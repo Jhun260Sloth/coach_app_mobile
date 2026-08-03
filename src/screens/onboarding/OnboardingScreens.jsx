@@ -7,7 +7,7 @@ import { C, fDisplay, fBody, LOGO_WHITE_SRC } from "../../theme/theme";
 import { Btn, Card, Badge, Toggle, TopBar, Field } from "../../components/ui/Primitives";
 import { LogoMark } from "../../components/ui/Primitives";
 
-/* =========================================================================
+/* ========================================================================
    ONBOARDING / AUTH SCREENS
    ========================================================================= */
 export function ScreenSplash({ nav }) {

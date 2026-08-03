@@ -1,22 +1,39 @@
 import React, { useState } from "react";
 import {
   WifiOff, Calendar, ClipboardList, Heart, Download, Clock, MessageCircle, Star, CheckCircle2,
+  AlertTriangle, CreditCard,
 } from "lucide-react";
 import { C, fDisplay, fBody } from "../../theme/theme";
 import { COACHES } from "../../data/mockData";
 import {
-  Avatar, Card, Badge, SegTabs, SectionLabel, Btn, TopBar, EmptyState, StatusPill, Chip,
+  Avatar, Card, Badge, SegTabs, SectionLabel, Btn, TopBar, EmptyState, StatusPill, Chip, BottomSheet, Row,
 } from "../../components/ui/Primitives";
 import { CoachListCard } from "./Discovery";
 
-export function ScreenClientDashboard({ nav, bookings, favorites, offline }) {
+export function ScreenClientDashboard({ nav, bookings, favorites, offline, toast, cancelBooking, rescheduleBooking }) {
   const [tab, setTab] = useState("upcoming");
+  const [rescheduleTarget, setRescheduleTarget] = useState(null);
+  const [cancelTarget, setCancelTarget] = useState(null);
+  const [receiptTarget, setReceiptTarget] = useState(null);
+
   const upcoming = bookings.filter((b) => b.status === "confirmed" || b.status === "pending");
   const past = bookings.filter((b) => b.status === "completed" || b.status === "cancelled");
   const favCoaches = COACHES.filter((c) => favorites.includes(c.id));
 
+  const handleReschedule = (id, when) => {
+    rescheduleBooking(id, when);
+    toast(`Session rescheduled to ${when.date}, ${when.time}`);
+    setRescheduleTarget(null);
+  };
+
+  const handleCancel = (id) => {
+    cancelBooking(id);
+    toast("Session cancelled");
+    setCancelTarget(null);
+  };
+
   return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
       <div style={{ padding: "18px 20px 0" }}>
         <div style={{ fontSize: 22, fontWeight: 600, color: C.jet, ...fDisplay }}>My sessions</div>
         {offline && (
@@ -33,8 +50,15 @@ export function ScreenClientDashboard({ nav, bookings, favorites, offline }) {
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px 100px" }}>
-        {tab === "upcoming" && (upcoming.length ? upcoming.map((b) => <BookingCard key={b.id} b={b} nav={nav} />) :
-          <EmptyState icon={Calendar} title="No upcoming sessions" body="Search for a coach to book your next session." />)}
+        {tab === "upcoming" && (upcoming.length ? upcoming.map((b) => (
+          <BookingCard
+            key={b.id}
+            b={b}
+            nav={nav}
+            onReschedule={() => setRescheduleTarget(b)}
+            onCancel={() => setCancelTarget(b)}
+          />
+        )) : <EmptyState icon={Calendar} title="No upcoming sessions" body="Search for a coach to book your next session." />)}
 
         {tab === "past" && (past.length ? past.map((b) => <BookingCard key={b.id} b={b} nav={nav} past />) :
           <EmptyState icon={ClipboardList} title="No past sessions yet" body="Completed sessions will show up here." />)}
@@ -45,8 +69,11 @@ export function ScreenClientDashboard({ nav, bookings, favorites, offline }) {
 
         {tab === "payments" && (
           <>
+            {[...upcoming, ...past].length === 0 && (
+              <EmptyState icon={CreditCard} title="No payments yet" body="Your session receipts will show up here." />
+            )}
             {[...upcoming, ...past].map((b) => (
-              <Card key={b.id} style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <Card key={b.id} onClick={() => setReceiptTarget(b)} style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
                   <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fBody }}>{b.service}</div>
                   <div style={{ fontSize: 11.5, color: C.slate, marginTop: 2, ...fBody }}>{b.date} · {b.coachName}</div>
@@ -60,11 +87,164 @@ export function ScreenClientDashboard({ nav, bookings, favorites, offline }) {
           </>
         )}
       </div>
+
+      <RescheduleSheet
+        booking={rescheduleTarget}
+        onClose={() => setRescheduleTarget(null)}
+        onConfirm={handleReschedule}
+      />
+      <CancelSheet
+        booking={cancelTarget}
+        onClose={() => setCancelTarget(null)}
+        onConfirm={handleCancel}
+      />
+      <ReceiptSheet
+        booking={receiptTarget}
+        onClose={() => setReceiptTarget(null)}
+      />
     </div>
   );
 }
 
-export function BookingCard({ b, nav, past }) {
+/* Reschedule — lets the client pick a new day/time from the coach's live availability */
+function RescheduleSheet({ booking, onClose, onConfirm }) {
+  const coach = booking ? COACHES.find((c) => c.id === booking.coachId) : null;
+  const days = coach ? Object.keys(coach.availability) : [];
+  const [day, setDay] = useState(null);
+  const [time, setTime] = useState(null);
+
+  // Reset picker state whenever a new booking is opened
+  React.useEffect(() => {
+    if (booking) { setDay(days[0] || null); setTime(null); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [booking?.id]);
+
+  return (
+    <BottomSheet open={!!booking} onClose={onClose} title="Reschedule session" heightPct={78}>
+      {booking && (
+        <>
+          <Card style={{ marginBottom: 16, display: "flex", gap: 12, alignItems: "center" }}>
+            <Avatar name={booking.coachName} size={40} />
+            <div>
+              <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fDisplay }}>{booking.service}</div>
+              <div style={{ fontSize: 12, color: C.slate, ...fBody }}>Currently {booking.date} · {booking.time}</div>
+            </div>
+          </Card>
+
+          {coach ? (
+            <>
+              <SectionLabel>New day</SectionLabel>
+              <div style={{ display: "flex", gap: 8, overflowX: "auto", marginBottom: 18, paddingBottom: 4 }}>
+                {days.map((d) => (
+                  <Chip key={d} active={day === d} onClick={() => { setDay(d); setTime(null); }}>{d}</Chip>
+                ))}
+              </div>
+
+              <SectionLabel>New time</SectionLabel>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 20 }}>
+                {(coach.availability[day] || []).map((t) => (
+                  <button key={t} onClick={() => setTime(t)} style={{
+                    padding: "12px 0", borderRadius: 12, border: `1.5px solid ${time === t ? C.orange : C.border}`,
+                    background: time === t ? C.orangeTint : C.white, color: time === t ? C.orange : C.jet,
+                    fontWeight: 600, fontSize: 13.5, cursor: "pointer", ...fBody,
+                  }}>{t}</button>
+                ))}
+              </div>
+
+              <Btn full disabled={!day || !time} onClick={() => onConfirm(booking.id, { date: day, time })}>
+                Confirm new time
+              </Btn>
+            </>
+          ) : (
+            <div style={{ fontSize: 13, color: C.slate, lineHeight: 1.6, ...fBody, marginBottom: 16 }}>
+              This coach's live availability isn't accessible right now. Message them directly to arrange a new time.
+            </div>
+          )}
+        </>
+      )}
+    </BottomSheet>
+  );
+}
+
+/* Cancel — requires explicit confirmation before the session is actually cancelled */
+function CancelSheet({ booking, onClose, onConfirm }) {
+  const coach = booking ? COACHES.find((c) => c.id === booking.coachId) : null;
+  return (
+    <BottomSheet open={!!booking} onClose={onClose} title="Cancel this session?" heightPct={58}>
+      {booking && (
+        <>
+          <Card style={{ marginBottom: 14, display: "flex", gap: 12, alignItems: "center" }}>
+            <Avatar name={booking.coachName} size={40} />
+            <div>
+              <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fDisplay }}>{booking.service}</div>
+              <div style={{ fontSize: 12, color: C.slate, ...fBody }}>{booking.date} · {booking.time} with {booking.coachName}</div>
+            </div>
+          </Card>
+
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 8, background: C.warnTint, borderRadius: 12, padding: 12, marginBottom: 18 }}>
+            <AlertTriangle size={14} color={C.orange} style={{ marginTop: 2, flexShrink: 0 }} />
+            <span style={{ fontSize: 12, color: C.slate, lineHeight: 1.5, ...fBody }}>
+              {coach?.cancellationPolicy || "Cancelling may not be fully refundable depending on how close this is to your session time."}
+            </span>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <Btn full variant="danger" onClick={() => onConfirm(booking.id)}>Yes, cancel session</Btn>
+            <Btn full variant="secondary" onClick={onClose}>Keep session</Btn>
+          </div>
+        </>
+      )}
+    </BottomSheet>
+  );
+}
+
+/* Receipt — shown when a payments list item is tapped */
+function ReceiptSheet({ booking, onClose }) {
+  const fee = booking ? Math.round(booking.price * 0.06 * 100) / 100 : 0;
+  const subtotal = booking ? Math.round((booking.price - fee) * 100) / 100 : 0;
+  return (
+    <BottomSheet open={!!booking} onClose={onClose} title="Receipt" heightPct={72}>
+      {booking && (
+        <>
+          <div style={{ textAlign: "center", marginBottom: 18 }}>
+            <div style={{ width: 52, height: 52, borderRadius: 16, background: C.successTint, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px" }}>
+              <CheckCircle2 size={24} color={C.success} />
+            </div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: C.jet, ...fDisplay }}>${booking.price.toFixed(2)}</div>
+            <div style={{ fontSize: 12, color: C.slate, marginTop: 2, ...fBody }}>
+              {booking.status === "cancelled" ? "Cancelled" : "Paid"} · {booking.date}
+            </div>
+          </div>
+
+          <Card style={{ marginBottom: 14 }}>
+            <Row label="Service" value={booking.service} />
+            <Row label="Coach" value={booking.coachName} />
+            <Row label="Date" value={booking.date} />
+            <Row label="Time" value={booking.time} />
+            <Row label="Location" value={booking.mode} last />
+          </Card>
+
+          <Card style={{ marginBottom: 14 }}>
+            <Row label="Session fee" value={`$${subtotal.toFixed(2)}`} />
+            <Row label="Service fee" value={`$${fee.toFixed(2)}`} />
+            <Row label="Total" value={`$${booking.price.toFixed(2)}`} bold last />
+          </Card>
+
+          <Card style={{ marginBottom: 18, display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 34, height: 24, borderRadius: 5, background: C.jet, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <CreditCard size={13} color={C.white} />
+            </div>
+            <div style={{ fontSize: 13, color: C.jet, fontWeight: 500, ...fBody }}>Visa •••• 4821</div>
+          </Card>
+
+          <Btn full variant="outline" icon={Download}>Download receipt</Btn>
+        </>
+      )}
+    </BottomSheet>
+  );
+}
+
+export function BookingCard({ b, nav, past, onReschedule, onCancel }) {
   return (
     <Card style={{ marginBottom: 12 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -83,8 +263,8 @@ export function BookingCard({ b, nav, past }) {
       <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
         {!past ? (
           <>
-            <Btn size="sm" variant="secondary" full onClick={() => {}}>Reschedule</Btn>
-            <Btn size="sm" variant="outline" full onClick={() => {}}>Cancel</Btn>
+            <Btn size="sm" variant="secondary" full onClick={onReschedule}>Reschedule</Btn>
+            <Btn size="sm" variant="outline" full onClick={onCancel}>Cancel</Btn>
             <Btn size="sm" variant="dark" icon={MessageCircle} onClick={() => nav("chat-thread", { name: b.coachName || b.clientName })} />
           </>
         ) : (

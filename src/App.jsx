@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
 
-import { ScreenAboutYou } from "./screens/client/AboutYou";
+import { ScreenAboutYouLocation, ScreenAboutYouSports } from "./screens/client/AboutYou";
 
 
 import {
@@ -98,6 +98,8 @@ export default function App() {
   const goBack = () => { setHistory((h) => { const n = [...h]; const last = n.pop(); if (last) setScreen(last); return n; }); };
   const toggleFav = (id) => setFavorites((f) => f.includes(id) ? f.filter((x) => x !== id) : [...f, id]);
   const addBooking = (d) => setBookings((b) => [{ id: "b" + (b.length + 1), coachId: d.coach.id, coachName: d.coach.name, clientName: "Sarah Lin", service: d.pkg.name, date: d.day, time: d.time, mode: d.mode, status: d.coach.instantBook ? "confirmed" : "pending", price: d.total, reviewed: false }, ...b]);
+  const cancelBooking = (id) => setBookings((bs) => bs.map((b) => (b.id === id ? { ...b, status: "cancelled" } : b)));
+  const rescheduleBooking = (id, { date, time }) => setBookings((bs) => bs.map((b) => (b.id === id ? { ...b, date, time } : b)));
   const handleClientPrefs = (prefs) => setClientPrefs(prefs);
 
   // Called when the current (Josh Whitfield) coach profile submits verification documents.
@@ -139,7 +141,7 @@ export default function App() {
   const tabsForRole = role === "coach" ? COACH_TABS : role === "admin" ? ADMIN_TABS : CLIENT_TABS;
   const showTabs = tabsForRole.some((t) => t.value === screen);
 
-  const screenProps = { nav, params, toast, role, favorites, toggleFav, biometric, setBiometric, verified, verificationStatus, reachedDashboardAfterVerification, setReachedDashboardAfterVerification, offline, draft, setDraft, addBooking, bookings, coachBookings, setCoachBookings, setRole, addCoachRole: () => setHasCoachRole(true), submitVerification, verificationQueue, decideVerification, disputes, resolveDispute, clientPrefs, onComplete: handleClientPrefs };
+  const screenProps = { nav, params, toast, role, favorites, toggleFav, biometric, setBiometric, verified, verificationStatus, reachedDashboardAfterVerification, setReachedDashboardAfterVerification, offline, draft, setDraft, addBooking, cancelBooking, rescheduleBooking, bookings, coachBookings, setCoachBookings, setRole, addCoachRole: () => setHasCoachRole(true), submitVerification, verificationQueue, decideVerification, disputes, resolveDispute, clientPrefs, onComplete: handleClientPrefs };
 
   function renderScreen() {
     switch (screen) {
@@ -147,7 +149,8 @@ export default function App() {
       case "role-select": return <ScreenRoleSelect nav={nav} setRole={setRole} />;
       case "auth": return <ScreenAuth {...screenProps} />;
       case "tnc": return <ScreenTnc {...screenProps} />;
-      case "about-you": return <ScreenAboutYou {...screenProps} />;
+      case "about-you": return <ScreenAboutYouLocation {...screenProps} />;
+      case "about-you-sports": return <ScreenAboutYouSports {...screenProps} />;
       case "verification": return <ScreenVerification {...screenProps} />;
       case "verification-pending": return <ScreenVerificationPending {...screenProps} />;
       case "admin-login": return <ScreenAdminLogin {...screenProps} />;
