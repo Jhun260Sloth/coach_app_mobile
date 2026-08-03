@@ -68,35 +68,36 @@ export function ScreenAboutYou({ nav, onComplete }) {
           </div>
         )}
 
-        <div style={{ border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden", marginBottom: 28 }}>
-          {filteredLocations.length === 0 ? (
-            <div style={{ padding: "16px 14px", fontSize: 12.5, color: C.slateLight, ...fBody }}>
-              No matching suburbs.
-            </div>
-          ) : (
-            filteredLocations.map((loc, i) => {
-              const active = locations.includes(loc);
-              return (
-                <button
-                  key={loc}
-                  onClick={() => toggleLocation(loc)}
-                  style={{
-                    width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
-                    padding: "12px 14px", background: active ? C.orangeTint : C.white, border: "none",
-                    borderBottom: i === filteredLocations.length - 1 ? "none" : `1px solid ${C.border}`,
-                    cursor: "pointer", textAlign: "left",
-                  }}
-                >
-                  <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, color: C.jet, ...fBody }}>
-                    <MapPin size={14} color={active ? C.orange : C.slateLight} /> {loc}
-                  </span>
-                  {active && <Check size={16} color={C.orange} />}
-                </button>
-              );
-            })
-          )}
-        </div>
-
+<div style={{ border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden", marginBottom: 28 }}>
+  {filteredLocations.length === 0 ? (
+    <div style={{ padding: "16px 14px", fontSize: 12.5, color: C.slateLight, ...fBody }}>
+      No matching suburbs.
+    </div>
+  ) : (
+    <div style={{ maxHeight: 5 * 45, overflowY: "auto" }}>
+      {filteredLocations.map((loc, i) => {
+        const active = locations.includes(loc);
+        return (
+          <button
+            key={loc}
+            onClick={() => toggleLocation(loc)}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "12px 14px", background: active ? C.orangeTint : C.white, border: "none",
+              borderBottom: i === filteredLocations.length - 1 ? "none" : `1px solid ${C.border}`,
+              cursor: "pointer", textAlign: "left",
+            }}
+          >
+            <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, color: C.jet, ...fBody }}>
+              <MapPin size={14} color={active ? C.orange : C.slateLight} /> {loc}
+            </span>
+            {active && <Check size={16} color={C.orange} />}
+          </button>
+        );
+      })}
+    </div>
+  )}
+</div>
         <SectionLabel>What sports are you into?</SectionLabel>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
           {SPORTS.map((s) => (

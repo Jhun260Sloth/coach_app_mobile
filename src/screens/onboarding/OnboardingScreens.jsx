@@ -134,7 +134,7 @@ export function ScreenTnc({ nav, role, toast }) {
         </button>
         <Btn full disabled={!agree} onClick={() => {
           toast("Terms accepted");
-          if (role === "coach") nav("verification"); else nav("client-home");
+           if (role === "coach") nav("verification"); else nav("about-you");
         }}>Accept & continue</Btn>
       </div>
     </div>
