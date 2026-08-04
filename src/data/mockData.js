@@ -7,7 +7,6 @@ import {
    ========================================================================= */
 export const CONFIG = { serviceFeeRate: 0.06, commissionRate: 0.15 };
 
-export const SPORTS = ["Tennis", "Swimming", "Basketball", "Strength & Conditioning", "Football", "Yoga", "Rock Climbing", "Athletics"];
 
 const AVATAR_PALETTE = ["#4d7c0e"];
 export function initials(name) {
@@ -118,6 +117,11 @@ export const COACHES = [
     availability: { Tue: ["16:00"], Thu: ["16:00"], Sat: ["10:00", "13:00"] },
   },
 ];
+
+
+export const SPORTS = ["Tennis", "Swimming", "Basketball", "Strength & Conditioning", "Football", "Yoga", "Rock Climbing", "Athletics"];
+export const ALL_SUBURBS = [...new Set(COACHES.map((c) => c.suburb))].sort();
+
 
 export const THREADS = [
   { id: "t1", withName: "Maya Okafor", withRole: "coach", context: "Booking · Tue 4:00pm", lastMsg: "Sounds great, see you at the courts!", time: "9:41am", unread: 0 },

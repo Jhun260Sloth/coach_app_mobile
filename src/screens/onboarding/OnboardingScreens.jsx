@@ -7,7 +7,7 @@ import { C, fDisplay, fBody, LOGO_WHITE_SRC } from "../../theme/theme";
 import { Btn, Card, Badge, Toggle, TopBar, Field } from "../../components/ui/Primitives";
 import { LogoMark } from "../../components/ui/Primitives";
 
-/* =========================================================================
+/* ========================================================================
    ONBOARDING / AUTH SCREENS
    ========================================================================= */
 export function ScreenSplash({ nav }) {
@@ -134,7 +134,7 @@ export function ScreenTnc({ nav, role, toast }) {
         </button>
         <Btn full disabled={!agree} onClick={() => {
           toast("Terms accepted");
-          if (role === "coach") nav("verification"); else nav("client-home");
+           if (role === "coach") nav("verification"); else nav("about-you");
         }}>Accept & continue</Btn>
       </div>
     </div>
