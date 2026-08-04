@@ -1,299 +1,507 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
-  ArrowRight, Search, Users, Mail, Eye, EyeOff, Fingerprint, Check,
-  Upload, CheckCircle2, ClipboardList, Clock, Lock,
+  ArrowRight, Camera, User, Trophy, Clock, Award, Images, Video,
+  Upload, X, Plus, CheckCircle2, Trash2, DollarSign, Layers, FileText,
 } from "lucide-react";
-import { C, fDisplay, fBody, LOGO_WHITE_SRC } from "../../theme/theme";
+import { C, fDisplay, fBody } from "../../theme/theme";
 import { Btn, Card, Badge, Toggle, TopBar, Field } from "../../components/ui/Primitives";
-import { LogoMark } from "../../components/ui/Primitives";
 
 /* =========================================================================
-   ONBOARDING / AUTH SCREENS
+   COACH — PROFILE SETUP
+   (reached via "Proceed to Profile Setup" on the verification success screen)
    ========================================================================= */
-export function ScreenSplash({ nav }) {
-  return (
-    <div style={{ height: "100%", background: C.jet, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 28, textAlign: "center" }}>
-      <div style={{ animation: "clFadeUp .5s ease" }}>
-        <img src={LOGO_WHITE_SRC} alt="CoachLink" style={{ width: 120, height: "auto" }} />
-      </div>
-      <div style={{ color: "#9CA0AC", fontSize: 14, marginTop: 22, lineHeight: 1.5, ...fBody }}>
-        Find a coach you trust, or build your coaching business — all in one place.
-      </div>
-      <div style={{ marginTop: 40, width: "100%" }}>
-        <Btn full onClick={() => nav("role-select")}>Get started <ArrowRight size={16} /></Btn>
-        <div style={{ marginTop: 14 }}>
-          <button onClick={() => nav("auth", { mode: "login" })} style={{ background: "none", border: "none", color: "#9CA0AC", fontSize: 13.5, cursor: "pointer", ...fBody }}>
-            Already have an account? <span style={{ color: C.white, fontWeight: 600 }}>Log in</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
-export function ScreenRoleSelect({ nav, setRole }) {
-  const Option = ({ role, title, body, icon: Icon }) => (
-    <button onClick={() => { setRole(role); nav("auth", { mode: "signup" }); }}
-      style={{ width: "100%", textAlign: "left", background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 18, padding: 16, display: "flex", gap: 14, alignItems: "flex-start", cursor: "pointer", marginBottom: 12 }}>
-      <div style={{ width: 44, height: 44, borderRadius: 13, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-        <Icon size={20} color={C.orange} />
-      </div>
-      <div>
-        <div style={{ fontWeight: 600, color: C.jet, fontSize: 15.5, marginBottom: 3, ...fDisplay }}>{title}</div>
-        <div style={{ fontSize: 12.5, color: C.slate, lineHeight: 1.5, ...fBody }}>{body}</div>
-      </div>
-    </button>
-  );
-  return (
-    <div style={{ padding: "24px 20px", height: "100%", display: "flex", flexDirection: "column" }}>
-      <LogoMark size={34} />
-      <div style={{ fontSize: 24, fontWeight: 600, color: C.jet, marginTop: 22, ...fDisplay }}>What brings you<br />to CoachLink?</div>
-      <div style={{ fontSize: 13.5, color: C.slate, marginTop: 6, marginBottom: 22, ...fBody }}>You can add a coaching profile later from the same account.</div>
-      <Option role="client" icon={Search} title="Find a coach" body="Search, book and pay for sessions with verified coaches near you." />
-      <Option role="coach" icon={Users} title="Coach others" body="List your services, manage bookings and get paid automatically." />
-      <div style={{ marginTop: "auto", textAlign: "center" }}>
-        <button onClick={() => nav("auth", { mode: "login" })} style={{ background: "none", border: "none", color: C.slate, fontSize: 13.5, cursor: "pointer", ...fBody }}>
-          Already have an account? <span style={{ color: C.orange, fontWeight: 600 }}>Log in</span>
-        </button>
-      </div>
-    </div>
-  );
-}
+const SPORTS = [
+  "Tennis", "Basketball", "Football", "Swimming", "Golf",
+  "Yoga", "Boxing", "Running", "Strength & Conditioning", "Padel",
+];
 
-export function ScreenAuth({ nav, params, role, toast }) {
-  const [mode, setMode] = useState(params?.mode || "signup");
-  const [showPw, setShowPw] = useState(false);
-  return (
-    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title="" onBack={() => nav("role-select")} />
-      <div style={{ fontSize: 24, fontWeight: 600, color: C.jet, ...fDisplay }}>{mode === "signup" ? "Create your account" : "Welcome back"}</div>
-      <div style={{ fontSize: 13.5, color: C.slate, marginTop: 6, marginBottom: 20, ...fBody }}>
-        {role === "coach" ? "Signing up as a Coach." : "Signing up as a Client."} <button onClick={() => nav("role-select")} style={{ background: "none", border: "none", color: C.orange, fontWeight: 600, cursor: "pointer", fontSize: 13.5 }}>Change</button>
-      </div>
+const EXPERIENCE_LEVELS = [
+  { key: "0-2", label: "0–2 years" },
+  { key: "3-5", label: "3–5 years" },
+  { key: "6-10", label: "6–10 years" },
+  { key: "10+", label: "10+ years" },
+];
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <Field label="Full name" placeholder="Sarah Lin" show={mode === "signup"} />
-        <Field label="Email" placeholder="you@email.com" icon={Mail} />
-        <Field label="Password" placeholder="••••••••" type={showPw ? "text" : "password"} rightIcon={showPw ? EyeOff : Eye} onRight={() => setShowPw((s) => !s)} />
-      </div>
+export function ScreenProfileSetup({ nav, toast, saveProfile }) {
+  const [photo, setPhoto] = useState(null);
+  const [bio, setBio] = useState("");
+  const [sports, setSports] = useState([]);
+  const [experience, setExperience] = useState(null);
+  const [certs, setCerts] = useState([]);
+  const [media, setMedia] = useState([]);
 
-      <div style={{ marginTop: 18 }}>
-        <Btn full onClick={() => nav("tnc")}>{mode === "signup" ? "Create account" : "Log in"}</Btn>
-      </div>
+  const photoInput = useRef(null);
+  const certInput = useRef(null);
+  const mediaInput = useRef(null);
 
-      <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "18px 0" }}>
-        <div style={{ flex: 1, height: 1, background: C.border }} />
-        <span style={{ fontSize: 12, color: C.slateLight, ...fBody }}>or</span>
-        <div style={{ flex: 1, height: 1, background: C.border }} />
-      </div>
+  const toggleSport = (s) =>
+    setSports((cur) => (cur.includes(s) ? cur.filter((x) => x !== s) : [...cur, s]));
 
-      <Btn full variant="dark" icon={Fingerprint} onClick={() => { toast("Face ID recognised — welcome back"); nav("client-home"); }}>
-        Continue with Face ID
-      </Btn>
-      <div style={{ marginTop: 10 }}>
-        <Btn full variant="outline" onClick={() => { toast("Signed in with Google"); nav("tnc"); }}>Continue with Google</Btn>
-      </div>
-
-      <div style={{ marginTop: "auto", textAlign: "center", paddingBottom: 22 }}>
-        <button onClick={() => setMode(mode === "signup" ? "login" : "signup")} style={{ background: "none", border: "none", color: C.slate, fontSize: 13, cursor: "pointer", ...fBody }}>
-          {mode === "signup" ? "Already have an account? " : "New to CoachLink? "}
-          <span style={{ color: C.orange, fontWeight: 600 }}>{mode === "signup" ? "Log in" : "Sign up"}</span>
-        </button>
-      </div>
-    </div>
-  );
-}
-
-export function ScreenTnc({ nav, role, toast }) {
-  const [agree, setAgree] = useState(false);
-  return (
-    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title="Terms & Privacy" onBack={() => nav("auth")} />
-      <Badge tone="neutral">Version 2.1 · Updated Jun 2026</Badge>
-      <div style={{ marginTop: 14, flex: 1, overflowY: "auto", fontSize: 13, color: C.slate, lineHeight: 1.7, ...fBody }}>
-        <p style={{ marginBottom: 12 }}>By continuing you agree to CoachLink's Terms of Service and Privacy Policy. Key points:</p>
-        {[
-          "We collect your location to show nearby coaches and enable travel-radius search.",
-          "Payment details are processed by our PCI-compliant payment partner — CoachLink never stores full card numbers.",
-          "If you're booking for someone under 18, a parent or guardian must provide consent before the session is confirmed.",
-          "Coaches working with minors must hold a valid Working with Children Check, verified before their profile goes live.",
-          "You can request a full export or deletion of your data at any time from Account Settings.",
-        ].map((t, i) => (
-          <div key={i} style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-            <Check size={14} color={C.orange} style={{ flexShrink: 0, marginTop: 2 }} />
-            <span>{t}</span>
-          </div>
-        ))}
-      </div>
-      <div style={{ padding: "14px 0", borderTop: `1px solid ${C.border}` }}>
-        <button onClick={() => setAgree(!agree)} style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "none", border: "none", cursor: "pointer", textAlign: "left", marginBottom: 12 }}>
-          <div style={{ width: 20, height: 20, borderRadius: 6, border: `1.5px solid ${agree ? C.orange : C.border}`, background: agree ? C.orange : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
-            {agree && <Check size={13} color={C.white} />}
-          </div>
-          <span style={{ fontSize: 13, color: C.jet, ...fBody }}>I have read and agree to the Terms of Service and Privacy Policy.</span>
-        </button>
-        <Btn full disabled={!agree} onClick={() => {
-          toast("Terms accepted");
-          if (role === "coach") nav("verification"); else nav("client-home");
-        }}>Accept & continue</Btn>
-      </div>
-    </div>
-  );
-}
-
-export function ScreenVerification({ nav, toast, submitVerification }) {
-  const [worksWithMinors, setWorksWithMinors] = useState(true);
-  const [docs, setDocs] = useState({ id: false, wwcc: false, quals: false });
-  const allDone = docs.id && (!worksWithMinors || docs.wwcc) && docs.quals;
-  const Row = ({ k, title, body }) => (
-    <Card style={{ marginBottom: 10 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 600, fontSize: 14, color: C.jet, ...fDisplay }}>{title}</div>
-          <div style={{ fontSize: 12, color: C.slate, marginTop: 2, ...fBody }}>{body}</div>
-        </div>
-        {docs[k] ? <Badge tone="success" icon={CheckCircle2}>Uploaded</Badge> :
-          <Btn size="sm" variant="secondary" icon={Upload} onClick={() => setDocs((d) => ({ ...d, [k]: true }))}>Upload</Btn>}
-      </div>
-    </Card>
-  );
-  return (
-    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title="Get verified" />
-      <div style={{ fontSize: 13, color: C.slate, marginBottom: 16, ...fBody }}>
-        Verification builds trust with clients and unlocks bookings. Most reviews complete within 2 business days.
-      </div>
-      <Row k="id" title="Identity document" body="Driver's licence or passport" />
-      <Card style={{ marginBottom: 10 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fBody }}>I coach clients under 18</div>
-          <Toggle on={worksWithMinors} onClick={() => setWorksWithMinors((v) => !v)} />
-        </div>
-      </Card>
-      {worksWithMinors && <Row k="wwcc" title="Working with Children Check" body="Required to coach minors — state/territory issued" />}
-      <Row k="quals" title="Coaching qualifications" body="Certifications relevant to your sport (optional but recommended)" />
-
-      <div style={{ marginTop: "auto", padding: "14px 0" }}>
-        <Btn full disabled={!allDone} onClick={() => {
-          const documents = [
-            { key: "id", label: "Identity document", detail: "Driver's licence or passport — uploaded" },
-            ...(worksWithMinors ? [{ key: "wwcc", label: "Working with Children Check", detail: "State/territory issued — uploaded" }] : []),
-            { key: "quals", label: "Coaching qualifications", detail: "Certifications uploaded" },
-          ];
-          submitVerification({ documents, worksWithMinors });
-          toast("Documents submitted for review");
-          nav("verification-pending");
-        }}>
-          Submit for review
-        </Btn>
-      </div>
-    </div>
-  );
-}
-
-export function ScreenVerificationPending({ nav, verificationStatus, setReachedDashboardAfterVerification }) {
-  const approved = verificationStatus === "approved";
-  const goToDashboard = () => {
-    if (approved && setReachedDashboardAfterVerification) setReachedDashboardAfterVerification(true);
-    nav("coach-dashboard");
+  const onPhotoChosen = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhoto({ name: file.name, url: URL.createObjectURL(file) });
   };
+
+  const onCertsChosen = (e) => {
+    const files = Array.from(e.target.files || []);
+    setCerts((cur) => [
+      ...cur,
+      ...files.map((f) => ({ id: `${Date.now()}-${f.name}`, name: f.name })),
+    ]);
+    e.target.value = "";
+  };
+
+  const onMediaChosen = (e) => {
+    const files = Array.from(e.target.files || []);
+    setMedia((cur) => [
+      ...cur,
+      ...files.map((f) => ({
+        id: `${Date.now()}-${f.name}`,
+        name: f.name,
+        type: f.type.startsWith("video") ? "video" : "photo",
+        url: URL.createObjectURL(f),
+      })),
+    ]);
+    e.target.value = "";
+  };
+
+  const removeCert = (id) => setCerts((cur) => cur.filter((c) => c.id !== id));
+  const removeMedia = (id) => setMedia((cur) => cur.filter((m) => m.id !== id));
+
+  const complete = photo && bio.trim().length > 0 && sports.length > 0 && experience;
+
   return (
-    <div style={{ padding: "28px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
-      <div style={{ textAlign: "center", marginTop: 20 }}>
-        <div style={{
-          width: 64, height: 64, borderRadius: 20,
-          background: approved ? C.successTint : C.orangeTint,
-          display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px",
-        }}>
-          {approved ? <CheckCircle2 size={28} color={C.success} /> : <ClipboardList size={28} color={C.orange} />}
-        </div>
-        <div style={{ fontSize: 20, fontWeight: 600, color: C.jet, ...fDisplay }}>
-          {approved ? "Your application has been successfully verified" : "Verification submitted"}
-        </div>
-        <div style={{ fontSize: 13.5, color: C.slate, marginTop: 8, lineHeight: 1.6, maxWidth: 300, marginLeft: "auto", marginRight: "auto", ...fBody }}>
-          {approved
-            ? "An admin has reviewed and approved your documents. You now have full access to the Coach dashboard and can start accepting bookings."
-            : "Your documents have been submitted successfully and are now awaiting review by a CoachLink administrator. This usually takes up to 2 business days — we'll notify you as soon as a decision is made."}
-        </div>
-        {!approved && (
-          <div style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "center", marginTop: 18 }}>
-            <Badge tone="orange" icon={Clock}>Pending review</Badge>
-          </div>
-        )}
-        {approved && (
-          <div style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "center", marginTop: 18 }}>
-            <Badge tone="success" icon={CheckCircle2}>Verified</Badge>
-          </div>
-        )}
+    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
+      <TopBar title="Set up your profile" />
+      <div style={{ fontSize: 13, color: C.slate, marginBottom: 18, ...fBody }}>
+        This is what clients see when they search for a coach. Complete every field to get discovered faster.
       </div>
 
-      <div style={{ marginTop: "auto", padding: "14px 0", display: "flex", flexDirection: "column", gap: 10 }}>
-        <Btn full disabled={!approved} onClick={goToDashboard}>Continue to dashboard</Btn>
-        {!approved && (
-          <div style={{ fontSize: 11.5, color: C.slateLight, textAlign: "center", lineHeight: 1.5, ...fBody }}>
-            This unlocks once an admin approves your application.
+      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 8 }}>
+        {/* Profile image */}
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
+          <div
+            onClick={() => photoInput.current?.click()}
+            style={{
+              width: 72, height: 72, borderRadius: 20, background: photo ? "transparent" : C.orangeTint,
+              border: `1.5px dashed ${photo ? "transparent" : C.border}`, display: "flex",
+              alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, overflow: "hidden",
+            }}
+          >
+            {photo ? (
+              <img src={photo.url} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            ) : (
+              <User size={26} color={C.orange} />
+            )}
+          </div>
+          <div>
+            <div style={{ fontWeight: 600, fontSize: 14, color: C.jet, ...fDisplay }}>Profile photo</div>
+            <button
+              onClick={() => photoInput.current?.click()}
+              style={{ marginTop: 4, background: "none", border: "none", color: C.orange, fontWeight: 600, fontSize: 12.5, cursor: "pointer", display: "flex", alignItems: "center", gap: 5, padding: 0, ...fBody }}
+            >
+              <Camera size={13} /> {photo ? "Change photo" : "Upload photo"}
+            </button>
+          </div>
+          <input ref={photoInput} type="file" accept="image/*" onChange={onPhotoChosen} style={{ display: "none" }} />
+        </div>
+
+        {/* Bio */}
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Bio</div>
+          <textarea
+            value={bio}
+            onChange={(e) => setBio(e.target.value.slice(0, 400))}
+            placeholder="Tell clients about your coaching style, background and what makes you different..."
+            rows={4}
+            style={{
+              width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 14, padding: 12,
+              fontSize: 13.5, color: C.jet, resize: "none", outline: "none", boxSizing: "border-box", ...fBody,
+            }}
+          />
+          <div style={{ textAlign: "right", fontSize: 11, color: C.slateLight, marginTop: 4, ...fBody }}>
+            {bio.length}/400
+          </div>
+        </div>
+
+        {/* Sports coached */}
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, marginBottom: 8, ...fBody }}>Sports coached</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {SPORTS.map((s) => {
+              const active = sports.includes(s);
+              return (
+                <button
+                  key={s}
+                  onClick={() => toggleSport(s)}
+                  style={{
+                    padding: "8px 13px", borderRadius: 12, fontSize: 12.5, cursor: "pointer",
+                    border: `1.5px solid ${active ? C.orange : C.border}`,
+                    background: active ? C.orange : C.white,
+                    color: active ? C.white : C.jet, fontWeight: 600, ...fBody,
+                  }}
+                >
+                  {s}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Experience */}
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, marginBottom: 8, ...fBody }}>
+            <Trophy size={13} style={{ marginRight: 5, verticalAlign: -2 }} />Experience
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {EXPERIENCE_LEVELS.map((lvl) => {
+              const active = experience === lvl.key;
+              return (
+                <button
+                  key={lvl.key}
+                  onClick={() => setExperience(lvl.key)}
+                  style={{
+                    padding: "8px 13px", borderRadius: 12, fontSize: 12.5, cursor: "pointer",
+                    border: `1.5px solid ${active ? C.orange : C.border}`,
+                    background: active ? C.orange : C.white,
+                    color: active ? C.white : C.jet, fontWeight: 600, ...fBody,
+                  }}
+                >
+                  {lvl.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Certifications upload */}
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, ...fBody }}>
+              <Award size={13} style={{ marginRight: 5, verticalAlign: -2 }} />Certifications
+            </div>
+            <button
+              onClick={() => certInput.current?.click()}
+              style={{ background: "none", border: "none", color: C.orange, fontWeight: 600, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, ...fBody }}
+            >
+              <Upload size={12} /> Upload
+            </button>
+            <input ref={certInput} type="file" accept=".pdf,image/*" multiple onChange={onCertsChosen} style={{ display: "none" }} />
+          </div>
+          {certs.length === 0 ? (
+            <div style={{ fontSize: 12, color: C.slateLight, ...fBody }}>No certifications uploaded yet — optional but builds trust.</div>
+          ) : (
+            certs.map((c) => (
+              <Card key={c.id} style={{ marginBottom: 8, padding: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                    <FileText size={15} color={C.orange} style={{ flexShrink: 0 }} />
+                    <span style={{ fontSize: 12.5, color: C.jet, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", ...fBody }}>{c.name}</span>
+                  </div>
+                  <button onClick={() => removeCert(c.id)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", flexShrink: 0 }}>
+                    <Trash2 size={14} color={C.slateLight} />
+                  </button>
+                </div>
+              </Card>
+            ))
+          )}
+        </div>
+
+        {/* Photos & video reels */}
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, ...fBody }}>
+              <Images size={13} style={{ marginRight: 5, verticalAlign: -2 }} />Photos & video reels
+            </div>
+            <button
+              onClick={() => mediaInput.current?.click()}
+              style={{ background: "none", border: "none", color: C.orange, fontWeight: 600, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, ...fBody }}
+            >
+              <Upload size={12} /> Add
+            </button>
+            <input ref={mediaInput} type="file" accept="image/*,video/*" multiple onChange={onMediaChosen} style={{ display: "none" }} />
+          </div>
+          {media.length === 0 ? (
+            <div style={{ fontSize: 12, color: C.slateLight, ...fBody }}>Show your coaching in action — add a few photos or a short reel.</div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+              {media.map((m) => (
+                <div key={m.id} style={{ position: "relative", borderRadius: 12, overflow: "hidden", aspectRatio: "1", background: C.orangeTint }}>
+                  {m.type === "video" ? (
+                    <video src={m.url} style={{ width: "100%", height: "100%", objectFit: "cover" }} muted />
+                  ) : (
+                    <img src={m.url} alt={m.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  )}
+                  {m.type === "video" && (
+                    <div style={{ position: "absolute", bottom: 4, left: 4, background: "rgba(0,0,0,.55)", borderRadius: 6, padding: "2px 5px", display: "flex", alignItems: "center", gap: 3 }}>
+                      <Video size={10} color={C.white} />
+                    </div>
+                  )}
+                  <button
+                    onClick={() => removeMedia(m.id)}
+                    style={{ position: "absolute", top: 4, right: 4, width: 20, height: 20, borderRadius: 6, background: "rgba(0,0,0,.55)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                  >
+                    <X size={12} color={C.white} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div style={{ padding: "14px 0" }}>
+        <Btn
+          full
+          disabled={!complete}
+          onClick={() => {
+            saveProfile?.({ photo, bio, sports, experience, certs, media });
+            toast("Profile saved");
+            nav("services-setup");
+          }}
+        >
+          Continue to services setup <ArrowRight size={16} />
+        </Btn>
+        {!complete && (
+          <div style={{ fontSize: 11.5, color: C.slateLight, textAlign: "center", marginTop: 8, ...fBody }}>
+            Add a photo, bio, at least one sport and your experience level to continue.
           </div>
         )}
-        <Btn full variant="ghost" onClick={() => nav("support")}>Contact support</Btn>
       </div>
     </div>
   );
 }
 
 /* =========================================================================
-   ADMIN — LOGIN (admin skips splash / role-select / sign-up entirely)
+   COACH — COACHING SERVICES SETUP
+   (reached after Profile Setup is completed)
    ========================================================================= */
-export function ScreenAdminLogin({ nav, toast }) {
-  const [showPw, setShowPw] = useState(false);
+
+const CATEGORIES = ["Fitness & Conditioning", "Sport-specific", "Wellness", "Nutrition", "Mental Performance", "Other"];
+const RATE_UNITS = ["session", "hour", "package"];
+const DURATIONS = ["30 min", "45 min", "60 min", "90 min", "Custom"];
+const PACKAGE_TYPES = ["1:1 Session", "Group Session", "Package Deal", "Online Session"];
+
+const emptyService = () => ({
+  id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+  name: "",
+  category: "",
+  rate: "",
+  rateUnit: "session",
+  duration: "60 min",
+  terms: "",
+  packageTypes: [],
+});
+
+export function ScreenServicesSetup({ nav, toast, saveServices }) {
+  const [services, setServices] = useState([emptyService()]);
+
+  const updateService = (id, patch) =>
+    setServices((cur) => cur.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+
+  const togglePackage = (id, pkg) =>
+    setServices((cur) =>
+      cur.map((s) =>
+        s.id === id
+          ? { ...s, packageTypes: s.packageTypes.includes(pkg) ? s.packageTypes.filter((p) => p !== pkg) : [...s.packageTypes, pkg] }
+          : s
+      )
+    );
+
+  const addService = () => setServices((cur) => [...cur, emptyService()]);
+  const removeService = (id) => setServices((cur) => (cur.length > 1 ? cur.filter((s) => s.id !== id) : cur));
+
+  const isValid = (s) => s.name.trim() && s.category && s.rate && s.packageTypes.length > 0;
+  const complete = services.every(isValid);
+
   return (
-    <div style={{ height: "100%", background: C.jet, display: "flex", flexDirection: "column", padding: "40px 24px 28px" }}>
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-        <div style={{ textAlign: "center", marginBottom: 30 }}>
-          <img src={LOGO_WHITE_SRC} alt="CoachLink" style={{ width: 120, height: "auto", marginBottom: 20 }} />
-          <div style={{ marginTop: 14, fontSize: 20, fontWeight: 600, color: C.white, ...fDisplay }}>Admin console</div>
-          <div style={{ fontSize: 13, color: "#9CA0AC", marginTop: 4, ...fBody }}>Sign in with your CoachLink admin credentials</div>
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: "#C7C9D1", marginBottom: 6, ...fBody }}>Email</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, border: "1.5px solid #333747", background: "#1F2129", borderRadius: 13, padding: "11px 13px" }}>
-              <Mail size={16} color="#8A8E9B" />
-              <input placeholder="you@coachlink.com" style={{ border: "none", outline: "none", flex: 1, fontSize: 14, background: "transparent", color: C.white, ...fBody }} />
-            </div>
-          </div>
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: "#C7C9D1", marginBottom: 6, ...fBody }}>Password</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, border: "1.5px solid #333747", background: "#1F2129", borderRadius: 13, padding: "11px 13px" }}>
-              <Lock size={16} color="#8A8E9B" />
-              <input type={showPw ? "text" : "password"} placeholder="••••••••" style={{ border: "none", outline: "none", flex: 1, fontSize: 14, background: "transparent", color: C.white, ...fBody }} />
-              <button onClick={() => setShowPw((s) => !s)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}>
-                {showPw ? <EyeOff size={16} color="#8A8E9B" /> : <Eye size={16} color="#8A8E9B" />}
-              </button>
-            </div>
-          </div>
-          <div style={{ textAlign: "right" }}>
-            <button style={{ background: "none", border: "none", color: C.orange, fontSize: 12.5, fontWeight: 600, cursor: "pointer", ...fBody }}>Forgot password?</button>
-          </div>
-        </div>
-
-        <div style={{ marginTop: 20 }}>
-          <Btn full onClick={() => { toast("Welcome back, Admin"); nav("admin-home"); }}>Log in</Btn>
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "18px 0" }}>
-          <div style={{ flex: 1, height: 1, background: "#2B2E38" }} />
-          <span style={{ fontSize: 11.5, color: "#6F7280", ...fBody }}>or</span>
-          <div style={{ flex: 1, height: 1, background: "#2B2E38" }} />
-        </div>
-
-        <Btn full variant="secondary" icon={Fingerprint} onClick={() => { toast("Face ID recognised — welcome back"); nav("admin-home"); }}>
-          Continue with Face ID
-        </Btn>
+    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
+      <TopBar title="Coaching services" onBack={() => nav("profile-setup")} />
+      <div style={{ fontSize: 13, color: C.slate, marginBottom: 16, ...fBody }}>
+        Set up at least one service clients can book. You can add more, or edit pricing, any time from your dashboard.
       </div>
 
-      <div style={{ textAlign: "center", fontSize: 11.5, color: "#6F7280", lineHeight: 1.6, ...fBody }}>
-        Admin access is restricted to authorised CoachLink staff and is logged for audit purposes.
+      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 8 }}>
+        {services.map((s, idx) => (
+          <Card key={s.id} style={{ marginBottom: 14, padding: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <div style={{ fontWeight: 600, fontSize: 14, color: C.jet, ...fDisplay }}>Service {idx + 1}</div>
+              {services.length > 1 && (
+                <button onClick={() => removeService(s.id)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}>
+                  <Trash2 size={15} color={C.slateLight} />
+                </button>
+              )}
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <Field
+                label="Service name"
+                placeholder="e.g. 1-on-1 Tennis Coaching"
+                value={s.name}
+                onChange={(e) => updateService(s.id, { name: e.target.value })}
+              />
+            </div>
+
+            {/* Category */}
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: C.jet, marginBottom: 8, ...fBody }}>Category</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {CATEGORIES.map((c) => {
+                  const active = s.category === c;
+                  return (
+                    <button
+                      key={c}
+                      onClick={() => updateService(s.id, { category: c })}
+                      style={{
+                        padding: "7px 12px", borderRadius: 11, fontSize: 12, cursor: "pointer",
+                        border: `1.5px solid ${active ? C.orange : C.border}`,
+                        background: active ? C.orange : C.white,
+                        color: active ? C.white : C.jet, fontWeight: 600, ...fBody,
+                      }}
+                    >
+                      {c}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Rate */}
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>
+                <DollarSign size={12} style={{ marginRight: 4, verticalAlign: -2 }} />Rate
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <div style={{ flex: 1, display: "flex", alignItems: "center", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "10px 13px" }}>
+                  <span style={{ fontSize: 13.5, color: C.slateLight, marginRight: 4 }}>$</span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={s.rate}
+                    onChange={(e) => updateService(s.id, { rate: e.target.value })}
+                    placeholder="50"
+                    style={{ border: "none", outline: "none", flex: 1, fontSize: 13.5, color: C.jet, background: "transparent", ...fBody }}
+                  />
+                </div>
+                <div style={{ display: "flex", border: `1.5px solid ${C.border}`, borderRadius: 13, overflow: "hidden" }}>
+                  {RATE_UNITS.map((u) => (
+                    <button
+                      key={u}
+                      onClick={() => updateService(s.id, { rateUnit: u })}
+                      style={{
+                        padding: "10px 12px", border: "none", cursor: "pointer", fontSize: 12,
+                        background: s.rateUnit === u ? C.orange : C.white,
+                        color: s.rateUnit === u ? C.white : C.slate, fontWeight: 600, ...fBody,
+                      }}
+                    >
+                      /{u}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Session duration */}
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: C.jet, marginBottom: 8, ...fBody }}>
+                <Clock size={12} style={{ marginRight: 4, verticalAlign: -2 }} />Session duration
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {DURATIONS.map((d) => {
+                  const active = s.duration === d;
+                  return (
+                    <button
+                      key={d}
+                      onClick={() => updateService(s.id, { duration: d })}
+                      style={{
+                        padding: "7px 12px", borderRadius: 11, fontSize: 12, cursor: "pointer",
+                        border: `1.5px solid ${active ? C.orange : C.border}`,
+                        background: active ? C.orange : C.white,
+                        color: active ? C.white : C.jet, fontWeight: 600, ...fBody,
+                      }}
+                    >
+                      {d}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Package types */}
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: C.jet, marginBottom: 8, ...fBody }}>
+                <Layers size={12} style={{ marginRight: 4, verticalAlign: -2 }} />Package types
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {PACKAGE_TYPES.map((p) => {
+                  const active = s.packageTypes.includes(p);
+                  return (
+                    <button
+                      key={p}
+                      onClick={() => togglePackage(s.id, p)}
+                      style={{
+                        padding: "7px 12px", borderRadius: 11, fontSize: 12, cursor: "pointer",
+                        border: `1.5px solid ${active ? C.orange : C.border}`,
+                        background: active ? C.orange : C.white,
+                        color: active ? C.white : C.jet, fontWeight: 600,
+                        display: "flex", alignItems: "center", gap: 5, ...fBody,
+                      }}
+                    >
+                      {active && <CheckCircle2 size={12} />} {p}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Terms */}
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Terms</div>
+              <textarea
+                value={s.terms}
+                onChange={(e) => updateService(s.id, { terms: e.target.value.slice(0, 300) })}
+                placeholder="Cancellation policy, what's included, equipment needed..."
+                rows={3}
+                style={{
+                  width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: 11,
+                  fontSize: 13, color: C.jet, resize: "none", outline: "none", boxSizing: "border-box", ...fBody,
+                }}
+              />
+            </div>
+          </Card>
+        ))}
+
+        <button
+          onClick={addService}
+          style={{
+            width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            padding: "12px", borderRadius: 14, border: `1.5px dashed ${C.border}`, background: "none",
+            color: C.orange, fontWeight: 600, fontSize: 13, cursor: "pointer", marginBottom: 14, ...fBody,
+          }}
+        >
+          <Plus size={15} /> Add another service
+        </button>
+      </div>
+
+      <div style={{ padding: "14px 0" }}>
+        <Btn
+          full
+          disabled={!complete}
+          onClick={() => {
+            saveServices?.(services);
+            toast("Services published — you're ready to accept bookings");
+            nav("coach-dashboard");
+          }}
+        >
+          Finish setup <ArrowRight size={16} />
+        </Btn>
+        {!complete && (
+          <div style={{ fontSize: 11.5, color: C.slateLight, textAlign: "center", marginTop: 8, ...fBody }}>
+            Each service needs a name, category, rate and at least one package type.
+          </div>
+        )}
       </div>
     </div>
   );
