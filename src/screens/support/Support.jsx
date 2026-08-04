@@ -4,17 +4,18 @@ import { C, fBody } from "../../theme/theme";
 import { FAQS } from "../../data/mockData";
 import { TopBar, SegTabs, Badge, Card } from "../../components/ui/Primitives";
 
-export function ScreenSupport({ nav, role }) {
-  const [tab, setTab] = useState("faq");
+export function ScreenSupport({ nav, params = {}, role }) {
+  const [tab, setTab] = useState(params.presetTab || "faq");
   const [openIdx, setOpenIdx] = useState(null);
-  const [chatStarted, setChatStarted] = useState(false);
+  const [chatStarted, setChatStarted] = useState(!!params.bookingContext);
   const [query, setQuery] = useState("");
   const faqs = FAQS[role === "coach" ? "coach" : "client"].filter((f) => f.q.toLowerCase().includes(query.toLowerCase()));
+  const backTarget = params.backTo || (role === "coach" ? "coach-dashboard" : "client-home");
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "18px 20px 0" }}>
-        <TopBar title="Support" onBack={() => nav(role === "coach" ? "coach-dashboard" : "client-home")} />
+        <TopBar title="Support" onBack={() => nav(backTarget, params.backParams || {})} />
         <SegTabs value={tab} onChange={setTab} items={[{ value: "faq", label: "FAQs" }, { value: "chat", label: "Contact support" }]} />
       </div>
 
@@ -50,19 +51,19 @@ export function ScreenSupport({ nav, role }) {
           <div style={{ padding: "0 20px" }}>
             <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
               <Badge tone="neutral">{role === "coach" ? "Coach account" : "Client account"}</Badge>
-              <Badge tone="neutral">Recent booking: Tue, 22 Jul</Badge>
+              <Badge tone="neutral">{params.bookingContext ? `Booking: ${params.bookingContext}` : "Recent booking: Tue, 22 Jul"}</Badge>
             </div>
           </div>
           <div style={{ flex: 1, overflowY: "auto", padding: "6px 20px" }}>
             <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: 10 }}>
               <div style={{ maxWidth: "80%", background: C.fog, borderRadius: 16, borderBottomLeftRadius: 4, padding: "10px 13px", fontSize: 13, color: C.jet, lineHeight: 1.5, ...fBody }}>
-                Hi Sarah 👋 I'm the CoachLink support assistant. I can see your account details and recent booking already — what can I help with?
+                Hi Sarah 👋 I'm the CoachLink support assistant. I can see your account details{params.bookingContext ? " and this booking" : " and recent booking"} already — what can I help with?
               </div>
             </div>
             {chatStarted && (
               <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
                 <div style={{ maxWidth: "80%", background: C.orange, color: C.white, borderRadius: 16, borderBottomRightRadius: 4, padding: "10px 13px", fontSize: 13, lineHeight: 1.5, ...fBody }}>
-                  The FAQ didn't quite answer my question.
+                  {params.bookingContext ? `I have a question about my ${params.bookingContext} booking.` : "The FAQ didn't quite answer my question."}
                 </div>
               </div>
             )}

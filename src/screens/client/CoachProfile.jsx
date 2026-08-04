@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import {
   ChevronLeft, Heart, Share2, Star, ShieldCheck, BadgeCheck, Play, MessageCircle, CheckCircle2, Trophy,
+  Clock, TrendingUp, Repeat, MapPin, Navigation, Award,
 } from "lucide-react";
 import { C, fDisplay, fBody } from "../../theme/theme";
 import { COACHES, REVIEWS, SPORT_ICON } from "../../data/mockData";
@@ -24,6 +25,8 @@ export function CoverBanner({ sport, height = 150 }) {
 export function ScreenCoachProfile({ nav, params, favorites, toggleFav }) {
   const coach = COACHES.find((c) => c.id === params.id) || COACHES[0];
   const [tab, setTab] = useState("about");
+  const [selectedPkgId, setSelectedPkgId] = useState(null);
+  const selectedPkg = coach.packages.find((p) => p.id === selectedPkgId) || null;
   const fav = favorites.includes(coach.id);
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
@@ -68,6 +71,20 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav }) {
           {coach.verified.quals && <Badge tone="success" icon={BadgeCheck}>Qualifications checked</Badge>}
         </div>
 
+        <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+          {[
+            { icon: Clock, label: "Response time", value: coach.responseTime.replace("Usually replies within ", "") },
+            { icon: TrendingUp, label: "Acceptance rate", value: `${coach.acceptanceRate}%` },
+            { icon: Repeat, label: "Repeat clients", value: `${coach.repeatClientRate}%` },
+          ].map((s, i) => (
+            <div key={i} style={{ flex: 1, background: C.fog, borderRadius: 14, padding: "10px 10px" }}>
+              <s.icon size={14} color={C.orange} />
+              <div style={{ fontSize: 13, fontWeight: 700, color: C.jet, marginTop: 6, ...fDisplay }}>{s.value}</div>
+              <div style={{ fontSize: 10.5, color: C.slate, marginTop: 1, lineHeight: 1.3, ...fBody }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+
         <div style={{ marginTop: 18 }}>
           <SegTabs value={tab} onChange={setTab} items={[
             { value: "about", label: "About" }, { value: "reels", label: "Reels" },
@@ -83,6 +100,37 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav }) {
             <p style={{ fontSize: 13.5, color: C.slate, lineHeight: 1.6, marginBottom: 16, ...fBody }}>{coach.style}</p>
             <SectionLabel>Experience</SectionLabel>
             <p style={{ fontSize: 13.5, color: C.slate, marginBottom: 16, ...fBody }}>{coach.experience}</p>
+
+            <SectionLabel>Location & travel</SectionLabel>
+            <Card style={{ marginBottom: 16 }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
+                <MapPin size={15} color={C.orange} style={{ marginTop: 1, flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: C.jet, ...fBody }}>{coach.venue}</div>
+                  <div style={{ fontSize: 11.5, color: C.slate, marginTop: 1, ...fBody }}>{coach.suburb}</div>
+                </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                <Navigation size={15} color={C.orange} style={{ marginTop: 1, flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: C.jet, ...fBody }}>Travels up to {coach.travelRadiusKm}km</div>
+                  <div style={{ fontSize: 11.5, color: C.slate, marginTop: 1, ...fBody }}>
+                    {coach.willingToTravel ? "Willing to travel to your location" : "In-venue sessions only — travel not offered"}
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            <SectionLabel>Qualifications</SectionLabel>
+            <Card style={{ marginBottom: 16 }}>
+              {coach.qualifications.map((q, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: i === coach.qualifications.length - 1 ? "none" : `1px solid ${C.border}` }}>
+                  <Award size={14} color={C.success} style={{ flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, color: C.jet, ...fBody }}>{q}</span>
+                </div>
+              ))}
+            </Card>
+
             <SectionLabel>Cancellation policy</SectionLabel>
             <p style={{ fontSize: 13.5, color: C.slate, lineHeight: 1.6, marginBottom: 6, ...fBody }}>{coach.cancellationPolicy}</p>
           </div>
@@ -102,22 +150,26 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav }) {
 
         {tab === "packages" && (
           <div style={{ marginTop: 16 }}>
-            {coach.packages.map((p) => (
-              <Card key={p.id} style={{ marginBottom: 10 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 14, color: C.jet, ...fDisplay }}>{p.name}</div>
-                    <div style={{ fontSize: 12, color: C.slate, marginTop: 3, ...fBody }}>{p.type} · {p.duration} min · {p.mode}</div>
+            {coach.packages.map((p) => {
+              const selected = selectedPkgId === p.id;
+              return (
+                <Card key={p.id} onClick={() => setSelectedPkgId(p.id)} style={{ marginBottom: 10, border: `1.5px solid ${selected ? C.orange : C.border}`, background: selected ? C.orangeTint : C.white }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: 14, color: C.jet, ...fDisplay }}>{p.name}</div>
+                      <div style={{ fontSize: 12, color: C.slate, marginTop: 3, ...fBody }}>{p.type} · {p.duration} min · {p.mode}</div>
+                    </div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: C.jet, ...fDisplay }}>${p.price}</div>
                   </div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: C.jet, ...fDisplay }}>${p.price}</div>
-                </div>
-                <div style={{ marginTop: 10 }}>
-                  <Btn size="sm" full onClick={() => nav("booking-datetime", { coachId: coach.id, packageId: p.id })}>
-                    {coach.instantBook ? "Book now" : "Request to book"}
-                  </Btn>
-                </div>
-              </Card>
-            ))}
+                  <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ width: 18, height: 18, borderRadius: 18, border: `1.5px solid ${selected ? C.orange : C.border}`, background: selected ? C.orange : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      {selected && <CheckCircle2 size={11} color={C.white} />}
+                    </div>
+                    <span style={{ fontSize: 12.5, fontWeight: 600, color: selected ? C.orange : C.slate, ...fBody }}>{selected ? "Selected" : "Select this service"}</span>
+                  </div>
+                </Card>
+              );
+            })}
           </div>
         )}
 
@@ -144,16 +196,24 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav }) {
       </div>
 
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: C.white, borderTop: `1px solid ${C.border}`, padding: "12px 20px 20px", display: "flex", alignItems: "center", gap: 12 }}>
-        <div>
-          <div style={{ fontSize: 17, fontWeight: 700, color: C.jet, ...fDisplay }}>${coach.packages[0].price}</div>
-          <div style={{ fontSize: 11, color: C.slate, ...fBody }}>from / session</div>
-        </div>
-        <div style={{ flex: 1 }}>
-          <Btn full onClick={() => nav("booking-datetime", { coachId: coach.id, packageId: coach.packages[0].id })}>
-            {coach.instantBook ? "Book now" : "Request to book"}
-          </Btn>
-        </div>
-        <button onClick={() => nav("chat-thread", { name: coach.name })} style={{ width: 46, height: 46, borderRadius: 14, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+        {selectedPkg ? (
+          <>
+            <div>
+              <div style={{ fontSize: 17, fontWeight: 700, color: C.jet, ...fDisplay }}>${selectedPkg.price}</div>
+              <div style={{ fontSize: 11, color: C.slate, maxWidth: 120, ...fBody }}>{selectedPkg.name}</div>
+            </div>
+            <div style={{ flex: 1 }}>
+              <Btn full onClick={() => nav("booking-datetime", { coachId: coach.id, packageId: selectedPkg.id })}>
+                {coach.instantBook ? "Book now" : "Request to book"}
+              </Btn>
+            </div>
+          </>
+        ) : (
+          <div style={{ flex: 1 }}>
+            <Btn full onClick={() => setTab("packages")}>Select a service</Btn>
+          </div>
+        )}
+        <button onClick={() => nav("chat-thread", { name: coach.name })} style={{ width: 46, height: 46, borderRadius: 14, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
           <MessageCircle size={18} color={C.jet} />
         </button>
       </div>

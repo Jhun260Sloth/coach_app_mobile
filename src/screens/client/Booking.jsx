@@ -1,12 +1,37 @@
 import React, { useState } from "react";
 import {
   Info, Fingerprint, CreditCard, CheckCircle2, Plus, Lock, Calendar, Navigation, MessageCircle,
+  Users, User, ShieldCheck, Phone, Stethoscope, AlertTriangle, UserPlus,
 } from "lucide-react";
 import { C, fDisplay, fBody } from "../../theme/theme";
 import { COACHES, CONFIG } from "../../data/mockData";
 import {
   Avatar, Card, Chip, SectionLabel, Btn, TopBar, Toggle, Field, Row,
 } from "../../components/ui/Primitives";
+
+const WEEKDAY_INDEX = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+
+function nextDateForWeekday(abbrev) {
+  const target = WEEKDAY_INDEX[abbrev];
+  const now = new Date();
+  const diff = (target - now.getDay() + 7) % 7;
+  const result = new Date(now);
+  result.setDate(now.getDate() + diff);
+  return result;
+}
+
+function formatFullDate(abbrev) {
+  return nextDateForWeekday(abbrev).toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" });
+}
+
+function formatTime12(t) {
+  const [hStr, mStr] = t.split(":");
+  let h = parseInt(hStr, 10);
+  const period = h >= 12 ? "pm" : "am";
+  h = h % 12;
+  if (h === 0) h = 12;
+  return `${h}:${mStr} ${period}`;
+}
 
 export function ScreenBookingDateTime({ nav, params, setDraft }) {
   const coach = COACHES.find((c) => c.id === params.coachId);
@@ -27,7 +52,7 @@ export function ScreenBookingDateTime({ nav, params, setDraft }) {
 
       <SectionLabel>Day</SectionLabel>
       <div style={{ display: "flex", gap: 8, overflowX: "auto", marginBottom: 18, paddingBottom: 4 }}>
-        {days.map((d) => <Chip key={d} active={day === d} onClick={() => { setDay(d); setTime(null); }}>{d}</Chip>)}
+        {days.map((d) => <Chip key={d} active={day === d} onClick={() => { setDay(d); setTime(null); }}>{formatFullDate(d)}</Chip>)}
       </div>
 
       <SectionLabel>Available times · real-time</SectionLabel>
@@ -37,9 +62,18 @@ export function ScreenBookingDateTime({ nav, params, setDraft }) {
             padding: "12px 0", borderRadius: 12, border: `1.5px solid ${time === t ? C.orange : C.border}`,
             background: time === t ? C.orangeTint : C.white, color: time === t ? C.orange : C.jet,
             fontWeight: 600, fontSize: 13.5, cursor: "pointer", ...fBody,
-          }}>{t}</button>
+          }}>{formatTime12(t)}</button>
         ))}
       </div>
+
+      {time && (
+        <Card style={{ marginBottom: 16, background: C.orangeTint, border: "none" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <Calendar size={16} color={C.orange} />
+            <span style={{ fontSize: 13, fontWeight: 600, color: C.jet, ...fBody }}>{formatFullDate(day)} at {formatTime12(time)}</span>
+          </div>
+        </Card>
+      )}
 
       <div style={{ display: "flex", alignItems: "flex-start", gap: 8, background: C.fog, borderRadius: 12, padding: 12, marginBottom: 16 }}>
         <Info size={14} color={C.slate} style={{ marginTop: 2, flexShrink: 0 }} />
@@ -47,18 +81,36 @@ export function ScreenBookingDateTime({ nav, params, setDraft }) {
       </div>
 
       <div style={{ marginTop: "auto", padding: "14px 0" }}>
-        <Btn full disabled={!time} onClick={() => { setDraft({ coach, pkg, day, time, mode: pkg.mode }); nav("booking-review"); }}>Continue</Btn>
+        <Btn full disabled={!time} onClick={() => { setDraft({ coach, pkg, day: formatFullDate(day), time: formatTime12(time), mode: pkg.mode }); nav("booking-review"); }}>Continue</Btn>
       </div>
     </div>
   );
 }
 
-export function ScreenBookingReview({ nav, draft, setDraft, toast }) {
-  const [under18, setUnder18] = useState(false);
+export function ScreenBookingReview({ nav, draft, setDraft, toast, children = [] }) {
+  const [participants, setParticipants] = useState(["self"]);
+  const [guardianName, setGuardianName] = useState("");
+  const [guardianRelationship, setGuardianRelationship] = useState("");
+  const [emergencyName, setEmergencyName] = useState("");
+  const [emergencyPhone, setEmergencyPhone] = useState("");
+  const [conditions, setConditions] = useState("");
   const [consent, setConsent] = useState(false);
+
+  const toggleParticipant = (key) => setParticipants((p) => (p.includes(key) ? p.filter((x) => x !== key) : [...p, key]));
+  const selectedChildren = children.filter((c) => participants.includes(c.id));
+  const includesMinor = selectedChildren.length > 0;
+  const participantLabel = participants.length === 0
+    ? "Not selected"
+    : [
+      ...(participants.includes("self") ? ["You"] : []),
+      ...selectedChildren.map((c) => c.name || "Unnamed profile"),
+    ].join(", ");
+
   const fee = Math.round(draft.pkg.price * CONFIG.serviceFeeRate * 100) / 100;
   const total = draft.pkg.price + fee;
-  const canContinue = !under18 || consent;
+  const guardianDetailsComplete = guardianName.trim() && guardianRelationship.trim() && emergencyName.trim() && emergencyPhone.trim();
+  const canContinue = participants.length > 0 && (!includesMinor || (consent && guardianDetailsComplete));
+
   return (
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="Review booking" onBack={() => nav("booking-datetime", { coachId: draft.coach.id, packageId: draft.pkg.id })} />
@@ -66,8 +118,26 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast }) {
         <Card style={{ marginBottom: 14 }}>
           <Row label="Coach" value={draft.coach.name} />
           <Row label="Service" value={draft.pkg.name} />
-          <Row label="When" value={`${draft.day}, ${draft.time}`} />
-          <Row label="Location" value={draft.mode} last />
+          <Row label="When" value={`${draft.day} at ${draft.time}`} />
+          <Row label="Location" value={draft.mode} />
+          <Row label="For" value={participantLabel} last />
+        </Card>
+
+        <Card style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, marginBottom: 4, ...fBody }}>Who is this session for?</div>
+          <div style={{ fontSize: 12, color: C.slate, marginBottom: 12, lineHeight: 1.5, ...fBody }}>Select yourself, one child, or several — each participant keeps their own booking history.</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            <Chip active={participants.includes("self")} icon={User} onClick={() => toggleParticipant("self")}>Myself</Chip>
+            {children.map((c) => (
+              <Chip key={c.id} active={participants.includes(c.id)} icon={Users} onClick={() => toggleParticipant(c.id)}>{c.name || "Unnamed profile"}</Chip>
+            ))}
+          </div>
+          {children.length === 0 && (
+            <button onClick={() => nav("client-profile")} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", marginTop: 12, padding: 0 }}>
+              <UserPlus size={13} color={C.orange} />
+              <span style={{ fontSize: 12, color: C.orange, fontWeight: 600, ...fBody }}>Add a child profile from Account to book for them</span>
+            </button>
+          )}
         </Card>
 
         <Card style={{ marginBottom: 14 }}>
@@ -75,26 +145,69 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast }) {
           <div style={{ fontSize: 12.5, color: C.slate, lineHeight: 1.55, ...fBody }}>{draft.coach.cancellationPolicy}</div>
         </Card>
 
-        <Card style={{ marginBottom: 14 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fBody }}>This session is for someone under 18</div>
-            <Toggle on={under18} onClick={() => setUnder18((v) => !v)} />
-          </div>
-          {under18 && (
+        {includesMinor && (
+          <Card style={{ marginBottom: 14 }}>
+            <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 12 }}>
+              <ShieldCheck size={16} color={C.orange} style={{ flexShrink: 0, marginTop: 1 }} />
+              <div>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fDisplay }}>Child safety details</div>
+                <div style={{ fontSize: 12, color: C.slate, marginTop: 2, lineHeight: 1.55, ...fBody }}>
+                  This booking includes a participant under 18, so we collect a few extra details to keep sessions safe. {draft.coach.name.split(" ")[0]} holds the required Working with Children Check, and this information is shared with them only as needed for the session.
+                </div>
+              </div>
+            </div>
+
+            {selectedChildren.map((c) => (
+              <div key={c.id} style={{ background: C.fog, borderRadius: 12, padding: "10px 12px", marginBottom: 10 }}>
+                <Row label="Participant" value={c.name || "Unnamed profile"} />
+                <Row label="Age" value={c.age || "Not set"} last />
+              </div>
+            ))}
+
+            <div style={{ marginTop: 4 }}>
+              <SectionLabel>Guardian details</SectionLabel>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <Field label="Guardian full name" placeholder="Jamie Chen" icon={User} value={guardianName} onChange={(e) => setGuardianName(e.target.value)} />
+                <Field label="Relationship to participant" placeholder="Parent" value={guardianRelationship} onChange={(e) => setGuardianRelationship(e.target.value)} />
+              </div>
+            </div>
+
+            <div style={{ marginTop: 14 }}>
+              <SectionLabel>Emergency contact</SectionLabel>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <Field label="Emergency contact name" placeholder="Alex Chen" icon={User} value={emergencyName} onChange={(e) => setEmergencyName(e.target.value)} />
+                <Field label="Emergency contact phone" placeholder="04XX XXX XXX" icon={Phone} type="tel" value={emergencyPhone} onChange={(e) => setEmergencyPhone(e.target.value)} />
+              </div>
+            </div>
+
+            <div style={{ marginTop: 14 }}>
+              <SectionLabel>Relevant medical conditions or allergies</SectionLabel>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 10, background: C.fog, borderRadius: 14, padding: "12px 14px" }}>
+                <Stethoscope size={16} color={C.slateLight} style={{ marginTop: 2, flexShrink: 0 }} />
+                <textarea
+                  value={conditions}
+                  onChange={(e) => setConditions(e.target.value)}
+                  placeholder="e.g. asthma (carries inhaler), peanut allergy — leave blank if none"
+                  rows={2}
+                  style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13.5, color: C.jet, resize: "none", ...fBody }}
+                />
+              </div>
+            </div>
+
             <div style={{ marginTop: 14, borderTop: `1px solid ${C.border}`, paddingTop: 14 }}>
-              <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, marginBottom: 8, ...fDisplay }}>Guardian consent</div>
-              <Field label="Guardian full name" placeholder="Jamie Chen" />
-              <div style={{ height: 10 }} />
-              <Field label="Relationship to participant" placeholder="Parent" />
-              <button onClick={() => setConsent(!consent)} style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "none", border: "none", cursor: "pointer", textAlign: "left", marginTop: 12 }}>
+              <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 10, background: C.warnTint, borderRadius: 12, padding: 10 }}>
+                <AlertTriangle size={14} color="#B8860B" style={{ flexShrink: 0, marginTop: 1 }} />
+                <span style={{ fontSize: 11.5, color: C.jet, lineHeight: 1.5, ...fBody }}>Safeguarding: sessions involving minors require a checked-in guardian or approved drop-off arrangement, and any concerns can be reported to CoachLink support at any time.</span>
+              </div>
+              <button onClick={() => setConsent(!consent)} style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}>
                 <div style={{ width: 18, height: 18, borderRadius: 5, border: `1.5px solid ${consent ? C.orange : C.border}`, background: consent ? C.orange : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
                   {consent && <CheckCircle2 size={12} color={C.white} />}
                 </div>
                 <span style={{ fontSize: 12, color: C.jet, lineHeight: 1.5, ...fBody }}>I confirm I am the parent or legal guardian and consent to this booking, including CoachLink's handling of the participant's data.</span>
               </button>
             </div>
-          )}
-        </Card>
+          </Card>
+        )}
 
         <Card>
           <Row label="Session" value={`$${draft.pkg.price.toFixed(2)}`} />
@@ -103,7 +216,7 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast }) {
         </Card>
       </div>
       <div style={{ padding: "14px 0" }}>
-        <Btn full disabled={!canContinue} onClick={() => { setDraft({ ...draft, total, under18 }); nav("payment"); }}>Continue to payment</Btn>
+        <Btn full disabled={!canContinue} onClick={() => { setDraft({ ...draft, total, participants: participantLabel, includesMinor, guardianName, guardianRelationship, emergencyName, emergencyPhone, conditions }); nav("payment"); }}>Continue to payment</Btn>
       </div>
     </div>
   );
@@ -185,8 +298,9 @@ export function ScreenBookingConfirmation({ nav, draft, toast }) {
 
       <Card style={{ marginBottom: 14 }}>
         <Row label="Service" value={draft.pkg.name} />
-        <Row label="When" value={`${draft.day}, ${draft.time}`} />
-        <Row label="Location" value={draft.mode} last />
+        <Row label="When" value={`${draft.day} at ${draft.time}`} />
+        <Row label="Location" value={draft.mode} />
+        {draft.participants && <Row label="For" value={draft.participants} last />}
       </Card>
 
       <Card style={{ marginBottom: 10 }}>

@@ -37,6 +37,10 @@ export const COACHES = [
     experience: "8 yrs coaching", style: "High-energy, technical drills with a focus on footwork and match IQ.",
     bio: "Former state-level competitor turned full-time coach. I work with players from age 8 through adult club level, building technique that holds up under pressure.",
     cancellationPolicy: "Moderate — free reschedule up to 24h before session, 50% refund inside 24h.",
+    noShowPolicy: "Marked a no-show if you're more than 15 min late with no message. The full session fee is retained.",
+    venue: "Bondi Tennis Centre", travelRadiusKm: 10, willingToTravel: true,
+    qualifications: ["Tennis Australia Level 2 Coach", "Working with Children Check", "First Aid & CPR Certified"],
+    responseTime: "Usually replies within 1 hour", acceptanceRate: 96, repeatClientRate: 68,
     reelsCount: 6,
     packages: [
       { id: "p1", name: "1:1 Court Session", type: "1:1", duration: 60, mode: "In-person", price: 75 },
@@ -52,6 +56,10 @@ export const COACHES = [
     experience: "6 yrs coaching", style: "Programming-first — every block is periodised and tracked.",
     bio: "Accredited S&C coach working with amateur athletes and everyday lifters. Specialising in safe return-to-training after injury.",
     cancellationPolicy: "Strict — 50% refund up to 48h before, no refund inside 48h.",
+    noShowPolicy: "No-shows without at least 2h notice forfeit the full session fee — no exceptions.",
+    venue: "Fitzroy Strength Studio", travelRadiusKm: 5, willingToTravel: false,
+    qualifications: ["ASCA Level 2 Strength & Conditioning Coach", "First Aid & CPR Certified"],
+    responseTime: "Usually replies within 3 hours", acceptanceRate: 88, repeatClientRate: 74,
     reelsCount: 11,
     packages: [
       { id: "p1", name: "1:1 Programming Session", type: "1:1", duration: 45, mode: "In-person", price: 68 },
@@ -66,6 +74,10 @@ export const COACHES = [
     experience: "10 yrs coaching", style: "Patient, technical, big on video review between sets.",
     bio: "Ex-national squad swimmer. I coach juniors through masters swimmers, with a focus on efficient technique over raw yardage.",
     cancellationPolicy: "Flexible — free cancellation up to 12h before session.",
+    noShowPolicy: "A no-show forfeits 50% of the session fee. Repeated no-shows may affect future booking requests.",
+    venue: "Manly Aquatic Centre", travelRadiusKm: 8, willingToTravel: true,
+    qualifications: ["Swimming Australia Coach Accreditation", "Working with Children Check", "First Aid & CPR Certified"],
+    responseTime: "Usually replies within 30 minutes", acceptanceRate: 99, repeatClientRate: 81,
     reelsCount: 4,
     packages: [
       { id: "p1", name: "1:1 Poolside Session", type: "1:1", duration: 45, mode: "In-person", price: 60 },
@@ -80,6 +92,10 @@ export const COACHES = [
     experience: "5 yrs coaching", style: "Skill-first sessions built around repeatable shooting mechanics.",
     bio: "Former college player now coaching juniors and adult rec players. Sessions are filmed so you can see what changed.",
     cancellationPolicy: "Moderate — free reschedule up to 24h before session, 50% refund inside 24h.",
+    noShowPolicy: "Marked a no-show if you're more than 15 min late with no message. The full session fee is retained.",
+    venue: "South Yarra Basketball Courts", travelRadiusKm: 12, willingToTravel: true,
+    qualifications: ["Basketball Australia Level 1 Coach", "Working with Children Check"],
+    responseTime: "Usually replies within 2 hours", acceptanceRate: 91, repeatClientRate: 59,
     reelsCount: 9,
     packages: [
       { id: "p1", name: "1:1 Skills Session", type: "1:1", duration: 60, mode: "In-person", price: 70 },
@@ -94,6 +110,10 @@ export const COACHES = [
     experience: "9 yrs coaching", style: "Breath-led movement, adaptable to every level.",
     bio: "500hr certified instructor. I teach 1:1 and small group vinyasa with a focus on building sustainable mobility.",
     cancellationPolicy: "Flexible — free cancellation up to 12h before session.",
+    noShowPolicy: "A no-show forfeits the full session fee. Please message ahead if you're running late.",
+    venue: "Newtown Yoga Loft", travelRadiusKm: 6, willingToTravel: false,
+    qualifications: ["500hr Registered Yoga Teacher (RYT-500)", "First Aid & CPR Certified"],
+    responseTime: "Usually replies within 1 hour", acceptanceRate: 94, repeatClientRate: 77,
     reelsCount: 14,
     packages: [
       { id: "p1", name: "1:1 Private Session", type: "1:1", duration: 60, mode: "In-person", price: 55 },
@@ -109,6 +129,10 @@ export const COACHES = [
     experience: "4 yrs coaching", style: "Movement-focused coaching — reading routes before pulling on.",
     bio: "Gym and outdoor routesetter turned coach. I work with complete beginners through to lead-climbing prep.",
     cancellationPolicy: "Strict — 50% refund up to 48h before, no refund inside 48h.",
+    noShowPolicy: "No-shows without notice forfeit the full session fee, as equipment and safety spots are pre-arranged.",
+    venue: "Brunswick Climbing Gym", travelRadiusKm: 15, willingToTravel: true,
+    qualifications: ["Climbing Instructor Certificate II", "Working with Children Check"],
+    responseTime: "Usually replies within 4 hours", acceptanceRate: 85, repeatClientRate: 52,
     reelsCount: 7,
     packages: [
       { id: "p1", name: "1:1 Coaching Session", type: "1:1", duration: 90, mode: "In-person", price: 85 },
@@ -163,10 +187,10 @@ export const CLIENT_PROFILES = {
 };
 
 export const INITIAL_BOOKINGS = [
-  { id: "b1", coachId: "c1", coachName: "Maya Okafor", clientName: "Sarah Lin", service: "1:1 Court Session", date: "Tue, 22 Jul", time: "4:00pm", mode: "In-person", status: "confirmed", price: 75, reviewed: false },
-  { id: "b2", coachId: "c2", coachName: "Josh Whitfield", clientName: "Sarah Lin", service: "1:1 Programming Session", date: "Fri, 25 Jul", time: "6:00am", mode: "In-person", status: "pending", price: 68, reviewed: false },
-  { id: "b3", coachId: "c3", coachName: "Priya Nandan", clientName: "Sarah Lin", service: "1:1 Poolside Session", date: "Sun, 13 Jul", time: "8:00am", mode: "In-person", status: "completed", price: 60, reviewed: false },
-  { id: "b4", coachId: "c5", coachName: "Ella Fontaine", clientName: "Sarah Lin", service: "Virtual Session", date: "Wed, 9 Jul", time: "7:00am", mode: "Virtual", status: "completed", price: 38, reviewed: true },
+  { id: "b1", coachId: "c1", coachName: "Maya Okafor", clientName: "Sarah Lin", service: "1:1 Court Session", date: "Tue, 22 Jul", time: "4:00pm", mode: "In-person", status: "confirmed", price: 75, reviewed: false, participants: "You", notes: "" },
+  { id: "b2", coachId: "c2", coachName: "Josh Whitfield", clientName: "Sarah Lin", service: "1:1 Programming Session", date: "Fri, 25 Jul", time: "6:00am", mode: "In-person", status: "pending", price: 68, reviewed: false, participants: "You", notes: "Coming back from a shoulder injury — cleared for light training, will bring physio notes." },
+  { id: "b3", coachId: "c3", coachName: "Priya Nandan", clientName: "Sarah Lin", service: "1:1 Poolside Session", date: "Sun, 13 Jul", time: "8:00am", mode: "In-person", status: "completed", price: 60, reviewed: false, participants: "You", notes: "" },
+  { id: "b4", coachId: "c5", coachName: "Ella Fontaine", clientName: "Sarah Lin", service: "Virtual Session", date: "Wed, 9 Jul", time: "7:00am", mode: "Virtual", status: "completed", price: 38, reviewed: true, participants: "You", notes: "" },
 ];
 
 export const COACH_BOOKINGS = [

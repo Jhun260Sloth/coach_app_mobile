@@ -264,14 +264,14 @@ export function Row({ label, value, bold, last }) {
   );
 }
 
-export function Field({ label, placeholder, type = "text", icon: Icon, rightIcon: RightIcon, onRight, show = true }) {
+export function Field({ label, placeholder, type = "text", icon: Icon, rightIcon: RightIcon, onRight, show = true, value, onChange }) {
   if (!show) return null;
   return (
     <div>
       <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>{label}</div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
         {Icon && <Icon size={16} color={C.slateLight} />}
-        <input placeholder={placeholder} type={type} style={{ border: "none", outline: "none", flex: 1, fontSize: 14, ...fBody }} />
+        <input placeholder={placeholder} type={type} value={value} onChange={onChange} style={{ border: "none", outline: "none", flex: 1, fontSize: 14, ...fBody }} />
         {RightIcon && <button onClick={onRight} style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}><RightIcon size={16} color={C.slateLight} /></button>}
       </div>
     </div>
