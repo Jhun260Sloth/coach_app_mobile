@@ -4,8 +4,61 @@ import {
   Upload, CheckCircle2, ClipboardList, Clock, Lock,
 } from "lucide-react";
 import { C, fDisplay, fBody, LOGO_WHITE_SRC } from "../../theme/theme";
-import { Btn, Card, Badge, Toggle, TopBar, Field } from "../../components/ui/Primitives";
+import { Btn, Card, Badge, Toggle, TopBar, Field, BottomSheet } from "../../components/ui/Primitives";
 import { LogoMark } from "../../components/ui/Primitives";
+
+function GoogleGlyph({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24">
+      <path fill="#4285F4" d="M23.04 12.27c0-.82-.07-1.42-.22-2.05H12.24v3.72h6.19c-.12 1.02-.8 2.56-2.31 3.6l-.02.14 3.35 2.58.23.02c2.14-1.96 3.36-4.85 3.36-8.01z" />
+      <path fill="#34A853" d="M12.24 23.5c3.04 0 5.6-1 7.46-2.72l-3.56-2.74c-.95.66-2.23 1.13-3.9 1.13-2.98 0-5.5-1.96-6.4-4.67l-.13.01-3.48 2.68-.05.13c1.85 3.66 5.65 6.18 10.06 6.18z" />
+      <path fill="#FBBC05" d="M5.84 14.5a6.9 6.9 0 0 1-.38-2.25c0-.78.14-1.54.37-2.25l-.01-.15-3.53-2.72-.11.05A11.2 11.2 0 0 0 1 12.25c0 1.8.44 3.51 1.19 5.02l3.65-2.77z" />
+      <path fill="#EA4335" d="M12.24 5.33c2.12 0 3.55.9 4.37 1.66l3.19-3.08C17.83 2.02 15.28 1 12.24 1 7.83 1 4.03 3.52 2.18 7.18l3.64 2.82c.92-2.71 3.44-4.67 6.42-4.67z" />
+    </svg>
+  );
+}
+
+function FacebookGlyph({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path
+        fill={C.white}
+        d="M15.5 8.5h-2v-1.7c0-.64.42-.8.72-.8h1.24V3.5l-1.9-.01C11.4 3.49 10.5 5 10.5 6.9V8.5H9v3h1.5v8h3v-8h1.87l.13-3z"
+      />
+    </svg>
+  );
+}
+
+const TERMS_POINTS = [
+  "We collect your location to show nearby coaches and enable travel-radius search.",
+  "Payment details are processed by our PCI-compliant payment partner — CoachLink never stores full card numbers.",
+  "If you're booking for someone under 18, a parent or guardian must provide consent before the session is confirmed.",
+  "Coaches working with minors must hold a valid Working with Children Check, verified before their profile goes live.",
+  "You can request a full export or deletion of your data at any time from Account Settings.",
+];
+
+const PRIVACY_POINTS = [
+  "We only use your personal information to match you with coaches and run your bookings safely.",
+  "Your exact location is never shown to other users — only your suburb and approximate distance.",
+  "We never sell your personal information to third parties.",
+  "You can review, download or delete the data we hold about you at any time from Account Settings.",
+];
+
+function LegalSheet({ open, onClose, title, points }) {
+  return (
+    <BottomSheet open={open} onClose={onClose} title={title} heightPct={60}>
+      <Badge tone="neutral">Version 2.1 · Updated Jun 2026</Badge>
+      <div style={{ marginTop: 14, fontSize: 13, color: C.slate, lineHeight: 1.7, ...fBody }}>
+        {points.map((t, i) => (
+          <div key={i} style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+            <Check size={14} color={C.orange} style={{ flexShrink: 0, marginTop: 2 }} />
+            <span>{t}</span>
+          </div>
+        ))}
+      </div>
+    </BottomSheet>
+  );
+}
 
 /* ========================================================================
    ONBOARDING / AUTH SCREENS
@@ -16,15 +69,20 @@ export function ScreenSplash({ nav }) {
       <div style={{ animation: "clFadeUp .5s ease" }}>
         <img src={LOGO_WHITE_SRC} alt="CoachLink" style={{ width: 120, height: "auto" }} />
       </div>
+      
       <div style={{ color: "#9CA0AC", fontSize: 14, marginTop: 22, lineHeight: 1.5, ...fBody }}>
         Find a coach you trust, or build your coaching business — all in one place.
       </div>
-      <div style={{ marginTop: 40, width: "100%" }}>
-        <Btn full onClick={() => nav("role-select")}>Get started <ArrowRight size={16} /></Btn>
-        <div style={{ marginTop: 14 }}>
-          <button onClick={() => nav("auth", { mode: "login" })} style={{ background: "none", border: "none", color: "#9CA0AC", fontSize: 13.5, cursor: "pointer", ...fBody }}>
-            Already have an account? <span style={{ color: C.white, fontWeight: 600 }}>Log in</span>
-          </button>
+
+      <div style={{ marginTop: 40, width: "100%", display: "flex", gap: 10 }}>
+        {/* Primary CTA */}
+        <div style={{ flex: 1 }}>
+          <Btn full variant="primary" onClick={() => nav("role-select")}>Sign up</Btn>
+        </div>
+
+        {/* Secondary CTA */}
+        <div style={{ flex: 1 }}>
+          <Btn full variant="secondary" onClick={() => nav("auth", { mode: "login" })}>Log in</Btn>
         </div>
       </div>
     </div>
@@ -63,6 +121,17 @@ export function ScreenRoleSelect({ nav, setRole }) {
 export function ScreenAuth({ nav, params, role, toast }) {
   const [mode, setMode] = useState(params?.mode || "signup");
   const [showPw, setShowPw] = useState(false);
+  const [agree, setAgree] = useState(false);
+  const [sheet, setSheet] = useState(null); // null | "terms" | "privacy"
+
+  const proceedAfterAuth = () => {
+    if (mode === "login") { nav(role === "coach" ? "coach-dashboard" : "client-home"); return; }
+    if (role === "coach") nav("verification");
+    else nav("about-you-profile");
+  };
+
+  const canSubmit = mode === "login" || agree;
+
   return (
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="" onBack={() => nav("role-select")} />
@@ -77,21 +146,53 @@ export function ScreenAuth({ nav, params, role, toast }) {
         <Field label="Password" placeholder="••••••••" type={showPw ? "text" : "password"} rightIcon={showPw ? EyeOff : Eye} onRight={() => setShowPw((s) => !s)} />
       </div>
 
+      {mode === "signup" && (
+        <button onClick={() => setAgree(!agree)} style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "none", border: "none", cursor: "pointer", textAlign: "left", marginTop: 16 }}>
+          <div style={{ width: 20, height: 20, borderRadius: 6, border: `1.5px solid ${agree ? C.orange : C.border}`, background: agree ? C.orange : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+            {agree && <Check size={13} color={C.white} />}
+          </div>
+          <span style={{ fontSize: 12.5, color: C.jet, lineHeight: 1.5, ...fBody }}>
+            I agree to the{" "}
+            <span onClick={(e) => { e.stopPropagation(); setSheet("terms"); }} style={{ color: C.orange, fontWeight: 600, textDecoration: "underline" }}>Terms &amp; Conditions</span>
+            {" "}and{" "}
+            <span onClick={(e) => { e.stopPropagation(); setSheet("privacy"); }} style={{ color: C.orange, fontWeight: 600, textDecoration: "underline" }}>Privacy Policy</span>
+            {" "}in the sign up
+          </span>
+        </button>
+      )}
+
       <div style={{ marginTop: 18 }}>
-        <Btn full onClick={() => nav("tnc")}>{mode === "signup" ? "Create account" : "Log in"}</Btn>
+        <Btn full disabled={!canSubmit} onClick={proceedAfterAuth}>{mode === "signup" ? "Create account" : "Log in"}</Btn>
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "18px 0" }}>
         <div style={{ flex: 1, height: 1, background: C.border }} />
-        <span style={{ fontSize: 12, color: C.slateLight, ...fBody }}>or</span>
+        <span style={{ fontSize: 12, color: C.slateLight, ...fBody }}>or continue with</span>
         <div style={{ flex: 1, height: 1, background: C.border }} />
       </div>
 
-      <Btn full variant="dark" icon={Fingerprint} onClick={() => { toast("Face ID recognised — welcome back"); nav("client-home"); }}>
-        Continue with Face ID
-      </Btn>
-      <div style={{ marginTop: 10 }}>
-        <Btn full variant="outline" onClick={() => { toast("Signed in with Google"); nav("tnc"); }}>Continue with Google</Btn>
+      <div style={{ display: "flex", justifyContent: "center", gap: 16 }}>
+        <button
+          onClick={() => { toast("Face ID recognised — welcome back"); nav(role === "coach" ? "coach-dashboard" : "client-home"); }}
+          aria-label="Continue with Face ID"
+          style={{ width: 52, height: 52, borderRadius: 16, background: C.jet, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+        >
+          <Fingerprint size={22} color={C.white} />
+        </button>
+        <button
+          onClick={() => { toast("Signed in with Google"); proceedAfterAuth(); }}
+          aria-label="Continue with Google"
+          style={{ width: 52, height: 52, borderRadius: 16, background: C.white, border: `1.5px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+        >
+          <GoogleGlyph size={20} />
+        </button>
+        <button
+          onClick={() => { toast("Signed in with Facebook"); proceedAfterAuth(); }}
+          aria-label="Continue with Facebook"
+          style={{ width: 52, height: 52, borderRadius: 16, background: "#1877F2", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+        >
+          <FacebookGlyph size={20} />
+        </button>
       </div>
 
       <div style={{ marginTop: "auto", textAlign: "center", paddingBottom: 22 }}>
@@ -100,43 +201,9 @@ export function ScreenAuth({ nav, params, role, toast }) {
           <span style={{ color: C.orange, fontWeight: 600 }}>{mode === "signup" ? "Log in" : "Sign up"}</span>
         </button>
       </div>
-    </div>
-  );
-}
 
-export function ScreenTnc({ nav, role, toast }) {
-  const [agree, setAgree] = useState(false);
-  return (
-    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title="Terms & Privacy" onBack={() => nav("auth")} />
-      <Badge tone="neutral">Version 2.1 · Updated Jun 2026</Badge>
-      <div style={{ marginTop: 14, flex: 1, overflowY: "auto", fontSize: 13, color: C.slate, lineHeight: 1.7, ...fBody }}>
-        <p style={{ marginBottom: 12 }}>By continuing you agree to CoachLink's Terms of Service and Privacy Policy. Key points:</p>
-        {[
-          "We collect your location to show nearby coaches and enable travel-radius search.",
-          "Payment details are processed by our PCI-compliant payment partner — CoachLink never stores full card numbers.",
-          "If you're booking for someone under 18, a parent or guardian must provide consent before the session is confirmed.",
-          "Coaches working with minors must hold a valid Working with Children Check, verified before their profile goes live.",
-          "You can request a full export or deletion of your data at any time from Account Settings.",
-        ].map((t, i) => (
-          <div key={i} style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-            <Check size={14} color={C.orange} style={{ flexShrink: 0, marginTop: 2 }} />
-            <span>{t}</span>
-          </div>
-        ))}
-      </div>
-      <div style={{ padding: "14px 0", borderTop: `1px solid ${C.border}` }}>
-        <button onClick={() => setAgree(!agree)} style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "none", border: "none", cursor: "pointer", textAlign: "left", marginBottom: 12 }}>
-          <div style={{ width: 20, height: 20, borderRadius: 6, border: `1.5px solid ${agree ? C.orange : C.border}`, background: agree ? C.orange : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
-            {agree && <Check size={13} color={C.white} />}
-          </div>
-          <span style={{ fontSize: 13, color: C.jet, ...fBody }}>I have read and agree to the Terms of Service and Privacy Policy.</span>
-        </button>
-        <Btn full disabled={!agree} onClick={() => {
-          toast("Terms accepted");
-           if (role === "coach") nav("verification"); else nav("about-you");
-        }}>Accept & continue</Btn>
-      </div>
+      <LegalSheet open={sheet === "terms"} onClose={() => setSheet(null)} title="Terms & Conditions" points={TERMS_POINTS} />
+      <LegalSheet open={sheet === "privacy"} onClose={() => setSheet(null)} title="Privacy Policy" points={PRIVACY_POINTS} />
     </div>
   );
 }

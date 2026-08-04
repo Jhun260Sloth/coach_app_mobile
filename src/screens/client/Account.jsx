@@ -1,13 +1,33 @@
 import React, { useState } from "react";
 import {
   Edit3, Bell, CreditCard, Fingerprint, Lock, FileText, Shield, HelpCircle, LogOut, Users, ChevronRight,
-  Mail, Phone, User, Plus, Trash2, Eye, EyeOff, AlertTriangle,
+  Mail, Phone, User, Plus, Trash2, Eye, EyeOff, AlertTriangle, Camera, MapPin, Target, Calendar, UserPlus,
 } from "lucide-react";
 import { C, fDisplay, fBody } from "../../theme/theme";
-import { Avatar, Btn, SectionLabel, Toggle, BottomSheet, Field } from "../../components/ui/Primitives";
+import { Avatar, Btn, SectionLabel, Toggle, BottomSheet, Field, Chip, Card, Badge } from "../../components/ui/Primitives";
+import { SPORTS } from "../../data/mockData";
 
-export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCoachRole }) {
+const emptyChildDraft = { name: "", age: "", sport: [], goals: "", postalCode: "", preferences: "", hasPhoto: false };
+
+export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCoachRole, children = [], addChild, updateChild, removeChild, bookings = [] }) {
   const [sheet, setSheet] = useState(null); // which bottom sheet is open
+  const [editingChildId, setEditingChildId] = useState(null); // null = creating new
+  const [childDraft, setChildDraft] = useState(emptyChildDraft);
+
+  const openNewChild = () => { setEditingChildId(null); setChildDraft(emptyChildDraft); setSheet("child"); };
+  const openEditChild = (child) => { setEditingChildId(child.id); setChildDraft({ ...emptyChildDraft, ...child }); setSheet("child"); };
+  const toggleDraftSport = (s) => setChildDraft((d) => ({ ...d, sport: d.sport.includes(s) ? d.sport.filter((x) => x !== s) : [...d.sport, s] }));
+  const saveChild = () => {
+    if (!childDraft.name.trim()) { toast("Give this profile a name first"); return; }
+    if (editingChildId) { updateChild(editingChildId, childDraft); toast(`${childDraft.name}'s profile updated`); }
+    else { addChild(childDraft); toast(`${childDraft.name}'s profile added`); }
+    setSheet(null);
+  };
+  const deleteChild = () => {
+    if (editingChildId) removeChild(editingChildId);
+    toast("Profile removed");
+    setSheet(null);
+  };
 
   const [notifPrefs, setNotifPrefs] = useState({
     push: true, email: true, sms: false, bookingReminders: true, messages: true, promos: false,
@@ -58,6 +78,28 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
         <Btn full variant="secondary" icon={Users} onClick={() => { addCoachRole(); toast("Coach profile added — switch anytime"); }}>Add a coaching profile</Btn>
 
         <div style={{ marginTop: 22 }}>
+          <SectionLabel>Family</SectionLabel>
+          <div style={{ fontSize: 12, color: C.slate, marginTop: -6, marginBottom: 12, lineHeight: 1.5, ...fBody }}>
+            Manage a separate profile for each child — their own sport, goals and booking history, all under your account.
+          </div>
+          {children.map((child) => (
+            <button key={child.id} onClick={() => openEditChild(child)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "10px 4px", background: "none", border: "none", borderBottom: `1px solid ${C.border}`, cursor: "pointer", textAlign: "left" }}>
+              <Avatar name={child.name || "Child"} size={40} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fBody }}>{child.name || "Unnamed profile"}</div>
+                <div style={{ fontSize: 12, color: C.slate, marginTop: 1, ...fBody }}>
+                  {child.age ? `Age ${child.age}` : "Age not set"}{child.sport?.length ? ` · ${child.sport.join(", ")}` : ""}
+                </div>
+              </div>
+              <ChevronRight size={16} color={C.slateLight} />
+            </button>
+          ))}
+          <div style={{ marginTop: 12 }}>
+            <Btn full variant="secondary" icon={UserPlus} onClick={openNewChild}>Add a child profile</Btn>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 22 }}>
           <SectionLabel>Profile</SectionLabel>
           <Row2 icon={Edit3} label="Edit profile" onClick={() => setSheet("edit")} />
           <Row2 icon={Bell} label="Notification preferences" onClick={() => setSheet("notif")} />
@@ -88,6 +130,104 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
           </button>
         </div>
       </div>
+
+      {/* Child / participant profile */}
+      <BottomSheet open={sheet === "child"} onClose={() => setSheet(null)} title={editingChildId ? "Edit child profile" : "Add child profile"} heightPct={90}>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 18 }}>
+          <button
+            onClick={() => setChildDraft((d) => ({ ...d, hasPhoto: !d.hasPhoto }))}
+            style={{ position: "relative", background: "none", border: "none", cursor: "pointer" }}
+          >
+            {childDraft.hasPhoto ? <Avatar name={childDraft.name || "Child"} size={72} /> : (
+              <div style={{ width: 72, height: 72, borderRadius: 72, background: C.fog, border: `1.5px dashed ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Camera size={20} color={C.slateLight} />
+              </div>
+            )}
+            <div style={{ position: "absolute", bottom: -2, right: -2, width: 24, height: 24, borderRadius: 24, background: C.orange, border: `2px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Camera size={11} color={C.white} />
+            </div>
+          </button>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ display: "flex", gap: 10 }}>
+            <div style={{ flex: 2 }}>
+              <Field label="Child's name" placeholder="e.g. Ava" icon={User} value={childDraft.name} onChange={(e) => setChildDraft((d) => ({ ...d, name: e.target.value }))} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <Field label="Age" placeholder="e.g. 9" value={childDraft.age} onChange={(e) => setChildDraft((d) => ({ ...d, age: e.target.value }))} />
+            </div>
+          </div>
+          <Field label="Location / postcode" placeholder="e.g. 2026" icon={MapPin} value={childDraft.postalCode} onChange={(e) => setChildDraft((d) => ({ ...d, postalCode: e.target.value }))} />
+        </div>
+
+        <div style={{ marginTop: 18 }}>
+          <SectionLabel>Sport / interests</SectionLabel>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+            {SPORTS.map((s) => (
+              <Chip key={s} active={childDraft.sport.includes(s)} onClick={() => toggleDraftSport(s)}>{s}</Chip>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginTop: 18 }}>
+          <SectionLabel>Coaching goals</SectionLabel>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 10, background: C.fog, borderRadius: 14, padding: "12px 14px" }}>
+            <Target size={16} color={C.slateLight} style={{ marginTop: 2, flexShrink: 0 }} />
+            <textarea
+              value={childDraft.goals}
+              onChange={(e) => setChildDraft((d) => ({ ...d, goals: e.target.value }))}
+              placeholder="e.g. build confidence for club trials"
+              rows={2}
+              style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13.5, color: C.jet, resize: "none", ...fBody }}
+            />
+          </div>
+        </div>
+
+        <div style={{ marginTop: 18 }}>
+          <SectionLabel>Coaching preferences</SectionLabel>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 10, background: C.fog, borderRadius: 14, padding: "12px 14px" }}>
+            <Users size={16} color={C.slateLight} style={{ marginTop: 2, flexShrink: 0 }} />
+            <textarea
+              value={childDraft.preferences}
+              onChange={(e) => setChildDraft((d) => ({ ...d, preferences: e.target.value }))}
+              placeholder="e.g. prefers a female coach, mornings only"
+              rows={2}
+              style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13.5, color: C.jet, resize: "none", ...fBody }}
+            />
+          </div>
+        </div>
+
+        {editingChildId && (
+          <div style={{ marginTop: 18 }}>
+            <SectionLabel>Booking history</SectionLabel>
+            {(() => {
+              const history = bookings.filter((b) => b.participant === childDraft.name);
+              if (history.length === 0) {
+                return <div style={{ fontSize: 12.5, color: C.slateLight, ...fBody }}>No sessions booked yet for {childDraft.name || "this profile"}.</div>;
+              }
+              return history.map((b) => (
+                <Card key={b.id} style={{ marginBottom: 8 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: C.jet, ...fBody }}>{b.service}</div>
+                      <div style={{ fontSize: 11.5, color: C.slate, marginTop: 2, ...fBody }}>{b.coachName} · {b.date}</div>
+                    </div>
+                    <Badge tone={b.status === "completed" ? "success" : "orange"}>{b.status}</Badge>
+                  </div>
+                </Card>
+              ));
+            })()}
+          </div>
+        )}
+
+        <div style={{ marginTop: 22, display: "flex", flexDirection: "column", gap: 10 }}>
+          <Btn full onClick={saveChild}>{editingChildId ? "Save changes" : "Add profile"}</Btn>
+          {editingChildId && (
+            <Btn full variant="danger" icon={Trash2} onClick={deleteChild}>Remove profile</Btn>
+          )}
+        </div>
+      </BottomSheet>
 
       {/* Edit profile */}
       <BottomSheet open={sheet === "edit"} onClose={closeSheet} title="Edit profile" heightPct={78}>
