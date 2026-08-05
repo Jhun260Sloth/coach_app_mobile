@@ -20,7 +20,7 @@ import { LogoMark, Toast, BottomTabs, StatusBar } from "./components/ui/Primitiv
 // Onboarding / auth
 import {
   ScreenSplash, ScreenRoleSelect, ScreenAuth, ScreenCoachRegister, ScreenCoachInfo,
-  ScreenCoachExpertise, ScreenTnc, ScreenVerification,
+  ScreenCoachExpertise, ScreenVerification,
   ScreenVerificationPending, ScreenAdminLogin,
 } from "./screens/onboarding/OnboardingScreens";
 
@@ -172,7 +172,6 @@ export default function App() {
       case "coach-register": return <ScreenCoachRegister {...screenProps} />;
       case "coach-info": return <ScreenCoachInfo {...screenProps} />;
       case "coach-expertise": return <ScreenCoachExpertise {...screenProps} />;
-      case "tnc": return <ScreenTnc {...screenProps} />;
       case "about-you-profile": return <ScreenAboutYouProfile {...screenProps} />;
       case "about-you-participants": return <ScreenAboutYouParticipants {...screenProps} />;
       case "about-you": return <ScreenAboutYouLocation {...screenProps} />;

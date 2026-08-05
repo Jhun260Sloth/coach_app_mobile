@@ -7,7 +7,7 @@ import {
 import { C, fDisplay, fBody, LOGO_WHITE_SRC } from "../../theme/theme";
 import {
   Btn, Card, Badge, Toggle, TopBar, Field, StepProgress, CheckboxRow, RadioRow,
-  SearchMultiSelect, Avatar, Chip,
+  SearchMultiSelect, Avatar, Chip, BottomSheet,
 } from "../../components/ui/Primitives";
 import { LogoMark } from "../../components/ui/Primitives";
 import {
@@ -44,6 +44,30 @@ function SelectField({ label, value, onChange, options, placeholder = "Select…
         {options.map((o) => <option key={o} value={o}>{o}</option>)}
       </select>
     </div>
+  );
+}
+
+const TERMS_POINTS = [
+  "We collect your location to show nearby coaches and enable travel-radius search.",
+  "Payment details are processed by our PCI-compliant payment partner — CoachLink never stores full card numbers.",
+  "If you're booking for someone under 18, a parent or guardian must provide consent before the session is confirmed.",
+  "Coaches working with minors must hold a valid Working with Children Check, verified before their profile goes live.",
+  "You can request a full export or deletion of your data at any time from Account Settings.",
+];
+
+function LegalSheet({ open, onClose }) {
+  return (
+    <BottomSheet open={open} onClose={onClose} title="Terms & Conditions" heightPct={60}>
+      <Badge tone="neutral">Version 2.1 · Updated Jun 2026</Badge>
+      <div style={{ marginTop: 14, fontSize: 13, color: C.slate, lineHeight: 1.7, ...fBody }}>
+        {TERMS_POINTS.map((t, i) => (
+          <div key={i} style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+            <Check size={14} color={C.orange} style={{ flexShrink: 0, marginTop: 2 }} />
+            <span>{t}</span>
+          </div>
+        ))}
+      </div>
+    </BottomSheet>
   );
 }
 
@@ -103,10 +127,14 @@ export function ScreenRoleSelect({ nav, setRole }) {
 export function ScreenAuth({ nav, params, role, toast }) {
   const [mode, setMode] = useState(params?.mode || "signup");
   const [showPw, setShowPw] = useState(false);
+  const [agree, setAgree] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+
+  const canSubmit = mode === "login" || agree;
 
   const proceedAfterAuth = () => {
     if (mode === "login") { nav("client-home"); return; }
-    nav("tnc");
+    nav("about-you-profile");
   };
 
   return (
@@ -123,8 +151,20 @@ export function ScreenAuth({ nav, params, role, toast }) {
         <Field label="Password" placeholder="••••••••" type={showPw ? "text" : "password"} rightIcon={showPw ? EyeOff : Eye} onRight={() => setShowPw((s) => !s)} />
       </div>
 
+      {mode === "signup" && (
+        <button onClick={() => setAgree((v) => !v)} style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "none", border: "none", cursor: "pointer", textAlign: "left", marginTop: 14, padding: "6px 0" }}>
+          <div style={{ width: 19, height: 19, borderRadius: 6, border: `1.5px solid ${agree ? C.orange : C.border}`, background: agree ? C.orange : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+            {agree && <Check size={12} color={C.white} />}
+          </div>
+          <span style={{ fontSize: 12.5, color: C.jet, lineHeight: 1.5, ...fBody }}>
+            I agree to the{" "}
+            <span onClick={(e) => { e.stopPropagation(); setShowTerms(true); }} style={{ color: C.orange, fontWeight: 600, textDecoration: "underline" }}>Terms & Conditions</span>
+          </span>
+        </button>
+      )}
+
       <div style={{ marginTop: 18 }}>
-        <Btn full onClick={proceedAfterAuth}>{mode === "signup" ? "Create account" : "Log in"}</Btn>
+        <Btn full disabled={!canSubmit} onClick={proceedAfterAuth}>{mode === "signup" ? "Create account" : "Log in"}</Btn>
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "18px 0" }}>
@@ -133,11 +173,11 @@ export function ScreenAuth({ nav, params, role, toast }) {
         <div style={{ flex: 1, height: 1, background: C.border }} />
       </div>
 
-      <Btn full variant="dark" icon={Fingerprint} onClick={() => { toast("Face ID recognised — welcome back"); proceedAfterAuth(); }}>
+      <Btn full variant="dark" icon={Fingerprint} disabled={!canSubmit} onClick={() => { toast("Face ID recognised — welcome back"); proceedAfterAuth(); }}>
         Continue with Face ID
       </Btn>
       <div style={{ marginTop: 10 }}>
-        <Btn full variant="outline" onClick={() => { toast("Signed in with Google"); proceedAfterAuth(); }}>Continue with Google</Btn>
+        <Btn full variant="outline" disabled={!canSubmit} onClick={() => { toast("Signed in with Google"); proceedAfterAuth(); }}>Continue with Google</Btn>
       </div>
 
       <div style={{ marginTop: "auto", textAlign: "center", paddingBottom: 22 }}>
@@ -146,6 +186,8 @@ export function ScreenAuth({ nav, params, role, toast }) {
           <span style={{ color: C.orange, fontWeight: 600 }}>{mode === "signup" ? "Log in" : "Sign up"}</span>
         </button>
       </div>
+
+      <LegalSheet open={showTerms} onClose={() => setShowTerms(false)} />
     </div>
   );
 }
@@ -160,11 +202,11 @@ export function ScreenCoachRegister({ nav, toast, updateCoachOnboarding }) {
   const [showPw, setShowPw] = useState(false);
   const [showConfirmPw, setShowConfirmPw] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
-  const [agreePrivacy, setAgreePrivacy] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
 
   const passwordsMatch = password.length > 0 && password === confirmPassword;
   const canContinue = firstName.trim() && lastName.trim() && email.trim() && mobile.trim()
-    && password.length >= 6 && passwordsMatch && agreeTerms && agreePrivacy;
+    && password.length >= 6 && passwordsMatch && agreeTerms;
 
   const proceed = () => {
     updateCoachOnboarding({ firstName, lastName, email, mobile, displayName: `${firstName} ${lastName}`.trim() });
@@ -239,13 +281,10 @@ export function ScreenCoachRegister({ nav, toast, updateCoachOnboarding }) {
             <div style={{ width: 19, height: 19, borderRadius: 6, border: `1.5px solid ${agreeTerms ? C.orange : C.border}`, background: agreeTerms ? C.orange : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
               {agreeTerms && <Check size={12} color={C.white} />}
             </div>
-            <span style={{ fontSize: 12.5, color: C.jet, ...fBody }}>I agree to the <span style={{ color: C.orange, fontWeight: 600 }}>Terms & Conditions</span></span>
-          </button>
-          <button onClick={() => setAgreePrivacy((v) => !v)} style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: "6px 0" }}>
-            <div style={{ width: 19, height: 19, borderRadius: 6, border: `1.5px solid ${agreePrivacy ? C.orange : C.border}`, background: agreePrivacy ? C.orange : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
-              {agreePrivacy && <Check size={12} color={C.white} />}
-            </div>
-            <span style={{ fontSize: 12.5, color: C.jet, ...fBody }}>I agree to the <span style={{ color: C.orange, fontWeight: 600 }}>Privacy Policy</span></span>
+            <span style={{ fontSize: 12.5, color: C.jet, ...fBody }}>
+              I agree to the{" "}
+              <span onClick={(e) => { e.stopPropagation(); setShowTerms(true); }} style={{ color: C.orange, fontWeight: 600, textDecoration: "underline" }}>Terms & Conditions</span>
+            </span>
           </button>
         </div>
 
@@ -269,6 +308,8 @@ export function ScreenCoachRegister({ nav, toast, updateCoachOnboarding }) {
           </button>
         </div>
       </div>
+
+      <LegalSheet open={showTerms} onClose={() => setShowTerms(false)} />
     </div>
   );
 }
@@ -506,43 +547,6 @@ export function ScreenCoachExpertise({ nav, coachOnboarding, updateCoachOnboardi
         <div style={{ marginTop: 20 }}>
           <Btn full disabled={!complete} onClick={proceed}>Continue</Btn>
         </div>
-      </div>
-    </div>
-  );
-}
-
-export function ScreenTnc({ nav, role, toast }) {
-  const [agree, setAgree] = useState(false);
-  return (
-    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title="Terms & Privacy" onBack={() => nav("auth")} />
-      <Badge tone="neutral">Version 2.1 · Updated Jun 2026</Badge>
-      <div style={{ marginTop: 14, flex: 1, overflowY: "auto", fontSize: 13, color: C.slate, lineHeight: 1.7, ...fBody }}>
-        <p style={{ marginBottom: 12 }}>By continuing you agree to CoachLink's Terms of Service and Privacy Policy. Key points:</p>
-        {[
-          "We collect your location to show nearby coaches and enable travel-radius search.",
-          "Payment details are processed by our PCI-compliant payment partner — CoachLink never stores full card numbers.",
-          "If you're booking for someone under 18, a parent or guardian must provide consent before the session is confirmed.",
-          "Coaches working with minors must hold a valid Working with Children Check, verified before their profile goes live.",
-          "You can request a full export or deletion of your data at any time from Account Settings.",
-        ].map((t, i) => (
-          <div key={i} style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-            <Check size={14} color={C.orange} style={{ flexShrink: 0, marginTop: 2 }} />
-            <span>{t}</span>
-          </div>
-        ))}
-      </div>
-      <div style={{ padding: "14px 0", borderTop: `1px solid ${C.border}` }}>
-        <button onClick={() => setAgree(!agree)} style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "none", border: "none", cursor: "pointer", textAlign: "left", marginBottom: 12 }}>
-          <div style={{ width: 20, height: 20, borderRadius: 6, border: `1.5px solid ${agree ? C.orange : C.border}`, background: agree ? C.orange : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
-            {agree && <Check size={13} color={C.white} />}
-          </div>
-          <span style={{ fontSize: 13, color: C.jet, ...fBody }}>I have read and agree to the Terms of Service and Privacy Policy.</span>
-        </button>
-        <Btn full disabled={!agree} onClick={() => {
-          toast("Terms accepted");
-          if (role === "coach") nav("verification"); else nav("about-you-profile");
-        }}>Accept & continue</Btn>
       </div>
     </div>
   );
