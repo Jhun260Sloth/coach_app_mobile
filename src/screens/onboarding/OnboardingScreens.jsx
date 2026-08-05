@@ -124,17 +124,18 @@ export function ScreenRoleSelect({ nav, setRole }) {
   );
 }
 
-export function ScreenAuth({ nav, params, role, toast }) {
+export function ScreenAuth({ nav, params, role, toast, biometric }) {
   const [mode, setMode] = useState(params?.mode || "signup");
   const [showPw, setShowPw] = useState(false);
   const [agree, setAgree] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
 
   const canSubmit = mode === "login" || agree;
+  const homeScreen = role === "coach" ? "coach-dashboard" : "client-home";
 
   const proceedAfterAuth = () => {
-    if (mode === "login") { nav("client-home"); return; }
-    nav("about-you-profile");
+    if (mode === "login") { nav(homeScreen); return; }
+    nav("enable-biometric", { next: role === "coach" ? "coach-info" : "about-you-profile" });
   };
 
   return (
@@ -173,11 +174,18 @@ export function ScreenAuth({ nav, params, role, toast }) {
         <div style={{ flex: 1, height: 1, background: C.border }} />
       </div>
 
-      <Btn full variant="dark" icon={Fingerprint} disabled={!canSubmit} onClick={() => { toast("Face ID recognised — welcome back"); proceedAfterAuth(); }}>
-        Continue with Face ID
+      {mode === "login" && biometric && (
+        <div style={{ marginBottom: 10 }}>
+          <Btn full variant="dark" icon={Fingerprint} onClick={() => { toast("Face ID recognised — welcome back"); nav(homeScreen); }}>
+            Continue with Face ID
+          </Btn>
+        </div>
+      )}
+      <Btn full variant="dark" icon={AppleIcon} disabled={!canSubmit} onClick={() => { toast(mode === "signup" ? "Signed up with Apple" : "Signed in with Apple"); proceedAfterAuth(); }}>
+        Continue with Apple
       </Btn>
       <div style={{ marginTop: 10 }}>
-        <Btn full variant="outline" disabled={!canSubmit} onClick={() => { toast("Signed in with Google"); proceedAfterAuth(); }}>Continue with Google</Btn>
+        <Btn full variant="outline" disabled={!canSubmit} onClick={() => { toast(mode === "signup" ? "Signed up with Google" : "Signed in with Google"); proceedAfterAuth(); }}>Continue with Google</Btn>
       </div>
 
       <div style={{ marginTop: "auto", textAlign: "center", paddingBottom: 22 }}>
@@ -210,7 +218,7 @@ export function ScreenCoachRegister({ nav, toast, updateCoachOnboarding }) {
 
   const proceed = () => {
     updateCoachOnboarding({ firstName, lastName, email, mobile, displayName: `${firstName} ${lastName}`.trim() });
-    nav("coach-info");
+    nav("enable-biometric", { next: "coach-info" });
   };
 
   return (
@@ -298,9 +306,14 @@ export function ScreenCoachRegister({ nav, toast, updateCoachOnboarding }) {
           <div style={{ flex: 1, height: 1, background: C.border }} />
         </div>
 
-        <Btn full variant="dark" icon={AppleIcon} onClick={() => { toast("Signed up with Apple"); updateCoachOnboarding({ displayName: "New Coach" }); nav("coach-info"); }}>
+        <Btn full variant="dark" icon={AppleIcon} onClick={() => { toast("Signed up with Apple"); updateCoachOnboarding({ displayName: "New Coach" }); nav("enable-biometric", { next: "coach-info" }); }}>
           Continue with Apple
         </Btn>
+        <div style={{ marginTop: 10 }}>
+          <Btn full variant="outline" onClick={() => { toast("Signed up with Google"); updateCoachOnboarding({ displayName: "New Coach" }); nav("enable-biometric", { next: "coach-info" }); }}>
+            Continue with Google
+          </Btn>
+        </div>
 
         <div style={{ textAlign: "center", marginTop: 20, paddingBottom: 8 }}>
           <button onClick={() => nav("auth", { mode: "login" })} style={{ background: "none", border: "none", color: C.slate, fontSize: 13, cursor: "pointer", ...fBody }}>
@@ -310,6 +323,35 @@ export function ScreenCoachRegister({ nav, toast, updateCoachOnboarding }) {
       </div>
 
       <LegalSheet open={showTerms} onClose={() => setShowTerms(false)} />
+    </div>
+  );
+}
+
+export function ScreenEnableBiometric({ nav, params, toast, biometric, setBiometric, role }) {
+  const next = params?.next || (role === "coach" ? "coach-info" : "about-you-profile");
+
+  const enable = () => {
+    setBiometric(true);
+    toast("Face ID enabled");
+    nav(next);
+  };
+  const skip = () => nav(next);
+
+  return (
+    <div style={{ padding: "24px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
+        <div style={{ width: 84, height: 84, borderRadius: 24, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 22 }}>
+          <ScanFace size={38} color={C.orange} />
+        </div>
+        <div style={{ fontSize: 22, fontWeight: 600, color: C.jet, ...fDisplay }}>Set up Face ID</div>
+        <div style={{ fontSize: 13.5, color: C.slate, marginTop: 10, lineHeight: 1.6, maxWidth: 280, ...fBody }}>
+          Your account is ready. Turn on Face ID to sign in instantly next time — no password needed.
+        </div>
+      </div>
+      <div style={{ paddingBottom: 24, display: "flex", flexDirection: "column", gap: 10 }}>
+        <Btn full variant="dark" icon={Fingerprint} onClick={enable}>Enable Face ID</Btn>
+        <Btn full variant="ghost" onClick={skip}>Not now</Btn>
+      </div>
     </div>
   );
 }

@@ -215,6 +215,76 @@ export function SearchMultiSelect({ options, value, onChange, placeholder = "Sea
   );
 }
 
+/**
+ * Single-select search combobox. Shows a filled pill with a clear (x) button
+ * once a value is chosen; otherwise a search input with a filtered dropdown.
+ * If `allowCustom` is true (default) and the typed query doesn't match an
+ * existing option, an "Add "<query>"" row lets the user pick a free-text value.
+ */
+export function SearchSelect({ options, value, onChange, placeholder = "Search…", allowCustom = true }) {
+  const [query, setQuery] = React.useState("");
+  const [open, setOpen] = React.useState(false);
+
+  const filtered = options
+    .filter((o) => o.toLowerCase().includes(query.trim().toLowerCase()))
+    .slice(0, 6);
+  const trimmed = query.trim();
+  const showAddCustom = allowCustom && trimmed.length > 0 && !options.some((o) => o.toLowerCase() === trimmed.toLowerCase());
+
+  const choose = (v) => { onChange(v); setQuery(""); setOpen(false); };
+  const clear = () => onChange("");
+
+  if (value) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
+        <span style={{ fontSize: 13.5, color: C.jet, fontWeight: 500, ...fBody }}>{value}</span>
+        <button onClick={clear} aria-label="Clear" style={{ background: "none", border: "none", cursor: "pointer", display: "flex", color: C.slateLight, flexShrink: 0 }}>
+          <svg width={13} height={13} viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth={2.3} strokeLinecap="round" /></svg>
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ position: "relative" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
+        <Search size={15} color={C.slateLight} />
+        <input
+          value={query}
+          onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          placeholder={placeholder}
+          style={{ border: "none", outline: "none", flex: 1, fontSize: 13.5, minWidth: 0, ...fBody }}
+        />
+      </div>
+      {open && (filtered.length > 0 || showAddCustom) && (
+        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.white, border: `1px solid ${C.border}`, borderRadius: 13, boxShadow: "0 10px 24px rgba(0,0,0,.10)", zIndex: 30, maxHeight: 190, overflowY: "auto" }}>
+          {filtered.map((o) => (
+            <button
+              key={o}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => choose(o)}
+              style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 13px", background: "none", border: "none", cursor: "pointer", fontSize: 13, color: C.jet, ...fBody }}
+            >
+              {o}
+            </button>
+          ))}
+          {showAddCustom && (
+            <button
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => choose(trimmed)}
+              style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 13px", background: "none", border: "none", borderTop: filtered.length ? `1px solid ${C.border}` : "none", cursor: "pointer", fontSize: 13, color: C.orange, fontWeight: 600, ...fBody }}
+            >
+              Add "{trimmed}"
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function StatusPill({ status }) {
   const map = {
     pending: { label: "Pending", tone: "orange", pulse: true },
