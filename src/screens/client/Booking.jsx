@@ -42,32 +42,82 @@ export function ScreenBookingDateTime({ nav, params, setDraft }) {
   return (
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="Choose a time" onBack={() => nav("coach-profile", { id: coach.id })} />
-      <Card style={{ marginBottom: 16, display: "flex", gap: 12, alignItems: "center" }}>
-        <Avatar name={coach.name} size={42} />
-        <div>
-          <div style={{ fontSize: 14, fontWeight: 600, color: C.jet, ...fDisplay }}>{pkg.name}</div>
-          <div style={{ fontSize: 12, color: C.slate, ...fBody }}>with {coach.name} · {pkg.duration} min · ${pkg.price}</div>
+
+      <Card style={{ marginBottom: 22, display: "flex", gap: 12, alignItems: "center", border: `1px solid ${C.border}`, boxShadow: "0 1px 2px rgba(22,24,29,.04)" }}>
+        <Avatar name={coach.name} size={44} />
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: C.jet, letterSpacing: "-0.1px", ...fDisplay }}>{pkg.name}</div>
+          <div style={{ fontSize: 12.5, color: C.slate, marginTop: 2, ...fBody }}>
+            with {coach.name} · {pkg.duration} min
+          </div>
+        </div>
+        <div style={{ marginLeft: "auto", fontSize: 16, fontWeight: 800, color: C.jet, whiteSpace: "nowrap", ...fDisplay }}>
+          ${pkg.price}
         </div>
       </Card>
 
       <SectionLabel>Day</SectionLabel>
-      <div style={{ display: "flex", gap: 8, overflowX: "auto", marginBottom: 18, paddingBottom: 4 }}>
-        {days.map((d) => <Chip key={d} active={day === d} onClick={() => { setDay(d); setTime(null); }}>{formatFullDate(d)}</Chip>)}
+      <div
+        className="cl-hide-scrollbar"
+        style={{
+          display: "flex", gap: 8, overflowX: "auto", marginBottom: 24, paddingBottom: 4,
+          WebkitOverflowScrolling: "touch", scrollSnapType: "x proximity",
+        }}
+      >
+        {days.map((d) => {
+          const active = day === d;
+          return (
+            <button
+              key={d}
+              onClick={() => { setDay(d); setTime(null); }}
+              style={{
+                flexShrink: 0, scrollSnapAlign: "start", padding: "10px 16px", borderRadius: 14,
+                border: `1.5px solid ${active ? C.jet : C.border}`,
+                background: active ? C.jet : C.white,
+                color: active ? C.white : C.jet,
+                fontWeight: active ? 700 : 600, fontSize: 13, whiteSpace: "nowrap", cursor: "pointer",
+                boxShadow: active ? "0 4px 10px rgba(22,24,29,.18)" : "none",
+                transition: "background .15s ease, box-shadow .15s ease", ...fBody,
+              }}
+            >
+              {formatFullDate(d)}
+            </button>
+          );
+        })}
       </div>
 
-      <SectionLabel>Available times · real-time</SectionLabel>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 20 }}>
-        {coach.availability[day].map((t) => (
-          <button key={t} onClick={() => setTime(t)} style={{
-            padding: "12px 0", borderRadius: 12, border: `1.5px solid ${time === t ? C.orange : C.border}`,
-            background: time === t ? C.orangeTint : C.white, color: time === t ? C.orange : C.jet,
-            fontWeight: 600, fontSize: 13.5, cursor: "pointer", ...fBody,
-          }}>{formatTime12(t)}</button>
-        ))}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+        <span style={{ fontSize: 12.5, fontWeight: 700, color: C.jet, ...fDisplay }}>Available times</span>
+        <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600, color: C.success, ...fBody }}>
+          <span style={{ width: 6, height: 6, borderRadius: 99, background: C.success, animation: "clPulse 1.4s infinite" }} />
+          Real-time
+        </span>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 22 }}>
+        {coach.availability[day].map((t) => {
+          const active = time === t;
+          return (
+            <button
+              key={t}
+              onClick={() => setTime(t)}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                padding: "12px 0", borderRadius: 12, border: `1.5px solid ${active ? C.jet : C.border}`,
+                background: active ? C.jet : C.white, color: active ? C.white : C.jet,
+                fontWeight: active ? 700 : 600, fontSize: 13.5, cursor: "pointer",
+                boxShadow: active ? "0 4px 10px rgba(22,24,29,.18)" : "none",
+                transition: "background .15s ease, box-shadow .15s ease", ...fBody,
+              }}
+            >
+              {active && <CheckCircle2 size={13} color={C.white} />}
+              {formatTime12(t)}
+            </button>
+          );
+        })}
       </div>
 
       {time && (
-        <Card style={{ marginBottom: 16, background: C.orangeTint, border: "none" }}>
+        <Card style={{ marginBottom: 18, background: C.orangeTint, border: "none" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <Calendar size={16} color={C.orange} />
             <span style={{ fontSize: 13, fontWeight: 600, color: C.jet, ...fBody }}>{formatFullDate(day)} at {formatTime12(time)}</span>

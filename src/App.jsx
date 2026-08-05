@@ -19,7 +19,8 @@ import { LogoMark, Toast, BottomTabs, StatusBar } from "./components/ui/Primitiv
 
 // Onboarding / auth
 import {
-  ScreenSplash, ScreenRoleSelect, ScreenAuth, ScreenVerification,
+  ScreenSplash, ScreenRoleSelect, ScreenAuth, ScreenCoachRegister, ScreenCoachInfo,
+  ScreenCoachExpertise, ScreenTnc, ScreenVerification,
   ScreenVerificationPending, ScreenAdminLogin,
 } from "./screens/onboarding/OnboardingScreens";
 
@@ -30,7 +31,7 @@ import {
   ScreenBookingDateTime, ScreenBookingReview, ScreenPayment, ScreenBookingConfirmation,
 } from "./screens/client/Booking";
 import { ScreenClientDashboard, ScreenLeaveReview, ScreenClientBookingDetail } from "./screens/client/Dashboard";
-import { ScreenClientProfile } from "./screens/client/Account";
+import { ScreenClientProfile, ScreenPaymentHistory } from "./screens/client/Account";
 
 // Coach
 import { ScreenCoachDashboard } from "./screens/coach/CoachDashboard";
@@ -95,6 +96,8 @@ export default function App() {
   const [disputes, setDisputes] = useState(ADMIN_DISPUTES);
   const [clientPrefs, setClientPrefs] = useState(null);
   const [children, setChildren] = useState([]);
+  const [coachOnboarding, setCoachOnboarding] = useState({});
+  const updateCoachOnboarding = (patch) => setCoachOnboarding((c) => ({ ...c, ...patch }));
 
   const toast = (msg) => { setToastMsg(msg); setTimeout(() => setToastMsg(null), 2200); };
   const nav = (s, p = {}) => { setHistory((h) => [...h, screen]); setScreen(s); setParams(p); };
@@ -127,11 +130,11 @@ export default function App() {
     setVerificationQueue((q) => [
       {
         id: "v" + (q.length + 1),
-        name: "Josh Whitfield",
-        sport: "Strength & Conditioning",
+        name: coachOnboarding.displayName || "New Coach",
+        sport: (coachOnboarding.primarySports && coachOnboarding.primarySports[0]) || "Coaching",
         type: documents.map((d) => d.label).join(" + "),
-        suburb: "Fitzroy, Melbourne",
-        experience: "6 yrs coaching",
+        suburb: coachOnboarding.location ? `${coachOnboarding.location.suburb}, ${coachOnboarding.location.state}` : "",
+        experience: coachOnboarding.yearsExperience || "",
         documents,
         submittedByUser: true,
       },
@@ -159,13 +162,17 @@ export default function App() {
   const tabsForRole = role === "coach" ? COACH_TABS : role === "admin" ? ADMIN_TABS : CLIENT_TABS;
   const showTabs = tabsForRole.some((t) => t.value === screen);
 
-  const screenProps = { nav, params, toast, role, favorites, toggleFav, biometric, setBiometric, verified, verificationStatus, reachedDashboardAfterVerification, setReachedDashboardAfterVerification, offline, draft, setDraft, addBooking, cancelBooking, rescheduleBooking, bookings, coachBookings, setCoachBookings, setRole, addCoachRole: () => setHasCoachRole(true), submitVerification, verificationQueue, decideVerification, disputes, resolveDispute, clientPrefs, onComplete: handleClientPrefs, children, addChild, updateChild, removeChild };
+  const screenProps = { nav, params, toast, role, favorites, toggleFav, biometric, setBiometric, verified, verificationStatus, reachedDashboardAfterVerification, setReachedDashboardAfterVerification, offline, draft, setDraft, addBooking, cancelBooking, rescheduleBooking, bookings, coachBookings, setCoachBookings, setRole, addCoachRole: () => setHasCoachRole(true), submitVerification, verificationQueue, decideVerification, disputes, resolveDispute, clientPrefs, onComplete: handleClientPrefs, children, addChild, updateChild, removeChild, coachOnboarding, updateCoachOnboarding };
 
   function renderScreen() {
     switch (screen) {
       case "splash": return <ScreenSplash nav={nav} />;
       case "role-select": return <ScreenRoleSelect nav={nav} setRole={setRole} />;
       case "auth": return <ScreenAuth {...screenProps} />;
+      case "coach-register": return <ScreenCoachRegister {...screenProps} />;
+      case "coach-info": return <ScreenCoachInfo {...screenProps} />;
+      case "coach-expertise": return <ScreenCoachExpertise {...screenProps} />;
+      case "tnc": return <ScreenTnc {...screenProps} />;
       case "about-you-profile": return <ScreenAboutYouProfile {...screenProps} />;
       case "about-you-participants": return <ScreenAboutYouParticipants {...screenProps} />;
       case "about-you": return <ScreenAboutYouLocation {...screenProps} />;
@@ -186,8 +193,11 @@ export default function App() {
       case "leave-review": return <ScreenLeaveReview {...screenProps} />;
       case "client-messages": return <ScreenMessages {...screenProps} />;
       case "client-profile": return <ScreenClientProfile {...screenProps} />;
+      case "client-payment-history": return <ScreenPaymentHistory {...screenProps} />;
 
-      case "coach-dashboard": return <ScreenCoachDashboard {...screenProps} />;
+      case "coach-dashboard":
+      case "coach-services-setup":
+        return <ScreenCoachDashboard {...screenProps} />;
       case "coach-calendar": return <ScreenCoachCalendar {...screenProps} />;
       case "coach-bookings": return <ScreenCoachBookings {...screenProps} />;
       case "coach-booking-detail": return <ScreenCoachBookingDetail {...screenProps} />;
@@ -241,7 +251,7 @@ export default function App() {
           style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 999, border: `1px solid ${offline ? C.orange : C.border}`, background: offline ? C.orangeTint : C.white, color: offline ? C.orange : C.slate, fontSize: 11.5, fontWeight: 600, cursor: "pointer", ...fBody }}>
           <WifiOff size={12} /> Offline
         </button>
-        <button onClick={() => { setScreen(role === "admin" ? "admin-login" : "splash"); setHistory([]); setBookings(INITIAL_BOOKINGS); setCoachBookings(COACH_BOOKINGS); setVerified(false); setVerificationStatus("none"); setReachedDashboardAfterVerification(false); setVerificationQueue(ADMIN_VERIFICATION_QUEUE); setDisputes(ADMIN_DISPUTES); setClientPrefs(null); setChildren([]); }}
+        <button onClick={() => { setScreen(role === "admin" ? "admin-login" : "splash"); setHistory([]); setBookings(INITIAL_BOOKINGS); setCoachBookings(COACH_BOOKINGS); setVerified(false); setVerificationStatus("none"); setReachedDashboardAfterVerification(false); setVerificationQueue(ADMIN_VERIFICATION_QUEUE); setDisputes(ADMIN_DISPUTES); setClientPrefs(null); setChildren([]); setCoachOnboarding({}); }}
           style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 999, border: `1px solid ${C.border}`, background: C.white, color: C.slate, fontSize: 11.5, fontWeight: 600, cursor: "pointer", ...fBody }}>
           <RefreshCcw size={12} /> Reset
         </button>

@@ -1,6 +1,6 @@
 import React from "react";
 import {
-  ChevronLeft, Star, CheckCircle2,
+  ChevronLeft, Star, CheckCircle2, Search,
 } from "lucide-react";
 import { C, fDisplay, fBody } from "../../theme/theme";
 import { initials, hashColor } from "../../data/mockData";
@@ -90,6 +90,131 @@ export function Badge({ tone = "neutral", children, icon: Icon, style }) {
   );
 }
 
+export function StepProgress({ step, total, label }) {
+  return (
+    <div style={{ marginBottom: 18 }}>
+      <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+        {Array.from({ length: total }, (_, i) => (
+          <div key={i} style={{ flex: 1, height: 4, borderRadius: 99, background: i < step ? C.orange : C.border }} />
+        ))}
+      </div>
+      <div style={{ fontSize: 11.5, fontWeight: 600, color: C.slateLight, ...fBody }}>
+        Step {step} of {total}{label ? ` — ${label}` : ""}
+      </div>
+    </div>
+  );
+}
+
+export function CheckboxRow({ label, checked, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left",
+        background: "none", border: "none", cursor: "pointer", padding: "8px 0",
+      }}
+    >
+      <div style={{
+        width: 19, height: 19, borderRadius: 6, flexShrink: 0,
+        border: `1.5px solid ${checked ? C.orange : C.border}`, background: checked ? C.orange : C.white,
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}>
+        {checked && <CheckCircle2Fill />}
+      </div>
+      <span style={{ fontSize: 13.5, color: C.jet, ...fBody }}>{label}</span>
+    </button>
+  );
+}
+
+function CheckCircle2Fill() {
+  return (
+    <svg width={12} height={12} viewBox="0 0 24 24" fill="none">
+      <path d="M20 6L9 17l-5-5" stroke={C.white} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function RadioRow({ label, selected, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left",
+        background: "none", border: "none", cursor: "pointer", padding: "8px 0",
+      }}
+    >
+      <div style={{
+        width: 19, height: 19, borderRadius: 99, flexShrink: 0,
+        border: `1.5px solid ${selected ? C.orange : C.border}`, background: C.white,
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}>
+        {selected && <div style={{ width: 10, height: 10, borderRadius: 99, background: C.orange }} />}
+      </div>
+      <span style={{ fontSize: 13.5, color: C.jet, ...fBody }}>{label}</span>
+    </button>
+  );
+}
+
+export function SearchMultiSelect({ options, value, onChange, placeholder = "Search…" }) {
+  const [query, setQuery] = React.useState("");
+  const [open, setOpen] = React.useState(false);
+
+  const filtered = options
+    .filter((o) => !value.includes(o))
+    .filter((o) => query.length > 0 && o.toLowerCase().includes(query.toLowerCase()))
+    .slice(0, 6);
+
+  const add = (o) => { onChange([...value, o]); setQuery(""); setOpen(false); };
+  const remove = (o) => onChange(value.filter((v) => v !== o));
+
+  return (
+    <div>
+      {value.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: value.length ? 8 : 0 }}>
+          {value.map((v) => (
+            <span key={v} style={{
+              display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 999,
+              fontSize: 12.5, fontWeight: 500, border: `1px solid ${C.orange}`, background: C.orangeTint, color: C.orange, ...fBody,
+            }}>
+              {v}
+              <button onClick={() => remove(v)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 0, color: C.orange }}>
+                <svg width={11} height={11} viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" /></svg>
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      <div style={{ position: "relative" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
+          <Search size={15} color={C.slateLight} />
+          <input
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+            onFocus={() => setOpen(true)}
+            onBlur={() => setTimeout(() => setOpen(false), 150)}
+            placeholder={placeholder}
+            style={{ border: "none", outline: "none", flex: 1, fontSize: 13.5, minWidth: 0, ...fBody }}
+          />
+        </div>
+        {open && filtered.length > 0 && (
+          <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.white, border: `1px solid ${C.border}`, borderRadius: 13, boxShadow: "0 10px 24px rgba(0,0,0,.10)", zIndex: 30, maxHeight: 190, overflowY: "auto" }}>
+            {filtered.map((o) => (
+              <button
+                key={o}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => add(o)}
+                style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 13px", background: "none", border: "none", cursor: "pointer", fontSize: 13, color: C.jet, ...fBody }}
+              >
+                {o}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function StatusPill({ status }) {
   const map = {
     pending: { label: "Pending", tone: "orange", pulse: true },
@@ -142,20 +267,25 @@ export function Toggle({ on, onClick }) {
   );
 }
 
-export function SegTabs({ items, value, onChange }) {
+export function SegTabs({ items, value, onChange, strong }) {
   return (
     <div style={{ display: "flex", background: C.fog, borderRadius: 13, padding: 3, gap: 2 }}>
-      {items.map((it) => (
-        <button key={it.value} onClick={() => onChange(it.value)}
-          style={{
-            flex: 1, padding: "8px 6px", borderRadius: 10, border: "none", cursor: "pointer",
-            background: value === it.value ? C.white : "transparent",
-            color: value === it.value ? C.jet : C.slate, fontWeight: 600, fontSize: 12.5,
-            boxShadow: value === it.value ? "0 1px 3px rgba(0,0,0,.08)" : "none", ...fBody,
-          }}>
-          {it.label}
-        </button>
-      ))}
+      {items.map((it) => {
+        const active = value === it.value;
+        return (
+          <button key={it.value} onClick={() => onChange(it.value)}
+            style={{
+              flex: 1, padding: "8px 6px", borderRadius: 10, border: "none", cursor: "pointer",
+              background: active ? (strong ? C.jet : C.white) : "transparent",
+              color: active ? (strong ? C.white : C.jet) : C.slate,
+              fontWeight: active ? 700 : 600, fontSize: 12.5,
+              boxShadow: active && !strong ? "0 1px 3px rgba(0,0,0,.08)" : "none",
+              transition: "background .15s ease, color .15s ease", ...fBody,
+            }}>
+            {it.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

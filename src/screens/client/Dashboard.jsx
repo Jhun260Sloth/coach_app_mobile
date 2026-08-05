@@ -1,25 +1,22 @@
 import React, { useState } from "react";
 import {
   WifiOff, Calendar, ClipboardList, Heart, Download, Clock, MessageCircle, Star, CheckCircle2,
-  AlertTriangle, CreditCard, ShieldCheck, LifeBuoy, Hourglass,
+  AlertTriangle, CreditCard, ShieldCheck, LifeBuoy, Hourglass, RefreshCcw,
 } from "lucide-react";
 import { C, fDisplay, fBody } from "../../theme/theme";
 import { COACHES } from "../../data/mockData";
 import {
   Avatar, Card, Badge, SegTabs, SectionLabel, Btn, TopBar, EmptyState, StatusPill, Chip, BottomSheet, Row,
 } from "../../components/ui/Primitives";
-import { CoachListCard } from "./Discovery";
 
-export function ScreenClientDashboard({ nav, bookings, favorites, offline, toast, cancelBooking, rescheduleBooking }) {
+export function ScreenClientDashboard({ nav, bookings, offline, toast, cancelBooking, rescheduleBooking }) {
   const [tab, setTab] = useState("upcoming");
   const [rescheduleTarget, setRescheduleTarget] = useState(null);
   const [cancelTarget, setCancelTarget] = useState(null);
-  const [receiptTarget, setReceiptTarget] = useState(null);
 
   const upcoming = bookings.filter((b) => b.status === "confirmed");
   const pending = bookings.filter((b) => b.status === "pending");
   const past = bookings.filter((b) => b.status === "completed" || b.status === "cancelled");
-  const favCoaches = COACHES.filter((c) => favorites.includes(c.id));
 
   const handleReschedule = (id, when) => {
     rescheduleBooking(id, when);
@@ -44,8 +41,7 @@ export function ScreenClientDashboard({ nav, bookings, favorites, offline, toast
         )}
         <div style={{ marginTop: 14 }}>
           <SegTabs value={tab} onChange={setTab} items={[
-            { value: "upcoming", label: "Upcoming" }, { value: "pending", label: "Pending" }, { value: "past", label: "Past" },
-            { value: "favorites", label: "Favorites" }, { value: "payments", label: "Payments" },
+            { value: "upcoming", label: "Upcoming" }, { value: "pending", label: "Pending" }, { value: "past", label: "Completed" },
           ]} />
         </div>
       </div>
@@ -72,30 +68,6 @@ export function ScreenClientDashboard({ nav, bookings, favorites, offline, toast
 
         {tab === "past" && (past.length ? past.map((b) => <BookingCard key={b.id} b={b} nav={nav} past />) :
           <EmptyState icon={ClipboardList} title="No past sessions yet" body="Completed sessions will show up here." />)}
-
-        {tab === "favorites" && (favCoaches.length ? favCoaches.map((c) => (
-          <CoachListCard key={c.id} coach={c} fav onFav={() => {}} onOpen={() => nav("coach-profile", { id: c.id })} />
-        )) : <EmptyState icon={Heart} title="No favorites yet" body="Tap the heart on a coach's profile to save them here." />)}
-
-        {tab === "payments" && (
-          <>
-            {[...upcoming, ...past].length === 0 && (
-              <EmptyState icon={CreditCard} title="No payments yet" body="Your session receipts will show up here." />
-            )}
-            {[...upcoming, ...past].map((b) => (
-              <Card key={b.id} onClick={() => setReceiptTarget(b)} style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fBody }}>{b.service}</div>
-                  <div style={{ fontSize: 11.5, color: C.slate, marginTop: 2, ...fBody }}>{b.date} · {b.coachName}</div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: C.jet, ...fDisplay }}>${b.price}</div>
-                  <Download size={15} color={C.slateLight} />
-                </div>
-              </Card>
-            ))}
-          </>
-        )}
       </div>
 
       <RescheduleSheet
@@ -108,10 +80,6 @@ export function ScreenClientDashboard({ nav, bookings, favorites, offline, toast
         pending={cancelTarget?.status === "pending"}
         onClose={() => setCancelTarget(null)}
         onConfirm={handleCancel}
-      />
-      <ReceiptSheet
-        booking={receiptTarget}
-        onClose={() => setReceiptTarget(null)}
       />
     </div>
   );
@@ -212,8 +180,8 @@ function CancelSheet({ booking, onClose, onConfirm, pending }) {
   );
 }
 
-/* Receipt — shown when a payments list item is tapped */
-function ReceiptSheet({ booking, onClose }) {
+/* Receipt — shown when a payments list item is tapped (also used in Account > Payment history) */
+export function ReceiptSheet({ booking, onClose }) {
   const fee = booking ? Math.round(booking.price * 0.06 * 100) / 100 : 0;
   const subtotal = booking ? Math.round((booking.price - fee) * 100) / 100 : 0;
   return (
@@ -261,41 +229,55 @@ function ReceiptSheet({ booking, onClose }) {
 export function BookingCard({ b, nav, past, onReschedule, onCancel }) {
   const pending = b.status === "pending";
   return (
-    <Card style={{ marginBottom: 12 }} onClick={() => nav("client-booking-detail", { id: b.id })}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div style={{ display: "flex", gap: 10 }}>
+    <Card
+      onClick={() => nav("client-booking-detail", { id: b.id })}
+      style={{ marginBottom: 14, border: `1px solid ${C.border}`, boxShadow: "0 1px 2px rgba(22,24,29,.04)" }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+        <div style={{ display: "flex", gap: 10, minWidth: 0 }}>
           <Avatar name={b.coachName || b.clientName} size={42} />
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: C.jet, ...fDisplay }}>{b.service}</div>
-            <div style={{ fontSize: 12, color: C.slate, marginTop: 2, ...fBody }}>{b.coachName || b.clientName}</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: C.slate, marginTop: 4, ...fBody }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: C.jet, letterSpacing: "-0.1px", ...fDisplay }}>{b.service}</div>
+            <div style={{ fontSize: 12.5, color: C.slate, marginTop: 3, ...fBody }}>{b.coachName || b.clientName}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: C.slateLight, marginTop: 6, ...fBody }}>
               <Clock size={11} /> {b.date} · {b.time}
             </div>
           </div>
         </div>
         <StatusPill status={b.status} />
       </div>
-      <div style={{ display: "flex", gap: 8, marginTop: 12 }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ display: "flex", gap: 8, marginTop: 14, alignItems: "center" }} onClick={(e) => e.stopPropagation()}>
+        {/* Upcoming (confirmed): reschedule / cancel are the two decisions a client needs to make; message is a quick escape hatch, not a primary action, so it stays icon-only. */}
         {!past && !pending && (
           <>
             <Btn size="sm" variant="secondary" full onClick={onReschedule}>Reschedule</Btn>
             <Btn size="sm" variant="outline" full onClick={onCancel}>Cancel</Btn>
-            <Btn size="sm" variant="dark" icon={MessageCircle} onClick={() => nav("chat-thread", { name: b.coachName || b.clientName })} />
+            <Btn size="sm" variant="dark" icon={MessageCircle} onClick={() => nav("chat-thread", { name: b.coachName || b.clientName, context: `${b.service} · ${b.date}`, bookingId: b.id })} />
           </>
         )}
+        {/* Pending: tapping the card already opens details, so a duplicate "View details" button is dead weight.
+            The two things a client actually wants here are to nudge the coach or pull out of the request. */}
         {!past && pending && (
           <>
-            <Btn size="sm" variant="primary" full onClick={() => nav("client-booking-detail", { id: b.id })}>View details</Btn>
             <Btn size="sm" variant="outline" full onClick={onCancel}>Withdraw</Btn>
-            <Btn size="sm" variant="dark" icon={MessageCircle} onClick={() => nav("chat-thread", { name: b.coachName || b.clientName })} />
+            <Btn size="sm" variant="dark" icon={MessageCircle} onClick={() => nav("chat-thread", { name: b.coachName || b.clientName, context: `${b.service} · ${b.date}`, bookingId: b.id })} />
           </>
         )}
-        {past && (
-          b.status === "completed" && !b.reviewed ? (
+        {/* Completed / cancelled: always offer a fast rebook path alongside whatever review state applies. */}
+        {past && b.status === "completed" && !b.reviewed && (
+          <>
             <Btn size="sm" full onClick={() => nav("leave-review", { bookingId: b.id, name: b.coachName })}>Leave a review</Btn>
-          ) : b.reviewed ? (
+            <Btn size="sm" variant="outline" full icon={RefreshCcw} onClick={() => nav("coach-profile", { id: b.coachId })}>Book again</Btn>
+          </>
+        )}
+        {past && b.status === "completed" && b.reviewed && (
+          <>
             <Badge tone="success" icon={CheckCircle2}>Review submitted</Badge>
-          ) : null
+            <Btn size="sm" variant="outline" full icon={RefreshCcw} onClick={() => nav("coach-profile", { id: b.coachId })}>Book again</Btn>
+          </>
+        )}
+        {past && b.status === "cancelled" && (
+          <Btn size="sm" variant="outline" full icon={RefreshCcw} onClick={() => nav("coach-profile", { id: b.coachId })}>Book again</Btn>
         )}
       </div>
     </Card>
@@ -431,13 +413,20 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
         )}
 
         {isPast && booking.status === "completed" && !booking.reviewed && (
-          <div style={{ marginBottom: 14 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
             <Btn full onClick={() => nav("leave-review", { bookingId: booking.id, name: booking.coachName })}>Leave a review</Btn>
+            <Btn full variant="secondary" icon={RefreshCcw} onClick={() => nav("coach-profile", { id: booking.coachId })}>Book again</Btn>
           </div>
         )}
         {isPast && booking.reviewed && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
+            <Badge tone="success" icon={CheckCircle2} style={{ alignSelf: "flex-start" }}>Review submitted</Badge>
+            <Btn full variant="secondary" icon={RefreshCcw} onClick={() => nav("coach-profile", { id: booking.coachId })}>Book again</Btn>
+          </div>
+        )}
+        {isPast && booking.status === "cancelled" && (
           <div style={{ marginBottom: 14 }}>
-            <Badge tone="success" icon={CheckCircle2}>Review submitted</Badge>
+            <Btn full variant="secondary" icon={RefreshCcw} onClick={() => nav("coach-profile", { id: booking.coachId })}>Book again</Btn>
           </div>
         )}
 

@@ -1,9 +1,9 @@
 
 import React, { useState, useRef, useEffect } from "react";
-import { Bell, Search, Filter, Navigation, Star, MapPin, Heart, BadgeCheck, Sparkles, Calendar, MessageCircle, Percent, Check, X, Plus, Minus } from "lucide-react";
+import { Bell, Search, Filter, Navigation, Star, MapPin, Heart, Sparkles, Calendar, MessageCircle, Percent, Check, X, Plus, Minus } from "lucide-react";
 import { C, fDisplay, fBody } from "../../theme/theme";
 import { COACHES, SPORTS, ALL_SUBURBS, CLIENT_NOTIFICATIONS } from "../../data/mockData";
-import { Card, Chip, Badge, SegTabs, SectionLabel, Avatar, Btn, TopBar, BottomSheet } from "../../components/ui/Primitives";
+import { Card, Chip, Badge, SegTabs, SectionLabel, Avatar, Btn, TopBar, BottomSheet, EmptyState } from "../../components/ui/Primitives";
 
 const NOTIF_ICON = { booking: Calendar, message: MessageCircle, review: Star, availability: Sparkles, promo: Percent };
 const MAP_PINS = [[20,30],[60,15],[40,55],[78,45],[25,70],[65,75],[50,40],[15,55],[85,20],[35,80]];
@@ -12,37 +12,50 @@ const DEFAULT_FILTERS = { sports: [], areas: [], maxPrice: 150, minRating: 0 };
 
 export function CoachListCard({ coach, onOpen, fav, onFav }) {
   return (
-    <Card onClick={onOpen} style={{ marginBottom: 12 }}>
+    <Card
+      onClick={onOpen}
+      style={{ marginBottom: 14, border: `1px solid ${C.border}`, boxShadow: "0 1px 2px rgba(22,24,29,.04)" }}
+    >
       <div style={{ display: "flex", gap: 12 }}>
         <Avatar name={coach.name} size={54} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <div>
-              <div style={{ fontWeight: 600, fontSize: 15, color: C.jet, ...fDisplay }}>{coach.name}</div>
-              <div style={{ fontSize: 12.5, color: C.slate, ...fBody }}>{coach.sport}</div>
+          {/* Identity + price: price sits top-right, same visual weight as the name, so it's
+              one of the first two things scanned — not something buried at the bottom of the card. */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 700, fontSize: 16, color: C.jet, letterSpacing: "-0.1px", ...fDisplay }}>{coach.name}</div>
+              <div style={{ fontSize: 12.5, color: C.slate, marginTop: 1, ...fBody }}>{coach.sport}</div>
             </div>
-            <button onClick={e => { e.stopPropagation(); onFav(); }} style={{ background: "none", border: "none", cursor: "pointer" }}>
-              <Heart size={18} color={fav ? C.orange : C.slateLight} fill={fav ? C.orange : "none"} />
-            </button>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
+              <div style={{ fontSize: 17, fontWeight: 800, color: C.jet, whiteSpace: "nowrap", ...fDisplay }}>
+                ${coach.packages[0].price}<span style={{ fontSize: 11, fontWeight: 500, color: C.slateLight }}>/session</span>
+              </div>
+              <button onClick={e => { e.stopPropagation(); onFav(); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                <Heart size={17} color={fav ? C.orange : C.slateLight} fill={fav ? C.orange : "none"} />
+              </button>
+            </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6, flexWrap: "wrap" }}>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10, flexWrap: "wrap" }}>
             <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5, color: C.jet, fontWeight: 600, ...fBody }}>
               <Star size={12} fill={C.orange} color={C.orange} /> {coach.rating}
               <span style={{ color: C.slateLight, fontWeight: 400 }}>({coach.reviews})</span>
             </span>
             <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 12.5, color: C.slate, ...fBody }}>
-              <MapPin size={12} /> {coach.suburb} Â· {coach.distanceKm} km
+              <MapPin size={12} /> {coach.suburb} · {coach.distanceKm} km
             </span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8, width: "100%", gap: 8 }}>
-            <div style={{ display: "flex", gap: 5, flexWrap: "wrap", minWidth: 0 }}>
-              {coach.verified.identity && <Badge tone="success" icon={BadgeCheck}>Verified</Badge>}
-              {coach.instantBook && <Badge tone="orange" icon={Sparkles}>Instant Book</Badge>}
+
+          {(coach.verified.identity || coach.instantBook) && (
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
+              {coach.verified.identity && (
+                <span style={{ fontSize: 11, fontWeight: 700, padding: "4px 9px", borderRadius: 8, background: C.successTint, color: C.success, ...fBody }}>Verified</span>
+              )}
+              {coach.instantBook && (
+                <span style={{ fontSize: 11, fontWeight: 700, padding: "4px 9px", borderRadius: 8, background: C.orangeTint, color: C.orange, ...fBody }}>Instant Book</span>
+              )}
             </div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: C.jet, whiteSpace: "nowrap", flexShrink: 0, marginLeft: "auto", ...fDisplay }}>
-              ${coach.packages[0].price}<span style={{ fontSize: 11, fontWeight: 500, color: C.slate }}>/session</span>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </Card>
@@ -179,6 +192,7 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
     return (!q || c.suburb.toLowerCase().includes(q) || c.name.toLowerCase().includes(q) || c.sport.toLowerCase().includes(q))
       && (!appliedFilters.areas.length || appliedFilters.areas.some(a => c.suburb.toLowerCase().includes(a.toLowerCase())));
   });
+  const favCoaches = COACHES.filter(c => favorites.includes(c.id));
 
   const markAllRead = () => setNotifications(arr => arr.map(n => ({ ...n, unread: false })));
   const openNotification = n => {
@@ -206,7 +220,7 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
           </button>
         </div>
 
-        <div style={{ position: "relative", marginTop: 16 }}>
+        <div style={{ position: "relative", marginTop: 18 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, background: C.fog, borderRadius: 14, padding: "13px 14px" }}>
             <Search size={16} color={C.slateLight} />
             <input value={searchText} onChange={e => { setSearchText(e.target.value); setShowSuggestions(true); }}
@@ -238,16 +252,20 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
           </div>
         )}
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16, marginBottom: 10 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 20, marginBottom: 14 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, color: C.jet, ...fDisplay }}>
-            <Navigation size={13} color={C.orange} /> Coaches near you
+            {view === "favorites" ? <><Heart size={13} color={C.orange} /> Your favorites</> : <><Navigation size={13} color={C.orange} /> Coaches near you</>}
           </div>
-          <SegTabs value={view} onChange={setView} items={[{ value: "list", label: "List" }, { value: "map", label: "Map" }]} />
+          <SegTabs strong value={view} onChange={setView} items={[{ value: "list", label: "List" }, { value: "map", label: "Map" }, { value: "favorites", label: "Favorites" }]} />
         </div>
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 100px" }}>
-        {filtered.length === 0
+        {view === "favorites" ? (
+          favCoaches.length === 0
+            ? <EmptyState icon={Heart} title="No favorites yet" body="Tap the heart on a coach's card or profile to save them here." />
+            : favCoaches.map(c => <CoachListCard key={c.id} coach={c} fav onFav={() => toggleFav(c.id)} onOpen={() => nav("coach-profile", { id: c.id })} />)
+        ) : filtered.length === 0
           ? <div style={{ textAlign: "center", padding: "40px 20px", color: C.slate, fontSize: 13, ...fBody }}>No coaches match your search. Try a different suburb or clear filters.</div>
           : filtered.map(c => <CoachListCard key={c.id} coach={c} fav={favorites.includes(c.id)} onFav={() => toggleFav(c.id)} onOpen={() => nav("coach-profile", { id: c.id })} />)
         }
