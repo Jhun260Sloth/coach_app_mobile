@@ -1,45 +1,157 @@
-import React, { useState } from "react";
-import { User, ClipboardList, ShieldCheck, Info, MessagesSquare, MessageCircle } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import {
+  User, ClipboardList, ShieldCheck, Info, MessagesSquare, MessageCircle,
+  ChevronLeft, ChevronRight, CalendarX2,
+} from "lucide-react";
 import { C, fDisplay, fBody } from "../../theme/theme";
 import { CLIENT_PROFILES, BOOKING_ENQUIRY_MESSAGES, CONFIG } from "../../data/mockData";
 import {
   Avatar, Card, SegTabs, EmptyState, StatusPill, Btn, TopBar, Row, SectionLabel, Badge,
 } from "../../components/ui/Primitives";
 
+/* ---- date helpers for the calendar view (booking dates look like "Tue, 22 Jul") ---- */
+const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const WEEKDAY_HEADERS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+function parseBookingDate(str, year = 2026) {
+  const m = /(\d{1,2})\s+([A-Za-z]{3})/.exec(str || "");
+  if (!m) return null;
+  const month = MONTH_ABBR.indexOf(m[2]);
+  if (month < 0) return null;
+  return new Date(year, month, parseInt(m[1], 10));
+}
+function sameDay(a, b) { return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
+function addDays(d, n) { const r = new Date(d); r.setDate(d.getDate() + n); return r; }
+function startOfWeek(d) { const dow = (d.getDay() + 6) % 7; return addDays(d, -dow); } // Monday-start
+function buildMonthGrid(cursor) {
+  const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+  const gridStart = startOfWeek(first);
+  const weeks = [];
+  let cur = gridStart;
+  for (let w = 0; w < 6; w++) {
+    const row = [];
+    for (let i = 0; i < 7; i++) { row.push(cur); cur = addDays(cur, 1); }
+    weeks.push(row);
+  }
+  return weeks;
+}
+
 export function ScreenCoachBookings({ nav, coachBookings }) {
   const [tab, setTab] = useState("pending");
+  const [view, setView] = useState("list");
+  const [calMode, setCalMode] = useState("month");
+
+  const dated = useMemo(() => coachBookings.map((b) => ({ ...b, _date: parseBookingDate(b.date) })), [coachBookings]);
+  const initialDate = useMemo(() => (dated.find((b) => b._date)?._date) || new Date(), [dated]);
+  const [cursor, setCursor] = useState(initialDate);
+  const [selectedDate, setSelectedDate] = useState(initialDate);
+
   const list = coachBookings.filter((b) => tab === "pending" ? b.status === "pending" : tab === "upcoming" ? b.status === "confirmed" : b.status === "completed");
+  const bookingsOnDate = (d) => dated.filter((b) => b._date && sameDay(b._date, d));
+
+  const weeks = calMode === "month" ? buildMonthGrid(cursor) : [Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(cursor), i))];
+  const headerLabel = calMode === "month"
+    ? cursor.toLocaleDateString(undefined, { month: "long", year: "numeric" })
+    : `${weeks[0][0].toLocaleDateString(undefined, { day: "numeric", month: "short" })} – ${weeks[0][6].toLocaleDateString(undefined, { day: "numeric", month: "short" })}`;
+
+  const goPrev = () => setCursor((c) => calMode === "month" ? new Date(c.getFullYear(), c.getMonth() - 1, 1) : addDays(c, -7));
+  const goNext = () => setCursor((c) => calMode === "month" ? new Date(c.getFullYear(), c.getMonth() + 1, 1) : addDays(c, 7));
+
+  const renderBookingCard = (b) => (
+    <Card key={b.id} style={{ marginBottom: 10 }} onClick={() => nav("coach-booking-detail", { id: b.id })}>
+      <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", gap: 10 }}>
+          <Avatar name={b.clientName} size={40} />
+          <div>
+            <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fDisplay }}>{b.clientName}</div>
+            <div style={{ fontSize: 12, color: C.slate, ...fBody }}>{b.service}</div>
+            <div style={{ fontSize: 11.5, color: C.slate, marginTop: 2, ...fBody }}>{b.date} · {b.time} · {b.mode}</div>
+          </div>
+        </div>
+        <StatusPill status={b.status} />
+      </div>
+      <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+        <Btn size="sm" variant="primary" full icon={User} onClick={(e) => { e.stopPropagation(); nav("coach-booking-detail", { id: b.id }); }}>View details</Btn>
+      </div>
+      {b.status === "completed" && (
+        <div style={{ marginTop: 8, fontSize: 12, color: C.success, fontWeight: 600, ...fBody }}>
+          Payout released: ${Math.round(b.price * (1 - CONFIG.commissionRate))}
+        </div>
+      )}
+    </Card>
+  );
+
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "18px 20px 0" }}>
         <div style={{ fontSize: 22, fontWeight: 600, color: C.jet, marginBottom: 14, ...fDisplay }}>Bookings</div>
-        <SegTabs value={tab} onChange={setTab} items={[{ value: "pending", label: "Pending" }, { value: "upcoming", label: "Upcoming" }, { value: "completed", label: "Completed" }]} />
+        <div style={{ marginBottom: 10 }}>
+          <SegTabs value={view} onChange={setView} items={[{ value: "list", label: "List" }, { value: "calendar", label: "Calendar" }]} />
+        </div>
+        {view === "list" && (
+          <SegTabs value={tab} onChange={setTab} items={[{ value: "pending", label: "Pending" }, { value: "upcoming", label: "Upcoming" }, { value: "completed", label: "Completed" }]} />
+        )}
+        {view === "calendar" && (
+          <>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <button onClick={goPrev} style={{ width: 30, height: 30, borderRadius: 10, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                <ChevronLeft size={16} color={C.jet} />
+              </button>
+              <span style={{ fontSize: 13.5, fontWeight: 700, color: C.jet, ...fDisplay }}>{headerLabel}</span>
+              <button onClick={goNext} style={{ width: 30, height: 30, borderRadius: 10, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                <ChevronRight size={16} color={C.jet} />
+              </button>
+            </div>
+            <SegTabs value={calMode} onChange={setCalMode} items={[{ value: "month", label: "Month" }, { value: "week", label: "Week" }]} />
+          </>
+        )}
       </div>
-      <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px 100px" }}>
-        {list.length === 0 && <EmptyState icon={ClipboardList} title="Nothing here" body="Bookings in this stage will appear here." />}
-        {list.map((b) => (
-          <Card key={b.id} style={{ marginBottom: 10 }} onClick={() => nav("coach-booking-detail", { id: b.id })}>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <div style={{ display: "flex", gap: 10 }}>
-                <Avatar name={b.clientName} size={40} />
-                <div>
-                  <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fDisplay }}>{b.clientName}</div>
-                  <div style={{ fontSize: 12, color: C.slate, ...fBody }}>{b.service}</div>
-                  <div style={{ fontSize: 11.5, color: C.slate, marginTop: 2, ...fBody }}>{b.date} · {b.time} · {b.mode}</div>
-                </div>
-              </div>
-              <StatusPill status={b.status} />
+      <div style={{ flex: 1, overflowY: "auto", padding: view === "calendar" ? "14px 20px 100px" : "16px 20px 100px" }}>
+        {view === "list" && (
+          <>
+            {list.length === 0 && <EmptyState icon={ClipboardList} title="Nothing here" body="Bookings in this stage will appear here." />}
+            {list.map(renderBookingCard)}
+          </>
+        )}
+
+        {view === "calendar" && (
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 6 }}>
+              {WEEKDAY_HEADERS.map((d) => (
+                <div key={d} style={{ textAlign: "center", fontSize: 10.5, fontWeight: 700, color: C.slateLight, ...fBody }}>{d}</div>
+              ))}
             </div>
-            <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-              <Btn size="sm" variant="primary" full icon={User} onClick={(e) => { e.stopPropagation(); nav("coach-booking-detail", { id: b.id }); }}>View details</Btn>
-            </div>
-            {tab === "completed" && (
-              <div style={{ marginTop: 8, fontSize: 12, color: C.success, fontWeight: 600, ...fBody }}>
-                Payout released: ${Math.round(b.price * (1 - CONFIG.commissionRate))}
+            {weeks.map((row, ri) => (
+              <div key={ri} style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 4 }}>
+                {row.map((d, di) => {
+                  const inRange = calMode === "week" || d.getMonth() === cursor.getMonth();
+                  const count = bookingsOnDate(d).length;
+                  const isSelected = sameDay(d, selectedDate);
+                  return (
+                    <button key={di} onClick={() => setSelectedDate(d)} style={{
+                      aspectRatio: "1", borderRadius: 10, cursor: "pointer",
+                      border: `1px solid ${isSelected ? C.orange : C.border}`,
+                      background: isSelected ? C.orangeTint : C.white,
+                      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3,
+                      opacity: inRange ? 1 : 0.35,
+                    }}>
+                      <span style={{ fontSize: 12, fontWeight: isSelected ? 700 : 500, color: C.jet, ...fBody }}>{d.getDate()}</span>
+                      <span style={{ width: 5, height: 5, borderRadius: 99, background: count > 0 ? C.orange : "transparent" }} />
+                    </button>
+                  );
+                })}
               </div>
-            )}
-          </Card>
-        ))}
+            ))}
+
+            <div style={{ marginTop: 18 }}>
+              <SectionLabel>{selectedDate.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}</SectionLabel>
+              {bookingsOnDate(selectedDate).length === 0 && (
+                <EmptyState icon={CalendarX2} title="No bookings" body="Nothing scheduled for this day." />
+              )}
+              {bookingsOnDate(selectedDate).map(renderBookingCard)}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

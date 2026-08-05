@@ -4,7 +4,7 @@ import { C, fDisplay, fBody } from "../../theme/theme";
 import { COACHES } from "../../data/mockData";
 import { Avatar, SectionLabel, Chip, Card, Toggle, Btn, Badge } from "../../components/ui/Primitives";
 
-export function ScreenCoachProfileEdit({ nav, toast }) {
+export function ScreenCoachProfileEdit({ nav, toast, coachPackages }) {
   const coach = COACHES[1];
   const [instantBook, setInstantBook] = useState(coach.instantBook);
   const [policy, setPolicy] = useState("Moderate");
@@ -45,11 +45,12 @@ export function ScreenCoachProfileEdit({ nav, toast }) {
         <div style={{ fontSize: 11, color: C.slateLight, marginBottom: 18, ...fBody }}>Trim clips right after capture before adding them to your profile.</div>
 
         <SectionLabel>Services & rates</SectionLabel>
-        {coach.packages.map((p) => (
-          <Card key={p.id} style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        {coachPackages.map((p) => (
+          <Card key={p.id} style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }} onClick={() => nav("coach-edit-package", { id: p.id })}>
             <div>
               <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fBody }}>{p.name}</div>
               <div style={{ fontSize: 11.5, color: C.slate, ...fBody }}>{p.type} · {p.duration} min · {p.mode}</div>
+              <div style={{ fontSize: 11, color: C.slateLight, marginTop: 1, ...fBody }}>{p.location}</div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ fontSize: 14, fontWeight: 700, color: C.jet, ...fDisplay }}>${p.price}</span>
@@ -57,7 +58,7 @@ export function ScreenCoachProfileEdit({ nav, toast }) {
             </div>
           </Card>
         ))}
-        <Btn variant="outline" size="sm" icon={Plus} full onClick={() => toast("New package draft created")}>Add package</Btn>
+        <Btn variant="outline" size="sm" icon={Plus} full onClick={() => nav("coach-create-package")}>Add package</Btn>
 
         <div style={{ marginTop: 20 }}>
           <SectionLabel>Booking type</SectionLabel>

@@ -62,8 +62,20 @@ export const COACHES = [
     responseTime: "Usually replies within 3 hours", acceptanceRate: 88, repeatClientRate: 74,
     reelsCount: 11,
     packages: [
-      { id: "p1", name: "1:1 Programming Session", type: "1:1", duration: 45, mode: "In-person", price: 68 },
-      { id: "p2", name: "Small Group (max 3)", type: "Group", duration: 60, mode: "In-person", price: 40 },
+      {
+        id: "p1", name: "1:1 Programming Session", type: "1:1 Coaching", packageType: "1:1 Coaching",
+        sport: "Strength & Conditioning", description: "Individually periodised strength session with technique coaching and load tracking.",
+        duration: 45, durationMinutes: 45, mode: "In-person", locationType: "In-person",
+        location: "Fitzroy Strength Studio", venue: "Fitzroy Strength Studio",
+        price: 68, maxParticipants: 1, equipment: "Wear flat, closed-toe shoes",
+      },
+      {
+        id: "p2", name: "Small Group (max 3)", type: "Group Training", packageType: "Group Training",
+        sport: "Strength & Conditioning", description: "Small-group strength session, same programming block for everyone in the group.",
+        duration: 60, durationMinutes: 60, mode: "In-person", locationType: "In-person",
+        location: "Fitzroy Strength Studio", venue: "Fitzroy Strength Studio",
+        price: 40, maxParticipants: 3, equipment: "",
+      },
     ],
     availability: { Tue: ["06:00", "07:00", "18:00"], Thu: ["06:00", "07:00"], Sat: ["08:00", "09:00"] },
   },
@@ -257,6 +269,15 @@ export const INITIAL_BOOKINGS = [
   { id: "b2", coachId: "c2", coachName: "Josh Whitfield", clientName: "Sarah Lin", service: "1:1 Programming Session", date: "Fri, 25 Jul", time: "6:00am", mode: "In-person", status: "pending", price: 68, reviewed: false, participants: "You", notes: "Coming back from a shoulder injury — cleared for light training, will bring physio notes." },
   { id: "b3", coachId: "c3", coachName: "Priya Nandan", clientName: "Sarah Lin", service: "1:1 Poolside Session", date: "Sun, 13 Jul", time: "8:00am", mode: "In-person", status: "completed", price: 60, reviewed: false, participants: "You", notes: "" },
   { id: "b4", coachId: "c5", coachName: "Ella Fontaine", clientName: "Sarah Lin", service: "Virtual Session", date: "Wed, 9 Jul", time: "7:00am", mode: "Virtual", status: "completed", price: 38, reviewed: true, participants: "You", notes: "" },
+];
+
+// Recurring weekly availability for the current coach (Josh Whitfield),
+// expressed as exact time blocks with the packages bookable during each one.
+// Package ids reference COACHES[1].packages.
+export const INITIAL_AVAILABILITY_BLOCKS = [
+  { id: "ab1", days: ["Tue", "Thu"], start: "06:00", end: "07:30", packageIds: ["p1"] },
+  { id: "ab2", days: ["Tue"], start: "17:30", end: "19:00", packageIds: ["p1", "p2"] },
+  { id: "ab3", days: ["Sat"], start: "08:00", end: "10:00", packageIds: ["p2"] },
 ];
 
 export const COACH_BOOKINGS = [
