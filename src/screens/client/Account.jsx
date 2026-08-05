@@ -1,18 +1,26 @@
 import React, { useState } from "react";
 import {
   Edit3, Bell, CreditCard, Fingerprint, Lock, FileText, Shield, HelpCircle, LogOut, Users, ChevronRight,
-  Mail, Phone, User, Plus, Trash2, Eye, EyeOff, AlertTriangle, Camera, MapPin, Target, Calendar, UserPlus,
+  Mail, Phone, User, Plus, Trash2, Eye, EyeOff, AlertTriangle, Camera, MapPin, Target, Calendar, UserPlus, Download,
+  CalendarDays, CreditCard as CardIcon,
 } from "lucide-react";
 import { C, fDisplay, fBody } from "../../theme/theme";
-import { Avatar, Btn, SectionLabel, Toggle, BottomSheet, Field, Chip, Card, Badge } from "../../components/ui/Primitives";
+import { Avatar, Btn, SectionLabel, Toggle, BottomSheet, Field, Chip, Card, Badge, EmptyState, TopBar } from "../../components/ui/Primitives";
 import { SPORTS } from "../../data/mockData";
+import { ReceiptSheet } from "./Dashboard";
 
 const emptyChildDraft = { name: "", age: "", sport: [], goals: "", postalCode: "", preferences: "", hasPhoto: false };
+const emptyCardDraft = { number: "", name: "", expiry: "", cvc: "" };
 
-export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCoachRole, children = [], addChild, updateChild, removeChild, bookings = [] }) {
+export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCoachRole, children = [], addChild, updateChild, removeChild, bookings = [], clientPrefs, onComplete }) {
   const [sheet, setSheet] = useState(null); // which bottom sheet is open
   const [editingChildId, setEditingChildId] = useState(null); // null = creating new
   const [childDraft, setChildDraft] = useState(emptyChildDraft);
+
+  // Name & email aren't part of the onboarding "about you" data (they're collected at
+  // sign-up instead), so they live here as their own bit of editable profile state.
+  const [profile, setProfile] = useState({ name: "Sarah Lin", email: "sarah.lin@email.com" });
+  const [editDraft, setEditDraft] = useState(null);
 
   const openNewChild = () => { setEditingChildId(null); setChildDraft(emptyChildDraft); setSheet("child"); };
   const openEditChild = (child) => { setEditingChildId(child.id); setChildDraft({ ...emptyChildDraft, ...child }); setSheet("child"); };
@@ -41,6 +49,54 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
   const removeCard = (id) => setCards((c) => c.filter((card) => card.id !== id));
   const makeDefault = (id) => setCards((c) => c.map((card) => ({ ...card, isDefault: card.id === id })));
 
+  const [cardDraft, setCardDraft] = useState(emptyCardDraft);
+  const cardBrandFromNumber = (num) => (num.replace(/\s/g, "").startsWith("4") ? "Visa" : num.replace(/\s/g, "").startsWith("5") ? "Mastercard" : "Card");
+  const canSaveCard = cardDraft.number.replace(/\s/g, "").length >= 12 && cardDraft.name.trim().length > 0 && /^\d{2}\/\d{2}$/.test(cardDraft.expiry) && cardDraft.cvc.length >= 3;
+  const openAddCard = () => { setCardDraft(emptyCardDraft); setSheet("addCard"); };
+  const saveCard = () => {
+    if (!canSaveCard) { toast("Check your card details and try again"); return; }
+    const digits = cardDraft.number.replace(/\s/g, "");
+    setCards((c) => [
+      ...c,
+      { id: Date.now(), brand: cardBrandFromNumber(digits), last4: digits.slice(-4), exp: cardDraft.expiry, isDefault: c.length === 0 },
+    ]);
+    toast("Payment method added");
+    setSheet("payment");
+  };
+
+  // Edit profile draft is seeded from whatever was collected during onboarding
+  // (mobile, address, postal code, sports, goals) plus the account's name/email,
+  // so editing the profile shows exactly what sign-up asked for.
+  const openEditProfile = () => {
+    setEditDraft({
+      name: profile.name,
+      email: profile.email,
+      phone: clientPrefs?.mobile || "",
+      address: clientPrefs?.address || "",
+      postalCode: clientPrefs?.postalCode || "",
+      sports: clientPrefs?.sports || [],
+      goals: clientPrefs?.goals || "",
+    });
+    setSheet("edit");
+  };
+  const toggleEditSport = (s) => setEditDraft((d) => ({ ...d, sports: d.sports.includes(s) ? d.sports.filter((x) => x !== s) : [...d.sports, s] }));
+  const saveProfile = () => {
+    if (!editDraft.name.trim()) { toast("Add your name first"); return; }
+    setProfile({ name: editDraft.name, email: editDraft.email });
+    if (onComplete) {
+      onComplete({
+        ...clientPrefs,
+        mobile: editDraft.phone,
+        address: editDraft.address,
+        postalCode: editDraft.postalCode,
+        sports: editDraft.sports,
+        goals: editDraft.goals,
+      });
+    }
+    toast("Profile updated");
+    setSheet(null);
+  };
+
   const [showPw, setShowPw] = useState(false);
 
   const closeSheet = () => setSheet(null);
@@ -67,33 +123,47 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "18px 20px 0", flex: 1, overflowY: "auto", paddingBottom: 100 }}>
         <div style={{ fontSize: 22, fontWeight: 600, color: C.jet, marginBottom: 18, ...fDisplay }}>Account</div>
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
-          <Avatar name="Sarah Lin" size={58} />
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 28 }}>
+          <Avatar name={profile.name} size={58} />
           <div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: C.jet, ...fDisplay }}>Sarah Lin</div>
-            <div style={{ fontSize: 12.5, color: C.slate, ...fBody }}>sarah.lin@email.com</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ fontSize: 16, fontWeight: 600, color: C.jet, ...fDisplay }}>{profile.name}</div>
+              <Badge tone="neutral">Client account</Badge>
+            </div>
+            <div style={{ fontSize: 12.5, color: C.slate, marginTop: 2, ...fBody }}>{profile.email}</div>
           </div>
         </div>
 
-        <Btn full variant="secondary" icon={Users} onClick={() => { addCoachRole(); toast("Coach profile added — switch anytime"); }}>Add a coaching profile</Btn>
-
-        <div style={{ marginTop: 22 }}>
+        <div style={{ marginTop: 32 }}>
           <SectionLabel>Family</SectionLabel>
           <div style={{ fontSize: 12, color: C.slate, marginTop: -6, marginBottom: 12, lineHeight: 1.5, ...fBody }}>
-            Manage a separate profile for each child — their own sport, goals and booking history, all under your account.
+            Separate profiles for each child.
           </div>
-          {children.map((child) => (
-            <button key={child.id} onClick={() => openEditChild(child)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "10px 4px", background: "none", border: "none", borderBottom: `1px solid ${C.border}`, cursor: "pointer", textAlign: "left" }}>
-              <Avatar name={child.name || "Child"} size={40} />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fBody }}>{child.name || "Unnamed profile"}</div>
-                <div style={{ fontSize: 12, color: C.slate, marginTop: 1, ...fBody }}>
-                  {child.age ? `Age ${child.age}` : "Age not set"}{child.sport?.length ? ` · ${child.sport.join(", ")}` : ""}
+          {children.map((child) => {
+            const ageLabel = child.age ? `Age ${child.age}` : "Age not set";
+            const sportLabel = child.sport?.length ? child.sport.join(", ") : "Sport not set";
+            return (
+              <button
+                key={child.id}
+                onClick={() => openEditChild(child)}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", gap: 12,
+                  padding: "12px 16px 12px 12px", marginBottom: 10,
+                  background: C.white, border: `1px solid ${C.border}`, borderRadius: 16,
+                  boxShadow: "0 1px 2px rgba(22,24,29,.04)", cursor: "pointer", textAlign: "left",
+                }}
+              >
+                <Avatar name={child.name || "Child"} size={40} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fBody }}>{child.name || "Unnamed profile"}</div>
+                  <div style={{ fontSize: 12, color: C.slate, marginTop: 1, ...fBody }}>
+                    {ageLabel} · {sportLabel}
+                  </div>
                 </div>
-              </div>
-              <ChevronRight size={16} color={C.slateLight} />
-            </button>
-          ))}
+                <ChevronRight size={16} color={C.slateLight} style={{ flexShrink: 0 }} />
+              </button>
+            );
+          })}
           <div style={{ marginTop: 12 }}>
             <Btn full variant="secondary" icon={UserPlus} onClick={openNewChild}>Add a child profile</Btn>
           </div>
@@ -101,9 +171,10 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
 
         <div style={{ marginTop: 22 }}>
           <SectionLabel>Profile</SectionLabel>
-          <Row2 icon={Edit3} label="Edit profile" onClick={() => setSheet("edit")} />
+          <Row2 icon={Edit3} label="Edit profile" onClick={openEditProfile} />
           <Row2 icon={Bell} label="Notification preferences" onClick={() => setSheet("notif")} />
           <Row2 icon={CreditCard} label="Payment methods" onClick={() => setSheet("payment")} />
+          <Row2 icon={Download} label="Payment history" onClick={() => nav("client-payment-history")} />
         </div>
 
         <div style={{ marginTop: 22 }}>
@@ -229,19 +300,53 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
         </div>
       </BottomSheet>
 
-      {/* Edit profile */}
-      <BottomSheet open={sheet === "edit"} onClose={closeSheet} title="Edit profile" heightPct={78}>
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 18 }}>
-          <Avatar name="Sarah Lin" size={64} />
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <Field label="Full name" placeholder="Sarah Lin" icon={User} />
-          <Field label="Email" placeholder="sarah.lin@email.com" icon={Mail} type="email" />
-          <Field label="Phone" placeholder="+1 (555) 123-4567" icon={Phone} type="tel" />
-        </div>
-        <div style={{ marginTop: 20 }}>
-          <Btn full onClick={() => { toast("Profile updated"); closeSheet(); }}>Save changes</Btn>
-        </div>
+      {/* Edit profile — mirrors every field collected across sign-up (name, email) and the
+          "About you" onboarding (phone, address, postal code, sports, goals), prefilled with
+          whatever the person already gave us so nothing has to be re-entered from scratch. */}
+      <BottomSheet open={sheet === "edit"} onClose={closeSheet} title="Edit profile" heightPct={88}>
+        {editDraft && (
+          <>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 18 }}>
+              <Avatar name={editDraft.name || "You"} size={64} />
+            </div>
+            <SectionLabel>Account</SectionLabel>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 20 }}>
+              <Field label="Full name" placeholder="Sarah Lin" icon={User} value={editDraft.name} onChange={(e) => setEditDraft((d) => ({ ...d, name: e.target.value }))} />
+              <Field label="Email" placeholder="you@email.com" icon={Mail} type="email" value={editDraft.email} onChange={(e) => setEditDraft((d) => ({ ...d, email: e.target.value }))} />
+              <Field label="Mobile number" placeholder="04XX XXX XXX" icon={Phone} type="tel" value={editDraft.phone} onChange={(e) => setEditDraft((d) => ({ ...d, phone: e.target.value }))} />
+            </div>
+
+            <SectionLabel>Location</SectionLabel>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 20 }}>
+              <Field label="Address" placeholder="Enter your address" icon={MapPin} value={editDraft.address} onChange={(e) => setEditDraft((d) => ({ ...d, address: e.target.value }))} />
+              <Field label="Postal code" placeholder="e.g. 2026" icon={MapPin} value={editDraft.postalCode} onChange={(e) => setEditDraft((d) => ({ ...d, postalCode: e.target.value }))} />
+            </div>
+            <div style={{ fontSize: 11.5, color: C.slateLight, marginTop: -10, marginBottom: 20, lineHeight: 1.5, ...fBody }}>
+              We only use this to find coaches nearby — it's never shown to coaches or other clients.
+            </div>
+
+            <SectionLabel>Sports you're into</SectionLabel>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
+              {SPORTS.map((s) => (
+                <Chip key={s} active={editDraft.sports.includes(s)} onClick={() => toggleEditSport(s)}>{s}</Chip>
+              ))}
+            </div>
+
+            <SectionLabel>Coaching goals</SectionLabel>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 10, background: C.fog, borderRadius: 14, padding: "12px 14px", marginBottom: 20 }}>
+              <Target size={16} color={C.slateLight} style={{ marginTop: 2, flexShrink: 0 }} />
+              <textarea
+                value={editDraft.goals}
+                onChange={(e) => setEditDraft((d) => ({ ...d, goals: e.target.value }))}
+                placeholder="e.g. build confidence for club trials, improve fitness, learn the basics..."
+                rows={3}
+                style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13.5, color: C.jet, resize: "none", ...fBody }}
+              />
+            </div>
+
+            <Btn full onClick={saveProfile}>Save changes</Btn>
+          </>
+        )}
       </BottomSheet>
 
       {/* Notification preferences */}
@@ -277,7 +382,53 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
           </div>
         ))}
         <div style={{ marginTop: 18 }}>
-          <Btn full variant="secondary" icon={Plus} onClick={() => toast("Add a new payment method")}>Add payment method</Btn>
+          <Btn full variant="secondary" icon={Plus} onClick={openAddCard}>Add payment method</Btn>
+        </div>
+      </BottomSheet>
+
+      {/* Add payment method */}
+      <BottomSheet open={sheet === "addCard"} onClose={() => setSheet("payment")} title="Add payment method" heightPct={68}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <Field
+            label="Card number"
+            placeholder="1234 5678 9012 3456"
+            icon={CardIcon}
+            value={cardDraft.number}
+            onChange={(e) => setCardDraft((d) => ({ ...d, number: e.target.value.replace(/[^\d\s]/g, "") }))}
+          />
+          <Field
+            label="Name on card"
+            placeholder="Sarah Lin"
+            icon={User}
+            value={cardDraft.name}
+            onChange={(e) => setCardDraft((d) => ({ ...d, name: e.target.value }))}
+          />
+          <div style={{ display: "flex", gap: 10 }}>
+            <div style={{ flex: 1 }}>
+              <Field
+                label="Expiry"
+                placeholder="MM/YY"
+                icon={CalendarDays}
+                value={cardDraft.expiry}
+                onChange={(e) => setCardDraft((d) => ({ ...d, expiry: e.target.value.replace(/[^\d/]/g, "") }))}
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <Field
+                label="CVC"
+                placeholder="123"
+                icon={Lock}
+                value={cardDraft.cvc}
+                onChange={(e) => setCardDraft((d) => ({ ...d, cvc: e.target.value.replace(/\D/g, "").slice(0, 4) }))}
+              />
+            </div>
+          </div>
+        </div>
+        <div style={{ fontSize: 11.5, color: C.slateLight, marginTop: 14, lineHeight: 1.5, ...fBody }}>
+          Payments are processed by our PCI-compliant payment partner — CoachLink never stores your full card number.
+        </div>
+        <div style={{ marginTop: 20 }}>
+          <Btn full disabled={!canSaveCard} onClick={saveCard}>Save card</Btn>
         </div>
       </BottomSheet>
 
@@ -329,6 +480,45 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
           <Btn full variant="secondary" onClick={closeSheet}>Cancel</Btn>
         </div>
       </BottomSheet>
+
+    </div>
+  );
+}
+
+/* =========================================================================
+   PAYMENT HISTORY — full page (was a bottom sheet). Tapping a row still opens
+   the receipt as a bottom sheet, since that's a lightweight detail glance,
+   not something worth its own page.
+   ========================================================================= */
+export function ScreenPaymentHistory({ nav, bookings = [] }) {
+  const [receiptTarget, setReceiptTarget] = useState(null);
+  const paidBookings = bookings.filter((b) => b.status === "confirmed" || b.status === "completed" || b.status === "cancelled");
+
+  return (
+    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
+      <TopBar title="Payment history" onBack={() => nav("client-profile")} />
+      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 20 }}>
+        {paidBookings.length === 0 && (
+          <EmptyState icon={CreditCard} title="No payments yet" body="Your session receipts will show up here." />
+        )}
+        {paidBookings.map((b) => (
+          <Card key={b.id} onClick={() => setReceiptTarget(b)} style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <Avatar name={b.coachName} size={40} />
+              <div>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fBody }}>{b.service}</div>
+                <div style={{ fontSize: 11.5, color: C.slate, marginTop: 2, ...fBody }}>{b.date} · {b.coachName}</div>
+              </div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: b.status === "cancelled" ? C.slateLight : C.jet, ...fDisplay }}>${b.price}</div>
+              <ChevronRight size={16} color={C.slateLight} />
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      <ReceiptSheet booking={receiptTarget} onClose={() => setReceiptTarget(null)} />
     </div>
   );
 }

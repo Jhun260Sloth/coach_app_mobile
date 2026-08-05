@@ -30,7 +30,7 @@ import {
   ScreenBookingDateTime, ScreenBookingReview, ScreenPayment, ScreenBookingConfirmation,
 } from "./screens/client/Booking";
 import { ScreenClientDashboard, ScreenLeaveReview, ScreenClientBookingDetail } from "./screens/client/Dashboard";
-import { ScreenClientProfile } from "./screens/client/Account";
+import { ScreenClientProfile, ScreenPaymentHistory } from "./screens/client/Account";
 
 // Coach
 import { ScreenCoachDashboard } from "./screens/coach/CoachDashboard";
@@ -186,6 +186,7 @@ export default function App() {
       case "leave-review": return <ScreenLeaveReview {...screenProps} />;
       case "client-messages": return <ScreenMessages {...screenProps} />;
       case "client-profile": return <ScreenClientProfile {...screenProps} />;
+      case "client-payment-history": return <ScreenPaymentHistory {...screenProps} />;
 
       case "coach-dashboard": return <ScreenCoachDashboard {...screenProps} />;
       case "coach-calendar": return <ScreenCoachCalendar {...screenProps} />;

@@ -142,20 +142,25 @@ export function Toggle({ on, onClick }) {
   );
 }
 
-export function SegTabs({ items, value, onChange }) {
+export function SegTabs({ items, value, onChange, strong }) {
   return (
     <div style={{ display: "flex", background: C.fog, borderRadius: 13, padding: 3, gap: 2 }}>
-      {items.map((it) => (
-        <button key={it.value} onClick={() => onChange(it.value)}
-          style={{
-            flex: 1, padding: "8px 6px", borderRadius: 10, border: "none", cursor: "pointer",
-            background: value === it.value ? C.white : "transparent",
-            color: value === it.value ? C.jet : C.slate, fontWeight: 600, fontSize: 12.5,
-            boxShadow: value === it.value ? "0 1px 3px rgba(0,0,0,.08)" : "none", ...fBody,
-          }}>
-          {it.label}
-        </button>
-      ))}
+      {items.map((it) => {
+        const active = value === it.value;
+        return (
+          <button key={it.value} onClick={() => onChange(it.value)}
+            style={{
+              flex: 1, padding: "8px 6px", borderRadius: 10, border: "none", cursor: "pointer",
+              background: active ? (strong ? C.jet : C.white) : "transparent",
+              color: active ? (strong ? C.white : C.jet) : C.slate,
+              fontWeight: active ? 700 : 600, fontSize: 12.5,
+              boxShadow: active && !strong ? "0 1px 3px rgba(0,0,0,.08)" : "none",
+              transition: "background .15s ease, color .15s ease", ...fBody,
+            }}>
+            {it.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

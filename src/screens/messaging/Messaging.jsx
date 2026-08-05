@@ -43,7 +43,9 @@ const cancelBtn = {
 
 export function ScreenMessages({ nav, role }) {
   const { isBlocked, unblock } = useBlockedThreads();
-  const threads = role === "coach" ? COACH_THREADS : THREADS;
+  const rawThreads = role === "coach" ? COACH_THREADS : THREADS;
+  // Prioritize threads with unread/new messages at the top; preserve relative order otherwise.
+  const threads = [...rawThreads].sort((a, b) => (b.unread > 0 ? 1 : 0) - (a.unread > 0 ? 1 : 0));
   const [blockedThread, setBlockedThread] = useState(null);
 
   return (
