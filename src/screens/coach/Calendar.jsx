@@ -1,111 +1,292 @@
-import React, { useState } from "react";
-import { Calendar as CalendarIcon, Trash2, Plus } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import {
+  ChevronLeft, ChevronRight, Ban, Trash2, CalendarDays,
+} from "lucide-react";
 import { C, fDisplay, fBody } from "../../theme/theme";
-import { Card, SectionLabel, Btn, Toggle } from "../../components/ui/Primitives";
+import { COACH_BLOCKED, fmtTimeRange } from "../../data/mockData";
+import {
+  Card, SectionLabel, Btn, Avatar, StatusPill, BottomSheet, EmptyState, Chip,
+} from "../../components/ui/Primitives";
 
-export function ScreenCoachCalendar({ nav, toast }) {
-  const [synced, setSynced] = useState(true);
-  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const slots = ["6:00", "7:00", "9:00", "16:00", "17:00", "18:00"];
-  const [active, setActive] = useState({ "Tue-6:00": true, "Tue-7:00": true, "Thu-6:00": true, "Sat-9:00": true });
-  const toggle = (k) => setActive((a) => ({ ...a, [k]: !a[k] }));
+const WEEKDAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+const TODAY_ISO = "2026-08-03";
 
-  const [exceptions, setExceptions] = useState([{ id: "e1", date: "Sat, 2 Aug", reason: "Personal leave" }]);
-  const [showForm, setShowForm] = useState(false);
-  const [newDate, setNewDate] = useState("");
-  const [newReason, setNewReason] = useState("");
+function pad(n) { return String(n).padStart(2, "0"); }
+function iso(y, m, d) { return `${y}-${pad(m + 1)}-${pad(d)}`; }
+function daysInMonth(y, m) { return new Date(y, m + 1, 0).getDate(); }
+function firstWeekday(y, m) { return new Date(y, m, 1).getDay(); }
 
-  const formatDate = (iso) => {
-    if (!iso) return "";
-    const d = new Date(iso + "T00:00:00");
-    if (isNaN(d)) return iso;
-    return d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+function monthLabel(y, m) {
+  const d = new Date(y, m, 1);
+  return d.toLocaleDateString(undefined, { month: "long" });
+}
+function dayLabel(dateISO) {
+  const d = new Date(dateISO + "T00:00:00");
+  return d.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short" });
+}
+
+const STATUS_DOT = {
+  pending: C.orange,
+  confirmed: C.success,
+  completed: C.slateLight,
+  cancelled: C.slateLight,
+};
+
+export function ScreenCoachCalendar({ nav, toast, coachBookings }) {
+  const [viewYear, setViewYear] = useState(2026);
+  const [viewMonth, setViewMonth] = useState(7); // August (0-indexed)
+  const [selectedDate, setSelectedDate] = useState(TODAY_ISO);
+  const [blocked, setBlocked] = useState(COACH_BLOCKED);
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  const [bDate, setBDate] = useState(TODAY_ISO);
+  const [bAllDay, setBAllDay] = useState(true);
+  const [bStart, setBStart] = useState("09:00");
+  const [bEnd, setBEnd] = useState("17:00");
+  const [bReason, setBReason] = useState("");
+
+  const bookingsByDate = useMemo(() => {
+    const map = {};
+    coachBookings.forEach((b) => {
+      if (!b.dateISO) return;
+      (map[b.dateISO] ||= []).push(b);
+    });
+    return map;
+  }, [coachBookings]);
+
+  const blockedByDate = useMemo(() => {
+    const map = {};
+    blocked.forEach((x) => { (map[x.dateISO] ||= []).push(x); });
+    return map;
+  }, [blocked]);
+
+  const weeks = useMemo(() => {
+    const total = daysInMonth(viewYear, viewMonth);
+    const startPad = firstWeekday(viewYear, viewMonth);
+    const cells = [];
+    for (let i = 0; i < startPad; i++) cells.push(null);
+    for (let d = 1; d <= total; d++) cells.push(d);
+    while (cells.length % 7 !== 0) cells.push(null);
+    const rows = [];
+    for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
+    return rows;
+  }, [viewYear, viewMonth]);
+
+  const changeMonth = (delta) => {
+    let m = viewMonth + delta, y = viewYear;
+    if (m < 0) { m = 11; y -= 1; } else if (m > 11) { m = 0; y += 1; }
+    setViewMonth(m); setViewYear(y);
   };
 
-  const saveException = () => {
-    if (!newDate) { toast("Pick a date for the exception"); return; }
-    setExceptions((arr) => [...arr, { id: "e" + (arr.length + 1), date: formatDate(newDate), reason: newReason || "Unavailable" }]);
-    toast("Exception added");
-    setNewDate(""); setNewReason(""); setShowForm(false);
+  const selectedBookings = (bookingsByDate[selectedDate] || []).slice().sort((a, b) => a.startTime.localeCompare(b.startTime));
+  const selectedBlocks = blockedByDate[selectedDate] || [];
+  const allDayBlocked = selectedBlocks.some((x) => x.allDay);
+
+  const saveBlock = () => {
+    if (!bDate) { toast("Pick a date to block"); return; }
+    if (!bAllDay && bStart >= bEnd) { toast("End time must be after start time"); return; }
+    setBlocked((arr) => [
+      ...arr,
+      { id: "bl" + (arr.length + 1), dateISO: bDate, allDay: bAllDay, startTime: bAllDay ? undefined : bStart, endTime: bAllDay ? undefined : bEnd, reason: bReason || "Unavailable" },
+    ]);
+    toast("Marked unavailable");
+    setSheetOpen(false);
+    setSelectedDate(bDate);
+    setBReason("");
   };
-  const removeException = (id) => { setExceptions((arr) => arr.filter((e) => e.id !== id)); toast("Exception removed"); };
+  const removeBlock = (id) => { setBlocked((arr) => arr.filter((x) => x.id !== id)); toast("Unavailability removed"); };
 
   return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
       <div style={{ padding: "18px 20px 0", flex: 1, overflowY: "auto", paddingBottom: 100 }}>
-        <div style={{ fontSize: 22, fontWeight: 600, color: C.jet, marginBottom: 14, ...fDisplay }}>Availability</div>
+        <div style={{ fontSize: 22, fontWeight: 600, color: C.jet, marginBottom: 14, ...fDisplay }}>Calendar</div>
 
-        <Card style={{ marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <CalendarIcon size={17} color={C.jet} />
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: C.jet, ...fBody }}>Sync with device calendar</div>
-              <div style={{ fontSize: 11, color: C.slate, ...fBody }}>{synced ? "Connected — Google Calendar" : "Not connected"}</div>
-            </div>
+        {/* Month header + nav */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+          <div style={{ fontSize: 19, fontWeight: 700, color: C.jet, ...fDisplay }}>
+            {viewYear} / {viewMonth + 1} <span style={{ fontSize: 13, fontWeight: 500, color: C.slateLight }}>· {monthLabel(viewYear, viewMonth)}</span>
           </div>
-          <Toggle on={synced} onClick={() => { setSynced((v) => !v); toast(!synced ? "Calendar connected" : "Calendar disconnected"); }} />
-        </Card>
-
-        <SectionLabel>Recurring weekly availability</SectionLabel>
-        <div style={{ overflowX: "auto", marginBottom: 20 }}>
-          <div style={{ display: "grid", gridTemplateColumns: `70px repeat(${days.length}, 40px)`, gap: 6, minWidth: 400 }}>
-            <div />
-            {days.map((d) => <div key={d} style={{ textAlign: "center", fontSize: 11, fontWeight: 600, color: C.slate, ...fBody }}>{d}</div>)}
-            {slots.map((s) => (
-              <React.Fragment key={s}>
-                <div style={{ fontSize: 11, color: C.slate, display: "flex", alignItems: "center", ...fBody }}>{s}</div>
-                {days.map((d) => {
-                  const k = `${d}-${s}`;
-                  const on = active[k];
-                  return (
-                    <button key={k} onClick={() => toggle(k)} style={{
-                      width: 40, height: 30, borderRadius: 8, cursor: "pointer",
-                      background: on ? C.orange : C.fog, border: "none",
-                    }} />
-                  );
-                })}
-              </React.Fragment>
-            ))}
+          <div style={{ display: "flex", gap: 6 }}>
+            <button onClick={() => changeMonth(-1)} style={{ width: 30, height: 30, borderRadius: 10, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+              <ChevronLeft size={16} color={C.jet} />
+            </button>
+            <button onClick={() => changeMonth(1)} style={{ width: 30, height: 30, borderRadius: 10, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+              <ChevronRight size={16} color={C.jet} />
+            </button>
           </div>
         </div>
 
-        <SectionLabel>One-off exceptions</SectionLabel>
-        {exceptions.map((ex) => (
-          <Card key={ex.id} style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: C.jet, ...fBody }}>{ex.date} — blocked</div>
-              <div style={{ fontSize: 11.5, color: C.slate, ...fBody }}>Reason: {ex.reason}</div>
+        {/* Weekday header */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", marginBottom: 4 }}>
+          {WEEKDAYS.map((w) => (
+            <div key={w} style={{ textAlign: "center", fontSize: 10.5, fontWeight: 700, color: C.slateLight, padding: "4px 0", ...fBody }}>{w}</div>
+          ))}
+        </div>
+
+        {/* Month grid */}
+        <div style={{ marginBottom: 18 }}>
+          {weeks.map((row, ri) => (
+            <div key={ri} style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
+              {row.map((d, ci) => {
+                if (!d) return <div key={ci} style={{ height: 46 }} />;
+                const dateISO = iso(viewYear, viewMonth, d);
+                const isSelected = dateISO === selectedDate;
+                const isToday = dateISO === TODAY_ISO;
+                const events = bookingsByDate[dateISO] || [];
+                const dayBlocks = blockedByDate[dateISO] || [];
+                const isBlockedAllDay = dayBlocks.some((x) => x.allDay);
+                return (
+                  <button
+                    key={ci}
+                    onClick={() => setSelectedDate(dateISO)}
+                    style={{
+                      height: 46, border: "none", background: "none", cursor: "pointer",
+                      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3,
+                    }}
+                  >
+                    <span style={{
+                      width: 28, height: 28, borderRadius: 99, display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 13, fontWeight: isSelected ? 700 : isToday ? 700 : 500,
+                      background: isSelected ? C.orange : "transparent",
+                      color: isSelected ? C.white : isBlockedAllDay ? C.slateLight : C.jet,
+                      border: isToday && !isSelected ? `1.5px solid ${C.orange}` : "none",
+                      textDecoration: isBlockedAllDay && !isSelected ? "line-through" : "none",
+                      ...fBody,
+                    }}>
+                      {d}
+                    </span>
+                    <span style={{ display: "flex", gap: 2, height: 4 }}>
+                      {events.slice(0, 3).map((e, i) => (
+                        <span key={i} style={{ width: 4, height: 4, borderRadius: 99, background: isSelected ? C.white : STATUS_DOT[e.status] || C.slate }} />
+                      ))}
+                      {events.length === 0 && dayBlocks.length > 0 && (
+                        <span style={{ width: 4, height: 4, borderRadius: 99, background: isSelected ? C.white : C.slateLight }} />
+                      )}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-            <button onClick={() => removeException(ex.id)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}>
-              <Trash2 size={16} color={C.slateLight} />
+          ))}
+        </div>
+
+        {/* Day agenda */}
+        <SectionLabel>Sessions on {dayLabel(selectedDate)}</SectionLabel>
+
+        {allDayBlocked && (
+          <Card style={{ marginBottom: 10, background: C.fog, border: "none", display: "flex", alignItems: "center", gap: 10 }}>
+            <Ban size={16} color={C.slate} style={{ flexShrink: 0 }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, ...fBody }}>Unavailable all day</div>
+              <div style={{ fontSize: 11.5, color: C.slate, ...fBody }}>{selectedBlocks.find((x) => x.allDay)?.reason}</div>
+            </div>
+            <button onClick={() => removeBlock(selectedBlocks.find((x) => x.allDay).id)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}>
+              <Trash2 size={14} color={C.slateLight} />
+            </button>
+          </Card>
+        )}
+
+        {selectedBlocks.filter((x) => !x.allDay).map((x) => (
+          <Card key={x.id} style={{ marginBottom: 10, background: C.fog, border: "none", display: "flex", alignItems: "center", gap: 10 }}>
+            <Ban size={16} color={C.slate} style={{ flexShrink: 0 }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, ...fBody }}>Blocked · {fmtTimeRange(x.startTime, x.endTime)}</div>
+              <div style={{ fontSize: 11.5, color: C.slate, ...fBody }}>{x.reason}</div>
+            </div>
+            <button onClick={() => removeBlock(x.id)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}>
+              <Trash2 size={14} color={C.slateLight} />
             </button>
           </Card>
         ))}
 
-        {showForm && (
-          <Card style={{ marginBottom: 10 }}>
-            <SectionLabel>New exception</SectionLabel>
-            <div style={{ marginBottom: 10 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Date</div>
-              <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)}
-                style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "10px 12px", fontSize: 13.5, outline: "none", ...fBody }} />
-            </div>
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Reason (optional)</div>
-              <input value={newReason} onChange={(e) => setNewReason(e.target.value)} placeholder="e.g. Personal leave"
-                style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "10px 12px", fontSize: 13.5, outline: "none", ...fBody }} />
-            </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <Btn variant="outline" size="sm" full onClick={() => { setShowForm(false); setNewDate(""); setNewReason(""); }}>Cancel</Btn>
-              <Btn size="sm" full onClick={saveException}>Save exception</Btn>
-            </div>
-          </Card>
+        {selectedBookings.length === 0 && !allDayBlocked && selectedBlocks.length === 0 && (
+          <div style={{ marginBottom: 6 }}>
+            <EmptyState icon={CalendarDays} title="Nothing scheduled" body="No sessions booked for this day yet." />
+          </div>
         )}
 
-        {!showForm && (
-          <Btn variant="outline" size="sm" icon={Plus} full onClick={() => setShowForm(true)}>Add exception</Btn>
+        {selectedBookings.map((b) => (
+          <Card key={b.id} style={{ marginBottom: 10 }} onClick={() => nav("coach-booking-detail", { id: b.id })}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+              <div style={{ display: "flex", gap: 10, minWidth: 0 }}>
+                <Avatar name={b.clientName} size={38} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fDisplay }}>{b.clientName}</div>
+                  <div style={{ fontSize: 12, color: C.slate, ...fBody }}>{b.service}</div>
+                  <div style={{ fontSize: 11.5, color: C.slate, marginTop: 2, ...fBody }}>{fmtTimeRange(b.startTime, b.endTime)}</div>
+                </div>
+              </div>
+              <StatusPill status={b.status} />
+            </div>
+          </Card>
+        ))}
+
+        <div style={{ marginTop: 8, marginBottom: 22 }}>
+          <Btn full variant="outline" icon={Ban} onClick={() => { setBDate(selectedDate); setSheetOpen(true); }}>Block out this date / time</Btn>
+        </div>
+
+        {/* All blocked dates overview */}
+        {blocked.length > 0 && (
+          <>
+            <SectionLabel>Unavailable dates & times</SectionLabel>
+            {blocked
+              .slice()
+              .sort((a, b) => a.dateISO.localeCompare(b.dateISO))
+              .map((x) => (
+                <Card key={x.id} style={{ marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }} onClick={() => setSelectedDate(x.dateISO)}>
+                  <div>
+                    <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, ...fBody }}>
+                      {dayLabel(x.dateISO)} — {x.allDay ? "All day" : fmtTimeRange(x.startTime, x.endTime)}
+                    </div>
+                    <div style={{ fontSize: 11, color: C.slate, ...fBody }}>{x.reason}</div>
+                  </div>
+                  <button onClick={(e) => { e.stopPropagation(); removeBlock(x.id); }} style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}>
+                    <Trash2 size={14} color={C.slateLight} />
+                  </button>
+                </Card>
+              ))}
+          </>
         )}
       </div>
+
+      <BottomSheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Block time off" heightPct={62}>
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Date</div>
+          <input type="date" value={bDate} onChange={(e) => setBDate(e.target.value)}
+            style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "10px 12px", fontSize: 13.5, outline: "none", boxSizing: "border-box", ...fBody }} />
+        </div>
+
+        <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+          <Chip active={bAllDay} onClick={() => setBAllDay(true)}>Whole day</Chip>
+          <Chip active={!bAllDay} onClick={() => setBAllDay(false)}>Specific time slot</Chip>
+        </div>
+
+        {!bAllDay && (
+          <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Start</div>
+              <input type="time" value={bStart} onChange={(e) => setBStart(e.target.value)}
+                style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "10px 12px", fontSize: 13.5, outline: "none", boxSizing: "border-box", ...fBody }} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>End</div>
+              <input type="time" value={bEnd} onChange={(e) => setBEnd(e.target.value)}
+                style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "10px 12px", fontSize: 13.5, outline: "none", boxSizing: "border-box", ...fBody }} />
+            </div>
+          </div>
+        )}
+
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Reason (optional)</div>
+          <input value={bReason} onChange={(e) => setBReason(e.target.value)} placeholder="e.g. Personal leave, facility maintenance"
+            style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "10px 12px", fontSize: 13.5, outline: "none", boxSizing: "border-box", ...fBody }} />
+        </div>
+
+        <div style={{ display: "flex", gap: 8 }}>
+          <Btn variant="outline" full onClick={() => setSheetOpen(false)}>Cancel</Btn>
+          <Btn full onClick={saveBlock}>Save</Btn>
+        </div>
+      </BottomSheet>
     </div>
   );
 }

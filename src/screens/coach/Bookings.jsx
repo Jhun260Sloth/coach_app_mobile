@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { User, ClipboardList, ShieldCheck, Info, MessagesSquare, MessageCircle } from "lucide-react";
+import { User, ClipboardList, ShieldCheck, Info, MessagesSquare, MessageCircle, CalendarClock, XCircle } from "lucide-react";
 import { C, fDisplay, fBody } from "../../theme/theme";
-import { CLIENT_PROFILES, BOOKING_ENQUIRY_MESSAGES, CONFIG } from "../../data/mockData";
+import { CLIENT_PROFILES, BOOKING_ENQUIRY_MESSAGES, CONFIG, fmtTimeRange } from "../../data/mockData";
 import {
   Avatar, Card, SegTabs, EmptyState, StatusPill, Btn, TopBar, Row, SectionLabel, Badge,
 } from "../../components/ui/Primitives";
@@ -47,10 +47,31 @@ export function ScreenCoachBookings({ nav, coachBookings }) {
 
 export function ScreenCoachBookingDetail({ nav, params, coachBookings, setCoachBookings, toast }) {
   const booking = coachBookings.find((b) => b.id === params.id);
+  const [rescheduling, setRescheduling] = useState(false);
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
+  const [newDate, setNewDate] = useState(booking?.dateISO || "");
+  const [newStart, setNewStart] = useState(booking?.startTime || "");
+  const [newEnd, setNewEnd] = useState(booking?.endTime || "");
+
   const respond = (status) => { setCoachBookings((arr) => arr.map((b) => b.id === booking.id ? { ...b, status } : b)); toast(status === "confirmed" ? "Booking accepted" : "Booking declined"); nav("coach-bookings"); };
   if (!booking) return <EmptyState icon={ClipboardList} title="Booking not found" body="This booking may have been removed." />;
   const profile = CLIENT_PROFILES[booking.clientName] || { memberSince: "—", totalSessions: 0, homeSuburb: "—", notes: "", verifiedPayment: true };
   const hasThread = !!BOOKING_ENQUIRY_MESSAGES[booking.id];
+  const canManage = booking.status === "confirmed";
+
+  const saveReschedule = () => {
+    if (!newDate || !newStart || !newEnd || newStart >= newEnd) { toast("Check the new date and times"); return; }
+    const d = new Date(newDate + "T00:00:00");
+    const dateLabel = d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+    setCoachBookings((arr) => arr.map((b) => b.id === booking.id ? { ...b, dateISO: newDate, date: dateLabel, startTime: newStart, endTime: newEnd, time: newStart } : b));
+    toast("Session rescheduled — client has been notified");
+    setRescheduling(false);
+  };
+  const confirmCancel = () => {
+    setCoachBookings((arr) => arr.map((b) => b.id === booking.id ? { ...b, status: "cancelled" } : b));
+    toast("Booking cancelled");
+    nav("coach-bookings");
+  };
   return (
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="Booking request" onBack={() => nav("coach-bookings")} />
@@ -87,7 +108,7 @@ export function ScreenCoachBookingDetail({ nav, params, coachBookings, setCoachB
         <Card style={{ marginBottom: 14 }}>
           <Row label="Service" value={booking.service} />
           <Row label="Date" value={booking.date} />
-          <Row label="Time" value={booking.time} />
+          <Row label="Time" value={booking.startTime && booking.endTime ? fmtTimeRange(booking.startTime, booking.endTime) : booking.time} />
           <Row label="Mode" value={booking.mode} />
           <Row label="Price" value={`$${booking.price}`} bold last />
         </Card>
@@ -113,13 +134,62 @@ export function ScreenCoachBookingDetail({ nav, params, coachBookings, setCoachB
           <Btn size="sm" variant="secondary" icon={MessageCircle} onClick={() => nav("chat-thread", { name: booking.clientName, context: `${booking.service} · ${booking.date}`, bookingId: booking.id, backTo: "coach-booking-detail", backParams: { id: booking.id } })}>Chat</Btn>
         </Card>
 
-        {booking.status === "pending" && (
-          <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+        {booking.status === "pending" && !rescheduling && !confirmingCancel && (
+          <div style={{ display: "flex", gap: 8, marginTop: 4, marginBottom: 12 }}>
             <Btn full variant="outline" onClick={() => respond("cancelled")}>Decline</Btn>
             <Btn full onClick={() => respond("confirmed")}>Accept</Btn>
           </div>
         )}
-        {booking.status !== "pending" && <StatusPill status={booking.status} />}
+        {booking.status !== "pending" && !rescheduling && !confirmingCancel && (
+          <div style={{ marginBottom: 12 }}><StatusPill status={booking.status} /></div>
+        )}
+
+        {rescheduling && (
+          <Card style={{ marginBottom: 14 }}>
+            <SectionLabel>Reschedule session</SectionLabel>
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>New date</div>
+              <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)}
+                style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "10px 12px", fontSize: 13.5, outline: "none", boxSizing: "border-box", ...fBody }} />
+            </div>
+            <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Start</div>
+                <input type="time" value={newStart} onChange={(e) => setNewStart(e.target.value)}
+                  style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "10px 12px", fontSize: 13.5, outline: "none", boxSizing: "border-box", ...fBody }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>End</div>
+                <input type="time" value={newEnd} onChange={(e) => setNewEnd(e.target.value)}
+                  style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "10px 12px", fontSize: 13.5, outline: "none", boxSizing: "border-box", ...fBody }} />
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <Btn full variant="outline" onClick={() => setRescheduling(false)}>Cancel</Btn>
+              <Btn full onClick={saveReschedule}>Save new time</Btn>
+            </div>
+          </Card>
+        )}
+
+        {confirmingCancel && (
+          <Card style={{ marginBottom: 14 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: C.jet, marginBottom: 4, ...fBody }}>Cancel this booking?</div>
+            <div style={{ fontSize: 12, color: C.slate, marginBottom: 14, lineHeight: 1.5, ...fBody }}>
+              {booking.clientName.split(" ")[0]} will be notified and, depending on your cancellation policy, may be entitled to a refund.
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <Btn full variant="outline" onClick={() => setConfirmingCancel(false)}>Keep booking</Btn>
+              <Btn full variant="danger" onClick={confirmCancel}>Confirm cancel</Btn>
+            </div>
+          </Card>
+        )}
+
+        {canManage && !rescheduling && !confirmingCancel && (
+          <div style={{ display: "flex", gap: 8 }}>
+            <Btn full variant="outline" icon={CalendarClock} onClick={() => { setNewDate(booking.dateISO || ""); setNewStart(booking.startTime || ""); setNewEnd(booking.endTime || ""); setRescheduling(true); }}>Reschedule</Btn>
+            <Btn full variant="danger" icon={XCircle} onClick={() => setConfirmingCancel(true)}>Cancel booking</Btn>
+          </div>
+        )}
       </div>
     </div>
   );

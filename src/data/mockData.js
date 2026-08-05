@@ -9,6 +9,73 @@ export const CONFIG = { serviceFeeRate: 0.06, commissionRate: 0.15 };
 
 export const SPORTS = ["Tennis", "Swimming", "Basketball", "Strength & Conditioning", "Football", "Yoga", "Rock Climbing", "Athletics"];
 
+/* =========================================================================
+   ONBOARDING REFERENCE DATA
+   ========================================================================= */
+// Broader sport list for onboarding multi-selects (kept separate from SPORTS,
+// which drives the client discovery filters + SPORT_ICON map).
+export const SPORT_OPTIONS_FULL = [
+  "Football", "Tennis", "Basketball", "Swimming", "Athletics", "Strength & Conditioning",
+  "Netball", "Rugby League", "Rugby Union", "Cricket", "Golf", "Boxing", "Cycling", "Running",
+  "Yoga", "Rock Climbing", "AFL", "Hockey", "Volleyball", "Table Tennis", "Badminton",
+  "Martial Arts", "Gymnastics", "Surfing", "Sailing", "Triathlon", "CrossFit", "Pilates",
+];
+
+export const LANGUAGE_OPTIONS = [
+  "English", "Mandarin", "Cantonese", "Spanish", "French", "German", "Italian", "Japanese",
+  "Korean", "Vietnamese", "Arabic", "Hindi", "Punjabi", "Greek", "Portuguese", "Filipino/Tagalog",
+  "Thai", "Indonesian", "Turkish", "Polish",
+];
+
+export const GENDER_OPTIONS = ["Male", "Female", "Prefer not to say"];
+
+export const COACHING_CATEGORY_OPTIONS = [
+  "Individual Coaching (1:1)", "Group Coaching", "Team Coaching", "Skills Development",
+  "Fitness & Conditioning", "High Performance", "Rehabilitation & Recovery", "Online Coaching",
+];
+export const SKILL_LEVEL_OPTIONS = ["Beginner", "Intermediate", "Advanced", "Elite / Professional"];
+export const AGE_GROUP_OPTIONS = ["Under 8", "8–12 Years", "13–17 Years", "Adults (18+)", "Seniors (60+)"];
+export const COACHING_EXPERIENCE_LEVELS = [
+  "Recreational", "Club Level", "School Level", "State Level", "National Level", "International Level",
+];
+export const COACHING_FORMAT_OPTIONS = ["In-person", "Online", "Hybrid (In-person & Online)"];
+
+export const ID_TYPE_OPTIONS = ["Passport", "Driver Licence", "Proof of Age Card"];
+export const CERTIFICATION_TYPE_OPTIONS = [
+  "Coaching Accreditation", "First Aid", "CPR", "Sports-Specific Certification", "Other",
+];
+
+// Small curated set of Australian suburbs used to simulate a Google Places-style
+// autocomplete for the onboarding Location field (search by suburb, city or postcode).
+export const AU_SUBURBS = [
+  { suburb: "Bondi", state: "NSW", postcode: "2026" },
+  { suburb: "Bondi Beach", state: "NSW", postcode: "2026" },
+  { suburb: "Sydney", state: "NSW", postcode: "2000" },
+  { suburb: "Parramatta", state: "NSW", postcode: "2150" },
+  { suburb: "Newtown", state: "NSW", postcode: "2042" },
+  { suburb: "Manly", state: "NSW", postcode: "2095" },
+  { suburb: "Chatswood", state: "NSW", postcode: "2067" },
+  { suburb: "Melbourne", state: "VIC", postcode: "3000" },
+  { suburb: "Fitzroy", state: "VIC", postcode: "3065" },
+  { suburb: "South Yarra", state: "VIC", postcode: "3141" },
+  { suburb: "Brunswick", state: "VIC", postcode: "3056" },
+  { suburb: "St Kilda", state: "VIC", postcode: "3182" },
+  { suburb: "Geelong", state: "VIC", postcode: "3220" },
+  { suburb: "Brisbane", state: "QLD", postcode: "4000" },
+  { suburb: "South Brisbane", state: "QLD", postcode: "4101" },
+  { suburb: "Surfers Paradise", state: "QLD", postcode: "4217" },
+  { suburb: "Cairns", state: "QLD", postcode: "4870" },
+  { suburb: "Perth", state: "WA", postcode: "6000" },
+  { suburb: "Fremantle", state: "WA", postcode: "6160" },
+  { suburb: "Adelaide", state: "SA", postcode: "5000" },
+  { suburb: "Glenelg", state: "SA", postcode: "5045" },
+  { suburb: "Hobart", state: "TAS", postcode: "7000" },
+  { suburb: "Darwin", state: "NT", postcode: "0800" },
+  { suburb: "Canberra", state: "ACT", postcode: "2600" },
+  { suburb: "Newcastle", state: "NSW", postcode: "2300" },
+  { suburb: "Wollongong", state: "NSW", postcode: "2500" },
+];
+
 const AVATAR_PALETTE = ["#4d7c0e"];
 export function initials(name) {
   return name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
@@ -165,11 +232,44 @@ export const INITIAL_BOOKINGS = [
   { id: "b4", coachId: "c5", coachName: "Ella Fontaine", clientName: "Sarah Lin", service: "Virtual Session", date: "Wed, 9 Jul", time: "7:00am", mode: "Virtual", status: "completed", price: 38, reviewed: true },
 ];
 
+// Helper to format a 24h "HH:MM" time as "4:00pm" for list/detail display.
+export function fmt12(t) {
+  if (!t) return "";
+  const [hStr, m] = t.split(":");
+  let h = parseInt(hStr, 10);
+  const ampm = h >= 12 ? "pm" : "am";
+  h = h % 12; if (h === 0) h = 12;
+  return `${h}:${m}${ampm}`;
+}
+// Helper to format a 24h "HH:MM" time as zero-padded "04:00pm" for calendar ranges.
+export function fmt12Padded(t) {
+  if (!t) return "";
+  const [hStr, m] = t.split(":");
+  let h = parseInt(hStr, 10);
+  const ampm = h >= 12 ? "pm" : "am";
+  h = h % 12; if (h === 0) h = 12;
+  return `${String(h).padStart(2, "0")}:${m}${ampm}`;
+}
+export function fmtTimeRange(start, end) {
+  return `${fmt12Padded(start)}-${fmt12Padded(end)}`;
+}
+
 export const COACH_BOOKINGS = [
-  { id: "cb1", clientName: "Sarah Lin", service: "1:1 Court Session", date: "Tue, 22 Jul", time: "4:00pm", mode: "In-person", status: "confirmed", price: 75, notes: "" },
-  { id: "cb2", clientName: "Marcus Webb", service: "Junior Group (max 4)", date: "Wed, 23 Jul", time: "5:00pm", mode: "In-person", status: "pending", price: 32, notes: "First session for his son, age 9." },
-  { id: "cb3", clientName: "The Chen Family (u18)", service: "1:1 Court Session", date: "Sat, 26 Jul", time: "9:00am", mode: "In-person", status: "pending", price: 75, notes: "Booking for two children, guardian consent provided at checkout." },
-  { id: "cb4", clientName: "Ravi Patel", service: "8-Week Term Block", date: "Mon, 14 Jul", time: "7:00am", mode: "In-person", status: "completed", price: 520, notes: "" },
+  { id: "cb1", clientName: "Sarah Lin", service: "1:1 Court Session", date: "Mon, 3 Aug", dateISO: "2026-08-03", startTime: "16:00", endTime: "17:00", time: "4:00pm", mode: "In-person", status: "confirmed", price: 75, notes: "" },
+  { id: "cb2", clientName: "Marcus Webb", service: "Junior Group (max 4)", date: "Tue, 4 Aug", dateISO: "2026-08-04", startTime: "17:00", endTime: "18:00", time: "5:00pm", mode: "In-person", status: "pending", price: 32, notes: "First session for his son, age 9." },
+  { id: "cb3", clientName: "The Chen Family (u18)", service: "1:1 Court Session", date: "Wed, 5 Aug", dateISO: "2026-08-05", startTime: "09:00", endTime: "10:00", time: "9:00am", mode: "In-person", status: "pending", price: 75, notes: "Booking for two children, guardian consent provided at checkout." },
+  { id: "cb4", clientName: "Ravi Patel", service: "8-Week Term Block", date: "Mon, 14 Jul", dateISO: "2026-07-14", startTime: "07:00", endTime: "08:00", time: "7:00am", mode: "In-person", status: "completed", price: 520, notes: "" },
+  { id: "cb5", clientName: "Ravi Patel", service: "8-Week Term Block", date: "Wed, 12 Aug", dateISO: "2026-08-12", startTime: "07:00", endTime: "08:00", time: "7:00am", mode: "In-person", status: "confirmed", price: 65, notes: "" },
+  { id: "cb6", clientName: "Sarah Lin", service: "1:1 Court Session", date: "Wed, 19 Aug", dateISO: "2026-08-19", startTime: "16:00", endTime: "17:00", time: "4:00pm", mode: "In-person", status: "confirmed", price: 75, notes: "" },
+  { id: "cb7", clientName: "Marcus Webb", service: "Junior Group (max 4)", date: "Fri, 21 Aug", dateISO: "2026-08-21", startTime: "17:00", endTime: "18:00", time: "5:00pm", mode: "In-person", status: "cancelled", price: 32, notes: "" },
+  { id: "cb8", clientName: "The Chen Family (u18)", service: "1:1 Court Session", date: "Mon, 31 Aug", dateISO: "2026-08-31", startTime: "09:00", endTime: "10:00", time: "9:00am", mode: "In-person", status: "pending", price: 75, notes: "Booking for two children, guardian consent provided at checkout." },
+];
+
+// Dates/time-slots the coach has manually marked unavailable — shown on the
+// coach calendar and used to block clients from requesting those times.
+export const COACH_BLOCKED = [
+  { id: "bl1", dateISO: "2026-08-06", allDay: true, reason: "Personal leave" },
+  { id: "bl2", dateISO: "2026-08-14", allDay: false, startTime: "06:00", endTime: "08:00", reason: "Facility maintenance" },
 ];
 
 export const REVIEWS = [

@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import {
-  ChevronLeft, Star, CheckCircle2,
+  ChevronLeft, Star, CheckCircle2, Check, X, Search, Plus,
 } from "lucide-react";
 import { C, fDisplay, fBody } from "../../theme/theme";
 import { initials, hashColor } from "../../data/mockData";
@@ -322,6 +322,185 @@ export function StatusBar({ dark }) {
           <span style={{ position: "absolute", inset: 1.5, right: 3, background: dark ? C.white : C.jet, borderRadius: 1 }} />
         </span>
       </div>
+    </div>
+  );
+}
+
+/* =========================================================================
+   ONBOARDING HELPERS
+   ========================================================================= */
+export function StepProgress({ step, total, label }) {
+  return (
+    <div style={{ marginBottom: 18 }}>
+      <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+        {Array.from({ length: total }).map((_, i) => (
+          <div key={i} style={{ flex: 1, height: 4, borderRadius: 99, background: i < step ? C.orange : C.border }} />
+        ))}
+      </div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: C.slateLight, letterSpacing: 0.2, ...fBody }}>
+        STEP {step} OF {total}{label ? ` · ${label.toUpperCase()}` : ""}
+      </div>
+    </div>
+  );
+}
+
+export function CheckboxRow({ label, checked, onClick, sublabel }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{ display: "flex", gap: 10, alignItems: "flex-start", width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: "9px 0" }}
+    >
+      <div style={{ width: 20, height: 20, borderRadius: 6, border: `1.5px solid ${checked ? C.orange : C.border}`, background: checked ? C.orange : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+        {checked && <Check size={13} color={C.white} />}
+      </div>
+      <div>
+        <div style={{ fontSize: 13.5, color: C.jet, fontWeight: 500, ...fBody }}>{label}</div>
+        {sublabel && <div style={{ fontSize: 11.5, color: C.slate, marginTop: 2, ...fBody }}>{sublabel}</div>}
+      </div>
+    </button>
+  );
+}
+
+export function RadioRow({ label, sublabel, selected, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{ display: "flex", gap: 10, alignItems: "flex-start", width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: "9px 0" }}
+    >
+      <div style={{ width: 20, height: 20, borderRadius: 99, border: `1.5px solid ${selected ? C.orange : C.border}`, background: C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+        {selected && <div style={{ width: 10, height: 10, borderRadius: 99, background: C.orange }} />}
+      </div>
+      <div>
+        <div style={{ fontSize: 13.5, color: C.jet, fontWeight: 500, ...fBody }}>{label}</div>
+        {sublabel && <div style={{ fontSize: 11.5, color: C.slate, marginTop: 2, ...fBody }}>{sublabel}</div>}
+      </div>
+    </button>
+  );
+}
+
+/**
+ * Searchable multi-select. Selected items render as removable chips above a
+ * search input; typing filters the option list shown in a small dropdown.
+ */
+export function SearchMultiSelect({ options, value, onChange, placeholder = "Search…" }) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const filtered = options.filter((o) => o.toLowerCase().includes(query.toLowerCase()) && !value.includes(o)).slice(0, 6);
+  const toggle = (o) => { onChange(value.includes(o) ? value.filter((x) => x !== o) : [...value, o]); setQuery(""); };
+  return (
+    <div>
+      {value.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+          {value.map((v) => (
+            <span key={v} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 10px 6px 12px", borderRadius: 999, fontSize: 12.5, fontWeight: 500, background: C.orangeTint, color: C.orange, ...fBody }}>
+              {v}
+              <button onMouseDown={(e) => e.preventDefault()} onClick={() => toggle(v)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 0 }}>
+                <X size={12} color={C.orange} />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      <div style={{ position: "relative" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
+          <Search size={15} color={C.slateLight} />
+          <input
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+            onFocus={() => setOpen(true)}
+            onBlur={() => setTimeout(() => setOpen(false), 150)}
+            placeholder={placeholder}
+            style={{ border: "none", outline: "none", flex: 1, fontSize: 13.5, minWidth: 0, ...fBody }}
+          />
+        </div>
+        {open && filtered.length > 0 && (
+          <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.white, border: `1px solid ${C.border}`, borderRadius: 13, boxShadow: "0 10px 24px rgba(0,0,0,.10)", zIndex: 30, maxHeight: 190, overflowY: "auto" }}>
+            {filtered.map((o) => (
+              <button
+                key={o}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => toggle(o)}
+                style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 13px", background: "none", border: "none", cursor: "pointer", fontSize: 13, color: C.jet, ...fBody }}
+              >
+                {o}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Searchable single-select combobox. Once a value is chosen it collapses to a
+ * compact "selected" row with a Change action; while searching, typing
+ * filters `options`, and if the typed text doesn't match an existing option,
+ * an "Add …" row lets the user add it as a new custom entry.
+ */
+export function SearchSelect({ options, value, onChange, placeholder = "Search…", allowCustom = true }) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(!value);
+
+  const filtered = options.filter((o) => o.toLowerCase().includes(query.toLowerCase())).slice(0, 6);
+  const trimmed = query.trim();
+  const exact = options.some((o) => o.toLowerCase() === trimmed.toLowerCase());
+  const showAdd = allowCustom && trimmed.length > 0 && !exact;
+
+  const pick = (v) => { onChange(v); setQuery(""); setOpen(false); setEditing(false); };
+
+  if (!editing && value) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 10, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", boxSizing: "border-box" }}>
+        <span style={{ flex: 1, fontSize: 13.5, color: C.jet, fontWeight: 500, ...fBody }}>{value}</span>
+        <button
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => { setEditing(true); setQuery(""); }}
+          style={{ background: "none", border: "none", color: C.orange, fontSize: 12, fontWeight: 600, cursor: "pointer", ...fBody }}
+        >
+          Change
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ position: "relative" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", boxSizing: "border-box" }}>
+        <Search size={15} color={C.slateLight} />
+        <input
+          value={query}
+          onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          placeholder={placeholder}
+          style={{ border: "none", outline: "none", flex: 1, fontSize: 13.5, minWidth: 0, ...fBody }}
+        />
+      </div>
+      {open && (filtered.length > 0 || showAdd) && (
+        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.white, border: `1px solid ${C.border}`, borderRadius: 13, boxShadow: "0 10px 24px rgba(0,0,0,.10)", zIndex: 30, maxHeight: 190, overflowY: "auto" }}>
+          {filtered.map((o) => (
+            <button
+              key={o}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => pick(o)}
+              style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 13px", background: "none", border: "none", cursor: "pointer", fontSize: 13, color: C.jet, ...fBody }}
+            >
+              {o}
+            </button>
+          ))}
+          {showAdd && (
+            <button
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => pick(trimmed)}
+              style={{ display: "flex", alignItems: "center", gap: 6, width: "100%", textAlign: "left", padding: "10px 13px", background: "none", border: "none", borderTop: filtered.length ? `1px solid ${C.border}` : "none", cursor: "pointer", fontSize: 13, color: C.orange, fontWeight: 600, ...fBody }}
+            >
+              <Plus size={13} /> Add "{trimmed}"
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -14,6 +14,7 @@ import { LogoMark, Toast, BottomTabs, StatusBar } from "./components/ui/Primitiv
 import {
   ScreenSplash, ScreenRoleSelect, ScreenAuth, ScreenTnc, ScreenVerification,
   ScreenVerificationPending, ScreenAdminLogin,
+  ScreenCoachRegister, ScreenCoachInfo, ScreenCoachExpertise,
 } from "./screens/onboarding/OnboardingScreens";
 
 // Client
@@ -31,6 +32,10 @@ import { ScreenCoachCalendar } from "./screens/coach/Calendar";
 import { ScreenCoachBookings, ScreenCoachBookingDetail } from "./screens/coach/Bookings";
 import { ScreenCoachProfileEdit } from "./screens/coach/ProfileEdit";
 import { ScreenCoachEarnings } from "./screens/coach/Earnings";
+import { ScreenCoachServicesSetup } from "./screens/coach/ServicesSetup";
+import { ScreenCoachAvailabilitySetup } from "./screens/coach/AvailabilitySetup";
+import { ScreenCoachPayoutSetup } from "./screens/coach/PayoutSetup";
+import { ScreenCoachSetupComplete } from "./screens/coach/SetupComplete";
 
 // Shared: messaging & support
 import { ScreenMessages, ScreenChatThread } from "./screens/messaging/Messaging";
@@ -82,6 +87,8 @@ export default function App() {
   const [offline, setOffline] = useState(false);
   const [hasCoachRole, setHasCoachRole] = useState(false);
   const [draft, setDraft] = useState(null);
+  const [coachOnboarding, setCoachOnboarding] = useState({});
+  const updateCoachOnboarding = (patch) => setCoachOnboarding((d) => ({ ...d, ...patch }));
   const [bookings, setBookings] = useState(INITIAL_BOOKINGS);
   const [coachBookings, setCoachBookings] = useState(COACH_BOOKINGS);
   const [verificationQueue, setVerificationQueue] = useState(ADMIN_VERIFICATION_QUEUE);
@@ -132,7 +139,7 @@ export default function App() {
   const tabsForRole = role === "coach" ? COACH_TABS : role === "admin" ? ADMIN_TABS : CLIENT_TABS;
   const showTabs = tabsForRole.some((t) => t.value === screen);
 
-  const screenProps = { nav, params, toast, role, favorites, toggleFav, biometric, setBiometric, verified, verificationStatus, reachedDashboardAfterVerification, setReachedDashboardAfterVerification, offline, draft, setDraft, addBooking, bookings, coachBookings, setCoachBookings, setRole, addCoachRole: () => setHasCoachRole(true), submitVerification, verificationQueue, decideVerification, disputes, resolveDispute };
+  const screenProps = { nav, params, toast, role, favorites, toggleFav, biometric, setBiometric, verified, verificationStatus, reachedDashboardAfterVerification, setReachedDashboardAfterVerification, offline, draft, setDraft, addBooking, bookings, coachBookings, setCoachBookings, setRole, addCoachRole: () => setHasCoachRole(true), submitVerification, verificationQueue, decideVerification, disputes, resolveDispute, coachOnboarding, updateCoachOnboarding };
 
   function renderScreen() {
     switch (screen) {
@@ -140,6 +147,9 @@ export default function App() {
       case "role-select": return <ScreenRoleSelect nav={nav} setRole={setRole} />;
       case "auth": return <ScreenAuth {...screenProps} />;
       case "tnc": return <ScreenTnc {...screenProps} />;
+      case "coach-register": return <ScreenCoachRegister {...screenProps} />;
+      case "coach-info": return <ScreenCoachInfo {...screenProps} />;
+      case "coach-expertise": return <ScreenCoachExpertise {...screenProps} />;
       case "verification": return <ScreenVerification {...screenProps} />;
       case "verification-pending": return <ScreenVerificationPending {...screenProps} />;
       case "admin-login": return <ScreenAdminLogin {...screenProps} />;
@@ -156,6 +166,10 @@ export default function App() {
       case "client-messages": return <ScreenMessages {...screenProps} />;
       case "client-profile": return <ScreenClientProfile {...screenProps} />;
 
+      case "coach-services-setup": return <ScreenCoachServicesSetup {...screenProps} />;
+      case "coach-availability-setup": return <ScreenCoachAvailabilitySetup {...screenProps} />;
+      case "coach-payout-setup": return <ScreenCoachPayoutSetup {...screenProps} />;
+      case "coach-setup-complete": return <ScreenCoachSetupComplete {...screenProps} />;
       case "coach-dashboard": return <ScreenCoachDashboard {...screenProps} />;
       case "coach-calendar": return <ScreenCoachCalendar {...screenProps} />;
       case "coach-bookings": return <ScreenCoachBookings {...screenProps} />;
@@ -210,7 +224,7 @@ export default function App() {
           style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 999, border: `1px solid ${offline ? C.orange : C.border}`, background: offline ? C.orangeTint : C.white, color: offline ? C.orange : C.slate, fontSize: 11.5, fontWeight: 600, cursor: "pointer", ...fBody }}>
           <WifiOff size={12} /> Offline
         </button>
-        <button onClick={() => { setScreen(role === "admin" ? "admin-login" : "splash"); setHistory([]); setBookings(INITIAL_BOOKINGS); setCoachBookings(COACH_BOOKINGS); setVerified(false); setVerificationStatus("none"); setReachedDashboardAfterVerification(false); setVerificationQueue(ADMIN_VERIFICATION_QUEUE); setDisputes(ADMIN_DISPUTES); }}
+        <button onClick={() => { setScreen(role === "admin" ? "admin-login" : "splash"); setHistory([]); setBookings(INITIAL_BOOKINGS); setCoachBookings(COACH_BOOKINGS); setVerified(false); setVerificationStatus("none"); setReachedDashboardAfterVerification(false); setVerificationQueue(ADMIN_VERIFICATION_QUEUE); setDisputes(ADMIN_DISPUTES); setCoachOnboarding({}); }}
           style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 999, border: `1px solid ${C.border}`, background: C.white, color: C.slate, fontSize: 11.5, fontWeight: 600, cursor: "pointer", ...fBody }}>
           <RefreshCcw size={12} /> Reset
         </button>
