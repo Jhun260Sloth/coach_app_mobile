@@ -38,4 +38,6 @@ export const KEYFRAMES = `
 @keyframes clFadeUp { from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:translateY(0)} }
 @keyframes clSheetUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
 @keyframes clBackdropIn { from{opacity:0} to{opacity:1} }
+.cl-hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.cl-hide-scrollbar::-webkit-scrollbar { display: none; width: 0; height: 0; }
 `;
