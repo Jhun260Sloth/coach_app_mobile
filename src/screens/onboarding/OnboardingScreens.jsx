@@ -76,7 +76,7 @@ function LegalSheet({ open, onClose }) {
    ========================================================================= */
 export function ScreenSplash({ nav }) {
   return (
-    <div style={{ height: "100%", background: C.jet, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 28, textAlign: "center" }}>
+    <div style={{ height: "100%", background: C.white, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 28, textAlign: "center" }}>
       <div style={{ animation: "clFadeUp .5s ease" }}>
         <img src={LOGO_WHITE_SRC} alt="CoachLink" style={{ width: 120, height: "auto" }} />
       </div>
@@ -126,11 +126,20 @@ export function ScreenRoleSelect({ nav, setRole }) {
 
 export function ScreenAuth({ nav, params, role, toast, biometric }) {
   const [mode, setMode] = useState(params?.mode || "signup");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
   const [agree, setAgree] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
 
-  const canSubmit = mode === "login" || agree;
+  const passwordsMatch = password.length > 0 && password === confirmPassword;
+  const canSubmit = mode === "login"
+    ? true
+    : firstName.trim() && lastName.trim() && email.trim() && password.length >= 6 && passwordsMatch && agree;
   const homeScreen = role === "coach" ? "coach-dashboard" : "client-home";
 
   const proceedAfterAuth = () => {
@@ -146,10 +155,29 @@ export function ScreenAuth({ nav, params, role, toast, biometric }) {
         {role === "coach" ? "Signing up as a Coach." : "Signing up as a Client."} <button onClick={() => nav("role-select")} style={{ background: "none", border: "none", color: C.orange, fontWeight: 600, cursor: "pointer", fontSize: 13.5 }}>Change</button>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <Field label="Full name" placeholder="Sarah Lin" show={mode === "signup"} />
-        <Field label="Email" placeholder="you@email.com" icon={Mail} />
-        <Field label="Password" placeholder="••••••••" type={showPw ? "text" : "password"} rightIcon={showPw ? EyeOff : Eye} onRight={() => setShowPw((s) => !s)} />
+       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ display: "flex", gap: 10 }}>
+            <div style={{ flex: 1 }}>
+              <div style={labelStyle}>First name</div>
+              <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Josh" style={inputStyle} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={labelStyle}>Last name</div>
+              <input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Whitfield" style={inputStyle} />
+            </div>
+          </div>
+
+  
+        <Field label="Email address" placeholder="you@email.com" icon={Mail} value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Field label="Password" placeholder="••••••••" type={showPw ? "text" : "password"} rightIcon={showPw ? EyeOff : Eye} onRight={() => setShowPw((s) => !s)} value={password} onChange={(e) => setPassword(e.target.value)} />
+        {mode === "signup" && (
+          <div>
+            <Field label="Confirm password" placeholder="••••••••" type={showConfirmPw ? "text" : "password"} rightIcon={showConfirmPw ? EyeOff : Eye} onRight={() => setShowConfirmPw((s) => !s)} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+            {confirmPassword.length > 0 && !passwordsMatch && (
+              <div style={{ fontSize: 11.5, color: "#D64545", marginTop: 6, ...fBody }}>Passwords don't match</div>
+            )}
+          </div>
+        )}
       </div>
 
       {mode === "signup" && (
@@ -816,7 +844,7 @@ export function ScreenVerificationPending({ nav, verificationStatus, setReachedD
 export function ScreenAdminLogin({ nav, toast }) {
   const [showPw, setShowPw] = useState(false);
   return (
-    <div style={{ height: "100%", background: C.jet, display: "flex", flexDirection: "column", padding: "40px 24px 28px" }}>
+    <div style={{ height: "100%", background: C.white, display: "flex", flexDirection: "column", padding: "40px 24px 28px" }}>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
         <div style={{ textAlign: "center", marginBottom: 30 }}>
           <img src={LOGO_WHITE_SRC} alt="CoachLink" style={{ width: 120, height: "auto", marginBottom: 20 }} />

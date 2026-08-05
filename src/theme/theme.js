@@ -31,7 +31,7 @@ export function useFonts() {
 export const fDisplay = { fontFamily: "'Outfit', sans-serif" };
 export const fBody = { fontFamily: "'Inter', sans-serif" };
 
-export const LOGO_WHITE_SRC = "logo-white.png";
+export const LOGO_WHITE_SRC = "logo-green.png";
 
 export const KEYFRAMES = `
 @keyframes clPulse { 0%,100%{opacity:1} 50%{opacity:.25} }

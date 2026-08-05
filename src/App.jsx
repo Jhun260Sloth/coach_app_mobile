@@ -2,7 +2,7 @@ import React, { useState } from "react";
 
 
 import {
-  ScreenAboutYouProfile, ScreenAboutYouParticipants, ScreenAboutYouLocation, ScreenAboutYouSports,
+  ScreenAboutYouProfile, ScreenAccountType, ScreenAboutYouParticipants, ScreenAboutYouSelf,
 } from "./screens/client/AboutYou";
 
 
@@ -189,9 +189,9 @@ export default function App() {
       case "coach-info": return <ScreenCoachInfo {...screenProps} />;
       case "coach-expertise": return <ScreenCoachExpertise {...screenProps} />;
       case "about-you-profile": return <ScreenAboutYouProfile {...screenProps} />;
+      case "account-type": return <ScreenAccountType {...screenProps} />;
       case "about-you-participants": return <ScreenAboutYouParticipants {...screenProps} />;
-      case "about-you": return <ScreenAboutYouLocation {...screenProps} />;
-      case "about-you-sports": return <ScreenAboutYouSports {...screenProps} />;
+      case "about-you-self": return <ScreenAboutYouSelf {...screenProps} />;
       case "verification": return <ScreenVerification {...screenProps} />;
       case "verification-pending": return <ScreenVerificationPending {...screenProps} />;
       case "admin-login": return <ScreenAdminLogin {...screenProps} />;
