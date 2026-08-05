@@ -2,7 +2,7 @@ import React, { useState } from "react";
 
 
 import {
-  ScreenAboutYouProfile, ScreenAboutYouParticipants, ScreenAboutYouLocation, ScreenAboutYouSports,
+  ScreenAboutYouProfile, ScreenAccountType, ScreenAboutYouParticipants, ScreenAboutYouSelf,
 } from "./screens/client/AboutYou";
 
 
@@ -14,13 +14,14 @@ import {
 import { C, fBody, fDisplay, useFonts, KEYFRAMES } from "./theme/theme";
 import {
   INITIAL_BOOKINGS, COACH_BOOKINGS, ADMIN_VERIFICATION_QUEUE, ADMIN_DISPUTES,
+  COACHES, INITIAL_AVAILABILITY_BLOCKS,
 } from "./data/mockData";
 import { LogoMark, Toast, BottomTabs, StatusBar } from "./components/ui/Primitives";
 
 // Onboarding / auth
 import {
   ScreenSplash, ScreenRoleSelect, ScreenAuth, ScreenCoachRegister, ScreenCoachInfo,
-  ScreenCoachExpertise, ScreenVerification,
+  ScreenCoachExpertise, ScreenEnableBiometric, ScreenVerification,
   ScreenVerificationPending, ScreenAdminLogin,
 } from "./screens/onboarding/OnboardingScreens";
 
@@ -38,6 +39,7 @@ import { ScreenCoachDashboard } from "./screens/coach/CoachDashboard";
 import { ScreenCoachCalendar } from "./screens/coach/Calendar";
 import { ScreenCoachBookings, ScreenCoachBookingDetail } from "./screens/coach/Bookings";
 import { ScreenCoachProfileEdit } from "./screens/coach/ProfileEdit";
+import { ScreenCoachPackageForm } from "./screens/coach/PackageForm";
 import { ScreenCoachEarnings } from "./screens/coach/Earnings";
 
 // Shared: messaging & support
@@ -83,7 +85,7 @@ export default function App() {
   const [history, setHistory] = useState([]);
   const [toastMsg, setToastMsg] = useState(null);
   const [favorites, setFavorites] = useState(["c1"]);
-  const [biometric, setBiometric] = useState(true);
+  const [biometric, setBiometric] = useState(false);
   const [verified, setVerified] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState("none"); // none | pending | approved | rejected
   const [reachedDashboardAfterVerification, setReachedDashboardAfterVerification] = useState(false);
@@ -92,6 +94,8 @@ export default function App() {
   const [draft, setDraft] = useState(null);
   const [bookings, setBookings] = useState(INITIAL_BOOKINGS);
   const [coachBookings, setCoachBookings] = useState(COACH_BOOKINGS);
+  const [coachPackages, setCoachPackages] = useState(COACHES[1].packages);
+  const [availabilityBlocks, setAvailabilityBlocks] = useState(INITIAL_AVAILABILITY_BLOCKS);
   const [verificationQueue, setVerificationQueue] = useState(ADMIN_VERIFICATION_QUEUE);
   const [disputes, setDisputes] = useState(ADMIN_DISPUTES);
   const [clientPrefs, setClientPrefs] = useState(null);
@@ -158,24 +162,36 @@ export default function App() {
 
   const resolveDispute = (id) => setDisputes((d) => d.filter((x) => x.id !== id));
 
+  // Create-or-update a coach package. Used by the Create/Edit Package flow.
+  const savePackage = (record) => setCoachPackages((pkgs) => {
+    const exists = pkgs.some((p) => p.id === record.id);
+    return exists ? pkgs.map((p) => (p.id === record.id ? record : p)) : [...pkgs, record];
+  });
+  const removePackage = (id) => {
+    setCoachPackages((pkgs) => pkgs.filter((p) => p.id !== id));
+    // Availability blocks referencing the removed package should drop it too.
+    setAvailabilityBlocks((blocks) => blocks.map((b) => ({ ...b, packageIds: b.packageIds.filter((pid) => pid !== id) })));
+  };
+
   const isDarkScreen = screen === "splash" || screen === "admin-login";
   const tabsForRole = role === "coach" ? COACH_TABS : role === "admin" ? ADMIN_TABS : CLIENT_TABS;
   const showTabs = tabsForRole.some((t) => t.value === screen);
 
-  const screenProps = { nav, params, toast, role, favorites, toggleFav, biometric, setBiometric, verified, verificationStatus, reachedDashboardAfterVerification, setReachedDashboardAfterVerification, offline, draft, setDraft, addBooking, cancelBooking, rescheduleBooking, bookings, coachBookings, setCoachBookings, setRole, addCoachRole: () => setHasCoachRole(true), submitVerification, verificationQueue, decideVerification, disputes, resolveDispute, clientPrefs, onComplete: handleClientPrefs, children, addChild, updateChild, removeChild, coachOnboarding, updateCoachOnboarding };
+  const screenProps = { nav, params, toast, role, favorites, toggleFav, biometric, setBiometric, verified, verificationStatus, reachedDashboardAfterVerification, setReachedDashboardAfterVerification, offline, draft, setDraft, addBooking, cancelBooking, rescheduleBooking, bookings, coachBookings, setCoachBookings, setRole, addCoachRole: () => setHasCoachRole(true), submitVerification, verificationQueue, decideVerification, disputes, resolveDispute, clientPrefs, onComplete: handleClientPrefs, children, addChild, updateChild, removeChild, coachOnboarding, updateCoachOnboarding, coachPackages, savePackage, removePackage, availabilityBlocks, setAvailabilityBlocks };
 
   function renderScreen() {
     switch (screen) {
       case "splash": return <ScreenSplash nav={nav} />;
       case "role-select": return <ScreenRoleSelect nav={nav} setRole={setRole} />;
       case "auth": return <ScreenAuth {...screenProps} />;
+      case "enable-biometric": return <ScreenEnableBiometric {...screenProps} />;
       case "coach-register": return <ScreenCoachRegister {...screenProps} />;
       case "coach-info": return <ScreenCoachInfo {...screenProps} />;
       case "coach-expertise": return <ScreenCoachExpertise {...screenProps} />;
       case "about-you-profile": return <ScreenAboutYouProfile {...screenProps} />;
+      case "account-type": return <ScreenAccountType {...screenProps} />;
       case "about-you-participants": return <ScreenAboutYouParticipants {...screenProps} />;
-      case "about-you": return <ScreenAboutYouLocation {...screenProps} />;
-      case "about-you-sports": return <ScreenAboutYouSports {...screenProps} />;
+      case "about-you-self": return <ScreenAboutYouSelf {...screenProps} />;
       case "verification": return <ScreenVerification {...screenProps} />;
       case "verification-pending": return <ScreenVerificationPending {...screenProps} />;
       case "admin-login": return <ScreenAdminLogin {...screenProps} />;
@@ -201,6 +217,9 @@ export default function App() {
       case "coach-bookings": return <ScreenCoachBookings {...screenProps} />;
       case "coach-booking-detail": return <ScreenCoachBookingDetail {...screenProps} />;
       case "coach-profile-edit": return <ScreenCoachProfileEdit {...screenProps} />;
+      case "coach-create-package":
+      case "coach-edit-package":
+        return <ScreenCoachPackageForm {...screenProps} />;
       case "coach-earnings": return <ScreenCoachEarnings {...screenProps} />;
       case "coach-messages": return <ScreenMessages {...screenProps} />;
 
@@ -250,7 +269,7 @@ export default function App() {
           style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 999, border: `1px solid ${offline ? C.orange : C.border}`, background: offline ? C.orangeTint : C.white, color: offline ? C.orange : C.slate, fontSize: 11.5, fontWeight: 600, cursor: "pointer", ...fBody }}>
           <WifiOff size={12} /> Offline
         </button>
-        <button onClick={() => { setScreen(role === "admin" ? "admin-login" : "splash"); setHistory([]); setBookings(INITIAL_BOOKINGS); setCoachBookings(COACH_BOOKINGS); setVerified(false); setVerificationStatus("none"); setReachedDashboardAfterVerification(false); setVerificationQueue(ADMIN_VERIFICATION_QUEUE); setDisputes(ADMIN_DISPUTES); setClientPrefs(null); setChildren([]); setCoachOnboarding({}); }}
+        <button onClick={() => { setScreen(role === "admin" ? "admin-login" : "splash"); setHistory([]); setBookings(INITIAL_BOOKINGS); setCoachBookings(COACH_BOOKINGS); setVerified(false); setVerificationStatus("none"); setReachedDashboardAfterVerification(false); setVerificationQueue(ADMIN_VERIFICATION_QUEUE); setDisputes(ADMIN_DISPUTES); setClientPrefs(null); setChildren([]); setCoachOnboarding({}); setBiometric(false); setCoachPackages(COACHES[1].packages); setAvailabilityBlocks(INITIAL_AVAILABILITY_BLOCKS); }}
           style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 999, border: `1px solid ${C.border}`, background: C.white, color: C.slate, fontSize: 11.5, fontWeight: 600, cursor: "pointer", ...fBody }}>
           <RefreshCcw size={12} /> Reset
         </button>

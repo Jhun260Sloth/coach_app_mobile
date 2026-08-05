@@ -13,7 +13,9 @@ export const SPORT_OPTIONS = [
   "Tennis", "Strength & Conditioning", "Swimming", "Basketball", "Football", "Yoga",
 ];
 export const SESSION_DURATION_OPTIONS = [30, 45, 60, 90, 120];
-export const DELIVERY_MODE_OPTIONS = ["In-person", "Online"];
+// "Come to You" means the coach travels to the client's location, so no
+// fixed venue is required — only an optional travel area/radius note.
+export const DELIVERY_MODE_OPTIONS = ["In-person", "Online", "Come to You"];
 
 const inputStyle = {
   width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "10px 13px",
@@ -39,6 +41,7 @@ export function emptyPackage() {
     maxParticipants: "",
     deliveryMode: "",
     venue: "",
+    travelArea: "",
     equipment: "",
   };
 }
@@ -58,15 +61,74 @@ export function isPackageValid(pkg) {
   );
 }
 
+// Human-readable location for a package, used in summaries and lists.
+export function packageLocationLabel(pkg) {
+  if (pkg.deliveryMode === "Online") return "Online";
+  if (pkg.deliveryMode === "Come to You") return pkg.travelArea ? `Come to You — ${pkg.travelArea}` : "Come to You";
+  return pkg.venue || "Location TBC";
+}
+
 export function packageSummary(pkg) {
   const duration = pkg.useCustomDuration ? pkg.sessionDurationCustom : `${pkg.sessionDuration} min`;
   const parts = [
     pkg.packageType, pkg.sport, duration,
     pkg.price !== "" ? `$${pkg.price}` : null,
     pkg.maxParticipants !== "" ? `max ${pkg.maxParticipants}` : null,
-    pkg.deliveryMode,
+    pkg.deliveryMode ? packageLocationLabel(pkg) : null,
   ];
   return parts.filter(Boolean).join(" · ");
+}
+
+/**
+ * Converts a saved package record (the compact shape used elsewhere in the
+ * app — client browsing, booking, etc.) into this form's working shape, so
+ * an existing package can be loaded for editing.
+ */
+export function recordToPackageForm(rec) {
+  const isPreset = SESSION_DURATION_OPTIONS.includes(rec.durationMinutes);
+  return {
+    ...emptyPackage(),
+    name: rec.name || "",
+    packageType: rec.packageType || rec.type || "",
+    sport: rec.sport || "",
+    description: rec.description || "",
+    sessionDuration: isPreset ? rec.durationMinutes : 60,
+    sessionDurationCustom: !isPreset && rec.durationMinutes ? `${rec.durationMinutes} minutes` : "",
+    useCustomDuration: !isPreset && !!rec.durationMinutes,
+    price: rec.price != null ? String(rec.price) : "",
+    maxParticipants: rec.maxParticipants != null ? String(rec.maxParticipants) : "1",
+    deliveryMode: rec.locationType || rec.mode || "",
+    venue: rec.locationType === "In-person" ? (rec.location || "") : "",
+    travelArea: rec.locationType === "Come to You" ? (rec.location || "") : "",
+    equipment: rec.equipment || "",
+  };
+}
+
+/**
+ * Converts this form's working shape into the compact record shape stored
+ * on the coach's package list (and read by client-facing screens, which
+ * only expect id/name/type/duration/mode/price to be present).
+ */
+export function packageFormToRecord(pkg, existingId) {
+  const durationMinutes = pkg.useCustomDuration
+    ? (parseInt(pkg.sessionDurationCustom, 10) || null)
+    : pkg.sessionDuration;
+  return {
+    id: existingId || `pkg${Date.now()}`,
+    name: pkg.name,
+    type: pkg.packageType,
+    packageType: pkg.packageType,
+    sport: pkg.sport,
+    description: pkg.description,
+    duration: pkg.useCustomDuration ? pkg.sessionDurationCustom : pkg.sessionDuration,
+    durationMinutes,
+    price: Number(pkg.price),
+    maxParticipants: Number(pkg.maxParticipants),
+    mode: pkg.deliveryMode,
+    locationType: pkg.deliveryMode,
+    location: packageLocationLabel(pkg),
+    equipment: pkg.equipment,
+  };
 }
 
 /**
@@ -165,13 +227,16 @@ export function ServicePackageForm({ initial, onSave, onCancel, saveLabel = "Add
         />
       </div>
 
-      <div style={labelStyle}>In-person / Online</div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+      <div style={labelStyle}>Delivery & location</div>
+      <div style={{ fontSize: 11.5, color: C.slateLight, marginBottom: 8, marginTop: -6, ...fBody }}>
+        Each package can have its own location — this doesn't need to match your other packages.
+      </div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
         {DELIVERY_MODE_OPTIONS.map((m) => (
           <Chip
             key={m}
             active={pkg.deliveryMode === m}
-            onClick={() => set({ deliveryMode: m, venue: m === "Online" ? "" : pkg.venue })}
+            onClick={() => set({ deliveryMode: m, venue: m === "In-person" ? pkg.venue : "", travelArea: m === "Come to You" ? pkg.travelArea : "" })}
           >
             {m}
           </Chip>
@@ -191,6 +256,26 @@ export function ServicePackageForm({ initial, onSave, onCancel, saveLabel = "Add
             />
           </div>
         </div>
+      )}
+
+      {pkg.deliveryMode === "Come to You" && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={labelStyle}>Travel area (optional)</div>
+          <div style={fieldWrapStyle}>
+            <MapPin size={14} color={C.slateLight} />
+            <input
+              value={pkg.travelArea}
+              onChange={(e) => set({ travelArea: e.target.value })}
+              placeholder="e.g. Within 10km of Fitzroy"
+              style={fieldInputStyle}
+            />
+          </div>
+          <div style={{ fontSize: 11, color: C.slateLight, marginTop: 6, ...fBody }}>You'll travel to the client's location for this package.</div>
+        </div>
+      )}
+
+      {pkg.deliveryMode === "Online" && (
+        <div style={{ fontSize: 11.5, color: C.slateLight, marginBottom: 16, ...fBody }}>Delivered virtually — no physical location needed.</div>
       )}
 
       <div style={labelStyle}>Equipment required (optional)</div>

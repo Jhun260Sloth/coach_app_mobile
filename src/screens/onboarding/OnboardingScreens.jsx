@@ -76,7 +76,7 @@ function LegalSheet({ open, onClose }) {
    ========================================================================= */
 export function ScreenSplash({ nav }) {
   return (
-    <div style={{ height: "100%", background: C.jet, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 28, textAlign: "center" }}>
+    <div style={{ height: "100%", background: C.white, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 28, textAlign: "center" }}>
       <div style={{ animation: "clFadeUp .5s ease" }}>
         <img src={LOGO_WHITE_SRC} alt="CoachLink" style={{ width: 120, height: "auto" }} />
       </div>
@@ -124,17 +124,27 @@ export function ScreenRoleSelect({ nav, setRole }) {
   );
 }
 
-export function ScreenAuth({ nav, params, role, toast }) {
+export function ScreenAuth({ nav, params, role, toast, biometric }) {
   const [mode, setMode] = useState(params?.mode || "signup");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
   const [agree, setAgree] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
 
-  const canSubmit = mode === "login" || agree;
+  const passwordsMatch = password.length > 0 && password === confirmPassword;
+  const canSubmit = mode === "login"
+    ? true
+    : firstName.trim() && lastName.trim() && email.trim() && password.length >= 6 && passwordsMatch && agree;
+  const homeScreen = role === "coach" ? "coach-dashboard" : "client-home";
 
   const proceedAfterAuth = () => {
-    if (mode === "login") { nav("client-home"); return; }
-    nav("about-you-profile");
+    if (mode === "login") { nav(homeScreen); return; }
+    nav("enable-biometric", { next: role === "coach" ? "coach-info" : "about-you-profile" });
   };
 
   return (
@@ -145,10 +155,29 @@ export function ScreenAuth({ nav, params, role, toast }) {
         {role === "coach" ? "Signing up as a Coach." : "Signing up as a Client."} <button onClick={() => nav("role-select")} style={{ background: "none", border: "none", color: C.orange, fontWeight: 600, cursor: "pointer", fontSize: 13.5 }}>Change</button>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <Field label="Full name" placeholder="Sarah Lin" show={mode === "signup"} />
-        <Field label="Email" placeholder="you@email.com" icon={Mail} />
-        <Field label="Password" placeholder="••••••••" type={showPw ? "text" : "password"} rightIcon={showPw ? EyeOff : Eye} onRight={() => setShowPw((s) => !s)} />
+       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ display: "flex", gap: 10 }}>
+            <div style={{ flex: 1 }}>
+              <div style={labelStyle}>First name</div>
+              <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Josh" style={inputStyle} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={labelStyle}>Last name</div>
+              <input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Whitfield" style={inputStyle} />
+            </div>
+          </div>
+
+  
+        <Field label="Email address" placeholder="you@email.com" icon={Mail} value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Field label="Password" placeholder="••••••••" type={showPw ? "text" : "password"} rightIcon={showPw ? EyeOff : Eye} onRight={() => setShowPw((s) => !s)} value={password} onChange={(e) => setPassword(e.target.value)} />
+        {mode === "signup" && (
+          <div>
+            <Field label="Confirm password" placeholder="••••••••" type={showConfirmPw ? "text" : "password"} rightIcon={showConfirmPw ? EyeOff : Eye} onRight={() => setShowConfirmPw((s) => !s)} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+            {confirmPassword.length > 0 && !passwordsMatch && (
+              <div style={{ fontSize: 11.5, color: "#D64545", marginTop: 6, ...fBody }}>Passwords don't match</div>
+            )}
+          </div>
+        )}
       </div>
 
       {mode === "signup" && (
@@ -173,11 +202,18 @@ export function ScreenAuth({ nav, params, role, toast }) {
         <div style={{ flex: 1, height: 1, background: C.border }} />
       </div>
 
-      <Btn full variant="dark" icon={Fingerprint} disabled={!canSubmit} onClick={() => { toast("Face ID recognised — welcome back"); proceedAfterAuth(); }}>
-        Continue with Face ID
+      {mode === "login" && biometric && (
+        <div style={{ marginBottom: 10 }}>
+          <Btn full variant="dark" icon={Fingerprint} onClick={() => { toast("Face ID recognised — welcome back"); nav(homeScreen); }}>
+            Continue with Face ID
+          </Btn>
+        </div>
+      )}
+      <Btn full variant="dark" icon={AppleIcon} disabled={!canSubmit} onClick={() => { toast(mode === "signup" ? "Signed up with Apple" : "Signed in with Apple"); proceedAfterAuth(); }}>
+        Continue with Apple
       </Btn>
       <div style={{ marginTop: 10 }}>
-        <Btn full variant="outline" disabled={!canSubmit} onClick={() => { toast("Signed in with Google"); proceedAfterAuth(); }}>Continue with Google</Btn>
+        <Btn full variant="outline" disabled={!canSubmit} onClick={() => { toast(mode === "signup" ? "Signed up with Google" : "Signed in with Google"); proceedAfterAuth(); }}>Continue with Google</Btn>
       </div>
 
       <div style={{ marginTop: "auto", textAlign: "center", paddingBottom: 22 }}>
@@ -210,7 +246,7 @@ export function ScreenCoachRegister({ nav, toast, updateCoachOnboarding }) {
 
   const proceed = () => {
     updateCoachOnboarding({ firstName, lastName, email, mobile, displayName: `${firstName} ${lastName}`.trim() });
-    nav("coach-info");
+    nav("enable-biometric", { next: "coach-info" });
   };
 
   return (
@@ -298,9 +334,14 @@ export function ScreenCoachRegister({ nav, toast, updateCoachOnboarding }) {
           <div style={{ flex: 1, height: 1, background: C.border }} />
         </div>
 
-        <Btn full variant="dark" icon={AppleIcon} onClick={() => { toast("Signed up with Apple"); updateCoachOnboarding({ displayName: "New Coach" }); nav("coach-info"); }}>
+        <Btn full variant="dark" icon={AppleIcon} onClick={() => { toast("Signed up with Apple"); updateCoachOnboarding({ displayName: "New Coach" }); nav("enable-biometric", { next: "coach-info" }); }}>
           Continue with Apple
         </Btn>
+        <div style={{ marginTop: 10 }}>
+          <Btn full variant="outline" onClick={() => { toast("Signed up with Google"); updateCoachOnboarding({ displayName: "New Coach" }); nav("enable-biometric", { next: "coach-info" }); }}>
+            Continue with Google
+          </Btn>
+        </div>
 
         <div style={{ textAlign: "center", marginTop: 20, paddingBottom: 8 }}>
           <button onClick={() => nav("auth", { mode: "login" })} style={{ background: "none", border: "none", color: C.slate, fontSize: 13, cursor: "pointer", ...fBody }}>
@@ -310,6 +351,35 @@ export function ScreenCoachRegister({ nav, toast, updateCoachOnboarding }) {
       </div>
 
       <LegalSheet open={showTerms} onClose={() => setShowTerms(false)} />
+    </div>
+  );
+}
+
+export function ScreenEnableBiometric({ nav, params, toast, biometric, setBiometric, role }) {
+  const next = params?.next || (role === "coach" ? "coach-info" : "about-you-profile");
+
+  const enable = () => {
+    setBiometric(true);
+    toast("Face ID enabled");
+    nav(next);
+  };
+  const skip = () => nav(next);
+
+  return (
+    <div style={{ padding: "24px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
+        <div style={{ width: 84, height: 84, borderRadius: 24, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 22 }}>
+          <ScanFace size={38} color={C.orange} />
+        </div>
+        <div style={{ fontSize: 22, fontWeight: 600, color: C.jet, ...fDisplay }}>Set up Face ID</div>
+        <div style={{ fontSize: 13.5, color: C.slate, marginTop: 10, lineHeight: 1.6, maxWidth: 280, ...fBody }}>
+          Your account is ready. Turn on Face ID to sign in instantly next time — no password needed.
+        </div>
+      </div>
+      <div style={{ paddingBottom: 24, display: "flex", flexDirection: "column", gap: 10 }}>
+        <Btn full variant="dark" icon={Fingerprint} onClick={enable}>Enable Face ID</Btn>
+        <Btn full variant="ghost" onClick={skip}>Not now</Btn>
+      </div>
     </div>
   );
 }
@@ -774,7 +844,7 @@ export function ScreenVerificationPending({ nav, verificationStatus, setReachedD
 export function ScreenAdminLogin({ nav, toast }) {
   const [showPw, setShowPw] = useState(false);
   return (
-    <div style={{ height: "100%", background: C.jet, display: "flex", flexDirection: "column", padding: "40px 24px 28px" }}>
+    <div style={{ height: "100%", background: C.white, display: "flex", flexDirection: "column", padding: "40px 24px 28px" }}>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
         <div style={{ textAlign: "center", marginBottom: 30 }}>
           <img src={LOGO_WHITE_SRC} alt="CoachLink" style={{ width: 120, height: "auto", marginBottom: 20 }} />
