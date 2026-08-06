@@ -406,7 +406,7 @@ export function LogoMark({ size = 30 }) {
   // Icon aspect ratio (from source asset) ~ 179 x 207
   const h = size * (207 / 179);
   return (
-    <img src="logo icon.png" alt="CoachLink" width={size} height={h} style={{ display: "block", objectFit: "contain" }} />
+    <img src="logo icon-green.png" alt="CoachLink" width={size} height={h} style={{ display: "block", objectFit: "contain" }} />
   );
 }
 

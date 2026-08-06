@@ -168,6 +168,7 @@ function ProfilePreview({ coach, data, packages, bookingType }) {
 }
 
 export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage, removePackage, biometric, setBiometric, coachMedia = [] }) {
+export function ScreenCoachProfileEdit({ nav, toast, coachPackages }) {
   const coach = COACHES[1];
 
   /* ---------------------------------------------------------------------
@@ -486,6 +487,13 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
                 </button>
               </div>
               <input ref={photoInputRef} type="file" accept="image/*" onChange={onPhotoChange} style={{ display: "none" }} />
+        <SectionLabel>Services & rates</SectionLabel>
+        {coachPackages.map((p) => (
+          <Card key={p.id} style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }} onClick={() => nav("coach-edit-package", { id: p.id })}>
+            <div>
+              <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fBody }}>{p.name}</div>
+              <div style={{ fontSize: 11.5, color: C.slate, ...fBody }}>{p.type} · {p.duration} min · {p.mode}</div>
+              <div style={{ fontSize: 11, color: C.slateLight, marginTop: 1, ...fBody }}>{p.location}</div>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -550,6 +558,9 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
                 <SearchSelect options={LOCATION_OPTIONS} value={draft.location} onChange={(v) => setDraftField({ location: v })} placeholder="Search suburb or city…" />
               </div>
             </div>
+          </Card>
+        ))}
+        <Btn variant="outline" size="sm" icon={Plus} full onClick={() => nav("coach-create-package")}>Add package</Btn>
 
             <div style={{ marginTop: 22, display: "flex", gap: 8 }}>
               <div style={{ flex: 1 }}>
