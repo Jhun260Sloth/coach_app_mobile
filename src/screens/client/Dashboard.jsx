@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   WifiOff, Calendar, ClipboardList, Heart, Download, Clock, MessageCircle, Star, CheckCircle2,
   AlertTriangle, CreditCard, ShieldCheck, LifeBuoy, Hourglass, RefreshCcw, ChevronLeft, ChevronRight, CalendarX2,
@@ -36,8 +36,50 @@ function buildMonthGrid(cursor) {
   return weeks;
 }
 
-export function ScreenClientDashboard({ nav, bookings, offline, toast, cancelBooking, rescheduleBooking }) {
-  const [tab, setTab] = useState("upcoming");
+/* ---- cancellation policy math (used by the Cancellation Summary sheet below) ----
+   Coach policy strings follow a "Tier — rule" format, e.g. "Moderate — free reschedule
+   up to 24h before session, 50% refund inside 24h." We read the tier keyword to pick
+   a refund rule, then compare against how many hours remain until the session. */
+function bookingDateTime(dateStr, timeStr) {
+  const d = parseBookingDate(dateStr);
+  if (!d) return null;
+  const m = /(\d{1,2}):(\d{2})\s*([ap]m)/i.exec(timeStr || "");
+  if (!m) return d;
+  let h = parseInt(m[1], 10);
+  const min = parseInt(m[2], 10);
+  const ap = m[3].toLowerCase();
+  if (ap === "pm" && h !== 12) h += 12;
+  if (ap === "am" && h === 12) h = 0;
+  const dt = new Date(d);
+  dt.setHours(h, min, 0, 0);
+  return dt;
+}
+
+function getCancellationOutcome(booking, coach) {
+  const policyText = coach?.cancellationPolicy || "";
+  const tier = /strict/i.test(policyText) ? "strict" : /moderate/i.test(policyText) ? "moderate" : /flexible/i.test(policyText) ? "flexible" : "standard";
+  const sessionAt = bookingDateTime(booking.date, booking.time);
+  const hoursUntil = sessionAt ? (sessionAt.getTime() - Date.now()) / 36e5 : null;
+
+  let refundPct = 1;
+  let ruleLabel;
+  if (tier === "flexible") {
+    if (hoursUntil == null || hoursUntil >= 12) { refundPct = 1; ruleLabel = "Cancelled 12h+ before the session — fully refundable under this coach's flexible policy."; }
+    else { refundPct = 0; ruleLabel = "Cancelled inside the 12-hour free-cancellation window — this coach's policy makes it non-refundable."; }
+  } else if (tier === "moderate") {
+    if (hoursUntil == null || hoursUntil >= 24) { refundPct = 1; ruleLabel = "Cancelled 24h+ before the session — fully refundable under this coach's moderate policy."; }
+    else { refundPct = 0.5; ruleLabel = "Cancelled inside 24h — this coach's moderate policy refunds 50% of the session fee."; }
+  } else if (tier === "strict") {
+    if (hoursUntil == null || hoursUntil >= 48) { refundPct = 0.5; ruleLabel = "Cancelled 48h+ before the session — this coach's strict policy refunds 50% of the session fee."; }
+    else { refundPct = 0; ruleLabel = "Cancelled inside 48h — this coach's strict policy is non-refundable."; }
+  } else {
+    refundPct = 1; ruleLabel = "Standard policy — fully refundable.";
+  }
+  return { refundPct, ruleLabel, hoursUntil, tier };
+}
+
+export function ScreenClientDashboard({ nav, bookings, offline, toast, cancelBooking, rescheduleBooking, payBooking }) {
+  const [tab, setTab] = useState("pending");
   const [view, setView] = useState("list");
   const [calMode, setCalMode] = useState("month");
   const [rescheduleTarget, setRescheduleTarget] = useState(null);
@@ -81,6 +123,7 @@ export function ScreenClientDashboard({ nav, bookings, offline, toast, cancelBoo
       past={b.status === "completed" || b.status === "cancelled"}
       onReschedule={() => setRescheduleTarget(b)}
       onCancel={() => setCancelTarget(b)}
+      onPay={() => { payBooking(b.id); toast("Payment sent — your booking is fully confirmed."); }}
     />
   );
 
@@ -98,7 +141,7 @@ export function ScreenClientDashboard({ nav, bookings, offline, toast, cancelBoo
         </div>
         {view === "list" && (
           <SegTabs value={tab} onChange={setTab} items={[
-            { value: "upcoming", label: "Upcoming" }, { value: "pending", label: "Pending" }, { value: "past", label: "Completed" },
+            { value: "pending", label: "Pending" }, { value: "upcoming", label: "Upcoming" }, { value: "past", label: "Completed" },
           ]} />
         )}
         {view === "calendar" && (
@@ -120,8 +163,8 @@ export function ScreenClientDashboard({ nav, bookings, offline, toast, cancelBoo
       <div style={{ flex: 1, overflowY: "auto", padding: view === "calendar" ? "14px 20px 100px" : "16px 20px 100px" }}>
         {view === "list" && (
           <>
-            {tab === "upcoming" && (upcoming.length ? upcoming.map(renderCard) : <EmptyState icon={Calendar} title="No upcoming sessions" body="Search for a coach to book your next session." />)}
             {tab === "pending" && (pending.length ? pending.map(renderCard) : <EmptyState icon={Hourglass} title="No pending requests" body="Requests waiting on a coach's response will show up here." />)}
+            {tab === "upcoming" && (upcoming.length ? upcoming.map(renderCard) : <EmptyState icon={Calendar} title="No upcoming sessions" body="Search for a coach to book your next session." />)}
             {tab === "past" && (past.length ? past.map(renderCard) : <EmptyState icon={ClipboardList} title="No past sessions yet" body="Completed sessions will show up here." />)}
           </>
         )}
@@ -248,34 +291,108 @@ function RescheduleSheet({ booking, onClose, onConfirm }) {
   );
 }
 
-/* Cancel — requires explicit confirmation before the session is actually cancelled.
-   Also doubles as the "withdraw request" flow for bookings still pending coach acceptance. */
+/* Cancel — for a confirmed session this now presents a full Cancellation Summary
+   (policy-based refund math, payment breakdown, resulting status, explicit
+   confirmation) before anything is cancelled. A still-pending request never had
+   payment collected, so it keeps the lighter "withdraw" confirmation instead. */
 function CancelSheet({ booking, onClose, onConfirm, pending }) {
   const coach = booking ? COACHES.find((c) => c.id === booking.coachId) : null;
+  const [understood, setUnderstood] = useState(false);
+  useEffect(() => { if (booking) setUnderstood(false); }, [booking?.id]);
+
+  if (pending) {
+    return (
+      <BottomSheet open={!!booking} onClose={onClose} title="Withdraw this request?" heightPct={58}>
+        {booking && (
+          <>
+            <Card style={{ marginBottom: 14, display: "flex", gap: 12, alignItems: "center" }}>
+              <Avatar name={booking.coachName} size={40} />
+              <div>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fDisplay }}>{booking.service}</div>
+                <div style={{ fontSize: 12, color: C.slate, ...fBody }}>{booking.date} · {booking.time} with {booking.coachName}</div>
+              </div>
+            </Card>
+
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 8, background: C.warnTint, borderRadius: 12, padding: 12, marginBottom: 18 }}>
+              <AlertTriangle size={14} color={C.orange} style={{ marginTop: 2, flexShrink: 0 }} />
+              <span style={{ fontSize: 12, color: C.slate, lineHeight: 1.5, ...fBody }}>
+                {booking.coachName.split(" ")[0]} hasn't responded to this request yet — withdrawing it now won't incur any charge.
+              </span>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <Btn full variant="danger" onClick={() => onConfirm(booking.id)}>Yes, withdraw request</Btn>
+              <Btn full variant="secondary" onClick={onClose}>Keep request</Btn>
+            </div>
+          </>
+        )}
+      </BottomSheet>
+    );
+  }
+
+  const outcome = booking ? getCancellationOutcome(booking, coach) : null;
+  const price = booking?.price || 0;
+  const fee = Math.round(price * 0.06 * 100) / 100;
+  const subtotal = Math.round((price - fee) * 100) / 100;
+  const alreadyPaid = booking ? !booking.paymentDue : false;
+  const refundAmount = alreadyPaid && outcome ? Math.round(subtotal * outcome.refundPct * 100) / 100 : 0;
+
   return (
-    <BottomSheet open={!!booking} onClose={onClose} title={pending ? "Withdraw this request?" : "Cancel this session?"} heightPct={58}>
+    <BottomSheet open={!!booking} onClose={onClose} title="Review Cancellation" heightPct={92}>
       {booking && (
         <>
-          <Card style={{ marginBottom: 14, display: "flex", gap: 12, alignItems: "center" }}>
-            <Avatar name={booking.coachName} size={40} />
-            <div>
-              <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fDisplay }}>{booking.service}</div>
-              <div style={{ fontSize: 12, color: C.slate, ...fBody }}>{booking.date} · {booking.time} with {booking.coachName}</div>
+          <div style={{ fontSize: 12.5, color: C.slate, lineHeight: 1.55, marginBottom: 18, ...fBody }}>
+            Please review the cancellation outcome before confirming. Refunds and fees are calculated based on the coach's cancellation policy.
+          </div>
+
+          <SectionLabel>Booking details</SectionLabel>
+          <Card style={{ marginBottom: 16 }}>
+            <Row label="Service" value={booking.service} />
+            <Row label="Coach" value={booking.coachName} />
+            <Row label="Date" value={booking.date} />
+            <Row label="Time" value={booking.time} last />
+          </Card>
+
+          <SectionLabel>Payment breakdown</SectionLabel>
+          {alreadyPaid ? (
+            <Card style={{ marginBottom: 16 }}>
+              <Row label="Session Fee" value={`$${subtotal.toFixed(2)}`} />
+              <Row label="Platform Service Fee" value={`$${fee.toFixed(2)}`} />
+              <Row label="Total Paid" value={`$${price.toFixed(2)}`} bold last />
+            </Card>
+          ) : (
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 8, background: C.fog, borderRadius: 12, padding: 12, marginBottom: 16 }}>
+              <CreditCard size={14} color={C.slate} style={{ marginTop: 2, flexShrink: 0 }} />
+              <span style={{ fontSize: 12, color: C.slate, lineHeight: 1.5, ...fBody }}>No payment has been collected for this booking yet — cancelling now won't incur any charge.</span>
+            </div>
+          )}
+
+          <SectionLabel>Refund amount</SectionLabel>
+          <Card style={{ marginBottom: 16, background: alreadyPaid && refundAmount > 0 ? C.successTint : C.warnTint }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: C.jet, ...fBody }}>{alreadyPaid ? "You'll be refunded" : "Amount owed"}</span>
+              <span style={{ fontSize: 18, fontWeight: 700, color: C.jet, ...fDisplay }}>${(alreadyPaid ? refundAmount : 0).toFixed(2)}</span>
+            </div>
+            <div style={{ fontSize: 11.5, color: C.slate, marginTop: 6, lineHeight: 1.5, ...fBody }}>
+              {alreadyPaid ? outcome.ruleLabel : "No charge applies since payment hasn't been sent."}
             </div>
           </Card>
 
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 8, background: C.warnTint, borderRadius: 12, padding: 12, marginBottom: 18 }}>
-            <AlertTriangle size={14} color={C.orange} style={{ marginTop: 2, flexShrink: 0 }} />
-            <span style={{ fontSize: 12, color: C.slate, lineHeight: 1.5, ...fBody }}>
-              {pending
-                ? `${booking.coachName.split(" ")[0]} hasn't responded to this request yet — withdrawing it now won't incur any charge.`
-                : (coach?.cancellationPolicy || "Cancelling may not be fully refundable depending on how close this is to your session time.")}
-            </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
+            <span style={{ fontSize: 12, color: C.slate, ...fBody }}>Resulting booking status:</span>
+            <StatusPill status="cancelled" />
           </div>
 
+          <button onClick={() => setUnderstood((v) => !v)} style={{ display: "flex", width: "100%", gap: 10, alignItems: "flex-start", background: "none", border: "none", cursor: "pointer", textAlign: "left", marginBottom: 18 }}>
+            <div style={{ width: 18, height: 18, borderRadius: 5, border: `1.5px solid ${understood ? C.orange : C.border}`, background: understood ? C.orange : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+              {understood && <CheckCircle2 size={12} color={C.white} />}
+            </div>
+            <span style={{ fontSize: 12, color: C.jet, lineHeight: 1.5, ...fBody }}>I understand the cancellation policy and refund outcome.</span>
+          </button>
+
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <Btn full variant="danger" onClick={() => onConfirm(booking.id)}>{pending ? "Yes, withdraw request" : "Yes, cancel session"}</Btn>
-            <Btn full variant="secondary" onClick={onClose}>{pending ? "Keep request" : "Keep session"}</Btn>
+            <Btn full variant="danger" disabled={!understood} onClick={() => onConfirm(booking.id)}>Confirm Cancellation</Btn>
+            <Btn full variant="secondary" onClick={onClose}>Keep session</Btn>
           </div>
         </>
       )}
@@ -329,12 +446,13 @@ export function ReceiptSheet({ booking, onClose }) {
   );
 }
 
-export function BookingCard({ b, nav, past, onReschedule, onCancel }) {
+export function BookingCard({ b, nav, past, onReschedule, onCancel, onPay }) {
   const pending = b.status === "pending";
+  const paymentDue = !past && b.status === "confirmed" && b.paymentDue;
   return (
     <Card
       onClick={() => nav("client-booking-detail", { id: b.id })}
-      style={{ marginBottom: 14, border: `1px solid ${C.border}`, boxShadow: "0 1px 2px rgba(22,24,29,.04)" }}
+      style={{ marginBottom: 14, border: `1px solid ${paymentDue ? C.orange : C.border}`, boxShadow: "0 1px 2px rgba(22,24,29,.04)" }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
         <div style={{ display: "flex", gap: 10, minWidth: 0 }}>
@@ -349,12 +467,19 @@ export function BookingCard({ b, nav, past, onReschedule, onCancel }) {
         </div>
         <StatusPill status={b.status} />
       </div>
+      {paymentDue && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.orangeTint, borderRadius: 12, padding: "9px 12px", marginTop: 12 }} onClick={(e) => e.stopPropagation()}>
+          <CreditCard size={14} color={C.orange} style={{ flexShrink: 0 }} />
+          <span style={{ flex: 1, fontSize: 12, color: C.jet, lineHeight: 1.4, ...fBody }}>{(b.coachName || "Your coach").split(" ")[0]} accepted — send your payment to lock in the session.</span>
+          <Btn size="sm" variant="dark" onClick={onPay}>Pay now</Btn>
+        </div>
+      )}
       <div style={{ display: "flex", gap: 8, marginTop: 14, alignItems: "center" }} onClick={(e) => e.stopPropagation()}>
         {/* Upcoming (confirmed): reschedule / cancel are the two decisions a client needs to make; message is a quick escape hatch, not a primary action, so it stays icon-only. */}
         {!past && !pending && (
           <>
             <Btn size="sm" variant="secondary" full onClick={onReschedule}>Reschedule</Btn>
-            <Btn size="sm" variant="ghost" onClick={onCancel}>Cancel</Btn>
+            <Btn size="sm" variant="outline" onClick={onCancel}>Cancel</Btn>
             <Btn size="sm" variant="dark" icon={MessageCircle} onClick={() => nav("chat-thread", { name: b.coachName || b.clientName, context: `${b.service} · ${b.date}`, bookingId: b.id })} />
           </>
         )}
@@ -390,7 +515,7 @@ export function BookingCard({ b, nav, past, onReschedule, onCancel }) {
 /* Booking details — the client-side counterpart to the coach's booking detail page.
    Surfaces the same categories of information (party info, session details, notes,
    booking policy) but never exposes the Accept/Decline workflow, which is coach-only. */
-export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancelBooking, rescheduleBooking }) {
+export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancelBooking, rescheduleBooking, payBooking }) {
   const booking = bookings.find((b) => b.id === params.id);
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -505,6 +630,21 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
             <Btn full variant="secondary" icon={MessageCircle} onClick={() => nav("chat-thread", messageParams)}>Message coach</Btn>
             <Btn full variant="outline" onClick={() => setCancelOpen(true)}>Withdraw</Btn>
           </div>
+        )}
+
+        {isUpcoming && booking.paymentDue && (
+          <Card style={{ marginBottom: 14, background: C.orangeTint, border: "none" }}>
+            <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+              <CreditCard size={16} color={C.orange} style={{ flexShrink: 0, marginTop: 1 }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: C.jet, ...fBody }}>{booking.coachName.split(" ")[0]} accepted your request</div>
+                <div style={{ fontSize: 12, color: C.slate, marginTop: 2, lineHeight: 1.5, ...fBody }}>Send your payment to lock in the session — funds are held securely until it's complete.</div>
+              </div>
+            </div>
+            <div style={{ marginTop: 10 }}>
+              <Btn full size="sm" variant="dark" onClick={() => { payBooking(booking.id); toast("Payment sent — your booking is fully confirmed."); }}>Pay ${typeof booking.price === "number" ? booking.price.toFixed(2) : booking.price} now</Btn>
+            </div>
+          </Card>
         )}
 
         {isUpcoming && (
