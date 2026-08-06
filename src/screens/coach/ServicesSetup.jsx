@@ -2,18 +2,25 @@ import React, { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { C, fDisplay, fBody } from "../../theme/theme";
 import { SectionLabel, Card, Btn, TopBar, StepProgress } from "../../components/ui/Primitives";
-import { ServicePackageForm, packageSummary } from "../../components/ui/ServicePackageForm";
+import { ServicePackageForm, packageSummary, packageFormToRecord } from "../../components/ui/ServicePackageForm";
 
 let svcIdCounter = 1;
 
-export function ScreenCoachServicesSetup({ nav, toast }) {
+export function ScreenCoachServicesSetup({ nav, toast, savePackage, removePackage }) {
   const [services, setServices] = useState([]);
 
   const addService = (pkg) => {
-    setServices((s) => [...s, { id: "svc" + svcIdCounter++, ...pkg }]);
+    const id = "svc" + svcIdCounter++;
+    setServices((s) => [...s, { id, ...pkg }]);
+    // Persist to the coach's real service list so it's immediately visible
+    // on the dashboard and profile once setup is complete.
+    if (savePackage) savePackage(packageFormToRecord(pkg, id));
     toast(services.length === 0 ? "Service added" : "Another service added");
   };
-  const removeService = (id) => setServices((s) => s.filter((x) => x.id !== id));
+  const removeService = (id) => {
+    setServices((s) => s.filter((x) => x.id !== id));
+    if (removePackage) removePackage(id);
+  };
 
   const canContinue = services.length > 0;
 

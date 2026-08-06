@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   WifiOff, Calendar, ClipboardList, Heart, Download, Clock, MessageCircle, Star, CheckCircle2,
-  AlertTriangle, CreditCard, ShieldCheck, LifeBuoy, Hourglass, RefreshCcw,
+  AlertTriangle, CreditCard, ShieldCheck, LifeBuoy, Hourglass, RefreshCcw, ChevronLeft, ChevronRight, CalendarX2,
 } from "lucide-react";
 import { C, fDisplay, fBody } from "../../theme/theme";
 import { COACHES } from "../../data/mockData";
@@ -9,14 +9,57 @@ import {
   Avatar, Card, Badge, SegTabs, SectionLabel, Btn, TopBar, EmptyState, StatusPill, Chip, BottomSheet, Row, ScrollFadeRow,
 } from "../../components/ui/Primitives";
 
+/* ---- date helpers for the calendar view (booking dates look like "Tue, 22 Jul") ---- */
+const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const WEEKDAY_HEADERS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+function parseBookingDate(str, year = 2026) {
+  const m = /(\d{1,2})\s+([A-Za-z]{3})/.exec(str || "");
+  if (!m) return null;
+  const month = MONTH_ABBR.indexOf(m[2]);
+  if (month < 0) return null;
+  return new Date(year, month, parseInt(m[1], 10));
+}
+function sameDay(a, b) { return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
+function addDays(d, n) { const r = new Date(d); r.setDate(d.getDate() + n); return r; }
+function startOfWeek(d) { const dow = (d.getDay() + 6) % 7; return addDays(d, -dow); } // Monday-start
+function buildMonthGrid(cursor) {
+  const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+  const gridStart = startOfWeek(first);
+  const weeks = [];
+  let cur = gridStart;
+  for (let w = 0; w < 6; w++) {
+    const row = [];
+    for (let i = 0; i < 7; i++) { row.push(cur); cur = addDays(cur, 1); }
+    weeks.push(row);
+  }
+  return weeks;
+}
+
 export function ScreenClientDashboard({ nav, bookings, offline, toast, cancelBooking, rescheduleBooking }) {
   const [tab, setTab] = useState("upcoming");
+  const [view, setView] = useState("list");
+  const [calMode, setCalMode] = useState("month");
   const [rescheduleTarget, setRescheduleTarget] = useState(null);
   const [cancelTarget, setCancelTarget] = useState(null);
 
   const upcoming = bookings.filter((b) => b.status === "confirmed");
   const pending = bookings.filter((b) => b.status === "pending");
   const past = bookings.filter((b) => b.status === "completed" || b.status === "cancelled");
+
+  const dated = useMemo(() => bookings.map((b) => ({ ...b, _date: parseBookingDate(b.date) })), [bookings]);
+  const initialDate = useMemo(() => (dated.find((b) => b._date)?._date) || new Date(), [dated]);
+  const [cursor, setCursor] = useState(initialDate);
+  const [selectedDate, setSelectedDate] = useState(initialDate);
+  const bookingsOnDate = (d) => dated.filter((b) => b._date && sameDay(b._date, d));
+
+  const weeks = calMode === "month" ? buildMonthGrid(cursor) : [Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(cursor), i))];
+  const headerLabel = calMode === "month"
+    ? cursor.toLocaleDateString(undefined, { month: "long", year: "numeric" })
+    : `${weeks[0][0].toLocaleDateString(undefined, { day: "numeric", month: "short" })} – ${weeks[0][6].toLocaleDateString(undefined, { day: "numeric", month: "short" })}`;
+
+  const goPrev = () => setCursor((c) => calMode === "month" ? new Date(c.getFullYear(), c.getMonth() - 1, 1) : addDays(c, -7));
+  const goNext = () => setCursor((c) => calMode === "month" ? new Date(c.getFullYear(), c.getMonth() + 1, 1) : addDays(c, 7));
 
   const handleReschedule = (id, when) => {
     rescheduleBooking(id, when);
@@ -30,6 +73,17 @@ export function ScreenClientDashboard({ nav, bookings, offline, toast, cancelBoo
     setCancelTarget(null);
   };
 
+  const renderCard = (b) => (
+    <BookingCard
+      key={b.id}
+      b={b}
+      nav={nav}
+      past={b.status === "completed" || b.status === "cancelled"}
+      onReschedule={() => setRescheduleTarget(b)}
+      onCancel={() => setCancelTarget(b)}
+    />
+  );
+
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
       <div style={{ padding: "18px 20px 0" }}>
@@ -39,35 +93,77 @@ export function ScreenClientDashboard({ nav, bookings, offline, toast, cancelBoo
             <WifiOff size={14} color={C.orange} /> You're offline — showing your last saved sessions.
           </div>
         )}
-        <div style={{ marginTop: 14 }}>
+        <div style={{ marginTop: 14, marginBottom: 10 }}>
+          <SegTabs value={view} onChange={setView} items={[{ value: "list", label: "List" }, { value: "calendar", label: "Calendar" }]} />
+        </div>
+        {view === "list" && (
           <SegTabs value={tab} onChange={setTab} items={[
             { value: "upcoming", label: "Upcoming" }, { value: "pending", label: "Pending" }, { value: "past", label: "Completed" },
           ]} />
-        </div>
+        )}
+        {view === "calendar" && (
+          <>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <button onClick={goPrev} style={{ width: 30, height: 30, borderRadius: 10, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                <ChevronLeft size={16} color={C.jet} />
+              </button>
+              <span style={{ fontSize: 13.5, fontWeight: 700, color: C.jet, ...fDisplay }}>{headerLabel}</span>
+              <button onClick={goNext} style={{ width: 30, height: 30, borderRadius: 10, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                <ChevronRight size={16} color={C.jet} />
+              </button>
+            </div>
+            <SegTabs value={calMode} onChange={setCalMode} items={[{ value: "month", label: "Month" }, { value: "week", label: "Week" }]} />
+          </>
+        )}
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px 100px" }}>
-        {tab === "upcoming" && (upcoming.length ? upcoming.map((b) => (
-          <BookingCard
-            key={b.id}
-            b={b}
-            nav={nav}
-            onReschedule={() => setRescheduleTarget(b)}
-            onCancel={() => setCancelTarget(b)}
-          />
-        )) : <EmptyState icon={Calendar} title="No upcoming sessions" body="Search for a coach to book your next session." />)}
+      <div style={{ flex: 1, overflowY: "auto", padding: view === "calendar" ? "14px 20px 100px" : "16px 20px 100px" }}>
+        {view === "list" && (
+          <>
+            {tab === "upcoming" && (upcoming.length ? upcoming.map(renderCard) : <EmptyState icon={Calendar} title="No upcoming sessions" body="Search for a coach to book your next session." />)}
+            {tab === "pending" && (pending.length ? pending.map(renderCard) : <EmptyState icon={Hourglass} title="No pending requests" body="Requests waiting on a coach's response will show up here." />)}
+            {tab === "past" && (past.length ? past.map(renderCard) : <EmptyState icon={ClipboardList} title="No past sessions yet" body="Completed sessions will show up here." />)}
+          </>
+        )}
 
-        {tab === "pending" && (pending.length ? pending.map((b) => (
-          <BookingCard
-            key={b.id}
-            b={b}
-            nav={nav}
-            onCancel={() => setCancelTarget(b)}
-          />
-        )) : <EmptyState icon={Hourglass} title="No pending requests" body="Requests waiting on a coach's response will show up here." />)}
+        {view === "calendar" && (
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 6 }}>
+              {WEEKDAY_HEADERS.map((d) => (
+                <div key={d} style={{ textAlign: "center", fontSize: 10.5, fontWeight: 700, color: C.slateLight, ...fBody }}>{d}</div>
+              ))}
+            </div>
+            {weeks.map((row, ri) => (
+              <div key={ri} style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 4 }}>
+                {row.map((d, di) => {
+                  const inRange = calMode === "week" || d.getMonth() === cursor.getMonth();
+                  const count = bookingsOnDate(d).length;
+                  const isSelected = sameDay(d, selectedDate);
+                  return (
+                    <button key={di} onClick={() => setSelectedDate(d)} style={{
+                      aspectRatio: "1", borderRadius: 10, cursor: "pointer",
+                      border: `1px solid ${isSelected ? C.orange : C.border}`,
+                      background: isSelected ? C.orangeTint : C.white,
+                      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3,
+                      opacity: inRange ? 1 : 0.35,
+                    }}>
+                      <span style={{ fontSize: 12, fontWeight: isSelected ? 700 : 500, color: C.jet, ...fBody }}>{d.getDate()}</span>
+                      <span style={{ width: 5, height: 5, borderRadius: 99, background: count > 0 ? C.orange : "transparent" }} />
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
 
-        {tab === "past" && (past.length ? past.map((b) => <BookingCard key={b.id} b={b} nav={nav} past />) :
-          <EmptyState icon={ClipboardList} title="No past sessions yet" body="Completed sessions will show up here." />)}
+            <div style={{ marginTop: 18 }}>
+              <SectionLabel>{selectedDate.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}</SectionLabel>
+              {bookingsOnDate(selectedDate).length === 0 && (
+                <EmptyState icon={CalendarX2} title="No sessions" body="Nothing scheduled for this day." />
+              )}
+              {bookingsOnDate(selectedDate).map(renderCard)}
+            </div>
+          </>
+        )}
       </div>
 
       <RescheduleSheet

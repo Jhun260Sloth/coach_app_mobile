@@ -42,6 +42,10 @@ import { ScreenCoachProfileEdit } from "./screens/coach/ProfileEdit";
 import { ScreenCoachReels } from "./screens/coach/Reels";
 import { ScreenCoachPackageForm } from "./screens/coach/PackageForm";
 import { ScreenCoachEarnings } from "./screens/coach/Earnings";
+import { ScreenCoachServicesSetup } from "./screens/coach/ServicesSetup";
+import { ScreenCoachAvailabilitySetup } from "./screens/coach/AvailabilitySetup";
+import { ScreenCoachPayoutSetup } from "./screens/coach/PayoutSetup";
+import { ScreenCoachSetupComplete } from "./screens/coach/SetupComplete";
 
 // Shared: messaging & support
 import { ScreenMessages, ScreenChatThread } from "./screens/messaging/Messaging";
@@ -189,7 +193,12 @@ export default function App() {
 
   const isDarkScreen = screen === "splash" || screen === "admin-login";
   const tabsForRole = role === "coach" ? COACH_TABS : role === "admin" ? ADMIN_TABS : CLIENT_TABS;
-  const showTabs = tabsForRole.some((t) => t.value === screen);
+  // Some screens render outside the tab bar entirely (e.g. the post-verification
+  // setup wizard) — they simply won't match any entry in tabsForRole, so the
+  // bottom nav stays hidden while the coach steps through them.
+  const TAB_ALIASES = {};
+  const activeTabScreen = TAB_ALIASES[screen] || screen;
+  const showTabs = tabsForRole.some((t) => t.value === activeTabScreen);
 
   const screenProps = { nav, params, toast, role, favorites, toggleFav, biometric, setBiometric, verified, verificationStatus, reachedDashboardAfterVerification, setReachedDashboardAfterVerification, offline, draft, setDraft, addBooking, cancelBooking, rescheduleBooking, bookings, coachBookings, setCoachBookings, setRole, addCoachRole: () => setHasCoachRole(true), submitVerification, verificationQueue, decideVerification, disputes, resolveDispute, clientPrefs, onComplete: handleClientPrefs, children, addChild, updateChild, removeChild, coachOnboarding, updateCoachOnboarding, coachPackages, savePackage, removePackage, availabilityBlocks, setAvailabilityBlocks, coachMedia, addMedia, removeMedia };
 
@@ -225,9 +234,11 @@ export default function App() {
       case "client-profile": return <ScreenClientProfile {...screenProps} />;
       case "client-payment-history": return <ScreenPaymentHistory {...screenProps} />;
 
-      case "coach-dashboard":
-      case "coach-services-setup":
-        return <ScreenCoachDashboard {...screenProps} />;
+      case "coach-dashboard": return <ScreenCoachDashboard {...screenProps} />;
+      case "coach-services-setup": return <ScreenCoachServicesSetup {...screenProps} />;
+      case "coach-availability-setup": return <ScreenCoachAvailabilitySetup {...screenProps} />;
+      case "coach-payout-setup": return <ScreenCoachPayoutSetup {...screenProps} />;
+      case "coach-setup-complete": return <ScreenCoachSetupComplete {...screenProps} />;
       case "coach-calendar": return <ScreenCoachCalendar {...screenProps} />;
       case "coach-bookings": return <ScreenCoachBookings {...screenProps} />;
       case "coach-booking-detail": return <ScreenCoachBookingDetail {...screenProps} />;
@@ -302,7 +313,7 @@ export default function App() {
             {renderScreen()}
             <Toast toast={toastMsg} />
           </div>
-          {showTabs && <BottomTabs items={tabsForRole} value={screen} onChange={(v) => { setHistory([]); setScreen(v); }} />}
+          {showTabs && <BottomTabs items={tabsForRole} value={activeTabScreen} onChange={(v) => { setHistory([]); setScreen(v); }} />}
         </div>
       </div>
 

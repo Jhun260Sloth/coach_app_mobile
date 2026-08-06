@@ -46,6 +46,7 @@ export const COACHES = [
       { id: "p1", name: "1:1 Court Session", type: "1:1", duration: 60, mode: "In-person", price: 75 },
       { id: "p2", name: "Junior Group (max 4)", type: "Group", duration: 60, mode: "In-person", price: 32 },
       { id: "p3", name: "8-Week Term Block", type: "Term", duration: 60, mode: "In-person", price: 520 },
+      { id: "p4", name: "Family Tennis Session", type: "Family Sessions", duration: 60, mode: "In-person", price: 95 },
     ],
     availability: { Mon: ["07:00", "16:00", "17:00"], Wed: ["16:00", "17:00", "18:00"], Fri: ["07:00", "08:00"], Sat: ["09:00", "10:00", "11:00"] },
   },
@@ -262,13 +263,32 @@ export const CLIENT_PROFILES = {
   "Marcus Webb": { memberSince: "Jun 2026", totalSessions: 1, homeSuburb: "Fitzroy, Melbourne", notes: "First-time booking with you. New to CoachLink.", verifiedPayment: true },
   "The Chen Family (u18)": { memberSince: "Mar 2026", totalSessions: 5, homeSuburb: "Bondi, Sydney", notes: "Books for two children (ages 10 & 13). Guardian consent on file.", verifiedPayment: true },
   "Ravi Patel": { memberSince: "Sep 2024", totalSessions: 22, homeSuburb: "Parramatta, Sydney", notes: "Long-term client, term-block subscriber.", verifiedPayment: true },
+  "Aiden Cross": { memberSince: "Jul 2026", totalSessions: 0, homeSuburb: "Bondi, Sydney", notes: "First-time booking with you. New to CoachLink.", verifiedPayment: true },
+  "Grace Liu": { memberSince: "May 2026", totalSessions: 2, homeSuburb: "Randwick, Sydney", notes: "Prefers group sessions over 1:1.", verifiedPayment: true },
+  "Owen King": { memberSince: "Feb 2026", totalSessions: 8, homeSuburb: "Bondi, Sydney", notes: "Regular client — books most weeks.", verifiedPayment: true },
+  "The Nguyen Family (u18)": { memberSince: "Jun 2026", totalSessions: 3, homeSuburb: "Bondi, Sydney", notes: "Books for one child (age 11). Guardian consent on file.", verifiedPayment: true },
 };
 
 export const INITIAL_BOOKINGS = [
-  { id: "b1", coachId: "c1", coachName: "Maya Okafor", clientName: "Sarah Lin", service: "1:1 Court Session", date: "Tue, 22 Jul", time: "4:00pm", mode: "In-person", status: "confirmed", price: 75, reviewed: false, participants: "You", notes: "" },
+  // Pending — awaiting the coach's response
   { id: "b2", coachId: "c2", coachName: "Josh Whitfield", clientName: "Sarah Lin", service: "1:1 Programming Session", date: "Fri, 25 Jul", time: "6:00am", mode: "In-person", status: "pending", price: 68, reviewed: false, participants: "You", notes: "Coming back from a shoulder injury — cleared for light training, will bring physio notes." },
+  { id: "b5", coachId: "c1", coachName: "Maya Okafor", clientName: "Sarah Lin", service: "Group Clinic", date: "Fri, 8 Aug", time: "3:00pm", mode: "In-person", status: "pending", price: 45, reviewed: false, participants: "You", notes: "" },
+  { id: "b6", coachId: "c5", coachName: "Ella Fontaine", clientName: "Sarah Lin", service: "Virtual Session", date: "Sun, 10 Aug", time: "9:00am", mode: "Virtual", status: "pending", price: 38, reviewed: false, participants: "You", notes: "" },
+  { id: "b7", coachId: "c6", coachName: "Tom Baxter", clientName: "Sarah Lin", service: "Bouldering Session", date: "Thu, 14 Aug", time: "5:30pm", mode: "In-person", status: "pending", price: 65, reviewed: false, participants: "You", notes: "" },
+
+  // Upcoming — confirmed and on the calendar
+  { id: "b1", coachId: "c1", coachName: "Maya Okafor", clientName: "Sarah Lin", service: "1:1 Court Session", date: "Tue, 22 Jul", time: "4:00pm", mode: "In-person", status: "confirmed", price: 75, reviewed: false, participants: "You", notes: "" },
+  { id: "b8", coachId: "c3", coachName: "Priya Nandan", clientName: "Sarah Lin", service: "1:1 Poolside Session", date: "Thu, 6 Aug", time: "7:00am", mode: "In-person", status: "confirmed", price: 60, reviewed: false, participants: "You", notes: "" },
+  { id: "b9", coachId: "c4", coachName: "Daniel Reyes", clientName: "Sarah Lin", service: "1:1 Shooting Session", date: "Sat, 8 Aug", time: "10:00am", mode: "In-person", status: "confirmed", price: 70, reviewed: false, participants: "You", notes: "" },
+  { id: "b10", coachId: "c6", coachName: "Tom Baxter", clientName: "Sarah Lin", service: "Bouldering Session", date: "Wed, 12 Aug", time: "5:00pm", mode: "In-person", status: "confirmed", price: 65, reviewed: false, participants: "You", notes: "" },
+
+  // Completed — past sessions
   { id: "b3", coachId: "c3", coachName: "Priya Nandan", clientName: "Sarah Lin", service: "1:1 Poolside Session", date: "Sun, 13 Jul", time: "8:00am", mode: "In-person", status: "completed", price: 60, reviewed: false, participants: "You", notes: "" },
   { id: "b4", coachId: "c5", coachName: "Ella Fontaine", clientName: "Sarah Lin", service: "Virtual Session", date: "Wed, 9 Jul", time: "7:00am", mode: "Virtual", status: "completed", price: 38, reviewed: true, participants: "You", notes: "" },
+  { id: "b11", coachId: "c1", coachName: "Maya Okafor", clientName: "Sarah Lin", service: "1:1 Court Session", date: "Thu, 16 Jul", time: "4:00pm", mode: "In-person", status: "completed", price: 75, reviewed: true, participants: "You", notes: "" },
+  { id: "b12", coachId: "c2", coachName: "Josh Whitfield", clientName: "Sarah Lin", service: "1:1 Programming Session", date: "Tue, 21 Jul", time: "6:00am", mode: "In-person", status: "completed", price: 68, reviewed: false, participants: "You", notes: "" },
+  { id: "b13", coachId: "c4", coachName: "Daniel Reyes", clientName: "Sarah Lin", service: "1:1 Shooting Session", date: "Fri, 24 Jul", time: "5:00pm", mode: "In-person", status: "completed", price: 70, reviewed: false, participants: "You", notes: "" },
+  { id: "b14", coachId: "c6", coachName: "Tom Baxter", clientName: "Sarah Lin", service: "Bouldering Session", date: "Sat, 25 Jul", time: "11:00am", mode: "In-person", status: "completed", price: 65, reviewed: true, participants: "You", notes: "" },
 ];
 
 // Recurring weekly availability for the current coach (Josh Whitfield),
@@ -281,10 +301,24 @@ export const INITIAL_AVAILABILITY_BLOCKS = [
 ];
 
 export const COACH_BOOKINGS = [
-  { id: "cb1", clientName: "Sarah Lin", service: "1:1 Court Session", date: "Tue, 22 Jul", time: "4:00pm", mode: "In-person", status: "confirmed", price: 75, notes: "" },
+  // Pending — awaiting the coach's accept/decline
   { id: "cb2", clientName: "Marcus Webb", service: "Junior Group (max 4)", date: "Wed, 23 Jul", time: "5:00pm", mode: "In-person", status: "pending", price: 32, notes: "First session for his son, age 9." },
   { id: "cb3", clientName: "The Chen Family (u18)", service: "1:1 Court Session", date: "Sat, 26 Jul", time: "9:00am", mode: "In-person", status: "pending", price: 75, notes: "Booking for two children, guardian consent provided at checkout." },
+  { id: "cb5", clientName: "Aiden Cross", service: "1:1 Court Session", date: "Mon, 28 Jul", time: "6:30am", mode: "In-person", status: "pending", price: 75, notes: "" },
+  { id: "cb6", clientName: "Grace Liu", service: "Junior Group (max 4)", date: "Thu, 30 Jul", time: "4:30pm", mode: "In-person", status: "pending", price: 32, notes: "Wants to try group coaching for the first time." },
+
+  // Upcoming — confirmed and on the calendar
+  { id: "cb1", clientName: "Sarah Lin", service: "1:1 Court Session", date: "Tue, 22 Jul", time: "4:00pm", mode: "In-person", status: "confirmed", price: 75, notes: "" },
+  { id: "cb7", clientName: "Ravi Patel", service: "1:1 Court Session", date: "Tue, 29 Jul", time: "7:00am", mode: "In-person", status: "confirmed", price: 75, notes: "" },
+  { id: "cb8", clientName: "Owen King", service: "1:1 Court Session", date: "Fri, 1 Aug", time: "5:30pm", mode: "In-person", status: "confirmed", price: 75, notes: "" },
+  { id: "cb9", clientName: "The Nguyen Family (u18)", service: "Junior Group (max 4)", date: "Sun, 3 Aug", time: "10:00am", mode: "In-person", status: "confirmed", price: 32, notes: "" },
+
+  // Completed — past sessions
   { id: "cb4", clientName: "Ravi Patel", service: "8-Week Term Block", date: "Mon, 14 Jul", time: "7:00am", mode: "In-person", status: "completed", price: 520, notes: "" },
+  { id: "cb10", clientName: "Sarah Lin", service: "1:1 Court Session", date: "Wed, 9 Jul", time: "4:00pm", mode: "In-person", status: "completed", price: 75, notes: "" },
+  { id: "cb11", clientName: "Marcus Webb", service: "Junior Group (max 4)", date: "Thu, 17 Jul", time: "5:00pm", mode: "In-person", status: "completed", price: 32, notes: "" },
+  { id: "cb12", clientName: "The Chen Family (u18)", service: "1:1 Court Session", date: "Sun, 20 Jul", time: "9:00am", mode: "In-person", status: "completed", price: 75, notes: "" },
+  { id: "cb13", clientName: "Owen King", service: "1:1 Court Session", date: "Mon, 21 Jul", time: "6:00am", mode: "In-person", status: "completed", price: 75, notes: "" },
 ];
 
 export const REVIEWS = [

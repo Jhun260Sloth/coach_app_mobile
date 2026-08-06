@@ -221,15 +221,19 @@ export function ScreenAccountType({ nav, params }) {
 /* Shared field set used by both the participant (child) setup flow and the
    "tell us about yourself" individual setup flow. */
 const PARTICIPANT_SPORT_EXAMPLES = ["Football", "Basketball", "Tennis", "Swimming", "Gymnastics"];
-const SKILL_LEVELS = ["Beginner", "Intermediate", "Advanced", "Elite"];
+export const SKILL_LEVELS = ["Beginner", "Intermediate", "Advanced", "Elite"];
 export const emptyParticipantDraft = {
   name: "", dob: "", gender: "", postalCode: "",
   sport: [], skillLevel: "", goals: "",
   medicalConditions: "", allergies: "", medicalNotes: "",
   emergencyName: "", emergencyRelationship: "", emergencyMobile: "",
+  guardianName: "", guardianRelationship: "", guardianMobile: "",
 };
 
-function ParticipantFields({ draft, setDraft }) {
+// showGuardianInfo renders the Guardian information block — only relevant when
+// this field set is being used to create/edit a CHILD's participant profile,
+// since an adult booking for themselves doesn't need a guardian on file.
+export function ParticipantFields({ draft, setDraft, showGuardianInfo = false }) {
   const [addingSport, setAddingSport] = useState(false);
   const [customSport, setCustomSport] = useState("");
   const [locationQuery, setLocationQuery] = useState("");
@@ -336,6 +340,20 @@ function ParticipantFields({ draft, setDraft }) {
         </div>
       </div>
 
+      {showGuardianInfo && (
+        <>
+          <SectionLabel>Guardian information</SectionLabel>
+          <div style={{ fontSize: 11.5, color: C.slateLight, marginTop: -6, marginBottom: 12, lineHeight: 1.5, ...fBody }}>
+            The parent or legal guardian responsible for this participant. This is who coaches and CoachLink will contact about the booking.
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+            <Field label="Guardian name" placeholder="e.g. Jamie Chen" icon={UserCheck} value={draft.guardianName} onChange={(e) => patch({ guardianName: e.target.value })} />
+            <Field label="Relationship to participant" placeholder="e.g. Parent" value={draft.guardianRelationship} onChange={(e) => patch({ guardianRelationship: e.target.value })} />
+            <Field label="Mobile number" placeholder="04XX XXX XXX" icon={Phone} type="tel" value={draft.guardianMobile} onChange={(e) => patch({ guardianMobile: e.target.value.replace(/[^0-9+\s]/g, "") })} />
+          </div>
+        </>
+      )}
+
       <SectionLabel>Sport interests</SectionLabel>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: extraSports.length ? 10 : 8 }}>
         {PARTICIPANT_SPORT_EXAMPLES.map((s) => (
@@ -417,7 +435,8 @@ export function ScreenAboutYouParticipants({ nav, params, addChild, toast }) {
   const [draft, setDraft] = useState(emptyParticipantDraft);
   const [savedCount, setSavedCount] = useState(0);
 
-  const canSave = draft.name.trim().length > 0 && !!draft.dob;
+  const canSave = draft.name.trim().length > 0 && !!draft.dob
+    && draft.guardianName.trim().length > 0 && draft.guardianRelationship.trim().length > 0 && draft.guardianMobile.trim().length > 0;
 
   const persist = () => {
     const age = calcAge(draft.dob);
@@ -453,7 +472,7 @@ export function ScreenAboutYouParticipants({ nav, params, addChild, toast }) {
             <Badge tone="success">{savedCount} participant{savedCount === 1 ? "" : "s"} added so far</Badge>
           </div>
         )}
-        <ParticipantFields draft={draft} setDraft={setDraft} />
+        <ParticipantFields draft={draft} setDraft={setDraft} showGuardianInfo />
       </div>
       <div style={{ padding: "14px 20px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
         <Btn full disabled={!canSave} onClick={saveAndFinish}>Save participant</Btn>

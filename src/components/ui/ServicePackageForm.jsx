@@ -4,7 +4,7 @@ import { C, fBody } from "../../theme/theme";
 import { Chip, Btn, SearchSelect } from "./Primitives";
 
 export const PACKAGE_TYPE_OPTIONS = [
-  "1:1 Coaching", "Group Training", "Team Program", "Skills Clinic", "Online Coaching",
+  "1:1 Coaching", "Group Training", "Family Sessions", "Team Program", "Skills Clinic", "Online Coaching",
 ];
 // Small set of quick-pick sports shown by default in the searchable Sport
 // Category field below. Coaches aren't limited to this list — they can search

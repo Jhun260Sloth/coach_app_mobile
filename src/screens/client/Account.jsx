@@ -2,14 +2,20 @@ import React, { useState } from "react";
 import {
   Edit3, Bell, CreditCard, Fingerprint, Lock, FileText, Shield, HelpCircle, LogOut, Users, ChevronRight,
   Mail, Phone, User, Plus, Trash2, Eye, EyeOff, AlertTriangle, Camera, MapPin, Target, Calendar, UserPlus, Download,
-  CalendarDays, CreditCard as CardIcon,
+  CalendarDays, CreditCard as CardIcon, Stethoscope, UserCheck,
 } from "lucide-react";
 import { C, fDisplay, fBody } from "../../theme/theme";
 import { Avatar, Btn, SectionLabel, Toggle, BottomSheet, Field, Chip, Card, Badge, EmptyState, TopBar } from "../../components/ui/Primitives";
 import { SPORTS } from "../../data/mockData";
 import { ReceiptSheet } from "./Dashboard";
+import { SKILL_LEVELS } from "./AboutYou";
 
-const emptyChildDraft = { name: "", age: "", sport: [], goals: "", postalCode: "", preferences: "", hasPhoto: false };
+const emptyChildDraft = {
+  name: "", age: "", sport: [], skillLevel: "", goals: "", postalCode: "", preferences: "", hasPhoto: false,
+  medicalConditions: "", allergies: "", medicalNotes: "",
+  emergencyName: "", emergencyRelationship: "", emergencyMobile: "",
+  guardianName: "", guardianRelationship: "", guardianMobile: "",
+};
 const emptyCardDraft = { number: "", name: "", expiry: "", cvc: "" };
 
 export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCoachRole, children = [], addChild, updateChild, removeChild, bookings = [], clientPrefs, onComplete }) {
@@ -75,7 +81,14 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
       address: clientPrefs?.address || "",
       postalCode: clientPrefs?.postalCode || "",
       sports: clientPrefs?.sports || [],
+      skillLevel: clientPrefs?.skillLevel || "",
       goals: clientPrefs?.goals || "",
+      medicalConditions: clientPrefs?.medicalConditions || "",
+      allergies: clientPrefs?.allergies || "",
+      medicalNotes: clientPrefs?.medicalNotes || "",
+      emergencyName: clientPrefs?.emergencyName || "",
+      emergencyRelationship: clientPrefs?.emergencyRelationship || "",
+      emergencyMobile: clientPrefs?.emergencyMobile || "",
     });
     setSheet("edit");
   };
@@ -90,7 +103,14 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
         address: editDraft.address,
         postalCode: editDraft.postalCode,
         sports: editDraft.sports,
+        skillLevel: editDraft.skillLevel,
         goals: editDraft.goals,
+        medicalConditions: editDraft.medicalConditions,
+        allergies: editDraft.allergies,
+        medicalNotes: editDraft.medicalNotes,
+        emergencyName: editDraft.emergencyName,
+        emergencyRelationship: editDraft.emergencyRelationship,
+        emergencyMobile: editDraft.emergencyMobile,
       });
     }
     toast("Profile updated");
@@ -232,11 +252,32 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
           <Field label="Location / postcode" placeholder="e.g. 2026" icon={MapPin} value={childDraft.postalCode} onChange={(e) => setChildDraft((d) => ({ ...d, postalCode: e.target.value }))} />
         </div>
 
+        <div style={{ marginTop: 4 }}>
+          <SectionLabel>Guardian information</SectionLabel>
+          <div style={{ fontSize: 11.5, color: C.slateLight, marginTop: -6, marginBottom: 12, lineHeight: 1.5, ...fBody }}>
+            The parent or legal guardian responsible for this participant.
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <Field label="Guardian name" placeholder="e.g. Jamie Chen" icon={UserCheck} value={childDraft.guardianName} onChange={(e) => setChildDraft((d) => ({ ...d, guardianName: e.target.value }))} />
+            <Field label="Relationship to participant" placeholder="e.g. Parent" value={childDraft.guardianRelationship} onChange={(e) => setChildDraft((d) => ({ ...d, guardianRelationship: e.target.value }))} />
+            <Field label="Mobile number" placeholder="04XX XXX XXX" icon={Phone} type="tel" value={childDraft.guardianMobile} onChange={(e) => setChildDraft((d) => ({ ...d, guardianMobile: e.target.value.replace(/[^0-9+\s]/g, "") }))} />
+          </div>
+        </div>
+
         <div style={{ marginTop: 18 }}>
           <SectionLabel>Sport / interests</SectionLabel>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
             {SPORTS.map((s) => (
               <Chip key={s} active={childDraft.sport.includes(s)} onClick={() => toggleDraftSport(s)}>{s}</Chip>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginTop: 18 }}>
+          <SectionLabel>Skill level</SectionLabel>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+            {SKILL_LEVELS.map((lvl) => (
+              <Chip key={lvl} active={childDraft.skillLevel === lvl} onClick={() => setChildDraft((d) => ({ ...d, skillLevel: lvl }))}>{lvl}</Chip>
             ))}
           </div>
         </div>
@@ -266,6 +307,33 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
               rows={2}
               style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13.5, color: C.jet, resize: "none", ...fBody }}
             />
+          </div>
+        </div>
+
+        <div style={{ marginTop: 18 }}>
+          <SectionLabel>Medical information (optional)</SectionLabel>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <Field label="Medical conditions" placeholder="e.g. asthma" icon={Stethoscope} value={childDraft.medicalConditions} onChange={(e) => setChildDraft((d) => ({ ...d, medicalConditions: e.target.value }))} />
+            <Field label="Allergies" placeholder="e.g. bee stings, peanuts" icon={AlertTriangle} value={childDraft.allergies} onChange={(e) => setChildDraft((d) => ({ ...d, allergies: e.target.value }))} />
+            <div>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Additional notes</div>
+              <textarea
+                value={childDraft.medicalNotes}
+                onChange={(e) => setChildDraft((d) => ({ ...d, medicalNotes: e.target.value }))}
+                placeholder="Anything else a coach should know"
+                rows={2}
+                style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: 13.5, outline: "none", boxSizing: "border-box", resize: "none", ...fBody }}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 18 }}>
+          <SectionLabel>Emergency contact (optional)</SectionLabel>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <Field label="Contact name" placeholder="e.g. Mia Chen" icon={UserCheck} value={childDraft.emergencyName} onChange={(e) => setChildDraft((d) => ({ ...d, emergencyName: e.target.value }))} />
+            <Field label="Relationship" placeholder="e.g. Mother" value={childDraft.emergencyRelationship} onChange={(e) => setChildDraft((d) => ({ ...d, emergencyRelationship: e.target.value }))} />
+            <Field label="Mobile number" placeholder="04XX XXX XXX" icon={Phone} type="tel" value={childDraft.emergencyMobile} onChange={(e) => setChildDraft((d) => ({ ...d, emergencyMobile: e.target.value.replace(/[^0-9+\s]/g, "") }))} />
           </div>
         </div>
 
@@ -332,6 +400,13 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
               ))}
             </div>
 
+            <SectionLabel>Skill level</SectionLabel>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
+              {SKILL_LEVELS.map((lvl) => (
+                <Chip key={lvl} active={editDraft.skillLevel === lvl} onClick={() => setEditDraft((d) => ({ ...d, skillLevel: lvl }))}>{lvl}</Chip>
+              ))}
+            </div>
+
             <SectionLabel>Coaching goals</SectionLabel>
             <div style={{ display: "flex", alignItems: "flex-start", gap: 10, background: C.fog, borderRadius: 14, padding: "12px 14px", marginBottom: 20 }}>
               <Target size={16} color={C.slateLight} style={{ marginTop: 2, flexShrink: 0 }} />
@@ -342,6 +417,29 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
                 rows={3}
                 style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13.5, color: C.jet, resize: "none", ...fBody }}
               />
+            </div>
+
+            <SectionLabel>Medical information (optional)</SectionLabel>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 20 }}>
+              <Field label="Medical conditions" placeholder="e.g. asthma" icon={Stethoscope} value={editDraft.medicalConditions} onChange={(e) => setEditDraft((d) => ({ ...d, medicalConditions: e.target.value }))} />
+              <Field label="Allergies" placeholder="e.g. bee stings, peanuts" icon={AlertTriangle} value={editDraft.allergies} onChange={(e) => setEditDraft((d) => ({ ...d, allergies: e.target.value }))} />
+              <div>
+                <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Additional notes</div>
+                <textarea
+                  value={editDraft.medicalNotes}
+                  onChange={(e) => setEditDraft((d) => ({ ...d, medicalNotes: e.target.value }))}
+                  placeholder="Anything else a coach should know"
+                  rows={2}
+                  style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: 13.5, outline: "none", boxSizing: "border-box", resize: "none", ...fBody }}
+                />
+              </div>
+            </div>
+
+            <SectionLabel>Emergency contact (optional)</SectionLabel>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 8 }}>
+              <Field label="Contact name" placeholder="e.g. Mia Chen" icon={UserCheck} value={editDraft.emergencyName} onChange={(e) => setEditDraft((d) => ({ ...d, emergencyName: e.target.value }))} />
+              <Field label="Relationship" placeholder="e.g. Partner" value={editDraft.emergencyRelationship} onChange={(e) => setEditDraft((d) => ({ ...d, emergencyRelationship: e.target.value }))} />
+              <Field label="Mobile number" placeholder="04XX XXX XXX" icon={Phone} type="tel" value={editDraft.emergencyMobile} onChange={(e) => setEditDraft((d) => ({ ...d, emergencyMobile: e.target.value.replace(/[^0-9+\s]/g, "") }))} />
             </div>
 
             <Btn full onClick={saveProfile}>Save changes</Btn>
