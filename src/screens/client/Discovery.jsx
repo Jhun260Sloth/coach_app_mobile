@@ -49,7 +49,12 @@ export function CoachListCard({ coach, onOpen }) {
 
           {coach.instantBook && (
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, padding: "4px 9px", borderRadius: 8, background: C.orangeTint, color: C.orange, ...oneLine, ...fBody }}>Instant Book</span>
+              {coach.verified.identity && (
+                <span style={{ fontSize: 11, fontWeight: 700, padding: "4px 9px", borderRadius: 8, background: C.successTint, color: C.success, ...fBody }}>Verified</span>
+              )}
+              {coach.instantBook && (
+                <span style={{ fontSize: 11, fontWeight: 700, padding: "4px 9px", borderRadius: 8, background: C.orangeTint, color: C.orange, ...fBody }}>Instant book</span>
+              )}
             </div>
           )}
         </div>

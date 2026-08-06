@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ChevronLeft, Star, CheckCircle2, Search,
 } from "lucide-react";
@@ -8,10 +8,26 @@ import { initials, hashColor } from "../../data/mockData";
 /* =========================================================================
    SHARED UI PRIMITIVES
    ========================================================================= */
-export function Btn({ children, onClick, variant = "primary", full, icon: Icon, disabled, size = "md", type = "button" }) {
+
+/* Small inline spinner used inside buttons and standalone loading states.
+   Inherits color from its parent via currentColor so it matches any button variant. */
+export function Spinner({ size = 15, color }) {
+  return (
+    <span
+      style={{
+        width: size, height: size, borderRadius: "50%", flexShrink: 0,
+        border: "2px solid currentColor", borderTopColor: "transparent",
+        opacity: 0.9, color: color || "currentColor",
+        animation: "clSpin .7s linear infinite", display: "inline-block",
+      }}
+    />
+  );
+}
+
+export function Btn({ children, onClick, variant = "primary", full, icon: Icon, disabled, loading, loadingText, size = "md", type = "button" }) {
   const base = {
     display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
-    borderRadius: 14, fontWeight: 600, cursor: disabled ? "default" : "pointer",
+    borderRadius: 14, fontWeight: 600, cursor: (disabled || loading) ? "default" : "pointer",
     border: "1px solid transparent", transition: "opacity .15s ease",
     opacity: disabled ? 0.5 : 1, width: full ? "100%" : "auto",
     padding: size === "sm" ? "9px 14px" : "13px 18px",
@@ -26,10 +42,54 @@ export function Btn({ children, onClick, variant = "primary", full, icon: Icon, 
     danger: { background: "transparent", color: "#D64545", border: "1px solid #F3D2D2" },
   };
   return (
-    <button type={type} disabled={disabled} onClick={disabled ? undefined : onClick} style={{ ...base, ...variants[variant] }}>
-      {Icon && <Icon size={size === "sm" ? 14 : 17} strokeWidth={2.3} />}
-      {children}
+    <button type={type} disabled={disabled || loading} aria-busy={loading || undefined} onClick={(disabled || loading) ? undefined : onClick} style={{ ...base, ...variants[variant] }}>
+      {loading ? <Spinner size={size === "sm" ? 13 : 15} /> : (Icon && <Icon size={size === "sm" ? 14 : 17} strokeWidth={2.3} />)}
+      {loading ? (loadingText || children) : children}
     </button>
+  );
+}
+
+/* Wraps a horizontally-scrollable row (day pickers, media strips, chip rails) and renders
+   a soft edge fade + directional cue on whichever side still has clipped, un-scrolled content.
+   Purely presentational — measures the wrapped scroller via ref and updates on scroll/resize,
+   so it never shows a cue on a row that already fits, and clears it once the user reaches the end. */
+export function ScrollFadeRow({ children, style, className }) {
+  const ref = useRef(null);
+  const [state, setState] = useState({ left: false, right: false });
+
+  const measure = () => {
+    const el = ref.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setState({
+      left: scrollLeft > 4,
+      right: scrollLeft + clientWidth < scrollWidth - 4,
+    });
+  };
+
+  useEffect(() => {
+    measure();
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    window.addEventListener("resize", measure);
+    return () => { ro.disconnect(); window.removeEventListener("resize", measure); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [children]);
+
+  return (
+    <div style={{ position: "relative" }}>
+      <div ref={ref} onScroll={measure} className={["cl-hide-scrollbar", className].filter(Boolean).join(" ")} style={style}>
+        {children}
+      </div>
+      {state.left && (
+        <div style={{ position: "absolute", top: 0, bottom: 4, left: 0, width: 28, pointerEvents: "none", background: `linear-gradient(90deg, ${C.white}, rgba(255,255,255,0))` }} />
+      )}
+      {state.right && (
+        <div style={{ position: "absolute", top: 0, bottom: 4, right: 0, width: 28, pointerEvents: "none", background: `linear-gradient(270deg, ${C.white}, rgba(255,255,255,0))` }} />
+      )}
+    </div>
   );
 }
 

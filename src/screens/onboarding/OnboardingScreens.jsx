@@ -71,9 +71,6 @@ function LegalSheet({ open, onClose }) {
   );
 }
 
-/* =========================================================================
-   ONBOARDING / AUTH SCREENS
-   ========================================================================= */
 export function ScreenSplash({ nav }) {
   return (
     <div style={{ height: "100%", background: C.white, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 28, textAlign: "center" }}>
@@ -255,7 +252,7 @@ export function ScreenCoachRegister({ nav, toast, updateCoachOnboarding }) {
       <div style={{ flex: 1, overflowY: "auto", paddingBottom: 24 }}>
         <StepProgress step={1} total={4} label="Account" />
 
-        <div style={{ fontSize: 23, fontWeight: 600, color: C.jet, ...fDisplay }}>Create Your Coach Account</div>
+        <div style={{ fontSize: 23, fontWeight: 600, color: C.jet, ...fDisplay }}>Create your coach account</div>
         <div style={{ fontSize: 13.5, color: C.slate, marginTop: 8, marginBottom: 20, lineHeight: 1.55, ...fBody }}>
           Join thousands of coaches growing their business through secure bookings, payments and client management.
         </div>
@@ -430,7 +427,7 @@ export function ScreenCoachInfo({ nav, toast, coachOnboarding, updateCoachOnboar
       <div style={{ flex: 1, overflowY: "auto", paddingBottom: 24 }}>
         <StepProgress step={2} total={4} label="Coach info" />
 
-        <div style={{ fontSize: 23, fontWeight: 600, color: C.jet, ...fDisplay }}>Coach Information</div>
+        <div style={{ fontSize: 23, fontWeight: 600, color: C.jet, ...fDisplay }}>Coach information</div>
         <div style={{ fontSize: 13.5, color: C.slate, marginTop: 8, marginBottom: 20, lineHeight: 1.55, ...fBody }}>
           This is what clients see first — your photo, name and story help them decide if you're the right coach for them.
         </div>
@@ -561,7 +558,7 @@ export function ScreenCoachExpertise({ nav, coachOnboarding, updateCoachOnboardi
       <div style={{ flex: 1, overflowY: "auto", paddingBottom: 24 }}>
         <StepProgress step={3} total={4} label="Expertise" />
 
-        <div style={{ fontSize: 23, fontWeight: 600, color: C.jet, ...fDisplay }}>Coaching Expertise</div>
+        <div style={{ fontSize: 23, fontWeight: 600, color: C.jet, ...fDisplay }}>Coaching expertise</div>
         <div style={{ fontSize: 13.5, color: C.slate, marginTop: 8, marginBottom: 20, lineHeight: 1.55, ...fBody }}>
           Help clients find you by sharing the sports, formats and skill levels you coach.
         </div>
@@ -826,7 +823,7 @@ export function ScreenVerificationPending({ nav, verificationStatus, setReachedD
       </div>
 
       <div style={{ marginTop: "auto", padding: "14px 0", display: "flex", flexDirection: "column", gap: 10 }}>
-        <Btn full disabled={!approved} onClick={goToSetup}>Proceed to Setup</Btn>
+        <Btn full disabled={!approved} onClick={goToSetup}>Proceed to setup</Btn>
         {!approved && (
           <div style={{ fontSize: 11.5, color: C.slateLight, textAlign: "center", lineHeight: 1.5, ...fBody }}>
             This unlocks once an admin approves your application.
@@ -838,9 +835,6 @@ export function ScreenVerificationPending({ nav, verificationStatus, setReachedD
   );
 }
 
-/* =========================================================================
-   ADMIN — LOGIN (admin skips splash / role-select / sign-up entirely)
-   ========================================================================= */
 export function ScreenAdminLogin({ nav, toast }) {
   const [showPw, setShowPw] = useState(false);
   return (
@@ -896,8 +890,3 @@ export function ScreenAdminLogin({ nav, toast }) {
     </div>
   );
 }
-
-
-
-
-

@@ -39,6 +39,7 @@ import { ScreenCoachDashboard } from "./screens/coach/CoachDashboard";
 import { ScreenCoachCalendar } from "./screens/coach/Calendar";
 import { ScreenCoachBookings, ScreenCoachBookingDetail } from "./screens/coach/Bookings";
 import { ScreenCoachProfileEdit } from "./screens/coach/ProfileEdit";
+import { ScreenCoachReels } from "./screens/coach/Reels";
 import { ScreenCoachPackageForm } from "./screens/coach/PackageForm";
 import { ScreenCoachEarnings } from "./screens/coach/Earnings";
 import { ScreenCoachServicesSetup } from "./screens/coach/ServicesSetup";
@@ -99,6 +100,15 @@ export default function App() {
   const [bookings, setBookings] = useState(INITIAL_BOOKINGS);
   const [coachBookings, setCoachBookings] = useState(COACH_BOOKINGS);
   const [coachPackages, setCoachPackages] = useState(COACHES[1].packages);
+  const [coachMedia, setCoachMedia] = useState(
+    Array.from({ length: COACHES[1].reelsCount }, (_, i) => ({
+      id: `m${i + 1}`,
+      type: i % 4 === 3 ? "photo" : "reel",
+      caption: i % 4 === 3 ? "Training photo" : "Session highlight",
+      sport: COACHES[1].sport,
+      url: null,
+    }))
+  );
   const [availabilityBlocks, setAvailabilityBlocks] = useState(INITIAL_AVAILABILITY_BLOCKS);
   const [verificationQueue, setVerificationQueue] = useState(ADMIN_VERIFICATION_QUEUE);
   const [disputes, setDisputes] = useState(ADMIN_DISPUTES);
@@ -177,6 +187,10 @@ export default function App() {
     setAvailabilityBlocks((blocks) => blocks.map((b) => ({ ...b, packageIds: b.packageIds.filter((pid) => pid !== id) })));
   };
 
+  // Reels & photos — coach's own media library shown on their public profile.
+  const addMedia = (item) => setCoachMedia((m) => [{ id: Date.now(), ...item }, ...m]);
+  const removeMedia = (id) => setCoachMedia((m) => m.filter((x) => x.id !== id));
+
   const isDarkScreen = screen === "splash" || screen === "admin-login";
   const tabsForRole = role === "coach" ? COACH_TABS : role === "admin" ? ADMIN_TABS : CLIENT_TABS;
   // Some screens render outside the tab bar entirely (e.g. the post-verification
@@ -186,7 +200,8 @@ export default function App() {
   const activeTabScreen = TAB_ALIASES[screen] || screen;
   const showTabs = tabsForRole.some((t) => t.value === activeTabScreen);
 
-  const screenProps = { nav, params, toast, role, favorites, toggleFav, biometric, setBiometric, verified, verificationStatus, reachedDashboardAfterVerification, setReachedDashboardAfterVerification, offline, draft, setDraft, addBooking, cancelBooking, rescheduleBooking, bookings, coachBookings, setCoachBookings, setRole, addCoachRole: () => setHasCoachRole(true), submitVerification, verificationQueue, decideVerification, disputes, resolveDispute, clientPrefs, onComplete: handleClientPrefs, children, addChild, updateChild, removeChild, coachOnboarding, updateCoachOnboarding, coachPackages, savePackage, removePackage, availabilityBlocks, setAvailabilityBlocks };
+  const screenProps = { nav, params, toast, role, favorites, toggleFav, biometric, setBiometric, verified, verificationStatus, reachedDashboardAfterVerification, setReachedDashboardAfterVerification, offline, draft, setDraft, addBooking, cancelBooking, rescheduleBooking, bookings, coachBookings, setCoachBookings, setRole, addCoachRole: () => setHasCoachRole(true), submitVerification, verificationQueue, decideVerification, disputes, resolveDispute, clientPrefs, onComplete: handleClientPrefs, children, addChild, updateChild, removeChild, coachOnboarding, updateCoachOnboarding, coachPackages, savePackage, removePackage, availabilityBlocks, setAvailabilityBlocks, coachMedia, addMedia, removeMedia };
+
 
   function renderScreen() {
     switch (screen) {
@@ -228,6 +243,7 @@ export default function App() {
       case "coach-bookings": return <ScreenCoachBookings {...screenProps} />;
       case "coach-booking-detail": return <ScreenCoachBookingDetail {...screenProps} />;
       case "coach-profile-edit": return <ScreenCoachProfileEdit {...screenProps} />;
+      case "coach-reels": return <ScreenCoachReels {...screenProps} />;
       case "coach-create-package":
       case "coach-edit-package":
         return <ScreenCoachPackageForm {...screenProps} />;
@@ -280,7 +296,8 @@ export default function App() {
           style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 999, border: `1px solid ${offline ? C.orange : C.border}`, background: offline ? C.orangeTint : C.white, color: offline ? C.orange : C.slate, fontSize: 11.5, fontWeight: 600, cursor: "pointer", ...fBody }}>
           <WifiOff size={12} /> Offline
         </button>
-        <button onClick={() => { setScreen(role === "admin" ? "admin-login" : "splash"); setHistory([]); setBookings(INITIAL_BOOKINGS); setCoachBookings(COACH_BOOKINGS); setVerified(false); setVerificationStatus("none"); setReachedDashboardAfterVerification(false); setVerificationQueue(ADMIN_VERIFICATION_QUEUE); setDisputes(ADMIN_DISPUTES); setClientPrefs(null); setChildren([]); setCoachOnboarding({}); setBiometric(false); setCoachPackages(COACHES[1].packages); setAvailabilityBlocks(INITIAL_AVAILABILITY_BLOCKS); }}
+        <button onClick={() => { setScreen(role === "admin" ? "admin-login" : "splash"); setHistory([]); setBookings(INITIAL_BOOKINGS); setCoachBookings(COACH_BOOKINGS); setVerified(false); setVerificationStatus("none"); setReachedDashboardAfterVerification(false); setVerificationQueue(ADMIN_VERIFICATION_QUEUE); setDisputes(ADMIN_DISPUTES); setClientPrefs(null); setChildren([]); setCoachOnboarding({}); setBiometric(false); setCoachPackages(COACHES[1].packages); setAvailabilityBlocks(INITIAL_AVAILABILITY_BLOCKS); setCoachMedia(Array.from({ length: COACHES[1].reelsCount }, (_, i) => ({ id: `m${i + 1}`, type: i % 4 === 3 ? "photo" : "reel", caption: i % 4 === 3 ? "Training photo" : "Session highlight", sport: COACHES[1].sport, url: null }))); }}
+
           style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 999, border: `1px solid ${C.border}`, background: C.white, color: C.slate, fontSize: 11.5, fontWeight: 600, cursor: "pointer", ...fBody }}>
           <RefreshCcw size={12} /> Reset
         </button>

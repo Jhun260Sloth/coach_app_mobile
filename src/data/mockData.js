@@ -367,6 +367,33 @@ export const CLIENT_NOTIFICATIONS = [
   },
 ];
 
+/* Coach's own verification documents — surfaced on the coach dashboard as they approach expiry */
+export const COACH_VERIFICATION_DOCS = [
+  { key: "wwcc", label: "Working with Children Check", expiresOn: "24 Aug 2026", daysLeft: 18 },
+  { key: "quals", label: "Coaching qualification renewal", expiresOn: "30 Sep 2026", daysLeft: 55 },
+];
+
+/* Notifications shown in the coach dashboard's bottom sheet */
+export const COACH_NOTIFICATIONS = [
+  {
+    id: "cn1", type: "message", title: "New message from Marcus Webb", body: "Do you run sessions on weekends?",
+    time: "Yesterday", unread: true, threadId: "ct2", clientName: "Marcus Webb",
+  },
+  {
+    id: "cn2", type: "verification", title: "Working with Children Check expiring soon",
+    body: "Your WWCC expires in 18 days — renew it to keep accepting under-18 bookings.",
+    time: "Today", unread: true,
+  },
+  {
+    id: "cn3", type: "booking", title: "New booking request", body: "Marcus Webb requested a 1:1 Programming Session for Sat, 9:00am.",
+    time: "2 hours ago", unread: true,
+  },
+  {
+    id: "cn4", type: "review", title: "New 5-star review", body: "Sarah L. left you a review after your last session.",
+    time: "3 days ago", unread: false,
+  },
+];
+
 /* Shared admin mock records */
 export const ADMIN_VERIFICATION_QUEUE = [
   {

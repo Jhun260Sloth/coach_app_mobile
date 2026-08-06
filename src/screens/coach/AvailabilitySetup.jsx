@@ -147,11 +147,11 @@ export function ScreenCoachAvailabilitySetup({ nav, toast }) {
           <SectionLabel>Additional actions</SectionLabel>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <Btn variant="outline" size="sm" icon={Plus} full onClick={addSlotToAllEnabled}>
-              Add Multiple Time Slots
+              Add multiple time slots
             </Btn>
 
             <Card style={{ padding: 12 }}>
-              <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, marginBottom: 8, ...fBody }}>Block Holiday</div>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, marginBottom: 8, ...fBody }}>Block holiday</div>
               <div style={{ display: "flex", gap: 8, marginBottom: blockedHolidays.length ? 10 : 0 }}>
                 <input type="date" value={holidayDraft} onChange={(e) => setHolidayDraft(e.target.value)} style={timeInputStyle} />
                 <Btn size="sm" variant="outline" onClick={blockHoliday}>Block</Btn>
