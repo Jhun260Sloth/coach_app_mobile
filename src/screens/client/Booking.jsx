@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import {
   Info, Fingerprint, CreditCard, CheckCircle2, Plus, Lock, Calendar, Navigation, MessageCircle,
-  Users, User, ShieldCheck, Phone, Stethoscope, AlertTriangle, UserPlus,
+  Users, User, ShieldCheck, Phone, Stethoscope, AlertTriangle, UserPlus, MapPin, Send, ClipboardCheck,
 } from "lucide-react";
 import { C, fDisplay, fBody } from "../../theme/theme";
 import { COACHES, CONFIG } from "../../data/mockData";
@@ -10,6 +10,29 @@ import {
 } from "../../components/ui/Primitives";
 
 const WEEKDAY_INDEX = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+
+// A coach's package tells us whether more than one person can join the same
+// booking. "1:1" / "1:1 Coaching" (and one-on-one term blocks) only ever have
+// room for one participant. "Group", "Group Training" and "Family Sessions"
+// packages can hold several.
+function packageAllowsMultipleParticipants(pkg) {
+  const text = `${pkg.type || pkg.packageType || ""} ${pkg.name || ""}`;
+  return /group|family/i.test(text);
+}
+
+// "Mode of Delivery" — how the session is conducted.
+function deliveryModeLabel(pkg) {
+  return pkg.deliveryMode || pkg.mode || "In-person";
+}
+
+// The exact venue/address a client should show up to (or an explanation why
+// there isn't one, for online / "come to you" sessions).
+function venueLabel(pkg, coach) {
+  const mode = deliveryModeLabel(pkg);
+  if (/online|virtual/i.test(mode)) return "Online — link shared once the coach accepts";
+  if (/come to you/i.test(mode)) return pkg.travelArea ? `Coach travels to you — ${pkg.travelArea}` : "Coach travels to your location";
+  return pkg.venue || (coach && coach.venue) || "Venue to be confirmed by coach";
+}
 
 function nextDateForWeekday(abbrev) {
   const target = WEEKDAY_INDEX[abbrev];
@@ -33,6 +56,67 @@ function formatTime12(t) {
   return `${h}:${mStr} ${period}`;
 }
 
+/**
+ * First step of the booking flow: "Who's attending?" — asked before date and
+ * time are chosen, so the coach's availability check and the review page
+ * both already know who the session is for.
+ */
+export function ScreenBookingParticipants({ nav, params, children = [] }) {
+  const coach = COACHES.find((c) => c.id === params.coachId);
+  const pkg = coach.packages.find((p) => p.id === params.packageId);
+  const allowsMultiple = packageAllowsMultipleParticipants(pkg);
+
+  const [participants, setParticipants] = useState(["self"]);
+  const toggleParticipant = (key) => setParticipants((p) => {
+    if (!allowsMultiple) return p.includes(key) ? p : [key]; // 1:1 — single selection acts like a radio button
+    return p.includes(key) ? p.filter((x) => x !== key) : [...p, key];
+  });
+
+  const canContinue = participants.length > 0;
+
+  return (
+    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
+      <TopBar title="Who's attending?" onBack={() => nav("coach-profile", { id: coach.id })} />
+
+      <Card style={{ marginBottom: 22, display: "flex", gap: 12, alignItems: "center", border: `1px solid ${C.border}`, boxShadow: "0 1px 2px rgba(22,24,29,.04)" }}>
+        <Avatar name={coach.name} size={44} />
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: C.jet, letterSpacing: "-0.1px", ...fDisplay }}>{pkg.name}</div>
+          <div style={{ fontSize: 12.5, color: C.slate, marginTop: 2, ...fBody }}>with {coach.name}</div>
+        </div>
+        <div style={{ marginLeft: "auto", fontSize: 16, fontWeight: 800, color: C.jet, whiteSpace: "nowrap", ...fDisplay }}>
+          ${pkg.price}
+        </div>
+      </Card>
+
+      <div style={{ flex: 1, overflowY: "auto" }}>
+        <SectionLabel>Select who's coming</SectionLabel>
+        <div style={{ fontSize: 12.5, color: C.slate, marginBottom: 14, lineHeight: 1.5, ...fBody }}>
+          {allowsMultiple
+            ? "This is a group session — select yourself, one child, or several. Each participant keeps their own booking history."
+            : "This is a 1:1 session, so pick a single participant — yourself or one child profile."}
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          <Chip active={participants.includes("self")} icon={User} onClick={() => toggleParticipant("self")}>Myself</Chip>
+          {children.map((c) => (
+            <Chip key={c.id} active={participants.includes(c.id)} icon={Users} onClick={() => toggleParticipant(c.id)}>{c.name || "Unnamed profile"}</Chip>
+          ))}
+        </div>
+        {children.length === 0 && (
+          <button onClick={() => nav("client-profile")} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", marginTop: 14, padding: 0 }}>
+            <UserPlus size={13} color={C.orange} />
+            <span style={{ fontSize: 12, color: C.orange, fontWeight: 600, ...fBody }}>Add a child profile from Account to book for them</span>
+          </button>
+        )}
+      </div>
+
+      <div style={{ marginTop: "auto", padding: "14px 0" }}>
+        <Btn full disabled={!canContinue} onClick={() => nav("booking-datetime", { coachId: coach.id, packageId: pkg.id, participants })}>Continue</Btn>
+      </div>
+    </div>
+  );
+}
+
 export function ScreenBookingDateTime({ nav, params, setDraft }) {
   const coach = COACHES.find((c) => c.id === params.coachId);
   const pkg = coach.packages.find((p) => p.id === params.packageId);
@@ -50,7 +134,7 @@ export function ScreenBookingDateTime({ nav, params, setDraft }) {
   };
   return (
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title="Choose a time" onBack={() => nav("coach-profile", { id: coach.id })} />
+      <TopBar title="Choose a time" onBack={() => nav("booking-participants", { coachId: coach.id, packageId: pkg.id, participants: params.participants })} />
 
       <Card style={{ marginBottom: 22, display: "flex", gap: 12, alignItems: "center", border: `1px solid ${C.border}`, boxShadow: "0 1px 2px rgba(22,24,29,.04)" }}>
         <Avatar name={coach.name} size={44} />
@@ -144,14 +228,15 @@ export function ScreenBookingDateTime({ nav, params, setDraft }) {
       </div>
 
       <div style={{ marginTop: "auto", padding: "14px 0" }}>
-        <Btn full disabled={!time || checking} onClick={() => { setDraft({ coach, pkg, day: formatFullDate(day), time: formatTime12(time), mode: pkg.mode }); nav("booking-review"); }}>Continue</Btn>
+        <Btn full disabled={!time || checking} onClick={() => { setDraft({ coach, pkg, day: formatFullDate(day), time: formatTime12(time), mode: pkg.mode, participants: params.participants || ["self"] }); nav("booking-review"); }}>Continue</Btn>
       </div>
     </div>
   );
 }
 
-export function ScreenBookingReview({ nav, draft, setDraft, toast, children = [] }) {
-  const [participants, setParticipants] = useState(["self"]);
+export function ScreenBookingReview({ nav, draft, setDraft, toast, children = [], bookings = [], addBooking }) {
+  // Who's attending was already chosen on the previous step (ScreenBookingParticipants).
+  const participants = draft.participants || ["self"];
   const [guardianName, setGuardianName] = useState("");
   const [guardianRelationship, setGuardianRelationship] = useState("");
   const [emergencyName, setEmergencyName] = useState("");
@@ -159,16 +244,6 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast, children = []
   const [conditions, setConditions] = useState("");
   const [consent, setConsent] = useState(false);
 
-  // A coach's package tells us whether more than one person can join the same booking.
-  // "1:1" / "1:1 Coaching" (and one-on-one term blocks) only ever have room for one
-  // participant. "Group", "Group Training" and "Family Sessions" packages can hold several.
-  const packageTypeText = `${draft.pkg.type || draft.pkg.packageType || ""} ${draft.pkg.name || ""}`;
-  const allowsMultipleParticipants = /group|family/i.test(packageTypeText);
-
-  const toggleParticipant = (key) => setParticipants((p) => {
-    if (!allowsMultipleParticipants) return p.includes(key) ? p : [key]; // 1:1 — single selection acts like a radio button
-    return p.includes(key) ? p.filter((x) => x !== key) : [...p, key];
-  });
   const selectedChildren = children.filter((c) => participants.includes(c.id));
   // Child safety details are only relevant for participants who are actually
   // under 18 — an unset age is treated as a minor too, since these are child
@@ -210,35 +285,15 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast, children = []
 
   return (
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title="Review booking" onBack={() => nav("booking-datetime", { coachId: draft.coach.id, packageId: draft.pkg.id })} />
+      <TopBar title="Review booking" onBack={() => nav("booking-datetime", { coachId: draft.coach.id, packageId: draft.pkg.id, participants })} />
       <div style={{ flex: 1, overflowY: "auto" }}>
         <Card style={{ marginBottom: 14 }}>
           <Row label="Coach" value={draft.coach.name} />
           <Row label="Service" value={draft.pkg.name} />
           <Row label="When" value={`${draft.day} at ${draft.time}`} />
-          <Row label="Location" value={draft.mode} />
+          <Row label="Venue" value={venueLabel(draft.pkg, draft.coach)} />
+          <Row label="Mode of Delivery" value={deliveryModeLabel(draft.pkg)} />
           <Row label="For" value={participantLabel} last />
-        </Card>
-
-        <Card style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, marginBottom: 4, ...fBody }}>Who's attending?</div>
-          <div style={{ fontSize: 12, color: C.slate, marginBottom: 12, lineHeight: 1.5, ...fBody }}>
-            {allowsMultipleParticipants
-              ? "This is a group session — select yourself, one child, or several. Each participant keeps their own booking history."
-              : "This is a 1:1 session, so pick a single participant — yourself or one child profile."}
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            <Chip active={participants.includes("self")} icon={User} onClick={() => toggleParticipant("self")}>Myself</Chip>
-            {children.map((c) => (
-              <Chip key={c.id} active={participants.includes(c.id)} icon={Users} onClick={() => toggleParticipant(c.id)}>{c.name || "Unnamed profile"}</Chip>
-            ))}
-          </div>
-          {children.length === 0 && (
-            <button onClick={() => nav("client-profile")} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", marginTop: 12, padding: 0 }}>
-              <UserPlus size={13} color={C.orange} />
-              <span style={{ fontSize: 12, color: C.orange, fontWeight: 600, ...fBody }}>Add a child profile from Account to book for them</span>
-            </button>
-          )}
         </Card>
 
         <Card style={{ marginBottom: 14 }}>
@@ -363,9 +418,13 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast, children = []
               return `${c.name || "Participant"} — ${bits.join("; ")}`;
             }).join("\n");
           const combinedConditions = [conditions.trim(), profileSafetyNotes].filter(Boolean).join("\n");
-          setDraft({ ...draft, total, participants: participantLabel, includesMinor, guardianName, guardianRelationship, emergencyName, emergencyPhone, conditions: combinedConditions });
-          nav("payment");
-        }}>Continue to payment</Btn>
+          const newId = "b" + (bookings.length + 1);
+          const finalDraft = { ...draft, id: newId, total, participants: participantLabel, includesMinor, guardianName, guardianRelationship, emergencyName, emergencyPhone, conditions: combinedConditions };
+          setDraft(finalDraft);
+          addBooking(finalDraft);
+          toast("Booking request sent");
+          nav("booking-request-sent", { id: newId, coachName: draft.coach.name });
+        }}>Submit request</Btn>
       </div>
     </div>
   );
@@ -495,6 +554,33 @@ export function ScreenBookingConfirmation({ nav, draft, toast }) {
       <div style={{ marginTop: "auto", padding: "14px 0", display: "flex", flexDirection: "column", gap: 10 }}>
         <Btn full variant="secondary" icon={MessageCircle} onClick={() => nav("chat-thread", { name: draft.coach.name })}>Message {draft.coach.name.split(" ")[0]}</Btn>
         <Btn full onClick={() => nav("client-dashboard")}>Go to dashboard</Btn>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Shown right after a client submits a booking request (replacing the old
+ * immediate-payment confirmation). No payment has been collected yet — the
+ * coach still needs to review, and possibly message the client, before
+ * accepting or declining.
+ */
+export function ScreenBookingRequestSent({ nav, params }) {
+  return (
+    <div style={{ padding: "28px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
+      <div style={{ textAlign: "center", marginBottom: 24 }}>
+        <div style={{ width: 60, height: 60, borderRadius: 20, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
+          <Send size={26} color={C.orange} />
+        </div>
+        <div style={{ fontSize: 20, fontWeight: 600, color: C.jet, ...fDisplay }}>Booking Request Sent</div>
+        <div style={{ fontSize: 13, color: C.slate, marginTop: 8, lineHeight: 1.6, maxWidth: 300, marginLeft: "auto", marginRight: "auto", ...fBody }}>
+          Your booking request has been sent to the coach for review. You'll receive a notification once the coach accepts, requests more information, or declines your request.
+        </div>
+      </div>
+
+      <div style={{ marginTop: "auto", padding: "14px 0", display: "flex", flexDirection: "column", gap: 10 }}>
+        <Btn full icon={ClipboardCheck} onClick={() => nav("client-booking-detail", { id: params.id })}>View Booking</Btn>
+        <Btn full variant="secondary" icon={MessageCircle} onClick={() => nav("chat-thread", { name: params.coachName })}>Message Coach</Btn>
       </div>
     </div>
   );

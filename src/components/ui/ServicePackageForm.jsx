@@ -5,6 +5,7 @@ import { Chip, Btn, SearchSelect } from "./Primitives";
 
 export const PACKAGE_TYPE_OPTIONS = [
   "1:1 Coaching", "Group Training", "Family Sessions", "Team Program", "Skills Clinic", "Online Coaching",
+  "Private Lesson", "Bootcamp", "Holiday Camp", "Assessment", "Workshop", "Squad Training",
 ];
 // Small set of quick-pick sports shown by default in the searchable Sport
 // Category field below. Coaches aren't limited to this list — they can search
@@ -31,7 +32,7 @@ const labelStyle = { fontSize: 12.5, fontWeight: 600, color: C.jet, marginBottom
 export function emptyPackage() {
   return {
     name: "",
-    packageType: "",
+    packageTypes: [],
     sport: "",
     description: "",
     sessionDuration: 60,
@@ -51,7 +52,7 @@ export function isPackageValid(pkg) {
   const venueOk = pkg.deliveryMode === "In-person" ? pkg.venue.trim().length > 0 : true;
   return (
     pkg.name.trim().length > 0 &&
-    !!pkg.packageType &&
+    pkg.packageTypes.length > 0 &&
     !!pkg.sport &&
     durationOk &&
     pkg.price !== "" && Number(pkg.price) > 0 &&
@@ -71,7 +72,7 @@ export function packageLocationLabel(pkg) {
 export function packageSummary(pkg) {
   const duration = pkg.useCustomDuration ? pkg.sessionDurationCustom : `${pkg.sessionDuration} min`;
   const parts = [
-    pkg.packageType, pkg.sport, duration,
+    (pkg.packageTypes || []).join(" + "), pkg.sport, duration,
     pkg.price !== "" ? `$${pkg.price}` : null,
     pkg.maxParticipants !== "" ? `max ${pkg.maxParticipants}` : null,
     pkg.deliveryMode ? packageLocationLabel(pkg) : null,
@@ -86,10 +87,14 @@ export function packageSummary(pkg) {
  */
 export function recordToPackageForm(rec) {
   const isPreset = SESSION_DURATION_OPTIONS.includes(rec.durationMinutes);
+  // Older/compact records only ever stored a single type string — split it
+  // back out so it still shows as (at least) one selected chip when editing.
+  const legacyTypes = (rec.packageType || rec.type || "")
+    .split("+").map((t) => t.trim()).filter(Boolean);
   return {
     ...emptyPackage(),
     name: rec.name || "",
-    packageType: rec.packageType || rec.type || "",
+    packageTypes: rec.packageTypes && rec.packageTypes.length ? rec.packageTypes : legacyTypes,
     sport: rec.sport || "",
     description: rec.description || "",
     sessionDuration: isPreset ? rec.durationMinutes : 60,
@@ -113,11 +118,13 @@ export function packageFormToRecord(pkg, existingId) {
   const durationMinutes = pkg.useCustomDuration
     ? (parseInt(pkg.sessionDurationCustom, 10) || null)
     : pkg.sessionDuration;
+  const typeLabel = pkg.packageTypes.join(" + ");
   return {
     id: existingId || `pkg${Date.now()}`,
     name: pkg.name,
-    type: pkg.packageType,
-    packageType: pkg.packageType,
+    type: typeLabel,
+    packageType: typeLabel,
+    packageTypes: pkg.packageTypes,
     sport: pkg.sport,
     description: pkg.description,
     duration: pkg.useCustomDuration ? pkg.sessionDurationCustom : pkg.sessionDuration,
@@ -154,10 +161,24 @@ export function ServicePackageForm({ initial, onSave, onCancel, saveLabel = "Add
       </div>
 
       <div style={labelStyle}>Package type</div>
+      <div style={{ fontSize: 11.5, color: C.slateLight, marginBottom: 8, marginTop: -6, ...fBody }}>
+        Select every format this service can be booked as — you can pick more than one.
+      </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
-        {PACKAGE_TYPE_OPTIONS.map((t) => (
-          <Chip key={t} active={pkg.packageType === t} onClick={() => set({ packageType: t })}>{t}</Chip>
-        ))}
+        {PACKAGE_TYPE_OPTIONS.map((t) => {
+          const active = pkg.packageTypes.includes(t);
+          return (
+            <Chip
+              key={t}
+              active={active}
+              onClick={() => set({
+                packageTypes: active ? pkg.packageTypes.filter((x) => x !== t) : [...pkg.packageTypes, t],
+              })}
+            >
+              {t}
+            </Chip>
+          );
+        })}
       </div>
 
       <div style={labelStyle}>Sport category</div>
@@ -215,7 +236,10 @@ export function ServicePackageForm({ initial, onSave, onCancel, saveLabel = "Add
         <span style={{ fontSize: 11.5, color: C.slateLight, ...fBody }}>per session</span>
       </div>
 
-      <div style={labelStyle}>Maximum participants</div>
+      <div style={labelStyle}>Maximum participants per package</div>
+      <div style={{ fontSize: 11.5, color: C.slateLight, marginBottom: 8, marginTop: -6, ...fBody }}>
+        The most people who can join a single session of this specific package.
+      </div>
       <div style={{ ...fieldWrapStyle, marginBottom: 16 }}>
         <Users size={14} color={C.slateLight} />
         <input
@@ -225,6 +249,7 @@ export function ServicePackageForm({ initial, onSave, onCancel, saveLabel = "Add
           inputMode="numeric"
           style={fieldInputStyle}
         />
+        <span style={{ fontSize: 11.5, color: C.slateLight, ...fBody }}>max people</span>
       </div>
 
       <div style={labelStyle}>Delivery & location</div>

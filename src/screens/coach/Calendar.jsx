@@ -1,9 +1,10 @@
-import React, { useState } from "react";
-import { Calendar as CalendarIcon, Trash2, Plus, Clock } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { Calendar as CalendarIcon, Trash2, Plus, Clock, ChevronLeft, ChevronRight, Ban } from "lucide-react";
 import { C, fDisplay, fBody } from "../../theme/theme";
-import { Card, SectionLabel, Btn, Toggle, Chip, EmptyState } from "../../components/ui/Primitives";
+import { Card, SectionLabel, Btn, Toggle, Chip, EmptyState, SegTabs } from "../../components/ui/Primitives";
 
 const DAY_OPTIONS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const WEEKDAY_HEADERS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const timeInputStyle = {
   width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "10px 12px",
   fontSize: 13.5, outline: "none", boxSizing: "border-box", ...fBody,
@@ -18,8 +19,40 @@ function to12h(t) {
   return `${h12}:${String(m).padStart(2, "0")} ${period}`;
 }
 
+/* ---- date helpers for the calendar view ---- */
+function addDays(d, n) { const r = new Date(d); r.setDate(d.getDate() + n); return r; }
+function startOfWeek(d) { const dow = (d.getDay() + 6) % 7; return addDays(d, -dow); } // Monday-start
+function buildMonthGrid(cursor) {
+  const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+  const gridStart = startOfWeek(first);
+  const weeks = [];
+  let cur = gridStart;
+  for (let w = 0; w < 6; w++) {
+    const row = [];
+    for (let i = 0; i < 7; i++) { row.push(cur); cur = addDays(cur, 1); }
+    weeks.push(row);
+  }
+  return weeks;
+}
+function sameDay(a, b) { return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
+// Matches the "Sat, 2 Aug" style strings used for one-off exceptions.
+function formatDateShort(d) {
+  return d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+}
+
+const DOW_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
 export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlocks, setAvailabilityBlocks }) {
   const [synced, setSynced] = useState(true);
+  const [view, setView] = useState("list");
+
+  // Calendar view — month grid navigation
+  const [cursor, setCursor] = useState(() => new Date());
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
+  const weeks = useMemo(() => buildMonthGrid(cursor), [cursor]);
+  const headerLabel = cursor.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  const goPrev = () => setCursor((c) => new Date(c.getFullYear(), c.getMonth() - 1, 1));
+  const goNext = () => setCursor((c) => new Date(c.getFullYear(), c.getMonth() + 1, 1));
 
   // New availability block form state
   const [showForm, setShowForm] = useState(false);
@@ -67,11 +100,107 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
   };
   const removeException = (id) => { setExceptions((arr) => arr.filter((e) => e.id !== id)); toast("Exception removed"); };
 
+  // Resolve a calendar date to whichever weekly availability blocks recur on
+  // that day, and whether a one-off exception blocks it out entirely.
+  const blocksForDate = (d) => availabilityBlocks.filter((b) => b.days.includes(DOW_ABBR[d.getDay()]));
+  const exceptionForDate = (d) => exceptions.find((ex) => ex.date === formatDateShort(d));
+  const selectedBlocks = blocksForDate(selectedDate);
+  const selectedException = exceptionForDate(selectedDate);
+
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "18px 20px 0", flex: 1, overflowY: "auto", paddingBottom: 100 }}>
         <div style={{ fontSize: 22, fontWeight: 600, color: C.jet, marginBottom: 14, ...fDisplay }}>Availability</div>
 
+        <div style={{ marginBottom: 16 }}>
+          <SegTabs value={view} onChange={setView} items={[{ value: "list", label: "List" }, { value: "calendar", label: "Calendar" }]} />
+        </div>
+
+        {view === "calendar" ? (
+          <>
+            <Card style={{ marginBottom: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <button onClick={goPrev} style={{ width: 30, height: 30, borderRadius: 10, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                  <ChevronLeft size={16} color={C.jet} />
+                </button>
+                <span style={{ fontSize: 13.5, fontWeight: 700, color: C.jet, ...fDisplay }}>{headerLabel}</span>
+                <button onClick={goNext} style={{ width: 30, height: 30, borderRadius: 10, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                  <ChevronRight size={16} color={C.jet} />
+                </button>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 6 }}>
+                {WEEKDAY_HEADERS.map((d) => (
+                  <div key={d} style={{ textAlign: "center", fontSize: 10.5, fontWeight: 700, color: C.slateLight, ...fBody }}>{d}</div>
+                ))}
+              </div>
+              {weeks.map((row, ri) => (
+                <div key={ri} style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 4 }}>
+                  {row.map((d, di) => {
+                    const inRange = d.getMonth() === cursor.getMonth();
+                    const isSelected = sameDay(d, selectedDate);
+                    const blocked = !!exceptionForDate(d);
+                    const available = !blocked && blocksForDate(d).length > 0;
+                    return (
+                      <button key={di} onClick={() => setSelectedDate(d)} style={{
+                        aspectRatio: "1", borderRadius: 10, cursor: "pointer",
+                        border: `1px solid ${isSelected ? C.orange : C.border}`,
+                        background: isSelected ? C.orangeTint : C.white,
+                        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3,
+                        opacity: inRange ? 1 : 0.35,
+                      }}>
+                        <span style={{ fontSize: 12, fontWeight: isSelected ? 700 : 500, color: C.jet, ...fBody }}>{d.getDate()}</span>
+                        <span style={{
+                          width: 5, height: 5, borderRadius: 99,
+                          background: blocked ? "#D64545" : available ? C.success : "transparent",
+                        }} />
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+
+              <div style={{ display: "flex", gap: 14, marginTop: 12, justifyContent: "center" }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: C.slate, ...fBody }}>
+                  <span style={{ width: 6, height: 6, borderRadius: 99, background: C.success }} /> Available
+                </span>
+                <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: C.slate, ...fBody }}>
+                  <span style={{ width: 6, height: 6, borderRadius: 99, background: "#D64545" }} /> Blocked
+                </span>
+              </div>
+            </Card>
+
+            <SectionLabel>{selectedDate.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}</SectionLabel>
+            {selectedException && (
+              <Card style={{ marginBottom: 10, background: "#FDECEC", border: "1px solid #F3D2D2", display: "flex", gap: 10, alignItems: "flex-start" }}>
+                <Ban size={16} color="#D64545" style={{ flexShrink: 0, marginTop: 1 }} />
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: C.jet, ...fBody }}>Blocked all day</div>
+                  <div style={{ fontSize: 11.5, color: C.slate, ...fBody }}>Reason: {selectedException.reason}</div>
+                </div>
+              </Card>
+            )}
+            {!selectedException && selectedBlocks.length === 0 && (
+              <EmptyState icon={CalendarIcon} title="No availability" body="Nothing set for this day. Add a weekly slot below in List view." />
+            )}
+            {!selectedException && selectedBlocks.map((b) => (
+              <Card key={b.id} style={{ marginBottom: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                  <Clock size={12} color={C.slate} />
+                  <span style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, ...fBody }}>{to12h(b.start)} – {to12h(b.end)}</span>
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+                  {packageMissing(b) ? (
+                    <span style={{ fontSize: 11.5, color: C.orange, fontWeight: 600, ...fBody }}>No packages selected</span>
+                  ) : (
+                    b.packageIds.map((id) => <Chip key={id} active>{packageName(id)}</Chip>)
+                  )}
+                </div>
+              </Card>
+            ))}
+          </>
+        ) : (
+          <>
         <Card style={{ marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <CalendarIcon size={17} color={C.jet} />
@@ -198,6 +327,8 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
             <Btn variant="outline" size="sm" icon={Plus} full onClick={() => setShowExForm(true)}>Add exception</Btn>
           )}
         </div>
+          </>
+        )}
       </div>
     </div>
   );

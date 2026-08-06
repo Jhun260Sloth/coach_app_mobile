@@ -29,10 +29,12 @@ import {
 import { ScreenClientHome, ScreenSearchFilters } from "./screens/client/Discovery";
 import { ScreenCoachProfile } from "./screens/client/CoachProfile";
 import {
-  ScreenBookingDateTime, ScreenBookingReview, ScreenPayment, ScreenBookingConfirmation,
+  ScreenBookingParticipants, ScreenBookingDateTime, ScreenBookingReview, ScreenPayment,
+  ScreenBookingConfirmation, ScreenBookingRequestSent,
 } from "./screens/client/Booking";
 import { ScreenClientDashboard, ScreenLeaveReview, ScreenClientBookingDetail } from "./screens/client/Dashboard";
 import { ScreenClientProfile, ScreenPaymentHistory } from "./screens/client/Account";
+import { ScreenClientSetupComplete } from "./screens/client/SetupComplete";
 
 // Coach
 import { ScreenCoachDashboard } from "./screens/coach/CoachDashboard";
@@ -121,7 +123,11 @@ export default function App() {
   const nav = (s, p = {}) => { setHistory((h) => [...h, screen]); setScreen(s); setParams(p); };
   const goBack = () => { setHistory((h) => { const n = [...h]; const last = n.pop(); if (last) setScreen(last); return n; }); };
   const toggleFav = (id) => setFavorites((f) => f.includes(id) ? f.filter((x) => x !== id) : [...f, id]);
-  const addBooking = (d) => setBookings((b) => [{ id: "b" + (b.length + 1), coachId: d.coach.id, coachName: d.coach.name, clientName: "Sarah Lin", service: d.pkg.name, date: d.day, time: d.time, mode: d.mode, status: d.coach.instantBook ? "confirmed" : "pending", price: d.total, reviewed: false, participants: d.participants || "You", notes: d.conditions || "" }, ...b]);
+  // Every booking now starts life as a pending request — no payment is collected
+  // until the coach has reviewed it and accepted. `d.id`, when supplied, keeps
+  // the id the client was already shown on the "Booking Request Sent" screen
+  // in sync with the record actually added here.
+  const addBooking = (d) => setBookings((b) => [{ id: d.id || ("b" + (b.length + 1)), coachId: d.coach.id, coachName: d.coach.name, clientName: "Sarah Lin", service: d.pkg.name, date: d.day, time: d.time, mode: d.mode, status: "pending", price: d.total, reviewed: false, participants: d.participants || "You", notes: d.conditions || "" }, ...b]);
   const cancelBooking = (id) => setBookings((bs) => bs.map((b) => (b.id === id ? { ...b, status: "cancelled" } : b)));
   const rescheduleBooking = (id, { date, time }) => setBookings((bs) => bs.map((b) => (b.id === id ? { ...b, date, time } : b)));
   const handleClientPrefs = (prefs) => {
@@ -215,7 +221,8 @@ export default function App() {
       case "about-you-profile": return <ScreenAboutYouProfile {...screenProps} />;
       case "account-type": return <ScreenAccountType {...screenProps} />;
       case "about-you-participants": return <ScreenAboutYouParticipants {...screenProps} />;
-      case "about-you-self": return <ScreenAboutYouSelf {...screenProps} />;
+      case "about-you-self": return <ScreenAboutYouSelf {...screenProps} />
+      case "client-setup-complete": return <ScreenClientSetupComplete {...screenProps} />;
       case "verification": return <ScreenVerification {...screenProps} />;
       case "verification-pending": return <ScreenVerificationPending {...screenProps} />;
       case "admin-login": return <ScreenAdminLogin {...screenProps} />;
@@ -223,10 +230,12 @@ export default function App() {
       case "client-home": return <ScreenClientHome {...screenProps} />;
       case "search-filters": return <ScreenSearchFilters {...screenProps} />;
       case "coach-profile": return <ScreenCoachProfile {...screenProps} />;
+      case "booking-participants": return <ScreenBookingParticipants {...screenProps} />;
       case "booking-datetime": return <ScreenBookingDateTime {...screenProps} />;
       case "booking-review": return <ScreenBookingReview {...screenProps} />;
       case "payment": return <ScreenPayment {...screenProps} />;
       case "booking-confirmation": return <ScreenBookingConfirmation {...screenProps} />;
+      case "booking-request-sent": return <ScreenBookingRequestSent {...screenProps} />;
       case "client-dashboard": return <ScreenClientDashboard {...screenProps} />;
       case "client-booking-detail": return <ScreenClientBookingDetail {...screenProps} />;
       case "leave-review": return <ScreenLeaveReview {...screenProps} />;

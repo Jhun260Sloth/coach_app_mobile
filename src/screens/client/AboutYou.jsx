@@ -447,7 +447,7 @@ export function ScreenAboutYouParticipants({ nav, params, addChild, toast }) {
   const saveAndFinish = () => {
     if (!canSave) return;
     persist();
-    nav("client-home");
+    nav("client-setup-complete");
   };
 
   const saveAndAddAnother = () => {
@@ -493,7 +493,7 @@ export function ScreenAboutYouSelf({ nav, params, onComplete }) {
     const age = calcAge(draft.dob);
     const prefs = { ...params, ...draft, age: age !== null ? age : "" };
     if (onComplete) onComplete(prefs);
-    nav("client-home");
+    nav("client-setup-complete", { name: draft.name });
   };
 
   return (
