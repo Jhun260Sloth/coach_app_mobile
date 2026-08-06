@@ -11,7 +11,7 @@ import {
   Percent,
 } from "lucide-react";
 import { C, fDisplay, fBody } from "../../theme/theme";
-import { REVIEWS, CONFIG, COACH_NOTIFICATIONS } from "../../data/mockData";
+import { REVIEWS, CONFIG } from "../../data/mockData";
 import {
   Avatar,
   Card,
@@ -60,13 +60,14 @@ export function StatMini({ label, value, icon: Icon }) {
 export function ScreenCoachDashboard({
   nav,
   coachBookings,
-  setCoachBookings,
+  respondBooking,
+  coachNotifications: notifications,
+  setCoachNotifications: setNotifications,
   verified,
   toast,
   offline,
 }) {
   const [notifOpen, setNotifOpen] = useState(false);
-  const [notifications, setNotifications] = useState(COACH_NOTIFICATIONS);
   const [respondingId, setRespondingId] = useState(null);
 
   const pending = coachBookings.filter((b) => b.status === "pending");
@@ -79,16 +80,11 @@ export function ScreenCoachDashboard({
 
   const unreadCount = notifications.filter((n) => n.unread).length;
 
-  const respond = (id, status) =>
-    setCoachBookings((arr) =>
-      arr.map((b) => (b.id === id ? { ...b, status } : b))
-    );
-
   const respondWithFeedback = (id, status, message) => {
     setRespondingId(id);
 
     setTimeout(() => {
-      respond(id, status);
+      respondBooking(id, status);
       setRespondingId(null);
       toast(message);
     }, 600);
