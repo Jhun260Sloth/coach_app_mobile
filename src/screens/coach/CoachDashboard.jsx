@@ -1,8 +1,13 @@
-import React from "react";
-import { WifiOff, Calendar, Star, Banknote } from "lucide-react";
+import React, { useState } from "react";
+import {
+  WifiOff, Calendar, Star, Banknote, Bell, MessageCircle, ShieldAlert, ChevronRight, Check, Percent,
+} from "lucide-react";
 import { C, fDisplay, fBody } from "../../theme/theme";
-import { REVIEWS, CONFIG } from "../../data/mockData";
-import { Avatar, Card, Btn, SectionLabel, StatusPill, StarRow } from "../../components/ui/Primitives";
+import { REVIEWS, CONFIG, COACH_THREADS, COACH_VERIFICATION_DOCS, COACH_NOTIFICATIONS } from "../../data/mockData";
+import { Avatar, Card, Btn, SectionLabel, StatusPill, StarRow, BottomSheet } from "../../components/ui/Primitives";
+
+const NOTIF_ICON = { message: MessageCircle, verification: ShieldAlert, booking: Calendar, review: Star, promo: Percent };
+const EXPIRY_WARN_DAYS = 30;
 
 export function StatMini({ label, value, icon: Icon }) {
   return (
@@ -15,6 +20,9 @@ export function StatMini({ label, value, icon: Icon }) {
 }
 
 export function ScreenCoachDashboard({ nav, coachBookings, setCoachBookings, verified, toast, offline }) {
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState(COACH_NOTIFICATIONS);
+
   const pending = coachBookings.filter((b) => b.status === "pending");
   const upcoming = coachBookings.filter((b) => b.status === "confirmed");
   const completed = coachBookings.filter((b) => b.status === "completed");
@@ -22,7 +30,21 @@ export function ScreenCoachDashboard({ nav, coachBookings, setCoachBookings, ver
   const grossPaid = completed.reduce((s, b) => s + b.price, 0);
   const commission = Math.round(grossPaid * CONFIG.commissionRate);
 
+  const unansweredThreads = COACH_THREADS.filter((t) => t.unread > 0);
+  const expiringDocs = COACH_VERIFICATION_DOCS.filter((d) => d.daysLeft <= EXPIRY_WARN_DAYS);
+  const unreadCount = notifications.filter((n) => n.unread).length;
+
   const respond = (id, status) => setCoachBookings((arr) => arr.map((b) => b.id === id ? { ...b, status } : b));
+
+  const markAllRead = () => setNotifications((arr) => arr.map((n) => ({ ...n, unread: false })));
+  const openNotification = (n) => {
+    setNotifications((arr) => arr.map((x) => x.id === n.id ? { ...x, unread: false } : x));
+    setNotifOpen(false);
+    if (n.type === "message") nav("chat-thread", { name: n.clientName, threadId: n.threadId });
+    else if (n.type === "verification") nav("coach-profile-edit");
+    else if (n.type === "booking") nav("coach-bookings");
+    else if (n.type === "review") nav("coach-dashboard");
+  };
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
@@ -32,10 +54,50 @@ export function ScreenCoachDashboard({ nav, coachBookings, setCoachBookings, ver
             <div style={{ fontSize: 12.5, color: C.slate, ...fBody }}>Welcome back</div>
             <div style={{ fontSize: 22, fontWeight: 600, color: C.jet, ...fDisplay }}>Josh's dashboard</div>
           </div>
-          <button onClick={() => nav("coach-profile-edit")} style={{ background: "none", border: "none", cursor: "pointer" }}>
-            <Avatar name="Josh Whitfield" size={40} />
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <button onClick={() => setNotifOpen(true)} style={{ background: "none", border: "none", cursor: "pointer" }}>
+              <div style={{ position: "relative" }}>
+                <Bell size={22} color={C.jet} />
+                {unreadCount > 0 && (
+                  <span style={{
+                    position: "absolute", top: -4, right: -6, minWidth: 15, height: 15, padding: "0 3px",
+                    background: C.orange, borderRadius: 99, border: `1.5px solid ${C.white}`,
+                    display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9.5, fontWeight: 700, color: C.white, ...fBody,
+                  }}>{unreadCount}</span>
+                )}
+              </div>
+            </button>
+            <button onClick={() => nav("coach-profile-edit")} style={{ background: "none", border: "none", cursor: "pointer" }}>
+              <Avatar name="Josh Whitfield" size={40} />
+            </button>
+          </div>
         </div>
+
+        {unansweredThreads.length > 0 && (
+          <button onClick={() => nav("coach-messages")} style={{
+            width: "100%", display: "flex", alignItems: "center", gap: 10, background: C.jet, color: C.white,
+            padding: "12px 14px", borderRadius: 14, marginTop: 14, border: "none", cursor: "pointer", textAlign: "left",
+          }}>
+            <MessageCircle size={16} color={C.orange} style={{ flexShrink: 0 }} />
+            <div style={{ flex: 1, fontSize: 12.5, ...fBody }}>
+              {unansweredThreads.length} unanswered {unansweredThreads.length === 1 ? "message" : "messages"} — reply to keep your response rate up.
+            </div>
+            <ChevronRight size={15} color={C.white} style={{ flexShrink: 0 }} />
+          </button>
+        )}
+
+        {expiringDocs.map((d) => (
+          <button key={d.key} onClick={() => nav("coach-profile-edit")} style={{
+            width: "100%", display: "flex", alignItems: "center", gap: 10, background: C.warnTint,
+            padding: "12px 14px", borderRadius: 14, marginTop: 10, border: "none", cursor: "pointer", textAlign: "left",
+          }}>
+            <ShieldAlert size={16} color={C.orange} style={{ flexShrink: 0 }} />
+            <div style={{ flex: 1, fontSize: 12.5, color: C.jet, ...fBody }}>
+              <span style={{ fontWeight: 600 }}>{d.label}</span> expires in {d.daysLeft} days ({d.expiresOn}).
+            </div>
+            <ChevronRight size={15} color={C.slate} style={{ flexShrink: 0 }} />
+          </button>
+        ))}
 
         {offline && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.jet, color: C.white, padding: "9px 12px", borderRadius: 12, marginTop: 14, fontSize: 12, ...fBody }}>
@@ -108,6 +170,32 @@ export function ScreenCoachDashboard({ nav, coachBookings, setCoachBookings, ver
           </Card>
         ))}
       </div>
+
+      <BottomSheet open={notifOpen} onClose={() => setNotifOpen(false)} title="Notifications" heightPct={72}>
+        {unreadCount > 0 && (
+          <button onClick={markAllRead} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", color: C.orange, fontSize: 12.5, fontWeight: 600, cursor: "pointer", marginBottom: 10, padding: "2px 0", ...fBody }}>
+            <Check size={13} /> Mark all as read
+          </button>
+        )}
+        {notifications.map((n) => {
+          const Icon = NOTIF_ICON[n.type] || Bell;
+          return (
+            <button key={n.id} onClick={() => openNotification(n)} style={{ width: "100%", display: "flex", gap: 12, alignItems: "flex-start", padding: "12px 4px", background: "none", border: "none", borderBottom: `1px solid ${C.border}`, cursor: "pointer", textAlign: "left" }}>
+              <div style={{ width: 36, height: 36, borderRadius: 11, background: n.type === "verification" ? C.warnTint : C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Icon size={16} color={C.orange} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: C.jet, ...fBody }}>{n.title}</span>
+                  <span style={{ fontSize: 10.5, color: C.slateLight, flexShrink: 0, ...fBody }}>{n.time}</span>
+                </div>
+                <div style={{ fontSize: 12.5, color: C.slate, marginTop: 3, lineHeight: 1.45, ...fBody }}>{n.body}</div>
+              </div>
+              {n.unread && <span style={{ width: 8, height: 8, borderRadius: 99, background: C.orange, flexShrink: 0, marginTop: 5 }} />}
+            </button>
+          );
+        })}
+      </BottomSheet>
     </div>
   );
 }

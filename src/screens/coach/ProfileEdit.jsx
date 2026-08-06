@@ -2,17 +2,28 @@ import React, { useState, useRef } from "react";
 import {
   Camera, Edit3, Eye, EyeOff, CreditCard, Fingerprint, Lock, Shield, HelpCircle,
   LogOut, ChevronRight, Trash2, Plus, User, ShieldCheck, BadgeCheck, AlertTriangle,
-  Wallet, Banknote, CalendarClock, Zap, Hand,
+  Wallet, Banknote, CalendarClock, Zap, Hand, Bell, MapPin, Film, Play, Image as ImageIcon, Trophy,
 } from "lucide-react";
 import { C, fDisplay, fBody } from "../../theme/theme";
-import { COACHES, LANGUAGE_OPTIONS, GENDER_OPTIONS, AU_SUBURBS } from "../../data/mockData";
+import { COACHES, LANGUAGE_OPTIONS, GENDER_OPTIONS, AU_SUBURBS, SPORTS, SPORT_ICON } from "../../data/mockData";
 import {
-  Avatar, SectionLabel, Chip, Card, Toggle, Btn, Badge, BottomSheet, Field, RadioRow,
+  Avatar, SectionLabel, Chip, Card, Toggle, Btn, Badge, BottomSheet, Field,
   SearchMultiSelect, SearchSelect,
 } from "../../components/ui/Primitives";
 import { CoverBanner } from "../client/CoachProfile";
 
 const LOCATION_OPTIONS = AU_SUBURBS.map((s) => `${s.suburb}, ${s.state}`);
+
+/* Small sport tag used in the identity header — icon + label, read-only. */
+function SportTag({ sport }) {
+  const Icon = SPORT_ICON[sport] || Trophy;
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 999, background: C.fog, fontSize: 11.5, fontWeight: 600, color: C.jet, ...fBody }}>
+      <Icon size={12} color={C.orange} />
+      {sport}
+    </span>
+  );
+}
 
 /* Small reusable settings-row, matching the client Account tab's Row2 pattern. */
 function Row2({ icon: Icon, label, sub, onClick, right, danger }) {
@@ -34,6 +45,50 @@ function Row2({ icon: Icon, label, sub, onClick, right, danger }) {
     </button>
   );
 }
+
+/* Selectable option card — used for Booking preferences and Cancellation
+   policy so both read as a clear set of choices with context, rather than
+   a bare radio list or a row of unlabeled chips. */
+function OptionCard({ icon: Icon, dotColor, title, desc, selected, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: "flex", alignItems: "flex-start", gap: 12, width: "100%", textAlign: "left",
+        padding: 14, borderRadius: 16, marginBottom: 10, cursor: "pointer",
+        border: `1.5px solid ${selected ? C.orange : C.border}`,
+        background: selected ? C.orangeTint : C.white,
+        transition: "border-color .15s ease, background .15s ease",
+      }}
+    >
+      {Icon && (
+        <div style={{ width: 36, height: 36, borderRadius: 12, background: selected ? C.white : C.fog, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Icon size={16} color={selected ? C.orange : C.slate} />
+        </div>
+      )}
+      {!Icon && dotColor && (
+        <div style={{ width: 10, height: 10, borderRadius: 99, background: dotColor, flexShrink: 0, marginTop: 5 }} />
+      )}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fBody }}>{title}</div>
+        {desc && <div style={{ fontSize: 11.5, color: C.slate, marginTop: 2, lineHeight: 1.45, ...fBody }}>{desc}</div>}
+      </div>
+      <div style={{
+        width: 19, height: 19, borderRadius: 99, flexShrink: 0, marginTop: 1,
+        border: `1.5px solid ${selected ? C.orange : C.border}`, background: C.white,
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}>
+        {selected && <div style={{ width: 10, height: 10, borderRadius: 99, background: C.orange }} />}
+      </div>
+    </button>
+  );
+}
+
+const CANCELLATION_POLICIES = [
+  { key: "Flexible", dotColor: C.success, desc: "Full refund up to 24 hours before the session." },
+  { key: "Moderate", dotColor: C.orange, desc: "Full refund up to 48 hours before; 50% refund after." },
+  { key: "Strict", dotColor: "#D64545", desc: "Full refund up to 7 days before; no refund after that." },
+];
 
 function StatBox({ label, value }) {
   return (
@@ -68,7 +123,13 @@ function ProfilePreview({ coach, data, packages, bookingType }) {
       <div style={{ height: 38 }} />
 
       <div style={{ fontSize: 18, fontWeight: 600, color: C.jet, ...fDisplay }}>{data.displayName || coach.name}</div>
-      <div style={{ fontSize: 12.5, color: C.slate, marginTop: 2, ...fBody }}>{coach.sport} · {data.location || coach.suburb}</div>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+        {(data.sports?.length ? data.sports : [coach.sport]).map((s) => <SportTag key={s} sport={s} />)}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 8 }}>
+        <MapPin size={12.5} color={C.slateLight} />
+        <span style={{ fontSize: 12, color: C.slate, ...fBody }}>{data.location || coach.suburb}</span>
+      </div>
 
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
         {coach.verified.identity && <Badge tone="success" icon={ShieldCheck}>ID verified</Badge>}
@@ -106,7 +167,7 @@ function ProfilePreview({ coach, data, packages, bookingType }) {
   );
 }
 
-export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage, removePackage, biometric, setBiometric }) {
+export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage, removePackage, biometric, setBiometric, coachMedia = [] }) {
   const coach = COACHES[1];
 
   /* ---------------------------------------------------------------------
@@ -122,6 +183,7 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
     yearsExperience: (coach.experience.match(/\d+/) || [""])[0],
     gender: "",
     languages: ["English"],
+    sports: [coach.sport],
     location: coach.suburb,
   });
   const [draft, setDraft] = useState(null);
@@ -139,6 +201,7 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
   const openPreview = (data) => { setPreviewData(data); setPreviewOpen(true); };
   const saveProfile = () => {
     if (!draft.displayName.trim()) { toast("Add a display name first"); return; }
+    if (!draft.sports || draft.sports.length === 0) { toast("Pick at least one sport you coach"); return; }
     setProfile(draft);
     toast("Profile changes saved and published");
     setDraft(null);
@@ -151,16 +214,10 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
      --------------------------------------------------------------------- */
   const [bookingType, setBookingType] = useState(coach.instantBook ? "instant" : "request");
   const [policy, setPolicy] = useState("Moderate");
-  const [deleteTarget, setDeleteTarget] = useState(null);
   const toggleActive = (pkg) => {
     const nowActive = !(pkg.active !== false);
     savePackage({ ...pkg, active: nowActive });
     toast(nowActive ? `${pkg.name} enabled` : `${pkg.name} paused — hidden from clients`);
-  };
-  const confirmDeletePackage = () => {
-    removePackage(deleteTarget.id);
-    toast("Package deleted");
-    setDeleteTarget(null);
   };
 
   /* ---------------------------------------------------------------------
@@ -205,15 +262,31 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
       <div style={{ padding: "18px 20px 0", flex: 1, overflowY: "auto", paddingBottom: 100 }}>
         <div style={{ fontSize: 22, fontWeight: 600, color: C.jet, marginBottom: 18, ...fDisplay }}>My coaching profile</div>
 
-        {/* Identity strip — mirrors the client Account tab's avatar + name row */}
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
+        {/* Identity strip — name, verification, sports and location, in that
+            order, so the most trust-building info sits closest to the name
+            instead of being buried in the profile info card below. */}
+        <div style={{ display: "flex", gap: 14, marginBottom: 22 }}>
           <Avatar name={profile.displayName} size={58} />
-          <div style={{ minWidth: 0 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
               <div style={{ fontSize: 16, fontWeight: 600, color: C.jet, ...fDisplay }}>{profile.displayName}</div>
               <Badge tone="neutral">Coach account</Badge>
             </div>
-            <div style={{ fontSize: 12.5, color: C.slate, marginTop: 2, ...fBody }}>{coach.sport} · {profile.location}</div>
+
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+              {coach.verified.identity && <Badge tone="success" icon={ShieldCheck}>ID verified</Badge>}
+              {coach.verified.wwcc && <Badge tone="success" icon={ShieldCheck}>WWCC verified</Badge>}
+              {coach.verified.quals && <Badge tone="success" icon={BadgeCheck}>Quals checked</Badge>}
+            </div>
+
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+              {profile.sports.map((s) => <SportTag key={s} sport={s} />)}
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 8 }}>
+              <MapPin size={12.5} color={C.slateLight} />
+              <span style={{ fontSize: 12, color: C.slate, ...fBody }}>{profile.location}</span>
+            </div>
           </div>
         </div>
 
@@ -223,10 +296,9 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
           <p style={{ fontSize: 12.5, color: C.slate, lineHeight: 1.55, margin: 0, ...fBody }}>
             {profile.bio.length > 120 ? `${profile.bio.slice(0, 120)}…` : profile.bio}
           </p>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
-            {coach.verified.identity && <Badge tone="success" icon={ShieldCheck}>ID verified</Badge>}
-            {coach.verified.wwcc && <Badge tone="success" icon={ShieldCheck}>WWCC verified</Badge>}
-            {coach.verified.quals && <Badge tone="success" icon={BadgeCheck}>Quals checked</Badge>}
+          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            <StatBox label="Experience" value={profile.yearsExperience ? `${profile.yearsExperience} yrs` : coach.experience} />
+            <StatBox label="Languages" value={profile.languages.length ? profile.languages.join(", ") : "English"} />
           </div>
         </Card>
         <div style={{ display: "flex", gap: 8, marginBottom: 22 }}>
@@ -238,6 +310,56 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
           </div>
         </div>
 
+        {/* ============ REELS & PHOTOS ============ */}
+        <SectionLabel>Reels & photos</SectionLabel>
+        {coachMedia.length === 0 ? (
+          <div style={{ fontSize: 12.5, color: C.slateLight, marginBottom: 22, ...fBody }}>
+            No reels or photos yet — add some so athletes can see you coach.
+          </div>
+        ) : (
+          <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, marginBottom: 12 }} className="cl-hide-scrollbar">
+            {coachMedia.slice(0, 6).map((item) => {
+              const isReel = item.type === "reel";
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => nav("coach-reels")}
+                  style={{
+                    width: 76, aspectRatio: "3/4", borderRadius: 14, flexShrink: 0, cursor: "pointer",
+                    background: item.url ? `url(${item.url}) center/cover` : `linear-gradient(160deg, ${C.jetSoft}, ${C.jet})`,
+                    display: "flex", alignItems: "center", justifyContent: "center", position: "relative",
+                  }}
+                >
+                  {!item.url && (
+                    <div style={{ width: 26, height: 26, borderRadius: 99, background: "rgba(255,255,255,.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      {isReel ? <Play size={11} color={C.white} fill={C.white} /> : <ImageIcon size={12} color={C.white} />}
+                    </div>
+                  )}
+                  {item.url && isReel && (
+                    <div style={{ width: 22, height: 22, borderRadius: 99, background: "rgba(22,24,29,.55)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Play size={9} color={C.white} fill={C.white} />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            <button
+              onClick={() => nav("coach-reels")}
+              style={{
+                width: 76, aspectRatio: "3/4", borderRadius: 14, flexShrink: 0, cursor: "pointer",
+                background: C.fog, border: `1px dashed ${C.border}`, display: "flex", flexDirection: "column",
+                alignItems: "center", justifyContent: "center", gap: 4,
+              }}
+            >
+              <ChevronRight size={14} color={C.slate} />
+              <span style={{ fontSize: 10.5, fontWeight: 600, color: C.slate, ...fBody }}>See all {coachMedia.length}</span>
+            </button>
+          </div>
+        )}
+        <div style={{ marginBottom: 22 }}>
+          <Btn full variant="outline" size="sm" icon={Film} onClick={() => nav("coach-reels")}>Manage reels & photos</Btn>
+        </div>
+
         {/* ============ 2 & 3. SERVICE PACKAGES ============ */}
         <SectionLabel>Service packages</SectionLabel>
         {coachPackages.length === 0 && (
@@ -246,28 +368,19 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
         {coachPackages.map((p) => {
           const isActive = p.active !== false;
           return (
-            <Card key={p.id} style={{ marginBottom: 10 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fBody }}>{p.name}</div>
-                  <div style={{ fontSize: 11.5, color: C.slate, marginTop: 2, ...fBody }}>{p.packageType || p.type} · {p.sport || coach.sport}</div>
-                  <div style={{ fontSize: 11.5, color: C.slateLight, marginTop: 1, ...fBody }}>{p.duration || p.durationMinutes} min · {p.mode || p.locationType}</div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+            <Card
+              key={p.id}
+              onClick={() => nav("coach-edit-package", { id: p.id })}
+              style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 12 }}
+            >
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fBody }}>{p.name}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
                   <span style={{ fontSize: 15, fontWeight: 700, color: C.jet, ...fDisplay }}>${p.price}</span>
-                  <button onClick={() => nav("coach-edit-package", { id: p.id })} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 2 }} aria-label="Edit package">
-                    <Edit3 size={15} color={C.slateLight} />
-                  </button>
-                  <button onClick={() => setDeleteTarget(p)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 2 }} aria-label="Delete package">
-                    <Trash2 size={15} color={C.slateLight} />
-                  </button>
+                  <span style={{ fontSize: 11.5, color: C.slate, ...fBody }}>{p.sport || coach.sport}</span>
                 </div>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12, paddingTop: 10, borderTop: `1px solid ${C.border}` }}>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  <Badge tone="neutral" icon={bookingType === "instant" ? Zap : Hand}>{bookingType === "instant" ? "Instant Book" : "Request to Book"}</Badge>
-                  <Badge tone={isActive ? "success" : "neutral"}>{isActive ? "Active" : "Paused"}</Badge>
-                </div>
+              <div onClick={(e) => e.stopPropagation()} style={{ flexShrink: 0 }}>
                 <Toggle on={isActive} onClick={() => toggleActive(p)} />
               </div>
             </Card>
@@ -292,26 +405,46 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
 
         {/* ============ NOTIFICATION PREFERENCES ============ */}
         <div style={{ marginTop: 4 }}>
-          <SectionLabel>Notification preferences</SectionLabel>
-          <NotifRow label="Booking requests" sub="New requests waiting on your response" prefKey="bookingRequests" />
-          <NotifRow label="Booking confirmations" sub="When a session is confirmed" prefKey="bookingConfirmations" />
-          <NotifRow label="Messages" sub="New messages from athletes" prefKey="messages" />
-          <NotifRow label="Payment updates" sub="Payouts, receipts and earnings" prefKey="paymentUpdates" />
+          <SectionLabel>Notifications</SectionLabel>
+          <Row2 icon={Bell} label="Notification preferences" sub="Bookings, messages & payment alerts" onClick={() => setSheet("notif")} />
         </div>
 
         {/* ============ BOOKING PREFERENCES ============ */}
         <div style={{ marginTop: 22 }}>
           <SectionLabel>Booking preferences</SectionLabel>
-          <div style={{ fontSize: 12, color: C.slate, marginTop: -6, marginBottom: 10, lineHeight: 1.5, ...fBody }}>
+          <div style={{ fontSize: 12, color: C.slate, marginTop: -6, marginBottom: 12, lineHeight: 1.5, ...fBody }}>
             Choose how athletes are able to book your services.
           </div>
-          <Card style={{ marginBottom: 16 }}>
-            <RadioRow label="Instant Book — sessions are auto-confirmed" selected={bookingType === "instant"} onClick={() => { setBookingType("instant"); toast("Instant Book enabled"); }} />
-            <RadioRow label="Request to Book — you approve each request" selected={bookingType === "request"} onClick={() => { setBookingType("request"); toast("Request to Book enabled"); }} />
-          </Card>
-          <SectionLabel>Cancellation policy</SectionLabel>
-          <div style={{ display: "flex", gap: 8 }}>
-            {["Flexible", "Moderate", "Strict"].map((p) => <Chip key={p} active={policy === p} onClick={() => setPolicy(p)}>{p}</Chip>)}
+          <OptionCard
+            icon={Zap}
+            title="Instant Book"
+            desc="Sessions are auto-confirmed the moment an athlete books — no approval needed."
+            selected={bookingType === "instant"}
+            onClick={() => { setBookingType("instant"); toast("Instant Book enabled"); }}
+          />
+          <OptionCard
+            icon={Hand}
+            title="Request to Book"
+            desc="Athletes send a request first; you review and approve each one."
+            selected={bookingType === "request"}
+            onClick={() => { setBookingType("request"); toast("Request to Book enabled"); }}
+          />
+
+          <div style={{ marginTop: 18 }}>
+            <SectionLabel>Cancellation policy</SectionLabel>
+            <div style={{ fontSize: 12, color: C.slate, marginTop: -6, marginBottom: 12, lineHeight: 1.5, ...fBody }}>
+              Sets the refund window athletes see before they book.
+            </div>
+            {CANCELLATION_POLICIES.map((cp) => (
+              <OptionCard
+                key={cp.key}
+                dotColor={cp.dotColor}
+                title={cp.key}
+                desc={cp.desc}
+                selected={policy === cp.key}
+                onClick={() => { setPolicy(cp.key); toast(`Cancellation policy set to ${cp.key}`); }}
+              />
+            ))}
           </div>
         </div>
 
@@ -356,6 +489,7 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <SectionLabel>Basics</SectionLabel>
               <Field label="Display name" placeholder="How athletes will see you" icon={User} value={draft.displayName} onChange={(e) => setDraftField({ displayName: e.target.value })} />
 
               <div>
@@ -380,6 +514,32 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
                 </div>
               </div>
 
+              <div style={{ height: 1, background: C.border, margin: "4px 0" }} />
+              <SectionLabel>Sports you coach</SectionLabel>
+              <div>
+                <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Sports</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {SPORTS.map((s) => {
+                    const active = draft.sports.includes(s);
+                    return (
+                      <Chip
+                        key={s}
+                        active={active}
+                        icon={SPORT_ICON[s]}
+                        onClick={() => setDraftField({ sports: active ? draft.sports.filter((x) => x !== s) : [...draft.sports, s] })}
+                      >
+                        {s}
+                      </Chip>
+                    );
+                  })}
+                </div>
+                {draft.sports.length === 0 && (
+                  <div style={{ fontSize: 11.5, color: "#D64545", marginTop: 6, ...fBody }}>Pick at least one sport so athletes can find you.</div>
+                )}
+              </div>
+
+              <div style={{ height: 1, background: C.border, margin: "4px 0" }} />
+              <SectionLabel>Languages & location</SectionLabel>
               <div>
                 <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Languages spoken</div>
                 <SearchMultiSelect options={LANGUAGE_OPTIONS} value={draft.languages} onChange={(v) => setDraftField({ languages: v })} placeholder="Search languages…" />
@@ -423,17 +583,14 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
         )}
       </BottomSheet>
 
-      {/* -------------------- DELETE PACKAGE -------------------- */}
-      <BottomSheet open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Delete package" heightPct={40}>
-        <div style={{ display: "flex", gap: 10, padding: 12, background: C.warnTint, borderRadius: 14, marginBottom: 16 }}>
-          <AlertTriangle size={17} color="#D64545" style={{ flexShrink: 0, marginTop: 1 }} />
-          <div style={{ fontSize: 12.5, color: C.jet, lineHeight: 1.5, ...fBody }}>
-            Deleting "{deleteTarget?.name}" removes it from your public profile immediately. This can't be undone.
-          </div>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <Btn full variant="danger" icon={Trash2} onClick={confirmDeletePackage}>Delete package</Btn>
-          <Btn full variant="secondary" onClick={() => setDeleteTarget(null)}>Cancel</Btn>
+      {/* -------------------- NOTIFICATION PREFERENCES -------------------- */}
+      <BottomSheet open={sheet === "notif"} onClose={closeSheet} title="Notification preferences" heightPct={62}>
+        <NotifRow label="Booking requests" sub="New requests waiting on your response" prefKey="bookingRequests" />
+        <NotifRow label="Booking confirmations" sub="When a session is confirmed" prefKey="bookingConfirmations" />
+        <NotifRow label="Messages" sub="New messages from athletes" prefKey="messages" />
+        <NotifRow label="Payment updates" sub="Payouts, receipts and earnings" prefKey="paymentUpdates" />
+        <div style={{ marginTop: 20 }}>
+          <Btn full onClick={() => { toast("Notification preferences saved"); closeSheet(); }}>Save preferences</Btn>
         </div>
       </BottomSheet>
 
