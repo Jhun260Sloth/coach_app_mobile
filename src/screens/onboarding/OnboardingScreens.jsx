@@ -842,32 +842,127 @@ export function ScreenAdminLogin({ nav, toast }) {
       <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
         <div style={{ textAlign: "center", marginBottom: 30 }}>
           <img src={LOGO_WHITE_SRC} alt="CoachLink" style={{ width: 120, height: "auto", marginBottom: 20 }} />
-          <div style={{ marginTop: 14, fontSize: 20, fontWeight: 600, color: C.white, ...fDisplay }}>Admin console</div>
           <div style={{ fontSize: 13, color: "#9CA0AC", marginTop: 4, ...fBody }}>Sign in with your CoachLink admin credentials</div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: "#C7C9D1", marginBottom: 6, ...fBody }}>Email</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, border: "1.5px solid #333747", background: "#1F2129", borderRadius: 13, padding: "11px 13px" }}>
-              <Mail size={16} color="#8A8E9B" />
-              <input placeholder="you@coachlink.com" style={{ border: "none", outline: "none", flex: 1, fontSize: 14, background: "transparent", color: C.white, ...fBody }} />
-            </div>
-          </div>
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: "#C7C9D1", marginBottom: 6, ...fBody }}>Password</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, border: "1.5px solid #333747", background: "#1F2129", borderRadius: 13, padding: "11px 13px" }}>
-              <Lock size={16} color="#8A8E9B" />
-              <input type={showPw ? "text" : "password"} placeholder="••••••••" style={{ border: "none", outline: "none", flex: 1, fontSize: 14, background: "transparent", color: C.white, ...fBody }} />
-              <button onClick={() => setShowPw((s) => !s)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}>
-                {showPw ? <EyeOff size={16} color="#8A8E9B" /> : <Eye size={16} color="#8A8E9B" />}
-              </button>
-            </div>
-          </div>
-          <div style={{ textAlign: "right" }}>
-            <button style={{ background: "none", border: "none", color: C.orange, fontSize: 12.5, fontWeight: 600, cursor: "pointer", ...fBody }}>Forgot password?</button>
-          </div>
-        </div>
+<div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+  <div>
+    <div
+      style={{
+        fontSize: 12,
+        fontWeight: 600,
+        color: C.jet,
+        marginBottom: 6,
+        ...fBody,
+      }}
+    >
+      Email
+    </div>
+
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        border: `1.5px solid ${C.border}`,
+        background: C.white,
+        borderRadius: 13,
+        padding: "11px 13px",
+      }}
+    >
+      <Mail size={16} color={C.slate} />
+
+      <input
+        type="email"
+        placeholder="you@coachlink.com"
+        style={{
+          border: "none",
+          outline: "none",
+          flex: 1,
+          fontSize: 14,
+          background: "transparent",
+          color: C.jet,
+          ...fBody,
+        }}
+      />
+    </div>
+  </div>
+
+  <div>
+    <div
+      style={{
+        fontSize: 12,
+        fontWeight: 600,
+        color: C.jet,
+        marginBottom: 6,
+        ...fBody,
+      }}
+    >
+      Password
+    </div>
+
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        border: `1.5px solid ${C.border}`,
+        background: C.white,
+        borderRadius: 13,
+        padding: "11px 13px",
+      }}
+    >
+      <Lock size={16} color={C.slate} />
+
+      <input
+        type={showPw ? "text" : "password"}
+        placeholder="••••••••"
+        style={{
+          border: "none",
+          outline: "none",
+          flex: 1,
+          fontSize: 14,
+          background: "transparent",
+          color: C.jet,
+          ...fBody,
+        }}
+      />
+
+      <button
+        onClick={() => setShowPw((s) => !s)}
+        style={{
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          display: "flex",
+          padding: 2,
+        }}
+      >
+        {showPw ? (
+          <EyeOff size={16} color={C.slate} />
+        ) : (
+          <Eye size={16} color={C.slate} />
+        )}
+      </button>
+    </div>
+  </div>
+
+  <div style={{ textAlign: "right" }}>
+    <button
+      style={{
+        background: "none",
+        border: "none",
+        color: C.orange,
+        fontSize: 12.5,
+        fontWeight: 600,
+        cursor: "pointer",
+        ...fBody,
+      }}
+    >
+      Forgot password?
+    </button>
+  </div>
+</div>
 
         <div style={{ marginTop: 20 }}>
           <Btn full onClick={() => { toast("Welcome back, Admin"); nav("admin-home"); }}>Log in</Btn>
