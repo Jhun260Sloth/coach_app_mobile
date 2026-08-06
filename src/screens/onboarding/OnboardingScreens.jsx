@@ -132,23 +132,35 @@ export function ScreenAuth({ nav, params, role, toast, biometric }) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
-  const [agree, setAgree] = useState(false);
-  const [showTerms, setShowTerms] = useState(false);
-
-  const canSubmit = mode === "login" || agree;
   const [showConfirmPw, setShowConfirmPw] = useState(false);
   const [agree, setAgree] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
 
-  const passwordsMatch = password.length > 0 && password === confirmPassword;
-  const canSubmit = mode === "login"
-    ? true
-    : firstName.trim() && lastName.trim() && email.trim() && password.length >= 6 && passwordsMatch && agree;
-  const homeScreen = role === "coach" ? "coach-dashboard" : "client-home";
+  const passwordsMatch =
+    password.length > 0 && password === confirmPassword;
+
+  const canSubmit =
+    mode === "login"
+      ? true
+      : firstName.trim() &&
+        lastName.trim() &&
+        email.trim() &&
+        password.length >= 6 &&
+        passwordsMatch &&
+        agree;
+
+  const homeScreen =
+    role === "coach" ? "coach-dashboard" : "client-home";
 
   const proceedAfterAuth = () => {
-    if (mode === "login") { nav(homeScreen); return; }
-    nav("enable-biometric", { next: role === "coach" ? "coach-info" : "about-you-profile" });
+    if (mode === "login") {
+      nav(homeScreen);
+      return;
+    }
+
+    nav("enable-biometric", {
+      next: role === "coach" ? "coach-info" : "about-you-profile",
+    });
   };
 
   return (
