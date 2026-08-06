@@ -168,7 +168,6 @@ function ProfilePreview({ coach, data, packages, bookingType }) {
 }
 
 export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage, removePackage, biometric, setBiometric, coachMedia = [] }) {
-export function ScreenCoachProfileEdit({ nav, toast, coachPackages }) {
   const coach = COACHES[1];
 
   /* ---------------------------------------------------------------------
