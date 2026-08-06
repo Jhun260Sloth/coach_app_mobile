@@ -132,6 +132,10 @@ export function ScreenAuth({ nav, params, role, toast, biometric }) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
+  const [agree, setAgree] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+
+  const canSubmit = mode === "login" || agree;
   const [showConfirmPw, setShowConfirmPw] = useState(false);
   const [agree, setAgree] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
