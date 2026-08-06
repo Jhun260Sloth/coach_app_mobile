@@ -457,7 +457,7 @@ export function ScreenAboutYouParticipants({ nav, params, addChild, toast }) {
       </div>
       <div style={{ padding: "14px 20px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
         <Btn full disabled={!canSave} onClick={saveAndFinish}>Save participant</Btn>
-        <Btn full variant="outline" icon={Plus} disabled={!canSave} onClick={saveAndAddAnother}>Add Another Participant</Btn>
+        <Btn full variant="outline" icon={Plus} disabled={!canSave} onClick={saveAndAddAnother}>Add another participant</Btn>
       </div>
     </div>
   );

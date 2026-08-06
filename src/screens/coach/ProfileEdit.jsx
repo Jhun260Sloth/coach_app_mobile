@@ -8,7 +8,7 @@ import { C, fDisplay, fBody } from "../../theme/theme";
 import { COACHES, LANGUAGE_OPTIONS, GENDER_OPTIONS, AU_SUBURBS, SPORTS, SPORT_ICON } from "../../data/mockData";
 import {
   Avatar, SectionLabel, Chip, Card, Toggle, Btn, Badge, BottomSheet, Field,
-  SearchMultiSelect, SearchSelect,
+  SearchMultiSelect, SearchSelect, ScrollFadeRow,
 } from "../../components/ui/Primitives";
 import { CoverBanner } from "../client/CoachProfile";
 
@@ -123,7 +123,7 @@ function ProfilePreview({ coach, data, packages, bookingType }) {
         {coach.verified.identity && <Badge tone="success" icon={ShieldCheck}>ID verified</Badge>}
         {coach.verified.wwcc && <Badge tone="success" icon={ShieldCheck}>WWCC verified</Badge>}
         {coach.verified.quals && <Badge tone="success" icon={BadgeCheck}>Quals checked</Badge>}
-        <Badge tone="orange">{bookingType === "instant" ? "Instant Book" : "Request to Book"}</Badge>
+        <Badge tone="orange">{bookingType === "instant" ? "Instant book" : "Request to book"}</Badge>
       </div>
 
       <div style={{ marginTop: 18 }}>
@@ -282,7 +282,7 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
             No reels or photos yet — add some so athletes can see you coach.
           </div>
         ) : (
-          <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, marginBottom: 12 }} className="cl-hide-scrollbar">
+          <ScrollFadeRow style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, marginBottom: 12 }}>
             {coachMedia.slice(0, 6).map((item) => {
               const isReel = item.type === "reel";
               return (
@@ -319,7 +319,7 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
               <ChevronRight size={14} color={C.slate} />
               <span style={{ fontSize: 10.5, fontWeight: 600, color: C.slate, ...fBody }}>See all {coachMedia.length}</span>
             </button>
-          </div>
+          </ScrollFadeRow>
         )}
         <div style={{ marginBottom: 22 }}>
           <Btn full variant="outline" size="sm" icon={Film} onClick={() => nav("coach-reels")}>Manage reels & photos</Btn>
@@ -378,17 +378,17 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
           </div>
           <OptionCard
             icon={Zap}
-            title="Instant Book"
+            title="Instant book"
             desc="Sessions are auto-confirmed the moment an athlete books — no approval needed."
             selected={bookingType === "instant"}
-            onClick={() => { setBookingType("instant"); toast("Instant Book enabled"); }}
+            onClick={() => { setBookingType("instant"); toast("Instant book enabled"); }}
           />
           <OptionCard
             icon={Hand}
-            title="Request to Book"
+            title="Request to book"
             desc="Athletes send a request first; you review and approve each one."
             selected={bookingType === "request"}
-            onClick={() => { setBookingType("request"); toast("Request to Book enabled"); }}
+            onClick={() => { setBookingType("request"); toast("Request to book enabled"); }}
           />
 
           <div style={{ marginTop: 18 }}>

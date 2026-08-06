@@ -159,7 +159,15 @@ export function ScreenCoachBookings({ nav, coachBookings }) {
 
 export function ScreenCoachBookingDetail({ nav, params, coachBookings, setCoachBookings, toast }) {
   const booking = coachBookings.find((b) => b.id === params.id);
-  const respond = (status) => { setCoachBookings((arr) => arr.map((b) => b.id === booking.id ? { ...b, status } : b)); toast(status === "confirmed" ? "Booking accepted" : "Booking declined"); nav("coach-bookings"); };
+  const [responding, setResponding] = useState(null);
+  const respond = (status) => {
+    setResponding(status);
+    setTimeout(() => {
+      setCoachBookings((arr) => arr.map((b) => b.id === booking.id ? { ...b, status } : b));
+      toast(status === "confirmed" ? "Booking accepted" : "Booking declined");
+      nav("coach-bookings");
+    }, 600);
+  };
   if (!booking) return <EmptyState icon={ClipboardList} title="Booking not found" body="This booking may have been removed." />;
   const profile = CLIENT_PROFILES[booking.clientName] || { memberSince: "—", totalSessions: 0, homeSuburb: "—", notes: "", verifiedPayment: true };
   const hasThread = !!BOOKING_ENQUIRY_MESSAGES[booking.id];
@@ -226,9 +234,11 @@ export function ScreenCoachBookingDetail({ nav, params, coachBookings, setCoachB
         </Card>
 
         {booking.status === "pending" && (
-          <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-            <Btn full variant="outline" onClick={() => respond("cancelled")}>Decline</Btn>
-            <Btn full onClick={() => respond("confirmed")}>Accept</Btn>
+          <div style={{ display: "flex", gap: 8, marginTop: 4, alignItems: "center" }}>
+            <Btn variant="ghost" loading={responding === "cancelled"} loadingText="Declining…" disabled={responding === "confirmed"} onClick={() => respond("cancelled")}>Decline</Btn>
+            <div style={{ flex: 1 }}>
+              <Btn full loading={responding === "confirmed"} loadingText="Accepting…" disabled={responding === "cancelled"} onClick={() => respond("confirmed")}>Accept</Btn>
+            </div>
           </div>
         )}
         {booking.status !== "pending" && <StatusPill status={booking.status} />}
