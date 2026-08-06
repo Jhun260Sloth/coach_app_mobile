@@ -71,9 +71,6 @@ function LegalSheet({ open, onClose }) {
   );
 }
 
-/* =========================================================================
-   ONBOARDING / AUTH SCREENS
-   ========================================================================= */
 export function ScreenSplash({ nav }) {
   return (
     <div style={{ height: "100%", background: C.white, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 28, textAlign: "center" }}>
@@ -136,31 +133,15 @@ export function ScreenAuth({ nav, params, role, toast, biometric }) {
   const [agree, setAgree] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
 
-  const passwordsMatch =
-    password.length > 0 && password === confirmPassword;
-
-  const canSubmit =
-    mode === "login"
-      ? true
-      : firstName.trim() &&
-        lastName.trim() &&
-        email.trim() &&
-        password.length >= 6 &&
-        passwordsMatch &&
-        agree;
-
-  const homeScreen =
-    role === "coach" ? "coach-dashboard" : "client-home";
+  const passwordsMatch = password.length > 0 && password === confirmPassword;
+  const canSubmit = mode === "login"
+    ? true
+    : firstName.trim() && lastName.trim() && email.trim() && password.length >= 6 && passwordsMatch && agree;
+  const homeScreen = role === "coach" ? "coach-dashboard" : "client-home";
 
   const proceedAfterAuth = () => {
-    if (mode === "login") {
-      nav(homeScreen);
-      return;
-    }
-
-    nav("enable-biometric", {
-      next: role === "coach" ? "coach-info" : "about-you-profile",
-    });
+    if (mode === "login") { nav(homeScreen); return; }
+    nav("enable-biometric", { next: role === "coach" ? "coach-info" : "about-you-profile" });
   };
 
   return (
@@ -854,9 +835,6 @@ export function ScreenVerificationPending({ nav, verificationStatus, setReachedD
   );
 }
 
-/* =========================================================================
-   ADMIN — LOGIN (admin skips splash / role-select / sign-up entirely)
-   ========================================================================= */
 export function ScreenAdminLogin({ nav, toast }) {
   const [showPw, setShowPw] = useState(false);
   return (
@@ -912,8 +890,3 @@ export function ScreenAdminLogin({ nav, toast }) {
     </div>
   );
 }
-
-
-
-
-
