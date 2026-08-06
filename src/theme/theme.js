@@ -13,6 +13,10 @@ export const C = {
   success: "#1E9E5A",
   successTint: "#E9F9EF",
   warnTint: "#FFF4E9",
+  strong: "#C2410C",
+  strongTint: "#FFE8D1",
+  error: "#DC2626",
+  errorTint: "#FEE2E2",
 };
 
 const FONT_IMPORT_ID = "coachlink-fonts";
@@ -38,6 +42,8 @@ export const KEYFRAMES = `
 @keyframes clFadeUp { from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:translateY(0)} }
 @keyframes clSheetUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
 @keyframes clBackdropIn { from{opacity:0} to{opacity:1} }
+@keyframes clSpin { to { transform: rotate(360deg); } }
+@keyframes clPopIn { from{opacity:0; transform:scale(.85)} to{opacity:1; transform:scale(1)} }
 .cl-hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 .cl-hide-scrollbar::-webkit-scrollbar { display: none; width: 0; height: 0; }
 `;

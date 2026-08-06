@@ -6,7 +6,7 @@ import {
 import { C, fDisplay, fBody } from "../../theme/theme";
 import { COACHES, CONFIG } from "../../data/mockData";
 import {
-  Avatar, Card, Chip, SectionLabel, Btn, TopBar, Toggle, Field, Row,
+  Avatar, Card, Chip, SectionLabel, Btn, TopBar, Toggle, Field, Row, Spinner, ScrollFadeRow,
 } from "../../components/ui/Primitives";
 
 const WEEKDAY_INDEX = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
@@ -39,6 +39,15 @@ export function ScreenBookingDateTime({ nav, params, setDraft }) {
   const days = Object.keys(coach.availability);
   const [day, setDay] = useState(days[0]);
   const [time, setTime] = useState(null);
+  const [checking, setChecking] = useState(false);
+
+  const selectTime = (t) => {
+    if (checking) return;
+    setTime(t);
+    setChecking(true);
+    // Simulates a real-time availability check against the coach's calendar before locking the slot in.
+    setTimeout(() => setChecking(false), 550);
+  };
   return (
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="Choose a time" onBack={() => nav("coach-profile", { id: coach.id })} />
@@ -57,8 +66,7 @@ export function ScreenBookingDateTime({ nav, params, setDraft }) {
       </Card>
 
       <SectionLabel>Day</SectionLabel>
-      <div
-        className="cl-hide-scrollbar"
+      <ScrollFadeRow
         style={{
           display: "flex", gap: 8, overflowX: "auto", marginBottom: 24, paddingBottom: 4,
           WebkitOverflowScrolling: "touch", scrollSnapType: "x proximity",
@@ -69,7 +77,7 @@ export function ScreenBookingDateTime({ nav, params, setDraft }) {
           return (
             <button
               key={d}
-              onClick={() => { setDay(d); setTime(null); }}
+              onClick={() => { setDay(d); setTime(null); setChecking(false); }}
               style={{
                 flexShrink: 0, scrollSnapAlign: "start", padding: "10px 16px", borderRadius: 14,
                 border: `1.5px solid ${active ? C.jet : C.border}`,
@@ -84,7 +92,7 @@ export function ScreenBookingDateTime({ nav, params, setDraft }) {
             </button>
           );
         })}
-      </div>
+      </ScrollFadeRow>
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
         <span style={{ fontSize: 12.5, fontWeight: 700, color: C.jet, ...fDisplay }}>Available times</span>
@@ -96,20 +104,21 @@ export function ScreenBookingDateTime({ nav, params, setDraft }) {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 22 }}>
         {coach.availability[day].map((t) => {
           const active = time === t;
+          const isChecking = active && checking;
           return (
             <button
               key={t}
-              onClick={() => setTime(t)}
+              onClick={() => selectTime(t)}
               style={{
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
                 padding: "12px 0", borderRadius: 12, border: `1.5px solid ${active ? C.jet : C.border}`,
                 background: active ? C.jet : C.white, color: active ? C.white : C.jet,
-                fontWeight: active ? 700 : 600, fontSize: 13.5, cursor: "pointer",
+                fontWeight: active ? 700 : 600, fontSize: 13.5, cursor: checking ? "default" : "pointer",
                 boxShadow: active ? "0 4px 10px rgba(22,24,29,.18)" : "none",
                 transition: "background .15s ease, box-shadow .15s ease", ...fBody,
               }}
             >
-              {active && <CheckCircle2 size={13} color={C.white} />}
+              {isChecking ? <Spinner size={13} /> : (active && <CheckCircle2 size={13} color={C.white} />)}
               {formatTime12(t)}
             </button>
           );
@@ -117,10 +126,14 @@ export function ScreenBookingDateTime({ nav, params, setDraft }) {
       </div>
 
       {time && (
-        <Card style={{ marginBottom: 18, background: C.orangeTint, border: "none" }}>
+        <Card style={{ marginBottom: 18, background: checking ? C.fog : C.orangeTint, border: "none" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <Calendar size={16} color={C.orange} />
-            <span style={{ fontSize: 13, fontWeight: 600, color: C.jet, ...fBody }}>{formatFullDate(day)} at {formatTime12(time)}</span>
+            {checking ? <Spinner size={16} color={C.slate} /> : <Calendar size={16} color={C.orange} />}
+            <span style={{ fontSize: 13, fontWeight: 600, color: C.jet, ...fBody }}>
+              {checking
+                ? `Checking availability for ${formatFullDate(day)} at ${formatTime12(time)}…`
+                : `${formatFullDate(day)} at ${formatTime12(time)} — confirmed available`}
+            </span>
           </div>
         </Card>
       )}
@@ -131,7 +144,7 @@ export function ScreenBookingDateTime({ nav, params, setDraft }) {
       </div>
 
       <div style={{ marginTop: "auto", padding: "14px 0" }}>
-        <Btn full disabled={!time} onClick={() => { setDraft({ coach, pkg, day: formatFullDate(day), time: formatTime12(time), mode: pkg.mode }); nav("booking-review"); }}>Continue</Btn>
+        <Btn full disabled={!time || checking} onClick={() => { setDraft({ coach, pkg, day: formatFullDate(day), time: formatTime12(time), mode: pkg.mode }); nav("booking-review"); }}>Continue</Btn>
       </div>
     </div>
   );
@@ -274,20 +287,32 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast, children = []
 
 export function ScreenPayment({ nav, draft, toast, addBooking, biometric }) {
   const [confirming, setConfirming] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const busy = confirming || processing || success;
+
   const pay = () => {
-    if (biometric) { setConfirming(true); setTimeout(() => { setConfirming(false); finish(); }, 1100); }
-    else finish();
+    if (busy) return;
+    if (biometric) { setConfirming(true); setTimeout(() => { setConfirming(false); processAndFinish(); }, 1100); }
+    else processAndFinish();
   };
-  const finish = () => {
-    addBooking(draft);
-    toast("Payment confirmed");
-    nav("booking-confirmation");
+  // Simulates submitting the charge to the payment processor before we show success —
+  // without this, tapping Pay looked identical whether the charge went through or not.
+  const processAndFinish = () => {
+    setProcessing(true);
+    setTimeout(() => {
+      setProcessing(false);
+      addBooking(draft);
+      toast("Payment confirmed");
+      setSuccess(true);
+      setTimeout(() => nav("booking-confirmation"), 700);
+    }, 900);
   };
   return (
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
       <TopBar title="Payment" onBack={() => nav("booking-review")} />
       <div style={{ flex: 1, overflowY: "auto" }}>
-        <Btn full variant="dark" onClick={pay}>Pay ${draft.total.toFixed(2)} with  Pay</Btn>
+        <Btn full variant="dark" disabled={busy} onClick={pay}>Pay ${draft.total.toFixed(2)} with  Pay</Btn>
         <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "16px 0" }}>
           <div style={{ flex: 1, height: 1, background: C.border }} /><span style={{ fontSize: 11.5, color: C.slateLight, ...fBody }}>or pay by card</span><div style={{ flex: 1, height: 1, background: C.border }} />
         </div>
@@ -314,7 +339,7 @@ export function ScreenPayment({ nav, draft, toast, addBooking, biometric }) {
         </div>
       </div>
       <div style={{ padding: "14px 0" }}>
-        <Btn full onClick={pay}>Pay & confirm booking</Btn>
+        <Btn full loading={processing} loadingText="Processing payment…" disabled={busy && !processing} onClick={pay}>Pay & confirm booking</Btn>
       </div>
 
       {confirming && (
@@ -323,6 +348,15 @@ export function ScreenPayment({ nav, draft, toast, addBooking, biometric }) {
             <Fingerprint size={30} color={C.white} />
           </div>
           <div style={{ color: C.white, fontSize: 14, fontWeight: 600, ...fBody }}>Confirm with Face ID</div>
+        </div>
+      )}
+
+      {success && (
+        <div style={{ position: "absolute", inset: 0, background: "rgba(22,24,29,.85)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 70, borderRadius: 0 }}>
+          <div style={{ width: 64, height: 64, borderRadius: 20, background: C.successTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14, animation: "clPopIn .25s ease" }}>
+            <CheckCircle2 size={30} color={C.success} />
+          </div>
+          <div style={{ color: C.white, fontSize: 14, fontWeight: 600, ...fBody }}>Payment confirmed</div>
         </div>
       )}
     </div>

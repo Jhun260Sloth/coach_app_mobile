@@ -52,7 +52,7 @@ export function CoachListCard({ coach, onOpen, fav, onFav }) {
                 <span style={{ fontSize: 11, fontWeight: 700, padding: "4px 9px", borderRadius: 8, background: C.successTint, color: C.success, ...fBody }}>Verified</span>
               )}
               {coach.instantBook && (
-                <span style={{ fontSize: 11, fontWeight: 700, padding: "4px 9px", borderRadius: 8, background: C.orangeTint, color: C.orange, ...fBody }}>Instant Book</span>
+                <span style={{ fontSize: 11, fontWeight: 700, padding: "4px 9px", borderRadius: 8, background: C.orangeTint, color: C.orange, ...fBody }}>Instant book</span>
               )}
             </div>
           )}

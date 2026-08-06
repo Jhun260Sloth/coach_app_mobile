@@ -25,7 +25,7 @@ export function ScreenCoachSetupComplete({ nav, setReachedDashboardAfterVerifica
       </div>
 
       <div style={{ marginTop: "auto", padding: "14px 0" }}>
-        <Btn full onClick={goToDashboard}>Go to Dashboard</Btn>
+        <Btn full onClick={goToDashboard}>Go to dashboard</Btn>
       </div>
     </div>
   );

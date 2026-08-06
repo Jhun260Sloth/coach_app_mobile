@@ -6,7 +6,7 @@ import {
 import { C, fDisplay, fBody } from "../../theme/theme";
 import { COACHES } from "../../data/mockData";
 import {
-  Avatar, Card, Badge, SegTabs, SectionLabel, Btn, TopBar, EmptyState, StatusPill, Chip, BottomSheet, Row,
+  Avatar, Card, Badge, SegTabs, SectionLabel, Btn, TopBar, EmptyState, StatusPill, Chip, BottomSheet, Row, ScrollFadeRow,
 } from "../../components/ui/Primitives";
 
 export function ScreenClientDashboard({ nav, bookings, offline, toast, cancelBooking, rescheduleBooking }) {
@@ -91,12 +91,19 @@ function RescheduleSheet({ booking, onClose, onConfirm }) {
   const days = coach ? Object.keys(coach.availability) : [];
   const [day, setDay] = useState(null);
   const [time, setTime] = useState(null);
+  const [confirming, setConfirming] = useState(false);
 
   // Reset picker state whenever a new booking is opened
   React.useEffect(() => {
-    if (booking) { setDay(days[0] || null); setTime(null); }
+    if (booking) { setDay(days[0] || null); setTime(null); setConfirming(false); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [booking?.id]);
+
+  const confirmReschedule = () => {
+    setConfirming(true);
+    // Simulates re-checking the coach's live calendar before locking in the new time.
+    setTimeout(() => { setConfirming(false); onConfirm(booking.id, { date: day, time }); }, 700);
+  };
 
   return (
     <BottomSheet open={!!booking} onClose={onClose} title="Reschedule session" heightPct={78}>
@@ -113,11 +120,11 @@ function RescheduleSheet({ booking, onClose, onConfirm }) {
           {coach ? (
             <>
               <SectionLabel>New day</SectionLabel>
-              <div style={{ display: "flex", gap: 8, overflowX: "auto", marginBottom: 18, paddingBottom: 4 }}>
+              <ScrollFadeRow style={{ display: "flex", gap: 8, overflowX: "auto", marginBottom: 18, paddingBottom: 4 }}>
                 {days.map((d) => (
                   <Chip key={d} active={day === d} onClick={() => { setDay(d); setTime(null); }}>{d}</Chip>
                 ))}
-              </div>
+              </ScrollFadeRow>
 
               <SectionLabel>New time</SectionLabel>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 20 }}>
@@ -130,7 +137,7 @@ function RescheduleSheet({ booking, onClose, onConfirm }) {
                 ))}
               </div>
 
-              <Btn full disabled={!day || !time} onClick={() => onConfirm(booking.id, { date: day, time })}>
+              <Btn full disabled={!day || !time} loading={confirming} loadingText="Confirming…" onClick={confirmReschedule}>
                 Confirm new time
               </Btn>
             </>
@@ -251,7 +258,7 @@ export function BookingCard({ b, nav, past, onReschedule, onCancel }) {
         {!past && !pending && (
           <>
             <Btn size="sm" variant="secondary" full onClick={onReschedule}>Reschedule</Btn>
-            <Btn size="sm" variant="outline" full onClick={onCancel}>Cancel</Btn>
+            <Btn size="sm" variant="ghost" onClick={onCancel}>Cancel</Btn>
             <Btn size="sm" variant="dark" icon={MessageCircle} onClick={() => nav("chat-thread", { name: b.coachName || b.clientName, context: `${b.service} · ${b.date}`, bookingId: b.id })} />
           </>
         )}
@@ -430,7 +437,7 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
           </div>
         )}
 
-        <Btn full variant="outline" icon={LifeBuoy} onClick={goSupport}>Contact Support</Btn>
+        <Btn full variant="outline" icon={LifeBuoy} onClick={goSupport}>Contact support</Btn>
       </div>
 
       <RescheduleSheet
