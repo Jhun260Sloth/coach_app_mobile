@@ -14,7 +14,6 @@ import { CoverBanner } from "../client/CoachProfile";
 
 const LOCATION_OPTIONS = AU_SUBURBS.map((s) => `${s.suburb}, ${s.state}`);
 
-/* Small sport tag used in the identity header — icon + label, read-only. */
 function SportTag({ sport }) {
   const Icon = SPORT_ICON[sport] || Trophy;
   return (
@@ -25,7 +24,6 @@ function SportTag({ sport }) {
   );
 }
 
-/* Small reusable settings-row, matching the client Account tab's Row2 pattern. */
 function Row2({ icon: Icon, label, sub, onClick, right, danger }) {
   return (
     <button
@@ -46,9 +44,6 @@ function Row2({ icon: Icon, label, sub, onClick, right, danger }) {
   );
 }
 
-/* Selectable option card — used for Booking preferences and Cancellation
-   policy so both read as a clear set of choices with context, rather than
-   a bare radio list or a row of unlabeled chips. */
 function OptionCard({ icon: Icon, dotColor, title, desc, selected, onClick }) {
   return (
     <button
@@ -99,13 +94,6 @@ function StatBox({ label, value }) {
   );
 }
 
-/* =========================================================================
-   PUBLIC PROFILE PREVIEW — reuses the same CoverBanner the client-facing
-   coach profile uses, so "Preview Profile" shows (as closely as this
-   prototype can) exactly what athletes will see once changes are published.
-   Accepts whatever draft/committed profile data is passed in, so it can be
-   used both for previewing unsaved edits and for viewing the live profile.
-   ========================================================================= */
 function ProfilePreview({ coach, data, packages, bookingType }) {
   const activePackages = packages.filter((p) => p.active !== false);
   return (
@@ -170,12 +158,6 @@ function ProfilePreview({ coach, data, packages, bookingType }) {
 export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage, removePackage, biometric, setBiometric, coachMedia = [] }) {
   const coach = COACHES[1];
 
-  /* ---------------------------------------------------------------------
-     1. PROFILE INFORMATION
-     "profile" is the currently published state; "draft" only exists while
-     the Edit sheet is open, so Preview can show either the live profile or
-     unsaved edits, and Save Changes is what commits draft -> profile.
-     --------------------------------------------------------------------- */
   const [profile, setProfile] = useState({
     photo: null,
     displayName: coach.name,
@@ -209,9 +191,6 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
     setPreviewOpen(false);
   };
 
-  /* ---------------------------------------------------------------------
-     2 & 3. SERVICE PACKAGES + booking type shown on each package
-     --------------------------------------------------------------------- */
   const [bookingType, setBookingType] = useState(coach.instantBook ? "instant" : "request");
   const [policy, setPolicy] = useState("Moderate");
   const toggleActive = (pkg) => {
@@ -220,9 +199,6 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
     toast(nowActive ? `${pkg.name} enabled` : `${pkg.name} paused — hidden from clients`);
   };
 
-  /* ---------------------------------------------------------------------
-     4. PAYMENT (payout) METHOD
-     --------------------------------------------------------------------- */
   const [payout, setPayout] = useState({ accountHolder: coach.name, bankName: "Commonwealth Bank", bsb: "062-000", accountNumber: "•••• 2210" });
   const [payoutDraft, setPayoutDraft] = useState(null);
   const openEditPayout = () => { setPayoutDraft({ ...payout }); setSheet("payment"); };
@@ -233,9 +209,6 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
     setSheet(null);
   };
 
-  /* ---------------------------------------------------------------------
-     5. NOTIFICATION PREFERENCES
-     --------------------------------------------------------------------- */
   const [notifPrefs, setNotifPrefs] = useState({
     bookingRequests: true, bookingConfirmations: true, messages: true, paymentUpdates: true,
   });
@@ -250,9 +223,6 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
     </div>
   );
 
-  /* ---------------------------------------------------------------------
-     SHEETS + misc UI state (Security / Privacy & Support / Account mgmt)
-     --------------------------------------------------------------------- */
   const [sheet, setSheet] = useState(null);
   const closeSheet = () => setSheet(null);
   const [showPw, setShowPw] = useState(false);
@@ -262,9 +232,6 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
       <div style={{ padding: "18px 20px 0", flex: 1, overflowY: "auto", paddingBottom: 100 }}>
         <div style={{ fontSize: 22, fontWeight: 600, color: C.jet, marginBottom: 18, ...fDisplay }}>My coaching profile</div>
 
-        {/* Identity strip — name, verification, sports and location, in that
-            order, so the most trust-building info sits closest to the name
-            instead of being buried in the profile info card below. */}
         <div style={{ display: "flex", gap: 14, marginBottom: 22 }}>
           <Avatar name={profile.displayName} size={58} />
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -290,7 +257,6 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
           </div>
         </div>
 
-        {/* ============ 1. PROFILE INFORMATION ============ */}
         <SectionLabel>Profile information</SectionLabel>
         <Card style={{ marginBottom: 10 }}>
           <p style={{ fontSize: 12.5, color: C.slate, lineHeight: 1.55, margin: 0, ...fBody }}>
@@ -310,7 +276,6 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
           </div>
         </div>
 
-        {/* ============ REELS & PHOTOS ============ */}
         <SectionLabel>Reels & photos</SectionLabel>
         {coachMedia.length === 0 ? (
           <div style={{ fontSize: 12.5, color: C.slateLight, marginBottom: 22, ...fBody }}>
@@ -360,7 +325,6 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
           <Btn full variant="outline" size="sm" icon={Film} onClick={() => nav("coach-reels")}>Manage reels & photos</Btn>
         </div>
 
-        {/* ============ 2 & 3. SERVICE PACKAGES ============ */}
         <SectionLabel>Service packages</SectionLabel>
         {coachPackages.length === 0 && (
           <div style={{ fontSize: 12.5, color: C.slateLight, marginBottom: 10, ...fBody }}>No packages yet — add your first service below.</div>
@@ -390,7 +354,6 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
           <Btn variant="outline" size="sm" icon={Plus} full onClick={() => nav("coach-create-package")}>Add service package</Btn>
         </div>
 
-        {/* ============ 4. PAYMENT METHOD ============ */}
         <SectionLabel>Payment method</SectionLabel>
         <Card style={{ marginBottom: 22, display: "flex", alignItems: "center", gap: 12 }} onClick={openEditPayout}>
           <div style={{ width: 40, height: 40, borderRadius: 12, background: C.fog, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -403,13 +366,11 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
           <ChevronRight size={16} color={C.slateLight} />
         </Card>
 
-        {/* ============ NOTIFICATION PREFERENCES ============ */}
         <div style={{ marginTop: 4 }}>
           <SectionLabel>Notifications</SectionLabel>
           <Row2 icon={Bell} label="Notification preferences" sub="Bookings, messages & payment alerts" onClick={() => setSheet("notif")} />
         </div>
 
-        {/* ============ BOOKING PREFERENCES ============ */}
         <div style={{ marginTop: 22 }}>
           <SectionLabel>Booking preferences</SectionLabel>
           <div style={{ fontSize: 12, color: C.slate, marginTop: -6, marginBottom: 12, lineHeight: 1.5, ...fBody }}>
@@ -448,21 +409,18 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
           </div>
         </div>
 
-        {/* ============ SECURITY ============ */}
         <div style={{ marginTop: 22 }}>
           <SectionLabel>Security</SectionLabel>
           <Row2 icon={Fingerprint} label="Biometric login" right={<Toggle on={biometric} onClick={() => setBiometric((v) => !v)} />} />
           <Row2 icon={Lock} label="Change password" onClick={() => setSheet("password")} />
         </div>
 
-        {/* ============ PRIVACY & SUPPORT ============ */}
         <div style={{ marginTop: 22 }}>
           <SectionLabel>Privacy & support</SectionLabel>
           <Row2 icon={Shield} label="Privacy policy" onClick={() => setSheet("privacy")} />
           <Row2 icon={HelpCircle} label="Support centre" onClick={() => nav("support")} />
         </div>
 
-        {/* ============ ACCOUNT MANAGEMENT ============ */}
         <div style={{ marginTop: 22 }}>
           <SectionLabel>Account management</SectionLabel>
           <Row2 icon={LogOut} label="Sign out" onClick={() => setSheet("signout")} />
@@ -470,7 +428,6 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
         </div>
       </div>
 
-      {/* -------------------- EDIT PROFILE -------------------- */}
       <BottomSheet open={sheet === "edit"} onClose={() => { setSheet(null); setDraft(null); }} title="Edit profile" heightPct={90}>
         {draft && (
           <>
@@ -486,13 +443,6 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
                 </button>
               </div>
               <input ref={photoInputRef} type="file" accept="image/*" onChange={onPhotoChange} style={{ display: "none" }} />
-        <SectionLabel>Services & rates</SectionLabel>
-        {coachPackages.map((p) => (
-          <Card key={p.id} style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }} onClick={() => nav("coach-edit-package", { id: p.id })}>
-            <div>
-              <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fBody }}>{p.name}</div>
-              <div style={{ fontSize: 11.5, color: C.slate, ...fBody }}>{p.type} · {p.duration} min · {p.mode}</div>
-              <div style={{ fontSize: 11, color: C.slateLight, marginTop: 1, ...fBody }}>{p.location}</div>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -557,9 +507,6 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
                 <SearchSelect options={LOCATION_OPTIONS} value={draft.location} onChange={(v) => setDraftField({ location: v })} placeholder="Search suburb or city…" />
               </div>
             </div>
-          </Card>
-        ))}
-        <Btn variant="outline" size="sm" icon={Plus} full onClick={() => nav("coach-create-package")}>Add package</Btn>
 
             <div style={{ marginTop: 22, display: "flex", gap: 8 }}>
               <div style={{ flex: 1 }}>
@@ -573,7 +520,6 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
         )}
       </BottomSheet>
 
-      {/* -------------------- PREVIEW PROFILE (stacks above Edit) -------------------- */}
       <BottomSheet open={previewOpen} onClose={() => setPreviewOpen(false)} title="Profile preview" heightPct={92}>
         {previewData && (
           <>
@@ -593,7 +539,6 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
         )}
       </BottomSheet>
 
-      {/* -------------------- NOTIFICATION PREFERENCES -------------------- */}
       <BottomSheet open={sheet === "notif"} onClose={closeSheet} title="Notification preferences" heightPct={62}>
         <NotifRow label="Booking requests" sub="New requests waiting on your response" prefKey="bookingRequests" />
         <NotifRow label="Booking confirmations" sub="When a session is confirmed" prefKey="bookingConfirmations" />
@@ -604,7 +549,6 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
         </div>
       </BottomSheet>
 
-      {/* -------------------- PAYMENT METHOD -------------------- */}
       <BottomSheet open={sheet === "payment"} onClose={closeSheet} title="Payment method" heightPct={64}>
         {payoutDraft && (
           <>
@@ -630,7 +574,6 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
         )}
       </BottomSheet>
 
-      {/* -------------------- CHANGE PASSWORD -------------------- */}
       <BottomSheet open={sheet === "password"} onClose={closeSheet} title="Change password" heightPct={62}>
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <Field label="Current password" placeholder="••••••••" icon={Lock} type={showPw ? "text" : "password"} rightIcon={showPw ? EyeOff : Eye} onRight={() => setShowPw((v) => !v)} />
@@ -642,7 +585,6 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
         </div>
       </BottomSheet>
 
-      {/* -------------------- PRIVACY POLICY -------------------- */}
       <BottomSheet open={sheet === "privacy"} onClose={closeSheet} title="Privacy policy" heightPct={75}>
         <div style={{ fontSize: 13, color: C.slate, lineHeight: 1.6, ...fBody }}>
           <p style={{ marginBottom: 12 }}>CoachLink collects the information needed to run your coaching business on the platform, including your profile details, service packages, booking history and payout information.</p>
@@ -654,7 +596,6 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
         </div>
       </BottomSheet>
 
-      {/* -------------------- SIGN OUT -------------------- */}
       <BottomSheet open={sheet === "signout"} onClose={closeSheet} title="Sign out" heightPct={38}>
         <div style={{ fontSize: 13.5, color: C.slate, lineHeight: 1.55, marginBottom: 18, ...fBody }}>
           Are you sure you want to sign out of your coach account?
@@ -665,7 +606,6 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
         </div>
       </BottomSheet>
 
-      {/* -------------------- DELETE ACCOUNT -------------------- */}
       <BottomSheet open={sheet === "delete"} onClose={closeSheet} title="Delete account" heightPct={50}>
         <div style={{ display: "flex", gap: 10, padding: 12, background: C.warnTint, borderRadius: 14, marginBottom: 16 }}>
           <AlertTriangle size={17} color="#D64545" style={{ flexShrink: 0, marginTop: 1 }} />
