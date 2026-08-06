@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Info, Fingerprint, CreditCard, CheckCircle2, Plus, Lock, Calendar, Navigation, MessageCircle,
   Users, User, ShieldCheck, Phone, Stethoscope, AlertTriangle, UserPlus,
@@ -146,9 +146,42 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast, children = []
   const [conditions, setConditions] = useState("");
   const [consent, setConsent] = useState(false);
 
-  const toggleParticipant = (key) => setParticipants((p) => (p.includes(key) ? p.filter((x) => x !== key) : [...p, key]));
+  // A coach's package tells us whether more than one person can join the same booking.
+  // "1:1" / "1:1 Coaching" (and one-on-one term blocks) only ever have room for one
+  // participant. "Group", "Group Training" and "Family Sessions" packages can hold several.
+  const packageTypeText = `${draft.pkg.type || draft.pkg.packageType || ""} ${draft.pkg.name || ""}`;
+  const allowsMultipleParticipants = /group|family/i.test(packageTypeText);
+
+  const toggleParticipant = (key) => setParticipants((p) => {
+    if (!allowsMultipleParticipants) return p.includes(key) ? p : [key]; // 1:1 — single selection acts like a radio button
+    return p.includes(key) ? p.filter((x) => x !== key) : [...p, key];
+  });
   const selectedChildren = children.filter((c) => participants.includes(c.id));
-  const includesMinor = selectedChildren.length > 0;
+  // Child safety details are only relevant for participants who are actually
+  // under 18 — an unset age is treated as a minor too, since these are child
+  // profiles and simply haven't had an age filled in yet.
+  const isMinor = (c) => {
+    const age = Number(c.age);
+    return c.age === "" || c.age === undefined || c.age === null || Number.isNaN(age) || age < 18;
+  };
+  const minorParticipants = selectedChildren.filter(isMinor);
+  const includesMinor = minorParticipants.length > 0;
+
+  // If a selected child already has guardian details on their profile (collected
+  // when the profile was set up), pull them in automatically so the guardian
+  // doesn't have to retype them here — but never clobber something they've
+  // already typed into these fields for this booking.
+  useEffect(() => {
+    const savedGuardian = minorParticipants.find((c) => c.guardianName);
+    if (savedGuardian) {
+      setGuardianName((v) => v || savedGuardian.guardianName || "");
+      setGuardianRelationship((v) => v || savedGuardian.guardianRelationship || "");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [participants.join(",")]);
+  // Children added with full safety details (e.g. via onboarding) already carry emergency
+  // contact and medical info on their profile — only chase fresh input for the ones that don't.
+  const childrenMissingSafetyInfo = minorParticipants.filter((c) => !(c.emergencyName || c.emergencyMobile || c.medicalConditions || c.allergies || c.medicalNotes));
   const participantLabel = participants.length === 0
     ? "Not selected"
     : [
@@ -158,7 +191,8 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast, children = []
 
   const fee = Math.round(draft.pkg.price * CONFIG.serviceFeeRate * 100) / 100;
   const total = draft.pkg.price + fee;
-  const guardianDetailsComplete = guardianName.trim() && guardianRelationship.trim() && emergencyName.trim() && emergencyPhone.trim();
+  const guardianDetailsComplete = guardianName.trim() && guardianRelationship.trim()
+    && (childrenMissingSafetyInfo.length === 0 || (emergencyName.trim() && emergencyPhone.trim()));
   const canContinue = participants.length > 0 && (!includesMinor || (consent && guardianDetailsComplete));
 
   return (
@@ -174,8 +208,12 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast, children = []
         </Card>
 
         <Card style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, marginBottom: 4, ...fBody }}>Who is this session for?</div>
-          <div style={{ fontSize: 12, color: C.slate, marginBottom: 12, lineHeight: 1.5, ...fBody }}>Select yourself, one child, or several — each participant keeps their own booking history.</div>
+          <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, marginBottom: 4, ...fBody }}>Who's attending?</div>
+          <div style={{ fontSize: 12, color: C.slate, marginBottom: 12, lineHeight: 1.5, ...fBody }}>
+            {allowsMultipleParticipants
+              ? "This is a group session — select yourself, one child, or several. Each participant keeps their own booking history."
+              : "This is a 1:1 session, so pick a single participant — yourself or one child profile."}
+          </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             <Chip active={participants.includes("self")} icon={User} onClick={() => toggleParticipant("self")}>Myself</Chip>
             {children.map((c) => (
@@ -202,17 +240,43 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast, children = []
               <div>
                 <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fDisplay }}>Child safety details</div>
                 <div style={{ fontSize: 12, color: C.slate, marginTop: 2, lineHeight: 1.55, ...fBody }}>
-                  This booking includes a participant under 18, so we collect a few extra details to keep sessions safe. {draft.coach.name.split(" ")[0]} holds the required Working with Children Check, and this information is shared with them only as needed for the session.
+                  This booking includes a participant under 18, so we share a few extra details with your coach to keep sessions safe. {draft.coach.name.split(" ")[0]} holds the required Working with Children Check, and this information is shared with them only as needed for the session.
                 </div>
               </div>
             </div>
 
-            {selectedChildren.map((c) => (
-              <div key={c.id} style={{ background: C.fog, borderRadius: 12, padding: "10px 12px", marginBottom: 10 }}>
-                <Row label="Participant" value={c.name || "Unnamed profile"} />
-                <Row label="Age" value={c.age || "Not set"} last />
-              </div>
-            ))}
+            {minorParticipants.map((c) => {
+              const hasSavedSafetyInfo = !!(c.emergencyName || c.emergencyMobile || c.medicalConditions || c.allergies || c.medicalNotes);
+              const hasSavedGuardian = !!c.guardianName;
+              return (
+                <div key={c.id} style={{ background: C.fog, borderRadius: 12, padding: "10px 12px", marginBottom: 10 }}>
+                  <Row label="Participant" value={c.name || "Unnamed profile"} />
+                  <Row label="Age" value={c.age || "Not set"} last={!hasSavedSafetyInfo && !hasSavedGuardian} />
+                  {hasSavedGuardian && (
+                    <Row label="Guardian on file" value={`${c.guardianName}${c.guardianRelationship ? ` (${c.guardianRelationship})` : ""}`} last={!hasSavedSafetyInfo} />
+                  )}
+                  {hasSavedSafetyInfo && (
+                    <>
+                      <Row label="Medical conditions" value={c.medicalConditions || "None declared"} />
+                      <Row label="Allergies" value={c.allergies || "None declared"} />
+                      {c.medicalNotes && <Row label="Medical notes" value={c.medicalNotes} />}
+                      <Row label="Emergency contact" value={c.emergencyName ? `${c.emergencyName}${c.emergencyRelationship ? ` (${c.emergencyRelationship})` : ""}` : "Not set"} />
+                      <Row label="Emergency phone" value={c.emergencyMobile || "Not set"} last />
+                    </>
+                  )}
+                  <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 8 }}>
+                    {hasSavedSafetyInfo ? (
+                      <span style={{ fontSize: 11, color: C.success, fontWeight: 600, ...fBody }}>Pulled from {c.name || "this"}'s profile</span>
+                    ) : (
+                      <button onClick={() => nav("client-profile")} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center", gap: 4 }}>
+                        <AlertTriangle size={12} color={C.orange} />
+                        <span style={{ fontSize: 11, color: C.orange, fontWeight: 600, ...fBody }}>No safety details saved on this profile yet — add them below or from Account</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
 
             <div style={{ marginTop: 4 }}>
               <SectionLabel>Guardian details</SectionLabel>
@@ -222,27 +286,31 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast, children = []
               </div>
             </div>
 
-            <div style={{ marginTop: 14 }}>
-              <SectionLabel>Emergency contact</SectionLabel>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <Field label="Emergency contact name" placeholder="Alex Chen" icon={User} value={emergencyName} onChange={(e) => setEmergencyName(e.target.value)} />
-                <Field label="Emergency contact phone" placeholder="04XX XXX XXX" icon={Phone} type="tel" value={emergencyPhone} onChange={(e) => setEmergencyPhone(e.target.value)} />
-              </div>
-            </div>
+            {childrenMissingSafetyInfo.length > 0 && (
+              <>
+                <div style={{ marginTop: 14 }}>
+                  <SectionLabel>Emergency contact</SectionLabel>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <Field label="Emergency contact name" placeholder="Alex Chen" icon={User} value={emergencyName} onChange={(e) => setEmergencyName(e.target.value)} />
+                    <Field label="Emergency contact phone" placeholder="04XX XXX XXX" icon={Phone} type="tel" value={emergencyPhone} onChange={(e) => setEmergencyPhone(e.target.value)} />
+                  </div>
+                </div>
 
-            <div style={{ marginTop: 14 }}>
-              <SectionLabel>Relevant medical conditions or allergies</SectionLabel>
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 10, background: C.fog, borderRadius: 14, padding: "12px 14px" }}>
-                <Stethoscope size={16} color={C.slateLight} style={{ marginTop: 2, flexShrink: 0 }} />
-                <textarea
-                  value={conditions}
-                  onChange={(e) => setConditions(e.target.value)}
-                  placeholder="e.g. asthma (carries inhaler), peanut allergy — leave blank if none"
-                  rows={2}
-                  style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13.5, color: C.jet, resize: "none", ...fBody }}
-                />
-              </div>
-            </div>
+                <div style={{ marginTop: 14 }}>
+                  <SectionLabel>Relevant medical conditions or allergies</SectionLabel>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10, background: C.fog, borderRadius: 14, padding: "12px 14px" }}>
+                    <Stethoscope size={16} color={C.slateLight} style={{ marginTop: 2, flexShrink: 0 }} />
+                    <textarea
+                      value={conditions}
+                      onChange={(e) => setConditions(e.target.value)}
+                      placeholder="e.g. asthma (carries inhaler), peanut allergy — leave blank if none"
+                      rows={2}
+                      style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13.5, color: C.jet, resize: "none", ...fBody }}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
 
             <div style={{ marginTop: 14, borderTop: `1px solid ${C.border}`, paddingTop: 14 }}>
               <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 10, background: C.warnTint, borderRadius: 12, padding: 10 }}>
@@ -266,7 +334,25 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast, children = []
         </Card>
       </div>
       <div style={{ padding: "14px 0" }}>
-        <Btn full disabled={!canContinue} onClick={() => { setDraft({ ...draft, total, participants: participantLabel, includesMinor, guardianName, guardianRelationship, emergencyName, emergencyPhone, conditions }); nav("payment"); }}>Continue to payment</Btn>
+        <Btn full disabled={!canContinue} onClick={() => {
+          // Fold any safety details already saved on a child's profile into the notes
+          // that travel with the booking, alongside anything freshly typed above.
+          const profileSafetyNotes = minorParticipants
+            .filter((c) => c.emergencyName || c.emergencyMobile || c.medicalConditions || c.allergies || c.medicalNotes)
+            .map((c) => {
+              const bits = [];
+              if (c.medicalConditions) bits.push(`Medical: ${c.medicalConditions}`);
+              if (c.allergies) bits.push(`Allergies: ${c.allergies}`);
+              if (c.medicalNotes) bits.push(c.medicalNotes);
+              if (c.emergencyName || c.emergencyMobile) {
+                bits.push(`Emergency contact: ${c.emergencyName || "—"}${c.emergencyRelationship ? ` (${c.emergencyRelationship})` : ""}${c.emergencyMobile ? ` – ${c.emergencyMobile}` : ""}`);
+              }
+              return `${c.name || "Participant"} — ${bits.join("; ")}`;
+            }).join("\n");
+          const combinedConditions = [conditions.trim(), profileSafetyNotes].filter(Boolean).join("\n");
+          setDraft({ ...draft, total, participants: participantLabel, includesMinor, guardianName, guardianRelationship, emergencyName, emergencyPhone, conditions: combinedConditions });
+          nav("payment");
+        }}>Continue to payment</Btn>
       </div>
     </div>
   );
