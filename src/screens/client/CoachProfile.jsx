@@ -203,8 +203,8 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav }) {
               <div style={{ fontSize: 11, color: C.slate, maxWidth: 120, ...fBody }}>{selectedPkg.name}</div>
             </div>
             <div style={{ flex: 1 }}>
-              <Btn full onClick={() => nav("booking-datetime", { coachId: coach.id, packageId: selectedPkg.id })}>
-                {coach.instantBook ? "Book now" : "Request to book"}
+              <Btn full onClick={() => nav("booking-participants", { coachId: coach.id, packageId: selectedPkg.id })}>
+                Request to book
               </Btn>
             </div>
           </>
