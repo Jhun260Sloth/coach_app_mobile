@@ -7,7 +7,7 @@ import {
 import { C, fDisplay, fBody } from "../../theme/theme";
 import { COACHES, CONFIG } from "../../data/mockData";
 import {
-  Avatar, Card, Chip, SectionLabel, Btn, TopBar, Toggle, Field, Row, RadioRow,
+  Avatar, Card, Chip, SectionLabel, Btn, TopBar, Toggle, Field, Row, RadioRow, Spinner,
 } from "../../components/ui/Primitives";
 import { StatusBanner, ResultOverlay } from "../../systems/StateSystem";
 
@@ -206,9 +206,6 @@ export function ScreenBookingParticipants({ nav, params, children = [] }) {
     </div>
   );
 }
-
-// add to the lucide-react import list at the top of the file:
-// Loader2 as Spinner,
 
 export function ScreenBookingDateTime({ nav, params, setDraft, bookings = [] }) {
   const coach = COACHES.find((c) => c.id === params.coachId);

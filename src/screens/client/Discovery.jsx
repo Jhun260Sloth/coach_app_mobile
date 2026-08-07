@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Bell, Search, Filter, Navigation, Star, MapPin, Heart, Sparkles, Calendar, MessageCircle, Percent, Check, X, Plus, Minus, CreditCard } from "lucide-react";
 import { C, fDisplay, fBody } from "../../theme/theme";
@@ -190,7 +189,7 @@ export function PannableMapView({ coaches = [], onOpen, onClose }) {
   );
 }
 
-export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFiltersChange, clientNotifications: notifications, setClientNotifications: setNotifications }) {
+export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFiltersChange, clientNotifications: notifications, setClientNotifications: setNotifications, coachAvailableNow }) {
   const [view, setView] = useState("list");
   const [notifOpen, setNotifOpen] = useState(false);
   const [searchText, setSearchText] = useState("");
