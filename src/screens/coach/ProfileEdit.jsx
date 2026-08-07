@@ -11,6 +11,7 @@ import {
   SearchMultiSelect, SearchSelect, ScrollFadeRow,
 } from "../../components/ui/Primitives";
 import { CoverBanner } from "../client/CoachProfile";
+import { StatusBanner } from "../../systems/StateSystem";
 
 const LOCATION_OPTIONS = AU_SUBURBS.map((s) => `${s.suburb}, ${s.state}`);
 
@@ -227,10 +228,31 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
   const closeSheet = () => setSheet(null);
   const [showPw, setShowPw] = useState(false);
 
+  // Profile publish state — a coach isn't visible to clients until the
+  // essentials are filled in and at least one bookable service is active.
+  const missingFields = [
+    !profile.displayName?.trim() && "display name",
+    (!profile.bio || profile.bio.trim().length < 40) && "a bio (40+ characters)",
+    (!profile.sports || profile.sports.length === 0) && "at least one sport",
+    !profile.location?.trim() && "a location",
+    !coachPackages?.some((p) => p.active !== false) && "an active service",
+  ].filter(Boolean);
+  const isPublished = missingFields.length === 0;
+
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "18px 20px 0", flex: 1, overflowY: "auto", paddingBottom: 100 }}>
         <div style={{ fontSize: 22, fontWeight: 600, color: C.jet, marginBottom: 18, ...fDisplay }}>My coaching profile</div>
+
+        <div style={{ marginBottom: 18 }}>
+          <StatusBanner
+            state={isPublished ? "profilePublished" : "profileIncomplete"}
+            message={isPublished ? "Clients can find and book you." : `Add ${missingFields.join(", ")} to publish your profile.`}
+            onPrimary={!isPublished ? openEditProfile : undefined}
+            primaryLabel="Finish profile"
+            compact
+          />
+        </div>
 
         <div style={{ display: "flex", gap: 14, marginBottom: 22 }}>
           <Avatar name={profile.displayName} size={58} />

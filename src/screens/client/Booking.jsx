@@ -8,6 +8,18 @@ import { COACHES, CONFIG } from "../../data/mockData";
 import {
   Avatar, Card, Chip, SectionLabel, Btn, TopBar, Toggle, Field, Row, Spinner, ScrollFadeRow,
 } from "../../components/ui/Primitives";
+import { StatusBanner, ResultOverlay } from "../../systems/StateSystem";
+
+const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+function parseShortDate(str, year = 2026) {
+  const m = /(\d{1,2})\s+([A-Za-z]{3})/.exec(str || "");
+  if (!m) return null;
+  const month = MONTH_ABBR.indexOf(m[2]);
+  if (month < 0) return null;
+  return new Date(year, month, parseInt(m[1], 10));
+}
+function sameCalendarDay(a, b) { return a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
+function normTime(t) { return (t || "").replace(/\s+/g, "").toLowerCase(); }
 
 const WEEKDAY_INDEX = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
 
@@ -117,7 +129,7 @@ export function ScreenBookingParticipants({ nav, params, children = [] }) {
   );
 }
 
-export function ScreenBookingDateTime({ nav, params, setDraft }) {
+export function ScreenBookingDateTime({ nav, params, setDraft, bookings = [] }) {
   const coach = COACHES.find((c) => c.id === params.coachId);
   const pkg = coach.packages.find((p) => p.id === params.packageId);
   const days = Object.keys(coach.availability);
@@ -132,6 +144,17 @@ export function ScreenBookingDateTime({ nav, params, setDraft }) {
     // Simulates a real-time availability check against the coach's calendar before locking the slot in.
     setTimeout(() => setChecking(false), 550);
   };
+
+  // Schedule conflict — does the client already have a pending/confirmed session
+  // at this exact day & time (with any coach)?
+  const conflictBooking = time && !checking
+    ? bookings.find((b) => {
+        if (!["pending", "confirmed"].includes(b.status)) return false;
+        const bd = parseShortDate(b.date);
+        const sd = nextDateForWeekday(day);
+        return sameCalendarDay(bd, sd) && normTime(b.time) === normTime(formatTime12(time));
+      })
+    : null;
   return (
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="Choose a time" onBack={() => nav("booking-participants", { coachId: coach.id, packageId: pkg.id, participants: params.participants })} />
@@ -209,7 +232,17 @@ export function ScreenBookingDateTime({ nav, params, setDraft }) {
         })}
       </div>
 
-      {time && (
+      {time && conflictBooking && (
+        <div style={{ marginBottom: 18 }}>
+          <StatusBanner
+            state="scheduleConflict"
+            message={`You already have ${conflictBooking.service} with ${conflictBooking.coachName} at this time.`}
+            onPrimary={() => { setTime(null); }}
+            onSecondary={() => nav("client-booking-detail", { id: conflictBooking.id })}
+          />
+        </div>
+      )}
+      {time && !conflictBooking && (
         <Card style={{ marginBottom: 18, background: checking ? C.fog : C.orangeTint, border: "none" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {checking ? <Spinner size={16} color={C.slate} /> : <Calendar size={16} color={C.orange} />}
@@ -228,7 +261,7 @@ export function ScreenBookingDateTime({ nav, params, setDraft }) {
       </div>
 
       <div style={{ marginTop: "auto", padding: "14px 0" }}>
-        <Btn full disabled={!time || checking} onClick={() => { setDraft({ coach, pkg, day: formatFullDate(day), time: formatTime12(time), mode: pkg.mode, participants: params.participants || ["self"] }); nav("booking-review"); }}>Continue</Btn>
+        <Btn full disabled={!time || checking || !!conflictBooking} onClick={() => { setDraft({ coach, pkg, day: formatFullDate(day), time: formatTime12(time), mode: pkg.mode, participants: params.participants || ["self"] }); nav("booking-review"); }}>Continue</Btn>
       </div>
     </div>
   );
@@ -430,34 +463,72 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast, children = []
   );
 }
 
-export function ScreenPayment({ nav, draft, toast, addBooking, biometric }) {
+export function ScreenPayment({ nav, params, draft, toast, addBooking, markBookingPaid, pushNotification, biometric, offline }) {
   const [confirming, setConfirming] = useState(false);
   const [processing, setProcessing] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const busy = confirming || processing || success;
+  const [result, setResult] = useState(null); // null | "success" | "failed" | "cancelled"
+  const busy = confirming || processing || result === "success";
 
-  const pay = () => {
+  const pay = (forceFail = false) => {
     if (busy) return;
-    if (biometric) { setConfirming(true); setTimeout(() => { setConfirming(false); processAndFinish(); }, 1100); }
-    else processAndFinish();
+    if (offline) { toast("You're offline — reconnect to pay"); return; }
+    setResult(null);
+    if (biometric) { setConfirming(true); setTimeout(() => { setConfirming(false); processAndFinish(forceFail); }, 1100); }
+    else processAndFinish(forceFail);
   };
-  // Simulates submitting the charge to the payment processor before we show success —
+  // Simulates submitting the charge to the payment processor before we show success/failure —
   // without this, tapping Pay looked identical whether the charge went through or not.
-  const processAndFinish = () => {
+  const processAndFinish = (forceFail) => {
     setProcessing(true);
     setTimeout(() => {
       setProcessing(false);
-      addBooking(draft);
+      if (forceFail) {
+        setResult("failed");
+        return;
+      }
+      if (params?.bookingId) {
+        markBookingPaid?.(params.bookingId);
+      } else {
+        addBooking(draft);
+        pushNotification?.({ audience: "coach", type: "booking", title: "Payment received", body: `Payment of $${draft.total.toFixed(2)} received for ${draft.pkg.name}.` });
+      }
       toast("Payment confirmed");
-      setSuccess(true);
-      setTimeout(() => nav("booking-confirmation"), 700);
+      setResult("success");
+      setTimeout(() => nav(params?.bookingId ? "client-booking-detail" : "booking-confirmation", params?.bookingId ? { id: params.bookingId } : {}), 700);
     }, 900);
   };
+
+  const cancelPayment = () => {
+    if (busy) return;
+    setResult("cancelled");
+  };
+
   return (
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
       <TopBar title="Payment" onBack={() => nav("booking-review")} />
       <div style={{ flex: 1, overflowY: "auto" }}>
-        <Btn full variant="dark" disabled={busy} onClick={pay}>Pay ${draft.total.toFixed(2)} with  Pay</Btn>
+        {offline && (
+          <div style={{ marginBottom: 16 }}>
+            <StatusBanner state="actionBlockedOffline" compact />
+          </div>
+        )}
+        {result === "failed" && (
+          <div style={{ marginBottom: 16 }}>
+            <StatusBanner
+              state="paymentFailed"
+              onPrimary={() => pay(false)}
+              onSecondary={cancelPayment}
+              primaryLabel="Try again"
+              secondaryLabel="Cancel payment"
+            />
+          </div>
+        )}
+        {result === "cancelled" && (
+          <div style={{ marginBottom: 16 }}>
+            <StatusBanner state="paymentCancelled" onPrimary={() => setResult(null)} primaryLabel="Resume payment" />
+          </div>
+        )}
+        <Btn full variant="dark" disabled={busy || offline} onClick={() => pay(false)}>Pay ${draft.total.toFixed(2)} with  Pay</Btn>
         <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "16px 0" }}>
           <div style={{ flex: 1, height: 1, background: C.border }} /><span style={{ fontSize: 11.5, color: C.slateLight, ...fBody }}>or pay by card</span><div style={{ flex: 1, height: 1, background: C.border }} />
         </div>
@@ -482,9 +553,24 @@ export function ScreenPayment({ nav, draft, toast, addBooking, biometric }) {
           <Lock size={13} color={C.slateLight} style={{ marginTop: 2, flexShrink: 0 }} />
           <span style={{ fontSize: 11.5, color: C.slateLight, lineHeight: 1.5, ...fBody }}>Funds are held securely and only released to {draft.coach.name.split(" ")[0]} once you confirm the session is complete.</span>
         </div>
+
+        <button
+          onClick={() => pay(true)}
+          disabled={busy || offline}
+          style={{ display: "block", margin: "18px auto 0", background: "none", border: "none", cursor: busy || offline ? "default" : "pointer", fontSize: 11, color: C.slateLight, textDecoration: "underline", ...fBody }}
+        >
+          Use a test card that declines (simulate failure)
+        </button>
       </div>
-      <div style={{ padding: "14px 0" }}>
-        <Btn full loading={processing} loadingText="Processing payment…" disabled={busy && !processing} onClick={pay}>Pay & confirm booking</Btn>
+      <div style={{ padding: "14px 0", display: "flex", gap: 10 }}>
+        {result !== "failed" && result !== "cancelled" && (
+          <button onClick={cancelPayment} disabled={busy} style={{ background: "none", border: "none", cursor: busy ? "default" : "pointer", fontSize: 12.5, color: C.slate, fontWeight: 600, padding: "0 4px", ...fBody }}>
+            Cancel
+          </button>
+        )}
+        <div style={{ flex: 1 }}>
+          <Btn full loading={processing} loadingText="Processing payment…" disabled={(busy && !processing) || offline} onClick={() => pay(false)}>Pay & confirm booking</Btn>
+        </div>
       </div>
 
       {confirming && (
@@ -495,15 +581,8 @@ export function ScreenPayment({ nav, draft, toast, addBooking, biometric }) {
           <div style={{ color: C.white, fontSize: 14, fontWeight: 600, ...fBody }}>Confirm with Face ID</div>
         </div>
       )}
-
-      {success && (
-        <div style={{ position: "absolute", inset: 0, background: "rgba(22,24,29,.85)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 70, borderRadius: 0 }}>
-          <div style={{ width: 64, height: 64, borderRadius: 20, background: C.successTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14, animation: "clPopIn .25s ease" }}>
-            <CheckCircle2 size={30} color={C.success} />
-          </div>
-          <div style={{ color: C.white, fontSize: 14, fontWeight: 600, ...fBody }}>Payment confirmed</div>
-        </div>
-      )}
+      <ResultOverlay open={processing} state="paymentProcessing" />
+      <ResultOverlay open={result === "success"} state="paymentSuccess" title="Payment confirmed" message="Funds are held securely until the session is complete." />
     </div>
   );
 }

@@ -351,14 +351,23 @@ export function StatusPill({ status }) {
     confirmed: { label: "Confirmed", tone: "success" },
     completed: { label: "Completed", tone: "neutral" },
     cancelled: { label: "Cancelled", tone: "neutral" },
+    declined: { label: "Declined", tone: "danger" },
+    expired: { label: "Expired", tone: "neutral" },
+    failed: { label: "Failed", tone: "danger" },
+    refunded: { label: "Refunded", tone: "success" },
     live: { label: "Live now", tone: "orange", pulse: true },
   };
   const m = map[status] || map.pending;
+  const colors = {
+    orange: { bg: C.orangeTint, fg: C.orange },
+    success: { bg: C.successTint, fg: C.success },
+    neutral: { bg: C.fog, fg: C.slate },
+    danger: { bg: "#FDECEC", fg: "#D64545" },
+  }[m.tone];
   return (
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 5,
-      background: m.tone === "orange" ? C.orangeTint : m.tone === "success" ? C.successTint : C.fog,
-      color: m.tone === "orange" ? C.orange : m.tone === "success" ? C.success : C.slate,
+      background: colors.bg, color: colors.fg,
       fontSize: 11.5, fontWeight: 700, padding: "4px 9px", borderRadius: 8, ...fBody,
     }}>
       <span style={{ width: 6, height: 6, borderRadius: 99, background: "currentColor", animation: m.pulse ? "clPulse 1.4s infinite" : "none" }} />

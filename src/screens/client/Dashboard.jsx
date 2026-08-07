@@ -8,6 +8,7 @@ import { COACHES } from "../../data/mockData";
 import {
   Avatar, Card, Badge, SegTabs, SectionLabel, Btn, TopBar, EmptyState, StatusPill, Chip, BottomSheet, Row, ScrollFadeRow,
 } from "../../components/ui/Primitives";
+import { StatusBanner } from "../../systems/StateSystem";
 
 /* ---- date helpers for the calendar view (booking dates look like "Tue, 22 Jul") ---- */
 const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -390,7 +391,7 @@ export function BookingCard({ b, nav, past, onReschedule, onCancel }) {
 /* Booking details — the client-side counterpart to the coach's booking detail page.
    Surfaces the same categories of information (party info, session details, notes,
    booking policy) but never exposes the Accept/Decline workflow, which is coach-only. */
-export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancelBooking, rescheduleBooking }) {
+export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancelBooking, rescheduleBooking, setDraft }) {
   const booking = bookings.find((b) => b.id === params.id);
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -507,6 +508,37 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
           </div>
         )}
 
+        {isUpcoming && booking.paid === false && (
+          <div style={{ marginBottom: 14 }}>
+            <Card style={{ marginBottom: 10, background: C.orangeTint, border: "none", display: "flex", alignItems: "center", gap: 10 }}>
+              <AlertTriangle size={15} color={C.orange} style={{ flexShrink: 0 }} />
+              <span style={{ fontSize: 12, color: C.jet, lineHeight: 1.5, ...fBody }}>Payment hasn't been collected for this confirmed session yet.</span>
+            </Card>
+            <Btn
+              full
+              icon={CreditCard}
+              onClick={() => {
+                setDraft({
+                  coach: { name: booking.coachName, id: booking.coachId },
+                  pkg: { name: booking.service, price: booking.price },
+                  day: booking.date, time: booking.time, mode: booking.mode,
+                  participants: booking.participants, total: booking.price,
+                });
+                nav("payment", { bookingId: booking.id });
+              }}
+            >
+              Pay now — {priceLabel}
+            </Btn>
+          </div>
+        )}
+
+        {isUpcoming && booking.refundStatus === "processing" && (
+          <div style={{ marginBottom: 14 }}><StatusBanner state="refundProcessing" compact /></div>
+        )}
+        {booking.refundStatus === "refunded" && (
+          <div style={{ marginBottom: 14 }}><StatusBanner state="paymentRefunded" message={`$${Number(booking.price).toFixed(2)} was refunded to your original payment method.`} compact /></div>
+        )}
+
         {isUpcoming && (
           <div style={{ display: "flex", gap: 8, marginTop: 4, marginBottom: 14 }}>
             <Btn size="sm" variant="secondary" full onClick={() => setRescheduleOpen(true)}>Reschedule</Btn>
@@ -529,6 +561,8 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
         )}
         {isPast && booking.status === "cancelled" && (
           <div style={{ marginBottom: 14 }}>
+            {booking.refundStatus === "processing" && <div style={{ marginBottom: 10 }}><StatusBanner state="refundProcessing" compact /></div>}
+            {booking.refundStatus === "refunded" && <div style={{ marginBottom: 10 }}><StatusBanner state="paymentRefunded" message={`$${Number(booking.price).toFixed(2)} was refunded to your original payment method.`} compact /></div>}
             <Btn full variant="secondary" icon={RefreshCcw} onClick={() => nav("coach-profile", { id: booking.coachId })}>Book again</Btn>
           </div>
         )}

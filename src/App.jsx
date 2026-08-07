@@ -119,6 +119,26 @@ export default function App() {
   const [coachOnboarding, setCoachOnboarding] = useState({});
   const updateCoachOnboarding = (patch) => setCoachOnboarding((c) => ({ ...c, ...patch }));
 
+  // Whether the current coach (Josh Whitfield) is open to new bookings right now.
+  // Drives the "Coach available / unavailable" state on his profile, Discover
+  // card and dashboard toggle.
+  const [coachAvailableNow, setCoachAvailableNow] = useState(true);
+
+  // Global notification log — a single source of truth that real in-app actions
+  // (booking accepted/declined, payment received, verification decided...) push
+  // into, tagged with who it's for. Screens merge this on top of their seed/mock
+  // notification lists via useLiveNotifications() so the bell badge and sheet
+  // reflect what's actually happening in the prototype, not just static mock data.
+  const [notifications, setNotifications] = useState([]);
+  const pushNotification = ({ audience, type = "booking", title, body }) => {
+    setNotifications((n) => [
+      { id: `rt${Date.now()}${Math.random().toString(36).slice(2, 6)}`, audience, type, title, body, time: "Just now", unread: true },
+      ...n,
+    ]);
+  };
+  const clientNotifications = notifications.filter((n) => n.audience === "client");
+  const coachNotifications = notifications.filter((n) => n.audience === "coach");
+
   const toast = (msg) => { setToastMsg(msg); setTimeout(() => setToastMsg(null), 2200); };
   const nav = (s, p = {}) => { setHistory((h) => [...h, screen]); setScreen(s); setParams(p); };
   const goBack = () => { setHistory((h) => { const n = [...h]; const last = n.pop(); if (last) setScreen(last); return n; }); };
@@ -127,9 +147,41 @@ export default function App() {
   // until the coach has reviewed it and accepted. `d.id`, when supplied, keeps
   // the id the client was already shown on the "Booking Request Sent" screen
   // in sync with the record actually added here.
-  const addBooking = (d) => setBookings((b) => [{ id: d.id || ("b" + (b.length + 1)), coachId: d.coach.id, coachName: d.coach.name, clientName: "Sarah Lin", service: d.pkg.name, date: d.day, time: d.time, mode: d.mode, status: "pending", price: d.total, reviewed: false, participants: d.participants || "You", notes: d.conditions || "" }, ...b]);
-  const cancelBooking = (id) => setBookings((bs) => bs.map((b) => (b.id === id ? { ...b, status: "cancelled" } : b)));
+  const addBooking = (d) => setBookings((b) => [{ id: d.id || ("b" + (b.length + 1)), coachId: d.coach.id, coachName: d.coach.name, clientName: "Sarah Lin", service: d.pkg.name, date: d.day, time: d.time, mode: d.mode, status: "pending", price: d.total, paid: false, reviewed: false, participants: d.participants || "You", notes: d.conditions || "" }, ...b]);
+  // Client cancels (or withdraws a pending request). Looks the booking up first
+  // so we can notify the coach with real details, and — if it had already been
+  // paid for — kicks off a simulated refund: cancelled now, refunded a moment
+  // later, matching the Payment processing -> success pattern used elsewhere.
+  const cancelBooking = (id) => {
+    setBookings((bs) => {
+      const target = bs.find((b) => b.id === id);
+      if (target) {
+        pushNotification({
+          audience: "coach", type: "booking",
+          title: target.status === "pending" ? "Request withdrawn" : "Booking cancelled",
+          body: `${target.clientName || "A client"} ${target.status === "pending" ? "withdrew their request for" : "cancelled"} ${target.service}${target.date ? ` on ${target.date}` : ""}.`,
+        });
+        if (target.status === "confirmed" && target.paid) {
+          setTimeout(() => {
+            setBookings((later) => later.map((b) => (b.id === id ? { ...b, refundStatus: "refunded" } : b)));
+            toast(`$${Number(target.price).toFixed(2)} refunded`);
+          }, 1400);
+          return bs.map((b) => (b.id === id ? { ...b, status: "cancelled", refundStatus: "processing" } : b));
+        }
+      }
+      return bs.map((b) => (b.id === id ? { ...b, status: "cancelled" } : b));
+    });
+  };
   const rescheduleBooking = (id, { date, time }) => setBookings((bs) => bs.map((b) => (b.id === id ? { ...b, date, time } : b)));
+  // Marks a confirmed booking as paid once ScreenPayment succeeds, and lets the
+  // coach know a charge actually landed (distinct from just "confirmed").
+  const markBookingPaid = (id) => setBookings((bs) => {
+    const target = bs.find((b) => b.id === id);
+    if (target) {
+      pushNotification({ audience: "coach", type: "booking", title: "Payment received", body: `Payment of $${Number(target.price).toFixed(2)} received for ${target.service}.` });
+    }
+    return bs.map((b) => (b.id === id ? { ...b, paid: true } : b));
+  });
   const handleClientPrefs = (prefs) => {
     setClientPrefs(prefs);
     // Participant profiles created during onboarding become managed child profiles.
@@ -175,6 +227,11 @@ export default function App() {
     if (applicant && applicant.submittedByUser) {
       setVerificationStatus(approve ? "approved" : "rejected");
       if (approve) setVerified(true);
+      pushNotification({
+        audience: "coach", type: "verification",
+        title: approve ? "You're verified!" : "Verification rejected",
+        body: approve ? "Your verification was approved. You can now accept bookings." : "One or more documents couldn't be confirmed — please resubmit.",
+      });
     }
     toast(approve ? `${applicant ? applicant.name : "Coach"} approved` : `${applicant ? applicant.name : "Coach"} rejected`);
     nav("admin-verify");
@@ -206,7 +263,7 @@ export default function App() {
   const activeTabScreen = TAB_ALIASES[screen] || screen;
   const showTabs = tabsForRole.some((t) => t.value === activeTabScreen);
 
-  const screenProps = { nav, params, toast, role, favorites, toggleFav, biometric, setBiometric, verified, verificationStatus, reachedDashboardAfterVerification, setReachedDashboardAfterVerification, offline, draft, setDraft, addBooking, cancelBooking, rescheduleBooking, bookings, coachBookings, setCoachBookings, setRole, addCoachRole: () => setHasCoachRole(true), submitVerification, verificationQueue, decideVerification, disputes, resolveDispute, clientPrefs, onComplete: handleClientPrefs, children, addChild, updateChild, removeChild, coachOnboarding, updateCoachOnboarding, coachPackages, savePackage, removePackage, availabilityBlocks, setAvailabilityBlocks, coachMedia, addMedia, removeMedia };
+  const screenProps = { nav, params, toast, role, favorites, toggleFav, biometric, setBiometric, verified, verificationStatus, reachedDashboardAfterVerification, setReachedDashboardAfterVerification, offline, draft, setDraft, addBooking, cancelBooking, rescheduleBooking, markBookingPaid, bookings, coachBookings, setCoachBookings, setRole, addCoachRole: () => setHasCoachRole(true), submitVerification, verificationQueue, decideVerification, disputes, resolveDispute, clientPrefs, onComplete: handleClientPrefs, children, addChild, updateChild, removeChild, coachOnboarding, updateCoachOnboarding, coachPackages, savePackage, removePackage, availabilityBlocks, setAvailabilityBlocks, coachMedia, addMedia, removeMedia, coachAvailableNow, setCoachAvailableNow, pushNotification, clientNotifications, coachNotifications };
 
 
   function renderScreen() {
@@ -305,7 +362,7 @@ export default function App() {
           style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 999, border: `1px solid ${offline ? C.orange : C.border}`, background: offline ? C.orangeTint : C.white, color: offline ? C.orange : C.slate, fontSize: 11.5, fontWeight: 600, cursor: "pointer", ...fBody }}>
           <WifiOff size={12} /> Offline
         </button>
-        <button onClick={() => { setScreen(role === "admin" ? "admin-login" : "splash"); setHistory([]); setBookings(INITIAL_BOOKINGS); setCoachBookings(COACH_BOOKINGS); setVerified(false); setVerificationStatus("none"); setReachedDashboardAfterVerification(false); setVerificationQueue(ADMIN_VERIFICATION_QUEUE); setDisputes(ADMIN_DISPUTES); setClientPrefs(null); setChildren([]); setCoachOnboarding({}); setBiometric(false); setCoachPackages(COACHES[1].packages); setAvailabilityBlocks(INITIAL_AVAILABILITY_BLOCKS); setCoachMedia(Array.from({ length: COACHES[1].reelsCount }, (_, i) => ({ id: `m${i + 1}`, type: i % 4 === 3 ? "photo" : "reel", caption: i % 4 === 3 ? "Training photo" : "Session highlight", sport: COACHES[1].sport, url: null }))); }}
+        <button onClick={() => { setScreen(role === "admin" ? "admin-login" : "splash"); setHistory([]); setBookings(INITIAL_BOOKINGS); setCoachBookings(COACH_BOOKINGS); setVerified(false); setVerificationStatus("none"); setReachedDashboardAfterVerification(false); setVerificationQueue(ADMIN_VERIFICATION_QUEUE); setDisputes(ADMIN_DISPUTES); setClientPrefs(null); setChildren([]); setCoachOnboarding({}); setBiometric(false); setCoachPackages(COACHES[1].packages); setAvailabilityBlocks(INITIAL_AVAILABILITY_BLOCKS); setCoachMedia(Array.from({ length: COACHES[1].reelsCount }, (_, i) => ({ id: `m${i + 1}`, type: i % 4 === 3 ? "photo" : "reel", caption: i % 4 === 3 ? "Training photo" : "Session highlight", sport: COACHES[1].sport, url: null }))); setNotifications([]); setCoachAvailableNow(true); }}
 
           style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 999, border: `1px solid ${C.border}`, background: C.white, color: C.slate, fontSize: 11.5, fontWeight: 600, cursor: "pointer", ...fBody }}>
           <RefreshCcw size={12} /> Reset
