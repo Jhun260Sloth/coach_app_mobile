@@ -251,7 +251,6 @@ export function ScreenBookingDateTime({ nav, params, setDraft, bookings = [] }) 
 
   const canContinue = !!selectedDate && !!time;
 
->>>>>>> main
   return (
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="Select Date & Time" onBack={() => nav("booking-participants", { coachId: coach.id, packageId: pkg.id, participants: params.participants })} />
@@ -332,7 +331,6 @@ export function ScreenBookingDateTime({ nav, params, setDraft, bookings = [] }) 
             </div>
           ))}
 
-<<<<<<< Jhunz-Branch
       {time && conflictBooking && (
         <div style={{ marginBottom: 18 }}>
           <StatusBanner
@@ -351,7 +349,7 @@ export function ScreenBookingDateTime({ nav, params, setDraft, bookings = [] }) 
               {checking
                 ? `Checking availability for ${formatFullDate(day)} at ${formatTime12(time)}…`
                 : `${formatFullDate(day)} at ${formatTime12(time)} — confirmed available`}
-=======
+
           <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap", justifyContent: "center" }}>
             <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10.5, color: C.slate, ...fBody }}>
               <span style={{ width: 9, height: 9, borderRadius: 3, border: `1.5px solid ${C.orange}` }} /> Available
@@ -364,7 +362,7 @@ export function ScreenBookingDateTime({ nav, params, setDraft, bookings = [] }) 
             </span>
             <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10.5, color: C.slate, ...fBody }}>
               <span style={{ width: 9, height: 9, borderRadius: 3, background: C.orange }} /> Selected
->>>>>>> main
+
             </span>
           </div>
         </Card>
