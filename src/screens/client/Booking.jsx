@@ -233,8 +233,6 @@ export function ScreenBookingDateTime({ nav, params, setDraft, bookings = [] }) 
     setSelectedDate(d);
     setTime(null);
   };
-
-<<<<<<< Jhunz-Branch
   // Schedule conflict — does the client already have a pending/confirmed session
   // at this exact day & time (with any coach)?
   const conflictBooking = time && !checking
