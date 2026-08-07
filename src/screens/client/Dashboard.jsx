@@ -516,8 +516,7 @@ export function BookingCard({ b, nav, past, onReschedule, onCancel, onPay }) {
 /* Booking details — the client-side counterpart to the coach's booking detail page.
    Surfaces the same categories of information (party info, session details, notes,
    booking policy) but never exposes the Accept/Decline workflow, which is coach-only. */
-export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancelBooking, rescheduleBooking, setDraft }) {
-export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancelBooking, rescheduleBooking, payBooking }) {
+export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancelBooking, rescheduleBooking, setDraft, payBooking }) {
   const booking = bookings.find((b) => b.id === params.id);
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
