@@ -102,8 +102,6 @@ export default function App() {
   const [draft, setDraft] = useState(null);
   const [bookings, setBookings] = useState(INITIAL_BOOKINGS);
   const [coachBookings, setCoachBookings] = useState(COACH_BOOKINGS);
-  const [clientNotifications, setClientNotifications] = useState(CLIENT_NOTIFICATIONS);
-  const [coachNotifications, setCoachNotifications] = useState(COACH_NOTIFICATIONS);
   const [coachPackages, setCoachPackages] = useState(COACHES[1].packages);
   const [coachMedia, setCoachMedia] = useState(
     Array.from({ length: COACHES[1].reelsCount }, (_, i) => ({
@@ -146,15 +144,24 @@ export default function App() {
   const nav = (s, p = {}) => { setHistory((h) => [...h, screen]); setScreen(s); setParams(p); };
   const goBack = () => { setHistory((h) => { const n = [...h]; const last = n.pop(); if (last) setScreen(last); return n; }); };
   const toggleFav = (id) => setFavorites((f) => f.includes(id) ? f.filter((x) => x !== id) : [...f, id]);
-  const addClientNotification = (n) => setClientNotifications((arr) => [{ id: "n" + Date.now(), unread: true, time: "Just now", ...n }, ...arr]);
-  const addCoachNotification = (n) => setCoachNotifications((arr) => [{ id: "cn" + Date.now(), unread: true, time: "Just now", ...n }, ...arr]);
 
   // Every booking now starts life as a pending request — no payment is collected
   // until the coach has reviewed it and accepted. `d.id`, when supplied, keeps
   // the id the client was already shown on the "Booking Request Sent" screen
   // in sync with the record actually added here.
-<<<<<<< Jhunz-Branch
-  const addBooking = (d) => setBookings((b) => [{ id: d.id || ("b" + (b.length + 1)), coachId: d.coach.id, coachName: d.coach.name, clientName: "Sarah Lin", service: d.pkg.name, date: d.day, time: d.time, mode: d.mode, status: "pending", price: d.total, paid: false, reviewed: false, participants: d.participants || "You", notes: d.conditions || "" }, ...b]);
+  const addBooking = (d) => {
+    const id = d.id || ("b" + (bookings.length + 1));
+    const coachId = d.coach.id;
+    setBookings((b) => [{ id, coachId, coachName: d.coach.name, clientName: "Sarah Lin", service: d.pkg.name, date: d.day, time: d.time, mode: d.mode, status: "pending", price: d.total, paid: false, reviewed: false, participants: d.participants || "You", notes: d.conditions || "" }, ...b]);
+    // The prototype's Coach role is always Josh Whitfield (c2) — mirror the
+    // request into their Bookings pending queue so it's reviewable, and let
+    // them chat with the client about it, from the coach side too.
+    if (coachId === "c2") {
+      setCoachBookings((cb) => [{ id, clientName: "Sarah Lin", service: d.pkg.name, date: d.day, time: d.time, mode: d.mode, status: "pending", price: d.total, notes: d.conditions || "" }, ...cb]);
+    }
+    pushNotification({ audience: "coach", type: "booking", title: "New booking request", body: `Sarah Lin requested a ${d.pkg.name} for ${d.day}, ${d.time}.` });
+  };
+
   // Client cancels (or withdraws a pending request). Looks the booking up first
   // so we can notify the coach with real details, and — if it had already been
   // paid for — kicks off a simulated refund: cancelled now, refunded a moment
@@ -168,6 +175,7 @@ export default function App() {
           title: target.status === "pending" ? "Request withdrawn" : "Booking cancelled",
           body: `${target.clientName || "A client"} ${target.status === "pending" ? "withdrew their request for" : "cancelled"} ${target.service}${target.date ? ` on ${target.date}` : ""}.`,
         });
+        setCoachBookings((cb) => cb.map((b) => (b.id === id ? { ...b, status: "cancelled" } : b)));
         if (target.status === "confirmed" && target.paid) {
           setTimeout(() => {
             setBookings((later) => later.map((b) => (b.id === id ? { ...b, refundStatus: "refunded" } : b)));
@@ -179,7 +187,9 @@ export default function App() {
       return bs.map((b) => (b.id === id ? { ...b, status: "cancelled" } : b));
     });
   };
+
   const rescheduleBooking = (id, { date, time }) => setBookings((bs) => bs.map((b) => (b.id === id ? { ...b, date, time } : b)));
+
   // Marks a confirmed booking as paid once ScreenPayment succeeds, and lets the
   // coach know a charge actually landed (distinct from just "confirmed").
   const markBookingPaid = (id) => setBookings((bs) => {
@@ -187,25 +197,8 @@ export default function App() {
     if (target) {
       pushNotification({ audience: "coach", type: "booking", title: "Payment received", body: `Payment of $${Number(target.price).toFixed(2)} received for ${target.service}.` });
     }
-    return bs.map((b) => (b.id === id ? { ...b, paid: true } : b));
+    return bs.map((b) => (b.id === id ? { ...b, paid: true, paymentDue: false } : b));
   });
-=======
-  const addBooking = (d) => {
-    const id = d.id || ("b" + (bookings.length + 1));
-    const coachId = d.coach.id;
-    setBookings((b) => [{ id, coachId, coachName: d.coach.name, clientName: "Sarah Lin", service: d.pkg.name, date: d.day, time: d.time, mode: d.mode, status: "pending", price: d.total, reviewed: false, participants: d.participants || "You", notes: d.conditions || "" }, ...b]);
-    // The prototype's Coach role is always Josh Whitfield (c2) — mirror the
-    // request into their Bookings pending queue so it's reviewable, and let
-    // them chat with the client about it, from the coach side too.
-    if (coachId === "c2") {
-      setCoachBookings((cb) => [{ id, clientName: "Sarah Lin", service: d.pkg.name, date: d.day, time: d.time, mode: d.mode, status: "pending", price: d.total, notes: d.conditions || "" }, ...cb]);
-      addCoachNotification({ type: "booking", title: "New booking request", body: `Sarah Lin requested a ${d.pkg.name} for ${d.day}, ${d.time}.` });
-    }
-  };
-  const cancelBooking = (id) => setBookings((bs) => bs.map((b) => (b.id === id ? { ...b, status: "cancelled" } : b)));
-  // Simulated payment step for a just-accepted booking (see respondBooking below).
-  const payBooking = (id) => setBookings((bs) => bs.map((b) => (b.id === id ? { ...b, paymentDue: false } : b)));
-  const rescheduleBooking = (id, { date, time }) => setBookings((bs) => bs.map((b) => (b.id === id ? { ...b, date, time } : b)));
 
   // Shared accept/decline handler for a coach's booking request — called from
   // both the Bookings tab and the coach dashboard's quick-action cards. Keeps
@@ -214,19 +207,16 @@ export default function App() {
   const respondBooking = (id, status) => {
     setCoachBookings((arr) => arr.map((b) => (b.id === id ? { ...b, status } : b)));
     const cb = coachBookings.find((b) => b.id === id);
-    const matchesClient = bookings.some((b) => b.id === id);
-    if (matchesClient) {
-      setBookings((arr) => arr.map((b) => (b.id === id ? { ...b, status, paymentDue: status === "confirmed" ? true : b.paymentDue } : b)));
-      if (cb) {
-        if (status === "confirmed") {
-          addClientNotification({ type: "payment", title: "Send your payment", body: `${COACHES[1].name} accepted your ${cb.service} request — send payment to confirm your session on ${cb.date}.`, bookingId: id });
-        } else if (status === "cancelled") {
-          addClientNotification({ type: "booking", title: "Booking declined", body: `${COACHES[1].name} declined your ${cb.service} request for ${cb.date}.`, bookingId: id });
-        }
+    setBookings((arr) => arr.map((b) => (b.id === id ? { ...b, status, paymentDue: status === "confirmed" ? true : b.paymentDue } : b)));
+    if (cb) {
+      if (status === "confirmed") {
+        pushNotification({ audience: "client", type: "payment", title: "Send your payment", body: `${COACHES[1].name} accepted your ${cb.service} request — send payment to confirm your session on ${cb.date}.`, bookingId: id });
+      } else if (status === "cancelled") {
+        pushNotification({ audience: "client", type: "booking", title: "Booking declined", body: `${COACHES[1].name} declined your ${cb.service} request for ${cb.date}.`, bookingId: id });
       }
     }
   };
->>>>>>> main
+
   const handleClientPrefs = (prefs) => {
     setClientPrefs(prefs);
     // Participant profiles created during onboarding become managed child profiles.
@@ -308,11 +298,7 @@ export default function App() {
   const activeTabScreen = TAB_ALIASES[screen] || screen;
   const showTabs = tabsForRole.some((t) => t.value === activeTabScreen);
 
-<<<<<<< Jhunz-Branch
-  const screenProps = { nav, params, toast, role, favorites, toggleFav, biometric, setBiometric, verified, verificationStatus, reachedDashboardAfterVerification, setReachedDashboardAfterVerification, offline, draft, setDraft, addBooking, cancelBooking, rescheduleBooking, markBookingPaid, bookings, coachBookings, setCoachBookings, setRole, addCoachRole: () => setHasCoachRole(true), submitVerification, verificationQueue, decideVerification, disputes, resolveDispute, clientPrefs, onComplete: handleClientPrefs, children, addChild, updateChild, removeChild, coachOnboarding, updateCoachOnboarding, coachPackages, savePackage, removePackage, availabilityBlocks, setAvailabilityBlocks, coachMedia, addMedia, removeMedia, coachAvailableNow, setCoachAvailableNow, pushNotification, clientNotifications, coachNotifications };
-=======
-  const screenProps = { nav, params, toast, role, favorites, toggleFav, biometric, setBiometric, verified, verificationStatus, reachedDashboardAfterVerification, setReachedDashboardAfterVerification, offline, draft, setDraft, addBooking, cancelBooking, rescheduleBooking, respondBooking, payBooking, bookings, setBookings, coachBookings, setCoachBookings, clientNotifications, setClientNotifications, addClientNotification, coachNotifications, setCoachNotifications, addCoachNotification, setRole, addCoachRole: () => setHasCoachRole(true), submitVerification, verificationQueue, decideVerification, disputes, resolveDispute, clientPrefs, onComplete: handleClientPrefs, children, addChild, updateChild, removeChild, coachOnboarding, updateCoachOnboarding, coachPackages, savePackage, removePackage, availabilityBlocks, setAvailabilityBlocks, coachMedia, addMedia, removeMedia };
->>>>>>> main
+  const screenProps = { nav, params, toast, role, favorites, toggleFav, biometric, setBiometric, verified, verificationStatus, reachedDashboardAfterVerification, setReachedDashboardAfterVerification, offline, draft, setDraft, addBooking, cancelBooking, rescheduleBooking, respondBooking, markBookingPaid, bookings, setBookings, coachBookings, setCoachBookings, setRole, addCoachRole: () => setHasCoachRole(true), submitVerification, verificationQueue, decideVerification, disputes, resolveDispute, clientPrefs, onComplete: handleClientPrefs, children, addChild, updateChild, removeChild, coachOnboarding, updateCoachOnboarding, coachPackages, savePackage, removePackage, availabilityBlocks, setAvailabilityBlocks, coachMedia, addMedia, removeMedia, coachAvailableNow, setCoachAvailableNow, pushNotification, clientNotifications, coachNotifications };
 
 
   function renderScreen() {
@@ -412,7 +398,7 @@ export default function App() {
           style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 999, border: `1px solid ${offline ? C.orange : C.border}`, background: offline ? C.orangeTint : C.white, color: offline ? C.orange : C.slate, fontSize: 11.5, fontWeight: 600, cursor: "pointer", ...fBody }}>
           <WifiOff size={12} /> Offline
         </button>
-        <button onClick={() => { setScreen(role === "admin" ? "admin-login" : "splash"); setHistory([]); setBookings(INITIAL_BOOKINGS); setCoachBookings(COACH_BOOKINGS); setClientNotifications(CLIENT_NOTIFICATIONS); setCoachNotifications(COACH_NOTIFICATIONS); setVerified(false); setVerificationStatus("none"); setReachedDashboardAfterVerification(false); setVerificationQueue(ADMIN_VERIFICATION_QUEUE); setDisputes(ADMIN_DISPUTES); setClientPrefs(null); setChildren([]); setCoachOnboarding({}); setBiometric(false); setCoachPackages(COACHES[1].packages); setAvailabilityBlocks(INITIAL_AVAILABILITY_BLOCKS); setCoachMedia(Array.from({ length: COACHES[1].reelsCount }, (_, i) => ({ id: `m${i + 1}`, type: i % 4 === 3 ? "photo" : "reel", caption: i % 4 === 3 ? "Training photo" : "Session highlight", sport: COACHES[1].sport, url: null }))); }}
+        <button onClick={() => { setScreen(role === "admin" ? "admin-login" : "splash"); setHistory([]); setBookings(INITIAL_BOOKINGS); setCoachBookings(COACH_BOOKINGS); setNotifications([]); setVerified(false); setVerificationStatus("none"); setReachedDashboardAfterVerification(false); setVerificationQueue(ADMIN_VERIFICATION_QUEUE); setDisputes(ADMIN_DISPUTES); setClientPrefs(null); setChildren([]); setCoachOnboarding({}); setBiometric(false); setCoachPackages(COACHES[1].packages); setAvailabilityBlocks(INITIAL_AVAILABILITY_BLOCKS); setCoachMedia(Array.from({ length: COACHES[1].reelsCount }, (_, i) => ({ id: `m${i + 1}`, type: i % 4 === 3 ? "photo" : "reel", caption: i % 4 === 3 ? "Training photo" : "Session highlight", sport: COACHES[1].sport, url: null }))); }}
 
           style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 999, border: `1px solid ${C.border}`, background: C.white, color: C.slate, fontSize: 11.5, fontWeight: 600, cursor: "pointer", ...fBody }}>
           <RefreshCcw size={12} /> Reset
