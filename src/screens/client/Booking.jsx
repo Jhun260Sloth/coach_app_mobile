@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { COACHES, CONFIG } from "../../data/mockData";
+
 import {
   Info, Fingerprint, CreditCard, CheckCircle2, Plus, Lock, Calendar, Navigation, MessageCircle,
   Users, User, ShieldCheck, Phone, Stethoscope, AlertTriangle, UserPlus, MapPin, Send, ClipboardCheck,
