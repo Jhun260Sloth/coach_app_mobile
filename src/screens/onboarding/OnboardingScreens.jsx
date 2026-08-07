@@ -206,11 +206,11 @@ export function ScreenAuth({ nav, params, role, toast, biometric }) {
           </Btn>
         </div>
       )}
-      <Btn full variant="dark" icon={AppleIcon} disabled={!canSubmit} onClick={() => { toast(mode === "signup" ? "Signed up with Apple" : "Signed in with Apple"); proceedAfterAuth(); }}>
+      <Btn full variant="dark" icon={AppleIcon} disabled={canSubmit} onClick={() => { toast(mode === "signup" ? "Signed up with Apple" : "Signed in with Apple"); proceedAfterAuth(); }}>
         Continue with Apple
       </Btn>
       <div style={{ marginTop: 10 }}>
-        <Btn full variant="outline" disabled={!canSubmit} onClick={() => { toast(mode === "signup" ? "Signed up with Google" : "Signed in with Google"); proceedAfterAuth(); }}>Continue with Google</Btn>
+        <Btn full variant="outline" disabled={canSubmit} onClick={() => { toast(mode === "signup" ? "Signed up with Google" : "Signed in with Google"); proceedAfterAuth(); }}>Continue with Google</Btn>
       </div>
 
       <div style={{ marginTop: "auto", textAlign: "center", paddingBottom: 22 }}>

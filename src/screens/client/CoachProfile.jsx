@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import {
   ChevronLeft, Heart, Share2, Star, ShieldCheck, BadgeCheck, Play, MessageCircle, CheckCircle2, Trophy,
-  Clock, TrendingUp, Repeat, MapPin, Navigation, Award,
+  Clock, TrendingUp, Repeat, MapPin, Navigation, Award, Users, XCircle,
 } from "lucide-react";
 import { C, fDisplay, fBody } from "../../theme/theme";
 import { COACHES, REVIEWS, SPORT_ICON } from "../../data/mockData";
@@ -168,20 +168,46 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav, coachAva
           <div style={{ marginTop: 16 }}>
             {coach.packages.map((p) => {
               const selected = selectedPkgId === p.id;
+              const unavailable = p.active === false;
               return (
-                <Card key={p.id} onClick={() => setSelectedPkgId(p.id)} style={{ marginBottom: 10, border: `1.5px solid ${selected ? C.orange : C.border}`, background: selected ? C.orangeTint : C.white }}>
+                <Card
+                  key={p.id}
+                  onClick={unavailable ? undefined : () => setSelectedPkgId(p.id)}
+                  style={{
+                    marginBottom: 10,
+                    border: `1.5px solid ${selected ? C.orange : C.border}`,
+                    background: selected ? C.orangeTint : unavailable ? C.fog : C.white,
+                    opacity: unavailable ? 0.6 : 1,
+                    cursor: unavailable ? "default" : "pointer",
+                  }}
+                >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                     <div>
                       <div style={{ fontWeight: 600, fontSize: 14, color: C.jet, ...fDisplay }}>{p.name}</div>
                       <div style={{ fontSize: 12, color: C.slate, marginTop: 3, ...fBody }}>{p.type} · {p.duration} min · {p.mode}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 5 }}>
+                        <Users size={11.5} color={C.slateLight} />
+                        <span style={{ fontSize: 11.5, color: C.slate, ...fBody }}>
+                          {p.maxParticipants ? `Up to ${p.maxParticipants} participant${p.maxParticipants > 1 ? "s" : ""}` : "1 participant"}
+                        </span>
+                      </div>
                     </div>
                     <div style={{ fontSize: 16, fontWeight: 700, color: C.jet, ...fDisplay }}>${p.price}</div>
                   </div>
                   <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ width: 18, height: 18, borderRadius: 18, border: `1.5px solid ${selected ? C.orange : C.border}`, background: selected ? C.orange : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      {selected && <CheckCircle2 size={11} color={C.white} />}
-                    </div>
-                    <span style={{ fontSize: 12.5, fontWeight: 600, color: selected ? C.orange : C.slate, ...fBody }}>{selected ? "Selected" : "Select this service"}</span>
+                    {unavailable ? (
+                      <>
+                        <XCircle size={14} color={C.slateLight} />
+                        <span style={{ fontSize: 12.5, fontWeight: 600, color: C.slateLight, ...fBody }}>Currently unavailable</span>
+                      </>
+                    ) : (
+                      <>
+                        <div style={{ width: 18, height: 18, borderRadius: 18, border: `1.5px solid ${selected ? C.orange : C.border}`, background: selected ? C.orange : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          {selected && <CheckCircle2 size={11} color={C.white} />}
+                        </div>
+                        <span style={{ fontSize: 12.5, fontWeight: 600, color: selected ? C.orange : C.slate, ...fBody }}>{selected ? "Selected" : "Select this service"}</span>
+                      </>
+                    )}
                   </div>
                 </Card>
               );
@@ -223,8 +249,8 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav, coachAva
               <div style={{ fontSize: 11, color: C.slate, maxWidth: 120, ...fBody }}>{selectedPkg.name}</div>
             </div>
             <div style={{ flex: 1 }}>
-              <Btn full onClick={() => nav("booking-participants", { coachId: coach.id, packageId: selectedPkg.id })}>
-                Request to book
+              <Btn full onClick={() => nav("package-detail", { coachId: coach.id, packageId: selectedPkg.id })}>
+                View package
               </Btn>
             </div>
           </>

@@ -1,8 +1,8 @@
 
 import React, { useState, useRef, useEffect } from "react";
-import { Bell, Search, Filter, Navigation, Star, MapPin, Heart, Sparkles, Calendar, MessageCircle, Percent, Check, X, Plus, Minus } from "lucide-react";
+import { Bell, Search, Filter, Navigation, Star, MapPin, Heart, Sparkles, Calendar, MessageCircle, Percent, Check, X, Plus, Minus, CreditCard } from "lucide-react";
 import { C, fDisplay, fBody } from "../../theme/theme";
-import { COACHES, SPORTS, ALL_SUBURBS, CLIENT_NOTIFICATIONS } from "../../data/mockData";
+import { COACHES, SPORTS, ALL_SUBURBS } from "../../data/mockData";
 import { Card, Chip, Badge, SegTabs, SectionLabel, Avatar, Btn, TopBar, BottomSheet, EmptyState } from "../../components/ui/Primitives";
 import { useLiveNotifications, NotificationBellButton, StatusBanner } from "../../systems/StateSystem";
 
@@ -11,7 +11,7 @@ import { useLiveNotifications, NotificationBellButton, StatusBanner } from "../.
 // mock data, so this is the one card that can actually flip to "unavailable".
 const LIVE_AVAILABILITY_COACH_ID = "c2";
 
-const NOTIF_ICON = { booking: Calendar, message: MessageCircle, review: Star, availability: Sparkles, promo: Percent };
+const NOTIF_ICON = { booking: Calendar, message: MessageCircle, review: Star, availability: Sparkles, promo: Percent, payment: CreditCard };
 const MAP_PINS = [[20,30],[60,15],[40,55],[78,45],[25,70],[65,75],[50,40],[15,55],[85,20],[35,80]];
 const MAP_SIZE = 1000;
 const DEFAULT_FILTERS = { sports: [], areas: [], maxPrice: 150, minRating: 0 };
@@ -190,10 +190,9 @@ export function PannableMapView({ coaches = [], onOpen, onClose }) {
   );
 }
 
-export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFiltersChange, coachAvailableNow, clientNotifications }) {
+export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFiltersChange, clientNotifications: notifications, setClientNotifications: setNotifications }) {
   const [view, setView] = useState("list");
   const [notifOpen, setNotifOpen] = useState(false);
-  const [notifications, setNotifications] = useLiveNotifications(clientNotifications, CLIENT_NOTIFICATIONS);
   const [searchText, setSearchText] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -218,7 +217,9 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
     setNotifOpen(false);
     if (n.type === "message") nav("chat-thread", { name: n.coachName });
     else if (n.type === "availability" && n.coachId) nav("coach-profile", { id: n.coachId });
-    else if (["booking", "review"].includes(n.type)) nav("client-dashboard");
+    else if (["booking", "review", "payment"].includes(n.type)) {
+      nav(n.bookingId ? "client-booking-detail" : "client-dashboard", n.bookingId ? { id: n.bookingId } : {});
+    }
   };
   const selectSuggestion = s => { setSearchText(s); setShowSuggestions(false); };
 

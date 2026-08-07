@@ -157,7 +157,7 @@ export function ScreenCoachBookings({ nav, coachBookings }) {
   );
 }
 
-export function ScreenCoachBookingDetail({ nav, params, coachBookings, setCoachBookings, toast, pushNotification }) {
+export function ScreenCoachBookingDetail({ nav, params, coachBookings, respondBooking, toast }) {
   const booking = coachBookings.find((b) => b.id === params.id);
   const [responding, setResponding] = useState(null);
   const respond = (status) => {
@@ -171,7 +171,7 @@ export function ScreenCoachBookingDetail({ nav, params, coachBookings, setCoachB
     }
     setResponding(status);
     setTimeout(() => {
-      setCoachBookings((arr) => arr.map((b) => b.id === booking.id ? { ...b, status } : b));
+      respondBooking(booking.id, status);
       toast(status === "confirmed" ? "Booking accepted" : "Booking declined");
       pushNotification?.({
         audience: "client", type: "booking",

@@ -367,8 +367,8 @@ export function StatusPill({ status }) {
   return (
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 5,
-      background: colors.bg, color: colors.fg,
-      fontSize: 11.5, fontWeight: 700, padding: "4px 9px", borderRadius: 8, ...fBody,
+      color: m.tone === "orange" ? C.orange : m.tone === "success" ? C.success : C.slate,
+      fontSize: 11.5, fontWeight: 700, padding: "4px,8px", borderRadius: 8, ...fBody,
     }}>
       <span style={{ width: 6, height: 6, borderRadius: 99, background: "currentColor", animation: m.pulse ? "clPulse 1.4s infinite" : "none" }} />
       {m.label}

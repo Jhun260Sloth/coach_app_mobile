@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Info, Fingerprint, CreditCard, CheckCircle2, Plus, Lock, Calendar, Navigation, MessageCircle,
   Users, User, ShieldCheck, Phone, Stethoscope, AlertTriangle, UserPlus, MapPin, Send, ClipboardCheck,
+  ChevronLeft, ChevronRight, Sunrise, Sun, Moon, Repeat as RepeatIcon,
 } from "lucide-react";
 import { C, fDisplay, fBody } from "../../theme/theme";
 import { COACHES, CONFIG } from "../../data/mockData";
 import {
-  Avatar, Card, Chip, SectionLabel, Btn, TopBar, Toggle, Field, Row, Spinner, ScrollFadeRow,
+  Avatar, Card, Chip, SectionLabel, Btn, TopBar, Toggle, Field, Row, RadioRow,
 } from "../../components/ui/Primitives";
 import { StatusBanner, ResultOverlay } from "../../systems/StateSystem";
 
@@ -21,7 +22,79 @@ function parseShortDate(str, year = 2026) {
 function sameCalendarDay(a, b) { return a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
 function normTime(t) { return (t || "").replace(/\s+/g, "").toLowerCase(); }
 
-const WEEKDAY_INDEX = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+/* ---- calendar helpers for the "Select Date & Time" screen ---- */
+function addDays(d, n) { const r = new Date(d); r.setDate(d.getDate() + n); return r; }
+function startOfWeek(d) { const dow = (d.getDay() + 6) % 7; return addDays(d, -dow); } // Monday-start
+function buildMonthGrid(cursor) {
+  const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+  const gridStart = startOfWeek(first);
+  const weeks = [];
+  let cur = gridStart;
+  for (let w = 0; w < 6; w++) {
+    const row = [];
+    for (let i = 0; i < 7; i++) { row.push(cur); cur = addDays(cur, 1); }
+    weeks.push(row);
+  }
+  return weeks;
+}
+function sameDay(a, b) { return a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
+function isPastDay(d) { const t = new Date(); t.setHours(0, 0, 0, 0); const x = new Date(d); x.setHours(0, 0, 0, 0); return x < t; }
+const DOW_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const WEEKDAY_HEADERS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+// Availability state for a calendar cell, based on how many slots the coach
+// has open that day: none -> unavailable, 1-2 -> limited, 3+ -> available.
+function dayAvailability(date, coach) {
+  if (isPastDay(date)) return "unavailable";
+  const abbrev = DOW_ABBR[date.getDay()];
+  const slots = coach.availability[abbrev];
+  if (!slots || slots.length === 0) return "unavailable";
+  if (slots.length <= 2) return "limited";
+  return "available";
+}
+
+function slotsForDate(date, coach) {
+  const abbrev = DOW_ABBR[date.getDay()];
+  return coach.availability[abbrev] || [];
+}
+
+// Buckets a coach's raw "HH:MM" slots into Morning / Afternoon / Evening.
+function groupSlotsByPeriod(slots) {
+  const groups = { Morning: [], Afternoon: [], Evening: [] };
+  slots.forEach((t) => {
+    const h = parseInt(t.split(":")[0], 10);
+    if (h < 12) groups.Morning.push(t);
+    else if (h < 17) groups.Afternoon.push(t);
+    else groups.Evening.push(t);
+  });
+  return groups;
+}
+
+function formatFullDateFromDate(d) {
+  return d.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" });
+}
+
+const REPEAT_OPTIONS = [
+  { value: "once", label: "One-time Session (Default)" },
+  { value: "weekly", label: "Weekly" },
+  { value: "fortnightly", label: "Fortnightly" },
+  { value: "monthly", label: "Monthly" },
+];
+const END_AFTER_OPTIONS = [
+  { value: "4", label: "4 sessions" },
+  { value: "8", label: "8 sessions" },
+  { value: "date", label: "End date" },
+];
+
+function repeatSummaryText(repeat) {
+  if (!repeat || repeat.freq === "once") return "One-time session";
+  const freqLabel = repeat.freq === "weekly"
+    ? `Every ${repeat.every || 1} week${(repeat.every || 1) > 1 ? "s" : ""}`
+    : repeat.freq === "fortnightly" ? "Every 2 weeks" : "Every month";
+  if (repeat.freq !== "weekly") return freqLabel;
+  if (repeat.endType === "date") return `${freqLabel}, until ${repeat.endDate || "a selected date"}`;
+  return `${freqLabel}, ends after ${repeat.endType} sessions`;
+}
 
 // A coach's package tells us whether more than one person can join the same
 // booking. "1:1" / "1:1 Coaching" (and one-on-one term blocks) only ever have
@@ -46,19 +119,6 @@ function venueLabel(pkg, coach) {
   return pkg.venue || (coach && coach.venue) || "Venue to be confirmed by coach";
 }
 
-function nextDateForWeekday(abbrev) {
-  const target = WEEKDAY_INDEX[abbrev];
-  const now = new Date();
-  const diff = (target - now.getDay() + 7) % 7;
-  const result = new Date(now);
-  result.setDate(now.getDate() + diff);
-  return result;
-}
-
-function formatFullDate(abbrev) {
-  return nextDateForWeekday(abbrev).toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" });
-}
-
 function formatTime12(t) {
   const [hStr, mStr] = t.split(":");
   let h = parseInt(hStr, 10);
@@ -77,18 +137,24 @@ export function ScreenBookingParticipants({ nav, params, children = [] }) {
   const coach = COACHES.find((c) => c.id === params.coachId);
   const pkg = coach.packages.find((p) => p.id === params.packageId);
   const allowsMultiple = packageAllowsMultipleParticipants(pkg);
+  // The package's "Maximum participants" (set by the coach) caps how many
+  // people the client can add to a single booking of this package.
+  const maxParticipants = pkg.maxParticipants || (allowsMultiple ? 99 : 1);
 
   const [participants, setParticipants] = useState(["self"]);
   const toggleParticipant = (key) => setParticipants((p) => {
     if (!allowsMultiple) return p.includes(key) ? p : [key]; // 1:1 — single selection acts like a radio button
-    return p.includes(key) ? p.filter((x) => x !== key) : [...p, key];
+    if (p.includes(key)) return p.filter((x) => x !== key);
+    if (p.length >= maxParticipants) return p; // package is at capacity — ignore further taps
+    return [...p, key];
   });
 
+  const atCapacity = allowsMultiple && participants.length >= maxParticipants;
   const canContinue = participants.length > 0;
 
   return (
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title="Who's attending?" onBack={() => nav("coach-profile", { id: coach.id })} />
+      <TopBar title="Who's attending?" onBack={() => nav("package-detail", { coachId: coach.id, packageId: pkg.id })} />
 
       <Card style={{ marginBottom: 22, display: "flex", gap: 12, alignItems: "center", border: `1px solid ${C.border}`, boxShadow: "0 1px 2px rgba(22,24,29,.04)" }}>
         <Avatar name={coach.name} size={44} />
@@ -102,17 +168,29 @@ export function ScreenBookingParticipants({ nav, params, children = [] }) {
       </Card>
 
       <div style={{ flex: 1, overflowY: "auto" }}>
-        <SectionLabel>Select who's coming</SectionLabel>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+          <SectionLabel>Select who's coming</SectionLabel>
+          <span style={{ fontSize: 11, fontWeight: 600, color: C.slateLight, ...fBody }}>
+            {participants.length}/{maxParticipants} max
+          </span>
+        </div>
         <div style={{ fontSize: 12.5, color: C.slate, marginBottom: 14, lineHeight: 1.5, ...fBody }}>
           {allowsMultiple
-            ? "This is a group session — select yourself, one child, or several. Each participant keeps their own booking history."
+            ? `This is a group session — up to ${maxParticipants} participant${maxParticipants > 1 ? "s" : ""} can join. Select yourself, one child, or several. Each participant keeps their own booking history.`
             : "This is a 1:1 session, so pick a single participant — yourself or one child profile."}
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          <Chip active={participants.includes("self")} icon={User} onClick={() => toggleParticipant("self")}>Myself</Chip>
-          {children.map((c) => (
-            <Chip key={c.id} active={participants.includes(c.id)} icon={Users} onClick={() => toggleParticipant(c.id)}>{c.name || "Unnamed profile"}</Chip>
-          ))}
+          <div style={{ opacity: atCapacity && !participants.includes("self") ? 0.45 : 1 }}>
+            <Chip active={participants.includes("self")} icon={User} onClick={(atCapacity && !participants.includes("self")) ? undefined : () => toggleParticipant("self")}>Myself</Chip>
+          </div>
+          {children.map((c) => {
+            const disabled = atCapacity && !participants.includes(c.id);
+            return (
+              <div key={c.id} style={{ opacity: disabled ? 0.45 : 1 }}>
+                <Chip active={participants.includes(c.id)} icon={Users} onClick={disabled ? undefined : () => toggleParticipant(c.id)}>{c.name || "Unnamed profile"}</Chip>
+              </div>
+            );
+          })}
         </div>
         {children.length === 0 && (
           <button onClick={() => nav("client-profile")} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", marginTop: 14, padding: 0 }}>
@@ -132,19 +210,31 @@ export function ScreenBookingParticipants({ nav, params, children = [] }) {
 export function ScreenBookingDateTime({ nav, params, setDraft, bookings = [] }) {
   const coach = COACHES.find((c) => c.id === params.coachId);
   const pkg = coach.packages.find((p) => p.id === params.packageId);
-  const days = Object.keys(coach.availability);
-  const [day, setDay] = useState(days[0]);
-  const [time, setTime] = useState(null);
-  const [checking, setChecking] = useState(false);
 
-  const selectTime = (t) => {
-    if (checking) return;
-    setTime(t);
-    setChecking(true);
-    // Simulates a real-time availability check against the coach's calendar before locking the slot in.
-    setTimeout(() => setChecking(false), 550);
+  const [cursor, setCursor] = useState(() => { const d = new Date(); d.setDate(1); return d; });
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [time, setTime] = useState(null);
+
+  // Repeat booking (optional)
+  const [repeatFreq, setRepeatFreq] = useState("once");
+  const [repeatEvery, setRepeatEvery] = useState(1);
+  const [endAfterType, setEndAfterType] = useState("4");
+  const [endDate, setEndDate] = useState("");
+
+  const weeks = useMemo(() => buildMonthGrid(cursor), [cursor]);
+  const monthLabel = cursor.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  const today = new Date();
+  const isCurrentMonth = cursor.getFullYear() === today.getFullYear() && cursor.getMonth() === today.getMonth();
+  const goPrevMonth = () => { if (!isCurrentMonth) setCursor((c) => new Date(c.getFullYear(), c.getMonth() - 1, 1)); };
+  const goNextMonth = () => setCursor((c) => new Date(c.getFullYear(), c.getMonth() + 1, 1));
+
+  const pickDate = (d, state) => {
+    if (state === "unavailable") return;
+    setSelectedDate(d);
+    setTime(null);
   };
 
+<<<<<<< Jhunz-Branch
   // Schedule conflict — does the client already have a pending/confirmed session
   // at this exact day & time (with any coach)?
   const conflictBooking = time && !checking
@@ -155,83 +245,97 @@ export function ScreenBookingDateTime({ nav, params, setDraft, bookings = [] }) 
         return sameCalendarDay(bd, sd) && normTime(b.time) === normTime(formatTime12(time));
       })
     : null;
+=======
+  const daySlots = selectedDate ? slotsForDate(selectedDate, coach) : [];
+  const grouped = groupSlotsByPeriod(daySlots);
+  const periodIcons = { Morning: Sunrise, Afternoon: Sun, Evening: Moon };
+
+  const repeat = { freq: repeatFreq, every: repeatEvery, endType: endAfterType, endDate };
+
+  const canContinue = !!selectedDate && !!time;
+
+>>>>>>> main
   return (
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title="Choose a time" onBack={() => nav("booking-participants", { coachId: coach.id, packageId: pkg.id, participants: params.participants })} />
+      <TopBar title="Select Date & Time" onBack={() => nav("booking-participants", { coachId: coach.id, packageId: pkg.id, participants: params.participants })} />
 
-      <Card style={{ marginBottom: 22, display: "flex", gap: 12, alignItems: "center", border: `1px solid ${C.border}`, boxShadow: "0 1px 2px rgba(22,24,29,.04)" }}>
-        <Avatar name={coach.name} size={44} />
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: C.jet, letterSpacing: "-0.1px", ...fDisplay }}>{pkg.name}</div>
-          <div style={{ fontSize: 12.5, color: C.slate, marginTop: 2, ...fBody }}>
-            with {coach.name} · {pkg.duration} min
+      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 8 }}>
+        <div style={{ fontSize: 12.5, color: C.slate, lineHeight: 1.5, marginBottom: 18, ...fBody }}>
+          Choose your preferred session date and time. Only available dates and time slots are shown.
+        </div>
+
+        <Card style={{ marginBottom: 20, display: "flex", gap: 12, alignItems: "center", border: `1px solid ${C.border}` }}>
+          <Avatar name={coach.name} size={40} />
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: C.jet, ...fDisplay }}>{pkg.name}</div>
+            <div style={{ fontSize: 12, color: C.slate, marginTop: 2, ...fBody }}>with {coach.name} · {pkg.duration} min</div>
           </div>
-        </div>
-        <div style={{ marginLeft: "auto", fontSize: 16, fontWeight: 800, color: C.jet, whiteSpace: "nowrap", ...fDisplay }}>
-          ${pkg.price}
-        </div>
-      </Card>
+          <div style={{ marginLeft: "auto", fontSize: 15, fontWeight: 800, color: C.jet, whiteSpace: "nowrap", ...fDisplay }}>${pkg.price}</div>
+        </Card>
 
-      <SectionLabel>Day</SectionLabel>
-      <ScrollFadeRow
-        style={{
-          display: "flex", gap: 8, overflowX: "auto", marginBottom: 24, paddingBottom: 4,
-          WebkitOverflowScrolling: "touch", scrollSnapType: "x proximity",
-        }}
-      >
-        {days.map((d) => {
-          const active = day === d;
-          return (
-            <button
-              key={d}
-              onClick={() => { setDay(d); setTime(null); setChecking(false); }}
-              style={{
-                flexShrink: 0, scrollSnapAlign: "start", padding: "10px 16px", borderRadius: 14,
-                border: `1.5px solid ${active ? C.jet : C.border}`,
-                background: active ? C.jet : C.white,
-                color: active ? C.white : C.jet,
-                fontWeight: active ? 700 : 600, fontSize: 13, whiteSpace: "nowrap", cursor: "pointer",
-                boxShadow: active ? "0 4px 10px rgba(22,24,29,.18)" : "none",
-                transition: "background .15s ease, box-shadow .15s ease", ...fBody,
-              }}
-            >
-              {formatFullDate(d)}
+        {/* 1. Choose the day */}
+        <SectionLabel>1. Choose the day</SectionLabel>
+        <Card style={{ marginBottom: 18 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <button onClick={goPrevMonth} disabled={isCurrentMonth} style={{ width: 30, height: 30, borderRadius: 10, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: isCurrentMonth ? "default" : "pointer", opacity: isCurrentMonth ? 0.4 : 1 }}>
+              <ChevronLeft size={16} color={C.jet} />
             </button>
-          );
-        })}
-      </ScrollFadeRow>
-
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-        <span style={{ fontSize: 12.5, fontWeight: 700, color: C.jet, ...fDisplay }}>Available times</span>
-        <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600, color: C.success, ...fBody }}>
-          <span style={{ width: 6, height: 6, borderRadius: 99, background: C.success, animation: "clPulse 1.4s infinite" }} />
-          Real-time
-        </span>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 22 }}>
-        {coach.availability[day].map((t) => {
-          const active = time === t;
-          const isChecking = active && checking;
-          return (
-            <button
-              key={t}
-              onClick={() => selectTime(t)}
-              style={{
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
-                padding: "12px 0", borderRadius: 12, border: `1.5px solid ${active ? C.jet : C.border}`,
-                background: active ? C.jet : C.white, color: active ? C.white : C.jet,
-                fontWeight: active ? 700 : 600, fontSize: 13.5, cursor: checking ? "default" : "pointer",
-                boxShadow: active ? "0 4px 10px rgba(22,24,29,.18)" : "none",
-                transition: "background .15s ease, box-shadow .15s ease", ...fBody,
-              }}
-            >
-              {isChecking ? <Spinner size={13} /> : (active && <CheckCircle2 size={13} color={C.white} />)}
-              {formatTime12(t)}
+            <span style={{ fontSize: 13.5, fontWeight: 700, color: C.jet, ...fDisplay }}>{monthLabel}</span>
+            <button onClick={goNextMonth} style={{ width: 30, height: 30, borderRadius: 10, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+              <ChevronRight size={16} color={C.jet} />
             </button>
-          );
-        })}
-      </div>
+          </div>
 
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 6 }}>
+            {WEEKDAY_HEADERS.map((d) => (
+              <div key={d} style={{ textAlign: "center", fontSize: 10, fontWeight: 700, color: C.slateLight, ...fBody }}>{d}</div>
+            ))}
+          </div>
+
+          {weeks.map((row, ri) => (
+            <div key={ri} style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 4 }}>
+              {row.map((d, di) => {
+                const inRange = d.getMonth() === cursor.getMonth();
+                const state = dayAvailability(d, coach);
+                const isSelected = sameDay(d, selectedDate);
+                const isToday = sameDay(d, today);
+                const disabled = !inRange || state === "unavailable";
+
+                let background = C.white;
+                let border = C.border;
+                let color = C.jet;
+                if (state === "available" && inRange) { border = C.orange; }
+                if (state === "limited" && inRange) { border = C.strong; }
+                if (disabled) { color = C.slateLight; }
+                if (isSelected) { background = C.orange; border = C.orange; color = C.white; }
+
+                return (
+                  <button
+                    key={di}
+                    onClick={() => pickDate(d, state)}
+                    disabled={disabled}
+                    style={{
+                      aspectRatio: "1", borderRadius: 10, position: "relative",
+                      border: `1.5px solid ${border}`, background,
+                      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2,
+                      opacity: inRange ? 1 : 0.3,
+                      cursor: disabled ? "not-allowed" : "pointer",
+                      outline: isToday && !isSelected ? `1.5px solid ${C.slate}` : "none",
+                      outlineOffset: isToday && !isSelected ? -1.5 : 0,
+                      boxSizing: "border-box",
+                    }}
+                  >
+                    <span style={{ fontSize: 12, fontWeight: isSelected || isToday ? 700 : 500, color, ...fBody }}>{d.getDate()}</span>
+                    {inRange && state === "limited" && !isSelected && (
+                      <span style={{ width: 4, height: 4, borderRadius: 99, background: C.strong }} />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+
+<<<<<<< Jhunz-Branch
       {time && conflictBooking && (
         <div style={{ marginBottom: 18 }}>
           <StatusBanner
@@ -250,18 +354,146 @@ export function ScreenBookingDateTime({ nav, params, setDraft, bookings = [] }) 
               {checking
                 ? `Checking availability for ${formatFullDate(day)} at ${formatTime12(time)}…`
                 : `${formatFullDate(day)} at ${formatTime12(time)} — confirmed available`}
+=======
+          <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap", justifyContent: "center" }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10.5, color: C.slate, ...fBody }}>
+              <span style={{ width: 9, height: 9, borderRadius: 3, border: `1.5px solid ${C.orange}` }} /> Available
+            </span>
+            <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10.5, color: C.slate, ...fBody }}>
+              <span style={{ width: 9, height: 9, borderRadius: 3, border: `1.5px solid ${C.strong}` }} /> Limited
+            </span>
+            <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10.5, color: C.slate, ...fBody }}>
+              <span style={{ width: 9, height: 9, borderRadius: 3, background: C.fog, border: `1.5px solid ${C.border}` }} /> Unavailable
+            </span>
+            <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10.5, color: C.slate, ...fBody }}>
+              <span style={{ width: 9, height: 9, borderRadius: 3, background: C.orange }} /> Selected
+>>>>>>> main
             </span>
           </div>
         </Card>
-      )}
 
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 8, background: C.fog, borderRadius: 12, padding: 12, marginBottom: 16 }}>
-        <Info size={14} color={C.slate} style={{ marginTop: 2, flexShrink: 0 }} />
-        <span style={{ fontSize: 12, color: C.slate, lineHeight: 1.5, ...fBody }}>Only real-time open slots are shown — {coach.name.split(" ")[0]}'s calendar updates automatically once you book.</span>
+        {/* 2. Available Time Slots */}
+        {selectedDate && (
+          <>
+            <SectionLabel>2. Available Time Slots</SectionLabel>
+            <div style={{ fontSize: 12, color: C.slate, marginBottom: 12, ...fBody }}>{formatFullDateFromDate(selectedDate)}</div>
+            {daySlots.length === 0 ? (
+              <Card style={{ marginBottom: 18, textAlign: "center" }}>
+                <span style={{ fontSize: 12.5, color: C.slate, ...fBody }}>No time slots available on this day.</span>
+              </Card>
+            ) : (
+              <div style={{ marginBottom: 18 }}>
+                {["Morning", "Afternoon", "Evening"].filter((p) => grouped[p].length > 0).map((period) => {
+                  const PeriodIcon = periodIcons[period];
+                  return (
+                    <div key={period} style={{ marginBottom: 14 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                        <PeriodIcon size={13} color={C.slateLight} />
+                        <span style={{ fontSize: 11.5, fontWeight: 700, color: C.slate, ...fBody }}>{period}</span>
+                      </div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                        {grouped[period].map((t) => {
+                          const active = time === t;
+                          return (
+                            <button
+                              key={t}
+                              onClick={() => setTime(t)}
+                              style={{
+                                display: "inline-flex", alignItems: "center", gap: 5,
+                                padding: "10px 16px", borderRadius: 999, border: `1.5px solid ${active ? C.jet : C.border}`,
+                                background: active ? C.jet : C.white, color: active ? C.white : C.jet,
+                                fontWeight: active ? 700 : 600, fontSize: 13, cursor: "pointer",
+                                transition: "background .15s ease", ...fBody,
+                              }}
+                            >
+                              {active && <CheckCircle2 size={12} color={C.white} />}
+                              {formatTime12(t)}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Repeat Booking (Optional) */}
+        {selectedDate && time && (
+          <>
+            <SectionLabel>Repeat Booking (Optional)</SectionLabel>
+            <Card style={{ marginBottom: 18 }}>
+              <div style={{ fontSize: 12, color: C.slate, marginBottom: 10, ...fBody }}>How often would you like to repeat this session?</div>
+              {REPEAT_OPTIONS.map((o) => (
+                <RadioRow key={o.value} label={o.label} selected={repeatFreq === o.value} onClick={() => setRepeatFreq(o.value)} />
+              ))}
+
+              {repeatFreq === "weekly" && (
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Repeat every</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "9px 13px", marginBottom: 14 }}>
+                    <RepeatIcon size={14} color={C.slateLight} />
+                    <input
+                      type="number" min={1} value={repeatEvery}
+                      onChange={(e) => setRepeatEvery(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                      style={{ border: "none", outline: "none", width: 40, fontSize: 13, ...fBody }}
+                    />
+                    <span style={{ fontSize: 12.5, color: C.slate, ...fBody }}>week{repeatEvery > 1 ? "s" : ""}</span>
+                  </div>
+
+                  <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>End after</div>
+                  {END_AFTER_OPTIONS.map((o) => (
+                    <RadioRow key={o.value} label={o.label} selected={endAfterType === o.value} onClick={() => setEndAfterType(o.value)} />
+                  ))}
+                  {endAfterType === "date" && (
+                    <input
+                      type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
+                      style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "10px 13px", fontSize: 13, outline: "none", boxSizing: "border-box", marginTop: 6, ...fBody }}
+                    />
+                  )}
+                </div>
+              )}
+            </Card>
+
+            {/* 3. Session Summary */}
+            <SectionLabel>3. Session Summary</SectionLabel>
+            <Card style={{ marginBottom: 18, background: C.orangeTint, border: "none" }}>
+              <Row label="Package" value={pkg.name} />
+              <Row label="Coach" value={coach.name} />
+              <Row label="Date" value={formatFullDateFromDate(selectedDate)} />
+              <Row label="Time" value={formatTime12(time)} />
+              <Row label="Repeats" value={repeatSummaryText(repeat)} />
+              <Row label="Price" value={`$${pkg.price} / session`} bold last />
+            </Card>
+          </>
+        )}
+
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 8, background: C.fog, borderRadius: 12, padding: 12, marginBottom: 16 }}>
+          <Info size={14} color={C.slate} style={{ marginTop: 2, flexShrink: 0 }} />
+          <span style={{ fontSize: 12, color: C.slate, lineHeight: 1.5, ...fBody }}>Only real-time open slots are shown — {coach.name.split(" ")[0]}'s calendar updates automatically once you book.</span>
+        </div>
       </div>
 
-      <div style={{ marginTop: "auto", padding: "14px 0" }}>
-        <Btn full disabled={!time || checking || !!conflictBooking} onClick={() => { setDraft({ coach, pkg, day: formatFullDate(day), time: formatTime12(time), mode: pkg.mode, participants: params.participants || ["self"] }); nav("booking-review"); }}>Continue</Btn>
+      <div style={{ padding: "14px 0" }}>
+        <Btn
+          full
+          disabled={!canContinue}
+          onClick={() => {
+            setDraft({
+              coach, pkg,
+              day: formatFullDateFromDate(selectedDate),
+              time: formatTime12(time),
+              mode: pkg.mode,
+              participants: params.participants || ["self"],
+              repeat,
+            });
+            nav("booking-review");
+          }}
+        >
+          Continue
+        </Btn>
       </div>
     </div>
   );
@@ -326,7 +558,10 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast, children = []
           <Row label="When" value={`${draft.day} at ${draft.time}`} />
           <Row label="Venue" value={venueLabel(draft.pkg, draft.coach)} />
           <Row label="Mode of Delivery" value={deliveryModeLabel(draft.pkg)} />
-          <Row label="For" value={participantLabel} last />
+          <Row label="For" value={participantLabel} last={!draft.repeat || draft.repeat.freq === "once"} />
+          {draft.repeat && draft.repeat.freq !== "once" && (
+            <Row label="Repeats" value={repeatSummaryText(draft.repeat)} last />
+          )}
         </Card>
 
         <Card style={{ marginBottom: 14 }}>
