@@ -207,6 +207,9 @@ export function ScreenBookingParticipants({ nav, params, children = [] }) {
   );
 }
 
+// add to the lucide-react import list at the top of the file:
+// Loader2 as Spinner,
+
 export function ScreenBookingDateTime({ nav, params, setDraft, bookings = [] }) {
   const coach = COACHES.find((c) => c.id === params.coachId);
   const pkg = coach.packages.find((p) => p.id === params.packageId);
@@ -214,6 +217,7 @@ export function ScreenBookingDateTime({ nav, params, setDraft, bookings = [] }) 
   const [cursor, setCursor] = useState(() => { const d = new Date(); d.setDate(1); return d; });
   const [selectedDate, setSelectedDate] = useState(null);
   const [time, setTime] = useState(null);
+  const [checking, setChecking] = useState(false);
 
   // Repeat booking (optional)
   const [repeatFreq, setRepeatFreq] = useState("once");
@@ -233,16 +237,25 @@ export function ScreenBookingDateTime({ nav, params, setDraft, bookings = [] }) 
     setSelectedDate(d);
     setTime(null);
   };
+
+  // Simulate a short "checking availability" pause whenever a new time is picked.
+  useEffect(() => {
+    if (!time) { setChecking(false); return; }
+    setChecking(true);
+    const t = setTimeout(() => setChecking(false), 600);
+    return () => clearTimeout(t);
+  }, [time, selectedDate]);
+
   // Schedule conflict — does the client already have a pending/confirmed session
   // at this exact day & time (with any coach)?
   const conflictBooking = time && !checking
     ? bookings.find((b) => {
         if (!["pending", "confirmed"].includes(b.status)) return false;
         const bd = parseShortDate(b.date);
-        const sd = nextDateForWeekday(day);
-        return sameCalendarDay(bd, sd) && normTime(b.time) === normTime(formatTime12(time));
+        return sameCalendarDay(bd, selectedDate) && normTime(b.time) === normTime(formatTime12(time));
       })
     : null;
+
   const daySlots = selectedDate ? slotsForDate(selectedDate, coach) : [];
   const grouped = groupSlotsByPeriod(daySlots);
   const periodIcons = { Morning: Sunrise, Afternoon: Sun, Evening: Moon };
@@ -331,25 +344,6 @@ export function ScreenBookingDateTime({ nav, params, setDraft, bookings = [] }) 
             </div>
           ))}
 
-      {time && conflictBooking && (
-        <div style={{ marginBottom: 18 }}>
-          <StatusBanner
-            state="scheduleConflict"
-            message={`You already have ${conflictBooking.service} with ${conflictBooking.coachName} at this time.`}
-            onPrimary={() => { setTime(null); }}
-            onSecondary={() => nav("client-booking-detail", { id: conflictBooking.id })}
-          />
-        </div>
-      )}
-      {time && !conflictBooking && (
-        <Card style={{ marginBottom: 18, background: checking ? C.fog : C.orangeTint, border: "none" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {checking ? <Spinner size={16} color={C.slate} /> : <Calendar size={16} color={C.orange} />}
-            <span style={{ fontSize: 13, fontWeight: 600, color: C.jet, ...fBody }}>
-              {checking
-                ? `Checking availability for ${formatFullDate(day)} at ${formatTime12(time)}…`
-                : `${formatFullDate(day)} at ${formatTime12(time)} — confirmed available`}
-
           <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap", justifyContent: "center" }}>
             <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10.5, color: C.slate, ...fBody }}>
               <span style={{ width: 9, height: 9, borderRadius: 3, border: `1.5px solid ${C.orange}` }} /> Available
@@ -362,10 +356,32 @@ export function ScreenBookingDateTime({ nav, params, setDraft, bookings = [] }) 
             </span>
             <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10.5, color: C.slate, ...fBody }}>
               <span style={{ width: 9, height: 9, borderRadius: 3, background: C.orange }} /> Selected
-
             </span>
           </div>
         </Card>
+
+        {time && conflictBooking && (
+          <div style={{ marginBottom: 18 }}>
+            <StatusBanner
+              state="scheduleConflict"
+              message={`You already have ${conflictBooking.service} with ${conflictBooking.coachName} at this time.`}
+              onPrimary={() => { setTime(null); }}
+              onSecondary={() => nav("client-booking-detail", { id: conflictBooking.id })}
+            />
+          </div>
+        )}
+        {time && !conflictBooking && (
+          <Card style={{ marginBottom: 18, background: checking ? C.fog : C.orangeTint, border: "none" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              {checking ? <Spinner size={16} color={C.slate} /> : <Calendar size={16} color={C.orange} />}
+              <span style={{ fontSize: 13, fontWeight: 600, color: C.jet, ...fBody }}>
+                {checking
+                  ? `Checking availability for ${formatFullDateFromDate(selectedDate)} at ${formatTime12(time)}…`
+                  : `${formatFullDateFromDate(selectedDate)} at ${formatTime12(time)} — confirmed available`}
+              </span>
+            </div>
+          </Card>
+        )}
 
         {/* 2. Available Time Slots */}
         {selectedDate && (
