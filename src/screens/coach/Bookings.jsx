@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import {
   User, ClipboardList, ShieldCheck, Info, MessagesSquare, MessageCircle,
-  ChevronLeft, ChevronRight, CalendarX2,
+  ChevronLeft, ChevronRight, CalendarX2, MapPin,
 } from "lucide-react";
 import { C, fDisplay, fBody } from "../../theme/theme";
 import { CLIENT_PROFILES, BOOKING_ENQUIRY_MESSAGES, CONFIG } from "../../data/mockData";
@@ -36,6 +36,32 @@ function buildMonthGrid(cursor) {
   return weeks;
 }
 
+/* Shared booking list card — used on both the coach dashboard's pending/upcoming
+   lists and the Bookings tab, so a booking looks identical wherever it appears.
+   Shows: client name, sport category, day/date & time, and venue. Any actions
+   (Accept/Decline, View details, payout note, ...) are passed in as children. */
+export function CoachBookingListCard({ b, onClick, children }) {
+  return (
+    <Card style={{ marginBottom: 10 }} onClick={onClick}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+        <div style={{ display: "flex", gap: 10, minWidth: 0 }}>
+          <Avatar name={b.clientName} size={40} />
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fDisplay }}>{b.clientName}</div>
+            <div style={{ fontSize: 12, color: C.slate, marginTop: 2, ...fBody }}>{b.sport || b.service}</div>
+            <div style={{ fontSize: 11.5, color: C.slate, marginTop: 2, ...fBody }}>{b.date} · {b.time}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11.5, color: C.slateLight, marginTop: 2, ...fBody }}>
+              <MapPin size={11} /> {b.venue || "Venue to be confirmed"}
+            </div>
+          </div>
+        </div>
+        <StatusPill status={b.status} />
+      </div>
+      {children}
+    </Card>
+  );
+}
+
 export function ScreenCoachBookings({ nav, coachBookings }) {
   const [tab, setTab] = useState("pending");
   const [view, setView] = useState("list");
@@ -58,18 +84,7 @@ export function ScreenCoachBookings({ nav, coachBookings }) {
   const goNext = () => setCursor((c) => calMode === "month" ? new Date(c.getFullYear(), c.getMonth() + 1, 1) : addDays(c, 7));
 
   const renderBookingCard = (b) => (
-    <Card key={b.id} style={{ marginBottom: 10 }} onClick={() => nav("coach-booking-detail", { id: b.id })}>
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", gap: 10 }}>
-          <Avatar name={b.clientName} size={40} />
-          <div>
-            <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fDisplay }}>{b.clientName}</div>
-            <div style={{ fontSize: 12, color: C.slate, ...fBody }}>{b.service}</div>
-            <div style={{ fontSize: 11.5, color: C.slate, marginTop: 2, ...fBody }}>{b.date} · {b.time} · {b.mode}</div>
-          </div>
-        </div>
-        <StatusPill status={b.status} />
-      </div>
+    <CoachBookingListCard key={b.id} b={b} onClick={() => nav("coach-booking-detail", { id: b.id })}>
       <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
         <Btn size="sm" variant="primary" full icon={User} onClick={(e) => { e.stopPropagation(); nav("coach-booking-detail", { id: b.id }); }}>View details</Btn>
       </div>
@@ -78,7 +93,7 @@ export function ScreenCoachBookings({ nav, coachBookings }) {
           Payout released: ${Math.round(b.price * (1 - CONFIG.commissionRate))}
         </div>
       )}
-    </Card>
+    </CoachBookingListCard>
   );
 
   return (
@@ -183,14 +198,15 @@ export function ScreenCoachBookingDetail({ nav, params, coachBookings, respondBo
               <div style={{ fontSize: 15.5, fontWeight: 600, color: C.jet, ...fDisplay }}>{booking.clientName}</div>
               <div style={{ fontSize: 12, color: C.slate, ...fBody }}>{profile.homeSuburb}</div>
             </div>
-            {profile.verifiedPayment && <Badge tone="success" icon={ShieldCheck}>Payment verified</Badge>}
+            {/* {profile.verifiedPayment && <Badge tone="success" icon={ShieldCheck}>Payment verified</Badge>} */}
           </div>
-          <div style={{ display: "flex", gap: 18, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.border}` }}>
-            <div>
+          <div style={{ display: "flex", gap: 24, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.border}` }}>
+            <div  style={{flex: 1,textAlign: "center",}}>
               <div style={{ fontSize: 16, fontWeight: 700, color: C.jet, ...fDisplay }}>{profile.totalSessions}</div>
               <div style={{ fontSize: 11, color: C.slate, ...fBody }}>Sessions with you</div>
             </div>
-            <div>
+            <div style={{width: 1,alignSelf: "stretch",background: C.border,}} />
+                <div  style={{flex: 1,textAlign: "center",}}>
               <div style={{ fontSize: 16, fontWeight: 700, color: C.jet, ...fDisplay }}>{profile.memberSince}</div>
               <div style={{ fontSize: 11, color: C.slate, ...fBody }}>Client since</div>
             </div>
@@ -205,11 +221,11 @@ export function ScreenCoachBookingDetail({ nav, params, coachBookings, respondBo
 
         <SectionLabel>Booking details</SectionLabel>
         <Card style={{ marginBottom: 14 }}>
-          <Row label="Service" value={booking.service} />
+          <Row label="Session name" value={booking.service} />
           <Row label="Date" value={booking.date} />
-          <Row label="Time" value={booking.time} />
+          <Row label="Time" value={`${booking.time}, ${booking.repeatText || "One-time session"}`} />
           <Row label="Mode" value={booking.mode} />
-          <Row label="Price" value={`$${booking.price}`} bold last />
+          <Row label="Service fee" value={`$${(typeof booking.fee === "number" ? booking.fee : 0).toFixed(2)}`} bold last />
         </Card>
 
         {booking.notes && (
@@ -235,7 +251,9 @@ export function ScreenCoachBookingDetail({ nav, params, coachBookings, respondBo
 
         {booking.status === "pending" && (
           <div style={{ display: "flex", gap: 8, marginTop: 4, alignItems: "center" }}>
-            <Btn variant="ghost" loading={responding === "cancelled"} loadingText="Declining…" disabled={responding === "confirmed"} onClick={() => respond("cancelled")}>Decline</Btn>
+            <div style={{ flex: 1 }}>
+              <Btn full variant="outline" loading={responding === "cancelled"} loadingText="Declining…" disabled={responding === "confirmed"} onClick={() => respond("cancelled")}>Decline</Btn>
+            </div>
             <div style={{ flex: 1 }}>
               <Btn full loading={responding === "confirmed"} loadingText="Accepting…" disabled={responding === "cancelled"} onClick={() => respond("confirmed")}>Accept</Btn>
             </div>

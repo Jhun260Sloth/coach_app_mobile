@@ -240,19 +240,15 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
           </button>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <div style={{ display: "flex", gap: 10 }}>
-            <div style={{ flex: 2 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>         
               <Field label="Child's name" placeholder="e.g. Ava" icon={User} value={childDraft.name} onChange={(e) => setChildDraft((d) => ({ ...d, name: e.target.value }))} />
-            </div>
-            <div style={{ flex: 1 }}>
+          
               <Field label="Age" placeholder="e.g. 9" value={childDraft.age} onChange={(e) => setChildDraft((d) => ({ ...d, age: e.target.value }))} />
-            </div>
-          </div>
+         
           <Field label="Location / postcode" placeholder="e.g. 2026" icon={MapPin} value={childDraft.postalCode} onChange={(e) => setChildDraft((d) => ({ ...d, postalCode: e.target.value }))} />
         </div>
 
-        <div style={{ marginTop: 4 }}>
+        <div style={{ marginTop: 4, paddingTop: 14 }}>
           <SectionLabel>Guardian information</SectionLabel>
           <div style={{ fontSize: 11.5, color: C.slateLight, marginTop: -6, marginBottom: 12, lineHeight: 1.5, ...fBody }}>
             The parent or legal guardian responsible for this participant.

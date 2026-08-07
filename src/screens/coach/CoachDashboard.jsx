@@ -21,6 +21,7 @@ import {
   StarRow,
   BottomSheet,
 } from "../../components/ui/Primitives";
+import { CoachBookingListCard } from "./Bookings";
 
 const NOTIF_ICON = {
   message: MessageCircle,
@@ -398,64 +399,11 @@ export function ScreenCoachDashboard({
         )}
 
         {pending.map((b) => (
-          <Card
+          <CoachBookingListCard
             key={b.id}
-            style={{
-              marginBottom: 10,
-            }}
-            onClick={() =>
-              nav("coach-booking-detail", {
-                id: b.id,
-              })
-            }
+            b={b}
+            onClick={() => nav("coach-booking-detail", { id: b.id })}
           >
-            <div
-              style={{
-                display: "flex",
-                gap: 10,
-              }}
-            >
-              <Avatar name={b.clientName} size={40} />
-
-              <div
-                style={{
-                  flex: 1,
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 13.5,
-                    fontWeight: 600,
-                    color: C.jet,
-                    ...fDisplay,
-                  }}
-                >
-                  {b.clientName}
-                </div>
-
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: C.slate,
-                    ...fBody,
-                  }}
-                >
-                  {b.service} · {b.date}, {b.time}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  fontSize: 14,
-                  fontWeight: 700,
-                  color: C.jet,
-                  ...fDisplay,
-                }}
-              >
-                ${b.price}
-              </div>
-            </div>
-
             <div
               style={{
                 display: "flex",
@@ -464,41 +412,46 @@ export function ScreenCoachDashboard({
                 alignItems: "center",
               }}
             >
-              <Btn
-                size="sm"
-                full
-                loading={respondingId === b.id}
-                loadingText="Accepting…"
-                disabled={respondingId && respondingId !== b.id}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  respondWithFeedback(
-                    b.id,
-                    "confirmed",
-                    "Booking accepted"
-                  );
-                }}
-              >
-                Accept
-              </Btn>
+              <div style={{ flex: 1 }}>
+                <Btn
+                  size="sm"
+                  full
+                  loading={respondingId === b.id}
+                  loadingText="Accepting…"
+                  disabled={respondingId && respondingId !== b.id}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    respondWithFeedback(
+                      b.id,
+                      "confirmed",
+                      "Booking accepted"
+                    );
+                  }}
+                >
+                  Accept
+                </Btn>
+              </div>
 
-              <Btn
-                size="sm"
-                variant="ghost"
-                disabled={respondingId === b.id}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  respondWithFeedback(
-                    b.id,
-                    "cancelled",
-                    "Booking declined"
-                  );
-                }}
-              >
-                Decline
-              </Btn>
+              <div style={{ flex: 1 }}>
+                <Btn
+                  size="sm"
+                  full
+                  variant="outline"
+                  disabled={respondingId === b.id}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    respondWithFeedback(
+                      b.id,
+                      "cancelled",
+                      "Booking declined"
+                    );
+                  }}
+                >
+                  Decline
+                </Btn>
+              </div>
             </div>
-          </Card>
+          </CoachBookingListCard>
         ))}
 
         {/* Upcoming Sessions */}
@@ -523,50 +476,11 @@ export function ScreenCoachDashboard({
           </div>
         ) : (
           upcoming.map((b) => (
-            <Card
+            <CoachBookingListCard
               key={b.id}
-              style={{
-                marginBottom: 10,
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  gap: 10,
-                  alignItems: "center",
-                }}
-              >
-                <Avatar name={b.clientName} size={38} />
-
-                <div>
-                  <div
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: C.jet,
-                      ...fBody,
-                    }}
-                  >
-                    {b.clientName}
-                  </div>
-
-                  <div
-                    style={{
-                      fontSize: 11.5,
-                      color: C.slate,
-                      ...fBody,
-                    }}
-                  >
-                    {b.date} · {b.time}
-                  </div>
-                </div>
-              </div>
-
-              <StatusPill status="confirmed" />
-            </Card>
+              b={b}
+              onClick={() => nav("coach-booking-detail", { id: b.id })}
+            />
           ))
         )}
 

@@ -269,7 +269,21 @@ export const CLIENT_PROFILES = {
   "The Nguyen Family (u18)": { memberSince: "Jun 2026", totalSessions: 3, homeSuburb: "Bondi, Sydney", notes: "Books for one child (age 11). Guardian consent on file.", verifiedPayment: true },
 };
 
-export const INITIAL_BOOKINGS = [
+// Fills in the fields a booking picks up once it's actually placed (sport
+// category, venue, repeat cadence, platform service fee) so mock records
+// display the same information a freshly-submitted booking would carry.
+function enrichBookingWithCoachMeta(b) {
+  const coach = COACHES.find((c) => c.id === b.coachId);
+  return {
+    sport: (coach && coach.sport) || "",
+    venue: /virtual|online/i.test(b.mode || "") ? "Online session" : ((coach && coach.venue) || "Venue to be confirmed"),
+    repeatText: "One-time session",
+    fee: Math.round(b.price * CONFIG.serviceFeeRate * 100) / 100,
+    ...b,
+  };
+}
+
+const RAW_INITIAL_BOOKINGS = [
   // Pending — awaiting the coach's response
   { id: "b2", coachId: "c2", coachName: "Josh Whitfield", clientName: "Sarah Lin", service: "1:1 Programming Session", date: "Fri, 25 Jul", time: "6:00am", mode: "In-person", status: "pending", price: 68, reviewed: false, participants: "You", notes: "Coming back from a shoulder injury — cleared for light training, will bring physio notes." },
   { id: "b5", coachId: "c1", coachName: "Maya Okafor", clientName: "Sarah Lin", service: "Group Clinic", date: "Fri, 8 Aug", time: "3:00pm", mode: "In-person", status: "pending", price: 45, reviewed: false, participants: "You", notes: "" },
@@ -290,6 +304,7 @@ export const INITIAL_BOOKINGS = [
   { id: "b13", coachId: "c4", coachName: "Daniel Reyes", clientName: "Sarah Lin", service: "1:1 Shooting Session", date: "Fri, 24 Jul", time: "5:00pm", mode: "In-person", status: "completed", price: 70, reviewed: false, participants: "You", notes: "" },
   { id: "b14", coachId: "c6", coachName: "Tom Baxter", clientName: "Sarah Lin", service: "Bouldering Session", date: "Sat, 25 Jul", time: "11:00am", mode: "In-person", status: "completed", price: 65, reviewed: true, participants: "You", notes: "" },
 ];
+export const INITIAL_BOOKINGS = RAW_INITIAL_BOOKINGS.map(enrichBookingWithCoachMeta);
 
 // Recurring weekly availability for the current coach (Josh Whitfield),
 // expressed as exact time blocks with the packages bookable during each one.
@@ -300,7 +315,20 @@ export const INITIAL_AVAILABILITY_BLOCKS = [
   { id: "ab3", days: ["Sat"], start: "08:00", end: "10:00", packageIds: ["p2"] },
 ];
 
-export const COACH_BOOKINGS = [
+// Same enrichment as enrichBookingWithCoachMeta above, but for the coach-side
+// mock queue — the prototype's coach role is always Josh Whitfield (c2).
+function enrichCoachBooking(b) {
+  const coach = COACHES[1];
+  return {
+    sport: coach.sport,
+    venue: /virtual|online/i.test(b.mode || "") ? "Online session" : coach.venue,
+    repeatText: "One-time session",
+    fee: Math.round(b.price * CONFIG.serviceFeeRate * 100) / 100,
+    ...b,
+  };
+}
+
+const RAW_COACH_BOOKINGS = [
   // Pending — awaiting the coach's accept/decline
   { id: "cb2", clientName: "Marcus Webb", service: "Junior Group (max 4)", date: "Wed, 23 Jul", time: "5:00pm", mode: "In-person", status: "pending", price: 32, notes: "First session for his son, age 9." },
   { id: "cb3", clientName: "The Chen Family (u18)", service: "1:1 Court Session", date: "Sat, 26 Jul", time: "9:00am", mode: "In-person", status: "pending", price: 75, notes: "Booking for two children, guardian consent provided at checkout." },
@@ -320,6 +348,7 @@ export const COACH_BOOKINGS = [
   { id: "cb12", clientName: "The Chen Family (u18)", service: "1:1 Court Session", date: "Sun, 20 Jul", time: "9:00am", mode: "In-person", status: "completed", price: 75, notes: "" },
   { id: "cb13", clientName: "Owen King", service: "1:1 Court Session", date: "Mon, 21 Jul", time: "6:00am", mode: "In-person", status: "completed", price: 75, notes: "" },
 ];
+export const COACH_BOOKINGS = RAW_COACH_BOOKINGS.map(enrichCoachBooking);
 
 export const REVIEWS = [
   { id: "r1", name: "Sarah L.", rating: 5, text: "Maya spotted a footwork issue in my first session that nobody else had picked up on. Genuinely improved my game.", verified: true, date: "3 weeks ago" },

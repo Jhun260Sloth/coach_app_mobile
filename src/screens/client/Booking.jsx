@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
   Info, Fingerprint, CreditCard, CheckCircle2, Plus, Lock, Calendar, Navigation, MessageCircle,
-  Users, User, ShieldCheck, Phone, Stethoscope, AlertTriangle, UserPlus, MapPin, Send, ClipboardCheck,
-  ChevronLeft, ChevronRight, Sunrise, Sun, Moon, Repeat as RepeatIcon,
+  Users, User, ShieldCheck, Phone, Stethoscope, AlertTriangle, UserPlus, MapPin, Send,
+  ChevronLeft, ChevronRight, Sunrise, Sun, Moon, Repeat as RepeatIcon, Home,
 } from "lucide-react";
 import { C, fDisplay, fBody } from "../../theme/theme";
 import { COACHES, CONFIG } from "../../data/mockData";
@@ -74,7 +74,7 @@ const END_AFTER_OPTIONS = [
   { value: "date", label: "End date" },
 ];
 
-function repeatSummaryText(repeat) {
+export function repeatSummaryText(repeat) {
   if (!repeat || repeat.freq === "once") return "One-time session";
   const freqLabel = repeat.freq === "weekly"
     ? `Every ${repeat.every || 1} week${(repeat.every || 1) > 1 ? "s" : ""}`
@@ -100,7 +100,7 @@ function deliveryModeLabel(pkg) {
 
 // The exact venue/address a client should show up to (or an explanation why
 // there isn't one, for online / "come to you" sessions).
-function venueLabel(pkg, coach) {
+export function venueLabel(pkg, coach) {
   const mode = deliveryModeLabel(pkg);
   if (/online|virtual/i.test(mode)) return "Online — link shared once the coach accepts";
   if (/come to you/i.test(mode)) return pkg.travelArea ? `Coach travels to you — ${pkg.travelArea}` : "Coach travels to your location";
@@ -641,7 +641,13 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast, children = []
             }).join("\n");
           const combinedConditions = [conditions.trim(), profileSafetyNotes].filter(Boolean).join("\n");
           const newId = "b" + (bookings.length + 1);
-          const finalDraft = { ...draft, id: newId, total, participants: participantLabel, includesMinor, guardianName, guardianRelationship, emergencyName, emergencyPhone, conditions: combinedConditions };
+          const finalDraft = {
+            ...draft, id: newId, total, participants: participantLabel, includesMinor, guardianName, guardianRelationship, emergencyName, emergencyPhone, conditions: combinedConditions,
+            sport: draft.pkg.sport || draft.coach.sport,
+            venue: venueLabel(draft.pkg, draft.coach),
+            repeatText: repeatSummaryText(draft.repeat),
+            fee,
+          };
           setDraft(finalDraft);
           addBooking(finalDraft);
           toast("Booking request sent");
@@ -801,7 +807,7 @@ export function ScreenBookingRequestSent({ nav, params }) {
       </div>
 
       <div style={{ marginTop: "auto", padding: "14px 0", display: "flex", flexDirection: "column", gap: 10 }}>
-        <Btn full icon={ClipboardCheck} onClick={() => nav("client-booking-detail", { id: params.id })}>View Booking</Btn>
+        <Btn full icon={Home} onClick={() => nav("client-dashboard")}>Return to home</Btn>
         <Btn full variant="secondary" icon={MessageCircle} onClick={() => nav("chat-thread", { name: params.coachName })}>Message Coach</Btn>
       </div>
     </div>

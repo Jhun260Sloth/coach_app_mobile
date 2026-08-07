@@ -2,7 +2,7 @@ import React, { useState } from "react";
 
 
 import {
-  ScreenAboutYouProfile, ScreenAccountType, ScreenAboutYouParticipants, ScreenAboutYouSelf,
+  ScreenAboutYouProfile, ScreenAboutYouParticipants,
 } from "./screens/client/AboutYou";
 
 
@@ -14,7 +14,7 @@ import {
 import { C, fBody, fDisplay, useFonts, KEYFRAMES } from "./theme/theme";
 import {
   INITIAL_BOOKINGS, COACH_BOOKINGS, ADMIN_VERIFICATION_QUEUE, ADMIN_DISPUTES,
-  COACHES, INITIAL_AVAILABILITY_BLOCKS, CLIENT_NOTIFICATIONS, COACH_NOTIFICATIONS,
+  COACHES, INITIAL_AVAILABILITY_BLOCKS, CLIENT_NOTIFICATIONS, COACH_NOTIFICATIONS, CONFIG,
 } from "./data/mockData";
 import { LogoMark, Toast, BottomTabs, StatusBar } from "./components/ui/Primitives";
 
@@ -136,12 +136,20 @@ export default function App() {
   const addBooking = (d) => {
     const id = d.id || ("b" + (bookings.length + 1));
     const coachId = d.coach.id;
-    setBookings((b) => [{ id, coachId, coachName: d.coach.name, clientName: "Sarah Lin", service: d.pkg.name, date: d.day, time: d.time, mode: d.mode, status: "pending", price: d.total, reviewed: false, participants: d.participants || "You", notes: d.conditions || "" }, ...b]);
+    // Sport category, venue, repeat cadence and the platform service fee are
+    // normally computed on the review screen — fall back to deriving them
+    // from the coach/package here so every entry point into addBooking (e.g.
+    // the legacy instant-book payment flow) still produces a complete record.
+    const sport = d.sport || d.pkg.sport || d.coach.sport;
+    const venue = d.venue || d.pkg.venue || d.coach.venue;
+    const repeatText = d.repeatText || "One-time session";
+    const fee = typeof d.fee === "number" ? d.fee : Math.round(d.pkg.price * CONFIG.serviceFeeRate * 100) / 100;
+    setBookings((b) => [{ id, coachId, coachName: d.coach.name, clientName: "Sarah Lin", service: d.pkg.name, date: d.day, time: d.time, mode: d.mode, status: "pending", price: d.total, reviewed: false, participants: d.participants || "You", notes: d.conditions || "", sport, venue, repeatText, fee }, ...b]);
     // The prototype's Coach role is always Josh Whitfield (c2) — mirror the
     // request into their Bookings pending queue so it's reviewable, and let
     // them chat with the client about it, from the coach side too.
     if (coachId === "c2") {
-      setCoachBookings((cb) => [{ id, clientName: "Sarah Lin", service: d.pkg.name, date: d.day, time: d.time, mode: d.mode, status: "pending", price: d.total, notes: d.conditions || "" }, ...cb]);
+      setCoachBookings((cb) => [{ id, clientName: "Sarah Lin", service: d.pkg.name, date: d.day, time: d.time, mode: d.mode, status: "pending", price: d.total, notes: d.conditions || "", sport, venue, repeatText, fee }, ...cb]);
       addCoachNotification({ type: "booking", title: "New booking request", body: `Sarah Lin requested a ${d.pkg.name} for ${d.day}, ${d.time}.` });
     }
   };
@@ -162,7 +170,7 @@ export default function App() {
       setBookings((arr) => arr.map((b) => (b.id === id ? { ...b, status, paymentDue: status === "confirmed" ? true : b.paymentDue } : b)));
       if (cb) {
         if (status === "confirmed") {
-          addClientNotification({ type: "payment", title: "Send your payment", body: `${COACHES[1].name} accepted your ${cb.service} request — send payment to confirm your session on ${cb.date}.`, bookingId: id });
+          addClientNotification({ type: "payment", title: "Booking accepted", body: `${COACHES[1].name} accepted your ${cb.service} request — send payment to confirm your session on ${cb.date}.`, bookingId: id });
         } else if (status === "cancelled") {
           addClientNotification({ type: "booking", title: "Booking declined", body: `${COACHES[1].name} declined your ${cb.service} request for ${cb.date}.`, bookingId: id });
         }
@@ -258,9 +266,7 @@ export default function App() {
       case "coach-info": return <ScreenCoachInfo {...screenProps} />;
       case "coach-expertise": return <ScreenCoachExpertise {...screenProps} />;
       case "about-you-profile": return <ScreenAboutYouProfile {...screenProps} />;
-      case "account-type": return <ScreenAccountType {...screenProps} />;
       case "about-you-participants": return <ScreenAboutYouParticipants {...screenProps} />;
-      case "about-you-self": return <ScreenAboutYouSelf {...screenProps} />
       case "client-setup-complete": return <ScreenClientSetupComplete {...screenProps} />;
       case "verification": return <ScreenVerification {...screenProps} />;
       case "verification-pending": return <ScreenVerificationPending {...screenProps} />;

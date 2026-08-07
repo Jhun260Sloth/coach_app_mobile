@@ -589,6 +589,7 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
           <Row label="Service" value={booking.service} />
           <Row label="Date" value={booking.date} />
           <Row label="Time" value={booking.time} />
+          <Row label="Repeats" value={booking.repeatText || "One-time session"} />
           <Row label="Mode" value={booking.mode} />
           {booking.participants && <Row label="For" value={booking.participants} />}
           <Row label="Price" value={priceLabel} bold last />

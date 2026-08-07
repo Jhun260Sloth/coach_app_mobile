@@ -7,7 +7,7 @@ import { C, fDisplay, fBody } from "../../theme/theme";
 import { AU_SUBURBS, GENDER_OPTIONS } from "../../data/mockData";
 import { Chip, SectionLabel, Btn, TopBar, Field, Card, Avatar, Badge } from "../../components/ui/Primitives";
 
-const TOTAL_STEPS = 3;
+const TOTAL_STEPS = 2;
 function StepDots({ step }) {
   return (
     <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
@@ -22,10 +22,12 @@ function StepHeader({ step, title, subtitle, onBack }) {
   return (
     <div style={{ padding: "20px 20px 0" }}>
       {onBack && <TopBar title="" onBack={onBack} />}
-      <div style={{ marginTop: onBack ? 0 : 8 }}>
-        <StepDots step={step} />
-      </div>
-      <div style={{ fontSize: 22, fontWeight: 600, color: C.jet, ...fDisplay, marginBottom: 6 }}>{title}</div>
+      {step !== undefined && (
+        <div style={{ marginTop: onBack ? 0 : 8 }}>
+          <StepDots step={step} />
+        </div>
+      )}
+      <div style={{ fontSize: 22, fontWeight: 600, color: C.jet, ...fDisplay, marginBottom: 6, marginTop: step === undefined && !onBack ? 8 : 0 }}>{title}</div>
       <div style={{ fontSize: 13, color: C.slate, ...fBody, marginBottom: 20, lineHeight: 1.5 }}>{subtitle}</div>
     </div>
   );
@@ -49,7 +51,7 @@ function calcAge(dobStr) {
   return age;
 }
 
-export function ScreenAboutYouProfile({ nav }) {
+export function ScreenAboutYouProfile({ nav, onComplete }) {
   const [mobile, setMobile] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [dob, setDob] = useState("");
@@ -62,11 +64,16 @@ export function ScreenAboutYouProfile({ nav }) {
   // Continue stays disabled — and the user can't advance — until the date of
   // birth entered confirms they're 18 or older.
   const canContinue = mobile.trim().length > 0 && postalCode.trim().length > 0 && ageVerified;
-  const goNext = () => { if (canContinue) nav("account-type", { mobile, postalCode, dob, age, hasPhoto }); };
+  const goNext = () => {
+    if (!canContinue) return;
+    const prefs = { mobile, postalCode, dob, age, hasPhoto };
+    if (onComplete) onComplete(prefs);
+    nav("client-setup-complete");
+  };
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <StepHeader step={0} title="Let's learn about you" subtitle="Collecting a few essentials helps keep CoachLink safe for everyone." />
+      <StepHeader title="Let's learn about you" subtitle="Collecting a few essentials helps keep CoachLink safe for everyone." />
 
       <div style={{ flex: 1, overflowY: "auto", padding: "0 20px" }}>
         <SectionLabel>Build your profile</SectionLabel>
@@ -157,62 +164,6 @@ export function ScreenAboutYouProfile({ nav }) {
         <Btn full disabled={!canContinue} onClick={goNext}>
           Continue
         </Btn>
-      </div>
-    </div>
-  );
-}
-
-/* Step 2 of 3 — account type: who is this booking for? */
-export function ScreenAccountType({ nav, params }) {
-  const [accountType, setAccountType] = useState(null); // "self" | "child"
-
-  const goNext = () => {
-    if (accountType === "child") nav("about-you-participants", { ...params });
-    else if (accountType === "self") nav("about-you-self", { ...params });
-  };
-
-  const Option = ({ value, icon: Icon, title, body }) => {
-    const active = accountType === value;
-    return (
-      <button
-        onClick={() => setAccountType(value)}
-        style={{ width: "100%", textAlign: "left", background: active ? C.orangeTint : C.white, border: `1.5px solid ${active ? C.orange : C.border}`, borderRadius: 18, padding: 16, display: "flex", gap: 14, alignItems: "flex-start", cursor: "pointer", marginBottom: 12 }}
-      >
-        <div style={{ width: 44, height: 44, borderRadius: 13, background: active ? C.orange : C.fog, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <Icon size={20} color={active ? C.white : C.slate} />
-        </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 600, color: C.jet, fontSize: 15, marginBottom: 3, ...fDisplay }}>{title}</div>
-          <div style={{ fontSize: 12.5, color: C.slate, lineHeight: 1.5, ...fBody }}>{body}</div>
-        </div>
-        <div style={{ width: 20, height: 20, borderRadius: 99, border: `1.5px solid ${active ? C.orange : C.border}`, background: C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
-          {active && <div style={{ width: 10, height: 10, borderRadius: 99, background: C.orange }} />}
-        </div>
-      </button>
-    );
-  };
-
-  return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <StepHeader step={1} title="Who are you booking for?" subtitle="Parents and guardians can keep a separate profile for each child." onBack={() => nav("about-you-profile")} />
-
-      <div style={{ flex: 1, overflowY: "auto", padding: "0 20px" }}>
-        <SectionLabel>Participants</SectionLabel>
-        <Option value="self" icon={User} title="Myself" body="I'll be the one attending coaching sessions." />
-        <Option value="child" icon={Users} title="My Child / Children" body="I'm booking sessions on behalf of one or more children." />
-
-        <Card style={{ marginTop: 8, marginBottom: 20, background: C.fog, border: "none" }}>
-          <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-            <ShieldCheck size={16} color={C.orange} style={{ flexShrink: 0, marginTop: 1 }} />
-            <div style={{ fontSize: 12, color: C.slate, lineHeight: 1.6, ...fBody }}>
-              Keeping each child on their own participant profile means coaches see only that child's age and needs — bookings, history and messages stay separate per child.
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      <div style={{ padding: "14px 20px 20px" }}>
-        <Btn full disabled={!accountType} onClick={goNext}>Continue</Btn>
       </div>
     </div>
   );
@@ -461,10 +412,10 @@ export function ScreenAboutYouParticipants({ nav, params, addChild, toast }) {
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <StepHeader
-        step={2}
+        step={1}
         title="Add a participant"
         subtitle="Create a profile for each child you would like to book coaching sessions for. You can add and manage multiple participant profiles at any time."
-        onBack={() => nav("account-type", params)}
+        onBack={() => nav("about-you-profile", params)}
       />
       <div style={{ flex: 1, overflowY: "auto", padding: "0 20px" }}>
         {savedCount > 0 && (
@@ -477,38 +428,6 @@ export function ScreenAboutYouParticipants({ nav, params, addChild, toast }) {
       <div style={{ padding: "14px 20px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
         <Btn full disabled={!canSave} onClick={saveAndFinish}>Save participant</Btn>
         <Btn full variant="outline" icon={Plus} disabled={!canSave} onClick={saveAndAddAnother}>Add another participant</Btn>
-      </div>
-    </div>
-  );
-}
-
-/* Step 3 of 3 (self path) — same field set as the participant flow, for the
-   account holder's own profile. */
-export function ScreenAboutYouSelf({ nav, params, onComplete }) {
-  const [draft, setDraft] = useState(emptyParticipantDraft);
-  const canContinue = draft.name.trim().length > 0 && !!draft.dob;
-
-  const finish = () => {
-    if (!canContinue) return;
-    const age = calcAge(draft.dob);
-    const prefs = { ...params, ...draft, age: age !== null ? age : "" };
-    if (onComplete) onComplete(prefs);
-    nav("client-setup-complete", { name: draft.name });
-  };
-
-  return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <StepHeader
-        step={2}
-        title="Tell us about yourself"
-        subtitle="Help us recommend suitable coaches and personalise your coaching experience."
-        onBack={() => nav("account-type", params)}
-      />
-      <div style={{ flex: 1, overflowY: "auto", padding: "0 20px" }}>
-        <ParticipantFields draft={draft} setDraft={setDraft} />
-      </div>
-      <div style={{ padding: "14px 20px 20px" }}>
-        <Btn full disabled={!canContinue} onClick={finish}>Continue</Btn>
       </div>
     </div>
   );
