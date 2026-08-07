@@ -20,7 +20,9 @@ import {
   StatusPill,
   StarRow,
   BottomSheet,
+  Toggle,
 } from "../../components/ui/Primitives";
+import { StatusBanner, useLiveNotifications } from "../../systems/StateSystem";
 
 const NOTIF_ICON = {
   message: MessageCircle,
@@ -66,6 +68,10 @@ export function ScreenCoachDashboard({
   verified,
   toast,
   offline,
+  coachAvailableNow,
+  setCoachAvailableNow,
+  pushNotification,
+  coachNotifications,
 }) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [respondingId, setRespondingId] = useState(null);
@@ -81,14 +87,33 @@ export function ScreenCoachDashboard({
   const unreadCount = notifications.filter((n) => n.unread).length;
 
   const respondWithFeedback = (id, status, message) => {
+    // Guard against acting on a request that's no longer pending (already
+    // handled from the full Bookings screen, for instance).
+    const target = coachBookings.find((b) => b.id === id);
+    if (!target || target.status !== "pending") {
+      toast("This request has already been handled");
+      return;
+    }
     setRespondingId(id);
 
     setTimeout(() => {
       respondBooking(id, status);
       setRespondingId(null);
       toast(message);
+      pushNotification?.({
+        audience: "client", type: "booking",
+        title: status === "confirmed" ? "Booking confirmed" : "Booking declined",
+        body: status === "confirmed"
+          ? `Your session with ${target.coachName || "your coach"} is confirmed for ${target.date}, ${target.time}.`
+          : `Your request for ${target.service} on ${target.date} was declined.`,
+      });
     }, 600);
   };
+
+  // Verification docs approaching or past their expiry — surfaced as a
+  // banner so renewal is never a surprise mid-booking-season.
+  const expiringDocs = COACH_VERIFICATION_DOCS.filter((d) => d.daysLeft <= 30 && d.daysLeft > 0);
+  const expiredDocs = COACH_VERIFICATION_DOCS.filter((d) => d.daysLeft <= 0);
 
   const markAllRead = () =>
     setNotifications((arr) =>
@@ -257,6 +282,53 @@ export function ScreenCoachDashboard({
             Offline — showing your last synced data.
           </div>
         )}
+
+        {/* Verification expiry warnings */}
+        {expiredDocs.map((d) => (
+          <div key={d.key} style={{ marginTop: 14 }}>
+            <StatusBanner
+              state="verificationExpired"
+              title={`${d.label} expired`}
+              message={`This expired on ${d.expiresOn}. Renew it to keep accepting bookings that require it.`}
+              onPrimary={() => nav("verification")}
+            />
+          </div>
+        ))}
+        {expiredDocs.length === 0 && expiringDocs.map((d) => (
+          <div key={d.key} style={{ marginTop: 14 }}>
+            <StatusBanner
+              state="verificationExpiring"
+              title={`${d.label} expiring soon`}
+              message={`Expires ${d.expiresOn} (${d.daysLeft} days left). Renew it to avoid any interruption to your bookings.`}
+              onPrimary={() => nav("verification")}
+            />
+          </div>
+        ))}
+
+        {/* Available for bookings toggle */}
+        <Card style={{ marginTop: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+            <div style={{ width: 34, height: 34, borderRadius: 10, background: coachAvailableNow ? C.successTint : C.fog, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <span style={{ width: 9, height: 9, borderRadius: 99, background: coachAvailableNow ? C.success : C.slateLight }} />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: C.jet, ...fBody }}>
+                {coachAvailableNow ? "Available for bookings" : "Unavailable for bookings"}
+              </div>
+              <div style={{ fontSize: 11, color: C.slateLight, ...fBody }}>
+                {coachAvailableNow ? "Clients can send new requests" : "Your profile shows as unavailable"}
+              </div>
+            </div>
+          </div>
+          <Toggle
+            on={coachAvailableNow}
+            onClick={() => {
+              const next = !coachAvailableNow;
+              setCoachAvailableNow(next);
+              toast(next ? "You're now available for bookings" : "You're now marked unavailable");
+            }}
+          />
+        </Card>
 
         {/* Earnings + Pending Requests */}
         <div
@@ -490,7 +562,7 @@ export function ScreenCoachDashboard({
                   e.stopPropagation();
                   respondWithFeedback(
                     b.id,
-                    "cancelled",
+                    "declined",
                     "Booking declined"
                   );
                 }}

@@ -6,6 +6,9 @@ import {
 import { C, fDisplay, fBody } from "../../theme/theme";
 import { COACHES, REVIEWS, SPORT_ICON } from "../../data/mockData";
 import { Avatar, Badge, SegTabs, SectionLabel, Card, Btn, StarRow } from "../../components/ui/Primitives";
+import { StatusBanner } from "../../systems/StateSystem";
+
+const LIVE_AVAILABILITY_COACH_ID = "c2";
 
 export function CoverBanner({ sport, height = 150 }) {
   const Icon = SPORT_ICON[sport] || Trophy;
@@ -22,12 +25,13 @@ export function CoverBanner({ sport, height = 150 }) {
   );
 }
 
-export function ScreenCoachProfile({ nav, params, favorites, toggleFav }) {
+export function ScreenCoachProfile({ nav, params, favorites, toggleFav, coachAvailableNow }) {
   const coach = COACHES.find((c) => c.id === params.id) || COACHES[0];
   const [tab, setTab] = useState("about");
   const [selectedPkgId, setSelectedPkgId] = useState(null);
   const selectedPkg = coach.packages.find((p) => p.id === selectedPkgId) || null;
   const fav = favorites.includes(coach.id);
+  const unavailable = coach.id === LIVE_AVAILABILITY_COACH_ID && coachAvailableNow === false;
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <CoverBanner sport={coach.sport} height={150} />
@@ -70,6 +74,18 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav }) {
           {coach.verified.wwcc && <Badge tone="success" icon={ShieldCheck}>WWCC verified</Badge>}
           {coach.verified.quals && <Badge tone="success" icon={BadgeCheck}>Qualifications checked</Badge>}
         </div>
+
+        {unavailable && (
+          <div style={{ marginTop: 14 }}>
+            <StatusBanner
+              state="coachUnavailable"
+              onPrimary={() => nav("chat-thread", { name: coach.name })}
+              primaryLabel="Notify me when available"
+              onSecondary={() => nav("chat-thread", { name: coach.name })}
+              secondaryLabel="Message coach"
+            />
+          </div>
+        )}
 
         <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
           {[
@@ -222,7 +238,11 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav }) {
       </div>
 
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: C.white, borderTop: `1px solid ${C.border}`, padding: "12px 20px 20px", display: "flex", alignItems: "center", gap: 12 }}>
-        {selectedPkg ? (
+        {unavailable ? (
+          <div style={{ flex: 1 }}>
+            <Btn full disabled variant="secondary">Unavailable for new bookings</Btn>
+          </div>
+        ) : selectedPkg ? (
           <>
             <div>
               <div style={{ fontSize: 17, fontWeight: 700, color: C.jet, ...fDisplay }}>${selectedPkg.price}</div>

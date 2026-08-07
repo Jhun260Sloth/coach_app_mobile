@@ -8,6 +8,7 @@ import { COACHES } from "../../data/mockData";
 import {
   Avatar, Card, Badge, SegTabs, SectionLabel, Btn, TopBar, EmptyState, StatusPill, Chip, BottomSheet, Row, ScrollFadeRow,
 } from "../../components/ui/Primitives";
+import { StatusBanner } from "../../systems/StateSystem";
 
 /* ---- date helpers for the calendar view (booking dates look like "Tue, 22 Jul") ---- */
 const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -515,7 +516,11 @@ export function BookingCard({ b, nav, past, onReschedule, onCancel, onPay }) {
 /* Booking details — the client-side counterpart to the coach's booking detail page.
    Surfaces the same categories of information (party info, session details, notes,
    booking policy) but never exposes the Accept/Decline workflow, which is coach-only. */
+<<<<<<< Jhunz-Branch
+export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancelBooking, rescheduleBooking, setDraft }) {
+=======
 export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancelBooking, rescheduleBooking, payBooking }) {
+>>>>>>> main
   const booking = bookings.find((b) => b.id === params.id);
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -669,6 +674,8 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
         )}
         {isPast && booking.status === "cancelled" && (
           <div style={{ marginBottom: 14 }}>
+            {booking.refundStatus === "processing" && <div style={{ marginBottom: 10 }}><StatusBanner state="refundProcessing" compact /></div>}
+            {booking.refundStatus === "refunded" && <div style={{ marginBottom: 10 }}><StatusBanner state="paymentRefunded" message={`$${Number(booking.price).toFixed(2)} was refunded to your original payment method.`} compact /></div>}
             <Btn full variant="secondary" icon={RefreshCcw} onClick={() => nav("coach-profile", { id: booking.coachId })}>Book again</Btn>
           </div>
         )}

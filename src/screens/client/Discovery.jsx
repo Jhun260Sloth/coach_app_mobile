@@ -4,6 +4,12 @@ import { Bell, Search, Filter, Navigation, Star, MapPin, Heart, Sparkles, Calend
 import { C, fDisplay, fBody } from "../../theme/theme";
 import { COACHES, SPORTS, ALL_SUBURBS } from "../../data/mockData";
 import { Card, Chip, Badge, SegTabs, SectionLabel, Avatar, Btn, TopBar, BottomSheet, EmptyState } from "../../components/ui/Primitives";
+import { useLiveNotifications, NotificationBellButton, StatusBanner } from "../../systems/StateSystem";
+
+// Only the current in-app coach (Josh Whitfield, c2) has a live "available now"
+// toggle driven by app state — every other coach in the directory is static
+// mock data, so this is the one card that can actually flip to "unavailable".
+const LIVE_AVAILABILITY_COACH_ID = "c2";
 
 const NOTIF_ICON = { booking: Calendar, message: MessageCircle, review: Star, availability: Sparkles, promo: Percent, payment: CreditCard };
 const MAP_PINS = [[20,30],[60,15],[40,55],[78,45],[25,70],[65,75],[50,40],[15,55],[85,20],[35,80]];
@@ -14,14 +20,19 @@ const DEFAULT_FILTERS = { sports: [], areas: [], maxPrice: 150, minRating: 0 };
 // instead of wrapping, so card heights stay consistent no matter how long a name/suburb is.
 const oneLine = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
 
-export function CoachListCard({ coach, onOpen }) {
+export function CoachListCard({ coach, onOpen, unavailable }) {
   return (
     <Card
       onClick={onOpen}
-      style={{ marginBottom: 14, border: `1px solid ${C.border}`, boxShadow: "0 1px 2px rgba(22,24,29,.04)" }}
+      style={{ marginBottom: 14, border: `1px solid ${C.border}`, boxShadow: "0 1px 2px rgba(22,24,29,.04)", opacity: unavailable ? 0.8 : 1 }}
     >
       <div style={{ display: "flex", gap: 12 }}>
-        <Avatar name={coach.name} size={54} />
+        <div style={{ position: "relative", flexShrink: 0 }}>
+          <Avatar name={coach.name} size={54} />
+          {unavailable && (
+            <span style={{ position: "absolute", right: -2, bottom: -2, width: 16, height: 16, borderRadius: 99, background: C.slateLight, border: `2px solid ${C.white}` }} />
+          )}
+        </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           {/* Identity + price: price sits top-right, same visual weight as the name, so it's
               one of the first two things scanned — not something buried at the bottom of the card. */}
@@ -47,13 +58,19 @@ export function CoachListCard({ coach, onOpen }) {
             </div>
           </div>
 
-          {coach.instantBook && (
+          {(coach.instantBook || unavailable) && (
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
-              {coach.verified.identity && (
-                <span style={{ fontSize: 11, fontWeight: 700, padding: "4px 9px", borderRadius: 8, background: C.successTint, color: C.success, ...fBody }}>Verified</span>
-              )}
-              {coach.instantBook && (
-                <span style={{ fontSize: 11, fontWeight: 700, padding: "4px 9px", borderRadius: 8, background: C.orangeTint, color: C.orange, ...fBody }}>Instant book</span>
+              {unavailable ? (
+                <span style={{ fontSize: 11, fontWeight: 700, padding: "4px 9px", borderRadius: 8, background: C.fog, color: C.slate, ...fBody }}>Currently unavailable</span>
+              ) : (
+                <>
+                  {coach.verified.identity && (
+                    <span style={{ fontSize: 11, fontWeight: 700, padding: "4px 9px", borderRadius: 8, background: C.successTint, color: C.success, ...fBody }}>Verified</span>
+                  )}
+                  {coach.instantBook && (
+                    <span style={{ fontSize: 11, fontWeight: 700, padding: "4px 9px", borderRadius: 8, background: C.orangeTint, color: C.orange, ...fBody }}>Instant book</span>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -214,12 +231,7 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
             <div style={{ fontSize: 12.5, color: C.slate, ...fBody }}>Good morning</div>
             <div style={{ fontSize: 22, fontWeight: 600, color: C.jet, ...fDisplay }}>Find your coach</div>
           </div>
-          <button onClick={() => setNotifOpen(true)} style={{ background: "none", border: "none", cursor: "pointer" }}>
-            <div style={{ position: "relative" }}>
-              <Bell size={22} color={C.jet} />
-              {unreadCount > 0 && <span style={{ position: "absolute", top: -4, right: -6, minWidth: 15, height: 15, padding: "0 3px", background: C.orange, borderRadius: 99, border: `1.5px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9.5, fontWeight: 700, color: C.white, ...fBody }}>{unreadCount}</span>}
-            </div>
-          </button>
+          <NotificationBellButton count={unreadCount} onClick={() => setNotifOpen(true)} />
         </div>
 
         <div style={{ position: "relative", marginTop: 18 }}>
@@ -268,8 +280,14 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
             ? <EmptyState icon={Heart} title="No favorites yet" body="Tap the heart on a coach's card or profile to save them here." />
             : favCoaches.map(c => <CoachListCard key={c.id} coach={c} onOpen={() => nav("coach-profile", { id: c.id })} />)
         ) : filtered.length === 0
-          ? <div style={{ textAlign: "center", padding: "40px 20px", color: C.slate, fontSize: 13, ...fBody }}>No coaches match your search. Try a different suburb or clear filters.</div>
-          : filtered.map(c => <CoachListCard key={c.id} coach={c} onOpen={() => nav("coach-profile", { id: c.id })} />)
+          ? (
+            <StatusBanner
+              state="noResults"
+              style={{ marginTop: 10 }}
+              onPrimary={() => { setSearchText(""); setAppliedFilters(DEFAULT_FILTERS); }}
+            />
+          )
+          : filtered.map(c => <CoachListCard key={c.id} coach={c} unavailable={c.id === LIVE_AVAILABILITY_COACH_ID && !coachAvailableNow} onOpen={() => nav("coach-profile", { id: c.id })} />)
         }
       </div>
 

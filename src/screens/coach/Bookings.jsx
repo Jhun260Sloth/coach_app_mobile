@@ -46,7 +46,7 @@ export function ScreenCoachBookings({ nav, coachBookings }) {
   const [cursor, setCursor] = useState(initialDate);
   const [selectedDate, setSelectedDate] = useState(initialDate);
 
-  const list = coachBookings.filter((b) => tab === "pending" ? b.status === "pending" : tab === "upcoming" ? b.status === "confirmed" : b.status === "completed");
+  const list = coachBookings.filter((b) => tab === "pending" ? b.status === "pending" : tab === "upcoming" ? b.status === "confirmed" : ["completed", "declined", "expired"].includes(b.status));
   const bookingsOnDate = (d) => dated.filter((b) => b._date && sameDay(b._date, d));
 
   const weeks = calMode === "month" ? buildMonthGrid(cursor) : [Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(cursor), i))];
@@ -161,10 +161,25 @@ export function ScreenCoachBookingDetail({ nav, params, coachBookings, respondBo
   const booking = coachBookings.find((b) => b.id === params.id);
   const [responding, setResponding] = useState(null);
   const respond = (status) => {
+    // Guard against double-submits (e.g. a stale screen re-fired after the
+    // request was already handled elsewhere) — surface it as an invalid-action
+    // state instead of silently overwriting a decision that already happened.
+    if (!booking || booking.status !== "pending") {
+      toast("This request has already been handled");
+      nav("coach-bookings");
+      return;
+    }
     setResponding(status);
     setTimeout(() => {
       respondBooking(booking.id, status);
       toast(status === "confirmed" ? "Booking accepted" : "Booking declined");
+      pushNotification?.({
+        audience: "client", type: "booking",
+        title: status === "confirmed" ? "Booking confirmed" : "Booking declined",
+        body: status === "confirmed"
+          ? `Your session with ${booking.coachName || "your coach"} is confirmed for ${booking.date}, ${booking.time}.`
+          : `Your request for ${booking.service} on ${booking.date} was declined.`,
+      });
       nav("coach-bookings");
     }, 600);
   };
@@ -235,9 +250,9 @@ export function ScreenCoachBookingDetail({ nav, params, coachBookings, respondBo
 
         {booking.status === "pending" && (
           <div style={{ display: "flex", gap: 8, marginTop: 4, alignItems: "center" }}>
-            <Btn variant="ghost" loading={responding === "cancelled"} loadingText="Declining…" disabled={responding === "confirmed"} onClick={() => respond("cancelled")}>Decline</Btn>
+            <Btn variant="ghost" loading={responding === "declined"} loadingText="Declining…" disabled={responding === "confirmed"} onClick={() => respond("declined")}>Decline</Btn>
             <div style={{ flex: 1 }}>
-              <Btn full loading={responding === "confirmed"} loadingText="Accepting…" disabled={responding === "cancelled"} onClick={() => respond("confirmed")}>Accept</Btn>
+              <Btn full loading={responding === "confirmed"} loadingText="Accepting…" disabled={responding === "declined"} onClick={() => respond("confirmed")}>Accept</Btn>
             </div>
           </div>
         )}

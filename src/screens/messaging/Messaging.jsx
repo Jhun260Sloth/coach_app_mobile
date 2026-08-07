@@ -1,8 +1,9 @@
 import React, { useState, useRef } from "react";
-import { HelpCircle, ChevronLeft, Paperclip, MapPin, Send, MoreVertical, Flag, Ban, Check, CheckCircle2, Calendar, FileText, Navigation } from "lucide-react";
+import { HelpCircle, ChevronLeft, Paperclip, MapPin, Send, MoreVertical, Flag, Ban, Check, CheckCircle2, Calendar, FileText, Navigation, AlertCircle, RotateCcw } from "lucide-react";
 import { C, fDisplay, fBody } from "../../theme/theme";
 import { THREADS, COACH_THREADS, CHAT_MESSAGES, BOOKING_ENQUIRY_MESSAGES, COACHES } from "../../data/mockData";
 import { Avatar, BottomSheet, Btn } from "../../components/ui/Primitives";
+import { StatusBanner } from "../../systems/StateSystem";
 
 /* ── Blocked Threads Store ─────────────────────────────────────────────── */
 
@@ -293,7 +294,7 @@ function SuccessPanel({ title, body, onDone }) {
 
 /* ── Chat Thread Screen ────────────────────────────────────────────────── */
 
-export function ScreenChatThread({ nav, params, role, toast }) {
+export function ScreenChatThread({ nav, params, role, toast, offline }) {
   const { isBlocked, block, unblock } = useBlockedThreads();
   const threadId = params?.threadId || params?.bookingId || params?.name;
   const blocked = isBlocked(threadId);
@@ -309,11 +310,34 @@ export function ScreenChatThread({ nav, params, role, toast }) {
   const [customReason, setCustomReason] = useState("");
   const [locationSheet, setLocationSheet] = useState(false);
   const fileInputRef = useRef(null);
+  const msgIdRef = useRef(1000);
+  const nextMsgId = () => (msgIdRef.current += 1);
+
+  // Sends a message through a brief "sending" state before landing on
+  // sent/failed — offline always fails; otherwise it succeeds. Failed
+  // messages stay in the thread with a Retry action rather than vanishing.
+  const deliver = (id, text) => {
+    setMessages((m) => m.map((msg) => (msg.id === id ? { ...msg, status: "sending" } : msg)));
+    setTimeout(() => {
+      if (offline) {
+        setMessages((m) => m.map((msg) => (msg.id === id ? { ...msg, status: "failed" } : msg)));
+      } else {
+        setMessages((m) => m.map((msg) => (msg.id === id ? { ...msg, status: "sent" } : msg)));
+      }
+    }, 700);
+  };
 
   const send = () => {
     if (!input.trim() || blocked) return;
-    setMessages(m => [...m, { id: m.length + 1, from: "me", text: input, time: "now" }]);
+    const id = nextMsgId();
+    setMessages(m => [...m, { id, from: "me", text: input, time: "now", status: "sending" }]);
     setInput("");
+    deliver(id, input);
+  };
+
+  const retryMessage = (id) => {
+    setMessages((m) => m.map((msg) => (msg.id === id ? { ...msg, status: "sending" } : msg)));
+    deliver(id);
   };
 
   const handleAttachmentPick = (e) => {
@@ -403,22 +427,43 @@ export function ScreenChatThread({ nav, params, role, toast }) {
                 </div>
               </div>
             ) : (
-              <div style={{
-                maxWidth: "75%", padding: "10px 13px", borderRadius: 16,
-                borderBottomRightRadius: m.from === "me" ? 4 : 16,
-                borderBottomLeftRadius: m.from === "me" ? 16 : 4,
-                background: m.from === "me" ? C.orange : C.fog,
-                color: m.from === "me" ? C.white : C.jet,
-                fontSize: 13.5, lineHeight: 1.45, ...fBody,
-              }}>
-                {m.text}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: m.from === "me" ? "flex-end" : "flex-start", maxWidth: "75%" }}>
+                <div style={{
+                  padding: "10px 13px", borderRadius: 16,
+                  borderBottomRightRadius: m.from === "me" ? 4 : 16,
+                  borderBottomLeftRadius: m.from === "me" ? 16 : 4,
+                  background: m.status === "failed" ? "#FDECEC" : m.from === "me" ? C.orange : C.fog,
+                  color: m.status === "failed" ? "#D64545" : m.from === "me" ? C.white : C.jet,
+                  fontSize: 13.5, lineHeight: 1.45, ...fBody,
+                }}>
+                  {m.text}
+                </div>
+                {m.from === "me" && m.status && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 4, fontSize: 10.5, fontWeight: 600, ...fBody,
+                    color: m.status === "failed" ? "#D64545" : m.status === "sending" ? C.slateLight : C.success }}>
+                    {m.status === "sending" && <>Sending…</>}
+                    {m.status === "sent" && <><Check size={10} /> Sent</>}
+                    {m.status === "failed" && (
+                      <>
+                        <AlertCircle size={10} /> Not delivered
+                        <button onClick={() => retryMessage(m.id)} style={{ display: "flex", alignItems: "center", gap: 3, background: "none", border: "none", cursor: "pointer", color: "#D64545", fontWeight: 700, fontSize: 10.5, padding: 0, marginLeft: 4, ...fBody }}>
+                          <RotateCcw size={10} /> Retry
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
         ))}
       </div>
 
-      {/* Input / Blocked Bar */}
+      {offline && (
+        <div style={{ padding: "0 16px 8px" }}>
+          <StatusBanner state="offline" compact />
+        </div>
+      )}
       {blocked ? (
         <div style={{ padding: "14px 16px 22px", borderTop: `1px solid ${C.border}` }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, background: C.fog, borderRadius: 12, padding: "12px 14px", fontSize: 12.5, color: C.slate, lineHeight: 1.5, ...fBody }}>

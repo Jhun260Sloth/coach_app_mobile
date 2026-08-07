@@ -1,0 +1,390 @@
+import React, { useEffect, useRef, useState } from "react";
+import {
+  CheckCircle2, XCircle, Clock, Hourglass, AlertTriangle, AlertCircle, WifiOff, Wifi,
+  RefreshCcw, Ban, ShieldCheck, ShieldAlert, ShieldX, Bell, CalendarX2, CalendarCheck2,
+  Send, MessageCircle, CreditCard, DollarSign, RotateCcw, Lock, UserX, Sparkles,
+  PartyPopper, Info, TrendingUp, PauseCircle, Undo2, Search, ClipboardList, Radio,
+} from "lucide-react";
+import { C, fDisplay, fBody } from "../theme/theme";
+
+/* =========================================================================
+   STATE, FEEDBACK & NOTIFICATION SYSTEM
+   -------------------------------------------------------------------------
+   A single source of truth for every "how does this feel to the user"
+   moment in the app: what icon, what tone, what headline, what explanation,
+   what the person can *do* next, and what gets said in a notification.
+
+   Every entry follows the same shape so any screen can render it the same
+   way via <StatusBanner state="bookingDeclined" /> instead of hand-rolling
+   copy and colors per screen.
+   ========================================================================= */
+
+export const TONES = {
+  success: { fg: C.success, bg: C.successTint },
+  warning: { fg: C.orange, bg: C.orangeTint },
+  danger: { fg: "#D64545", bg: "#FDECEC" },
+  neutral: { fg: C.slate, bg: C.fog },
+  info: { fg: C.jet, bg: C.fog },
+};
+
+// icon, tone, title, message, primary/secondary CTA labels + the "next step" copy
+// shown under the message, and a notify() template used when this state fires
+// a push to the other party (client <-> coach).
+export const STATE_CATALOG = {
+  // ---- Coach availability ----
+  coachAvailable: {
+    tone: "success", icon: CheckCircle2, title: "Available for bookings",
+    message: "New booking requests will reach you right away.",
+  },
+  coachUnavailable: {
+    tone: "neutral", icon: PauseCircle, title: "Currently unavailable",
+    message: "This coach isn't taking new bookings right now.",
+    primary: "Notify me when available", secondary: "Message coach",
+    next: "You'll get a notification the moment they reopen bookings.",
+  },
+
+  // ---- Search ----
+  noResults: {
+    tone: "neutral", icon: Search, title: "No coaches match your search",
+    message: "Try a different suburb, a wider price range, or clear your filters.",
+    primary: "Clear filters", secondary: "Browse all coaches",
+  },
+
+  // ---- Booking lifecycle ----
+  bookingPending: {
+    tone: "warning", icon: Hourglass, title: "Request sent",
+    message: "Waiting on the coach to accept or decline.",
+    next: "You'll be notified as soon as they respond — usually within a few hours.",
+    notify: (b) => ({ title: "New booking request", body: `${b?.clientName || "A client"} requested ${b?.service || "a session"}${b?.date ? ` for ${b.date}` : ""}.` }),
+  },
+  bookingConfirmed: {
+    tone: "success", icon: CheckCircle2, title: "Booking confirmed",
+    message: "This session is locked in on both calendars.",
+    primary: "Add to calendar", secondary: "Message",
+    next: "Show up on time — cancellations follow the coach's policy.",
+    notify: (b) => ({ title: "Booking confirmed", body: `Your session with ${b?.coachName || "your coach"} is confirmed${b?.date ? ` for ${b.date}${b.time ? `, ${b.time}` : ""}` : ""}.` }),
+  },
+  bookingDeclined: {
+    tone: "danger", icon: XCircle, title: "Request declined",
+    message: "The coach isn't able to take this booking.",
+    primary: "Find another coach", secondary: "Message coach",
+    next: "No charge was made — you're free to book someone else.",
+    notify: (b) => ({ title: "Booking declined", body: `${b?.coachName || "The coach"} declined your request for ${b?.service || "a session"}.` }),
+  },
+  bookingExpired: {
+    tone: "neutral", icon: CalendarX2, title: "Request expired",
+    message: "The coach didn't respond in time, so this request was automatically closed.",
+    primary: "Try another time", secondary: "Message coach",
+    next: "No charge was made. Sending a new request restarts the clock.",
+    notify: (b) => ({ title: "Request expired", body: `Your request for ${b?.service || "a session"} expired without a response.` }),
+  },
+  bookingCancelled: {
+    tone: "neutral", icon: Ban, title: "Session cancelled",
+    message: "This booking has been called off.",
+    primary: "Book again", secondary: "View policy",
+    notify: (b) => ({ title: "Booking cancelled", body: `${b?.clientName || "A client"} cancelled ${b?.service || "a session"}${b?.date ? ` on ${b.date}` : ""}.` }),
+  },
+
+  // ---- Payment ----
+  paymentProcessing: {
+    tone: "info", icon: Clock, title: "Processing payment…",
+    message: "Confirming your charge with the payment provider.",
+    next: "This usually takes a few seconds — don't close the app.",
+  },
+  paymentSuccess: {
+    tone: "success", icon: CheckCircle2, title: "Payment successful",
+    message: "Funds are held securely until the session is completed.",
+    next: "A receipt has been added to your payment history.",
+    notify: (b) => ({ title: "Payment received", body: `Payment of $${b?.amount ?? ""} received for ${b?.service || "a session"}.` }),
+  },
+  paymentFailed: {
+    tone: "danger", icon: XCircle, title: "Payment failed",
+    message: "Your card was declined and no charge was made.",
+    primary: "Try again", secondary: "Use a different card",
+    next: "Check your card details or try another payment method.",
+  },
+  paymentCancelled: {
+    tone: "neutral", icon: Ban, title: "Payment cancelled",
+    message: "You stopped this payment before it completed.",
+    primary: "Resume payment", secondary: "Back to review",
+    next: "Your booking request is still saved — you can pay whenever you're ready.",
+  },
+  paymentRefunded: {
+    tone: "success", icon: Undo2, title: "Refund issued",
+    message: "Your refund has been sent back to your original payment method.",
+    next: "Refunds typically land in 5–10 business days.",
+    notify: (b) => ({ title: "Refund issued", body: `$${b?.amount ?? ""} was refunded for ${b?.service || "your session"}.` }),
+  },
+  refundProcessing: {
+    tone: "info", icon: Clock, title: "Refund requested",
+    message: "We're processing your refund now.",
+    next: "You'll be notified once it's issued — no action needed.",
+  },
+
+  // ---- Session ----
+  sessionConfirmed: {
+    tone: "success", icon: CalendarCheck2, title: "Session confirmed",
+    message: "You're on the calendar.",
+  },
+  sessionCompleted: {
+    tone: "success", icon: CheckCircle2, title: "Session completed",
+    message: "Hope it went well! Payouts release automatically.",
+    primary: "Leave a review", secondary: "Book again",
+    notify: (b) => ({ title: "Session completed", body: `Your session with ${b?.coachName || "your coach"} is complete. Leave a review?` }),
+  },
+  sessionCancelled: {
+    tone: "neutral", icon: Ban, title: "Session cancelled",
+    message: "This session will no longer take place.",
+    primary: "Book again",
+  },
+
+  // ---- Messaging ----
+  messageSent: {
+    tone: "success", icon: CheckCircle2, title: "Sent", message: "Delivered.",
+  },
+  messageFailed: {
+    tone: "danger", icon: AlertCircle, title: "Not delivered",
+    message: "This message didn't send.",
+    primary: "Retry",
+    next: "Check your connection and try again.",
+  },
+
+  // ---- Connectivity ----
+  online: {
+    tone: "success", icon: Wifi, title: "Back online", message: "Everything's syncing again.",
+  },
+  offline: {
+    tone: "neutral", icon: WifiOff, title: "You're offline",
+    message: "Showing your last saved data. Some actions are unavailable until you reconnect.",
+    next: "Booking, payment and messaging actions will resume once you're back online.",
+  },
+
+  // ---- Verification ----
+  verificationPending: {
+    tone: "warning", icon: Hourglass, title: "Verification pending",
+    message: "Your documents are with our review team.",
+    next: "Most reviews complete within 2 business days.",
+    notify: () => ({ title: "Verification submitted", body: "Your documents were submitted for review." }),
+  },
+  verificationApproved: {
+    tone: "success", icon: ShieldCheck, title: "Verification approved",
+    message: "You're verified and ready to accept bookings.",
+    notify: (b) => ({ title: "You're verified!", body: `${b?.name || "Your"} verification was approved. You can now accept bookings.` }),
+  },
+  verificationRejected: {
+    tone: "danger", icon: ShieldX, title: "Verification rejected",
+    message: "One or more documents couldn't be confirmed.",
+    primary: "Resubmit documents", secondary: "Contact support",
+    notify: (b) => ({ title: "Verification rejected", body: `${b?.name || "Your"} verification was rejected. Please resubmit your documents.` }),
+  },
+  verificationExpiring: {
+    tone: "warning", icon: ShieldAlert, title: "Verification expiring soon",
+    message: "Renew before it expires to keep accepting bookings without interruption.",
+    primary: "Renew now",
+    notify: (b) => ({ title: "Verification expiring soon", body: `${b?.label || "A document"} expires in ${b?.daysLeft ?? "a few"} days — renew it to avoid disruption.` }),
+  },
+  verificationExpired: {
+    tone: "danger", icon: ShieldX, title: "Verification expired",
+    message: "You can't accept certain bookings until this is renewed.",
+    primary: "Renew now",
+    notify: (b) => ({ title: "Verification expired", body: `${b?.label || "A document"} has expired. Renew it to keep accepting bookings.` }),
+  },
+
+  // ---- Profile ----
+  profilePublished: {
+    tone: "success", icon: CheckCircle2, title: "Profile published",
+    message: "Clients can now find and book you.",
+  },
+  profileIncomplete: {
+    tone: "warning", icon: AlertTriangle, title: "Profile incomplete",
+    message: "A few required details are missing, so your profile isn't visible to clients yet.",
+    primary: "Finish profile",
+    next: "Complete every required section to publish.",
+  },
+
+  // ---- Availability ----
+  availabilityUpdated: {
+    tone: "success", icon: CalendarCheck2, title: "Availability updated",
+    message: "Your bookable hours are live for clients.",
+  },
+  scheduleConflict: {
+    tone: "danger", icon: AlertTriangle, title: "Scheduling conflict",
+    message: "You already have a session booked at this time.",
+    primary: "Choose another time", secondary: "View conflicting booking",
+    next: "Pick a different slot to continue.",
+  },
+
+  // ---- Guardrails ----
+  actionBlockedOffline: {
+    tone: "neutral", icon: WifiOff, title: "You're offline",
+    message: "This action needs a connection — reconnect and try again.",
+    primary: "Retry",
+  },
+  invalidAction: {
+    tone: "danger", icon: AlertCircle, title: "This action can't be completed",
+    message: "That request was already handled, or is no longer available.",
+    primary: "Refresh",
+  },
+  unauthorized: {
+    tone: "danger", icon: UserX, title: "Not authorized",
+    message: "You don't have permission to do that.",
+    primary: "Go back",
+  },
+};
+
+function resolveState(state, params) {
+  if (typeof state === "string") return { key: state, ...STATE_CATALOG[state], params };
+  return { ...state, params };
+}
+
+/* -------------------------------------------------------------------------
+   StatusBanner — the workhorse component. Drop it anywhere a screen needs
+   to explain "here's the current state, here's what you can do about it".
+   ------------------------------------------------------------------------- */
+export function StatusBanner({ state, params, title, message, next, onPrimary, onSecondary, primaryLabel, secondaryLabel, compact, style }) {
+  const cfg = resolveState(state, params);
+  const tone = TONES[cfg.tone] || TONES.neutral;
+  const Icon = cfg.icon || Info;
+  return (
+    <div style={{
+      display: "flex", gap: 12, alignItems: "flex-start", background: tone.bg,
+      border: `1px solid ${tone.bg}`, borderRadius: 16, padding: compact ? "12px 13px" : "14px 15px",
+      ...style,
+    }}>
+      <div style={{ width: compact ? 30 : 36, height: compact ? 30 : 36, borderRadius: 11, background: C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <Icon size={compact ? 15 : 17} color={tone.fg} />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: compact ? 13 : 14, fontWeight: 700, color: C.jet, ...fDisplay }}>{title || cfg.title}</div>
+        {(message || cfg.message) && (
+          <div style={{ fontSize: compact ? 12 : 12.5, color: C.slate, marginTop: 3, lineHeight: 1.5, ...fBody }}>{message || cfg.message}</div>
+        )}
+        {(next || cfg.next) && (
+          <div style={{ fontSize: 11.5, color: tone.fg, marginTop: 6, fontWeight: 600, ...fBody }}>Next: {next || cfg.next}</div>
+        )}
+        {(onPrimary || onSecondary) && (
+          <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+            {onPrimary && (
+              <button onClick={onPrimary} style={{ background: tone.fg, color: C.white, border: "none", borderRadius: 9, padding: "7px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", ...fBody }}>
+                {primaryLabel || cfg.primary || "Continue"}
+              </button>
+            )}
+            {onSecondary && (
+              <button onClick={onSecondary} style={{ background: "none", color: C.jet, border: `1px solid ${C.border}`, borderRadius: 9, padding: "7px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer", ...fBody }}>
+                {secondaryLabel || cfg.secondary || "Cancel"}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------
+   ResultOverlay — full-screen transient overlay for Action -> Processing ->
+   Success/Failure sequences (payments, verification submits, etc).
+   ------------------------------------------------------------------------- */
+export function ResultOverlay({ open, state, params, title, message }) {
+  if (!open) return null;
+  const cfg = resolveState(state, params);
+  const tone = TONES[cfg.tone] || TONES.neutral;
+  const Icon = cfg.icon || Info;
+  const isProcessing = cfg.tone === "info";
+  return (
+    <div style={{ position: "absolute", inset: 0, background: "rgba(22,24,29,.88)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 80, textAlign: "center", padding: "0 30px" }}>
+      <div style={{ width: 64, height: 64, borderRadius: 20, background: isProcessing ? "rgba(255,255,255,.1)" : tone.bg, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14, animation: isProcessing ? "none" : "clPopIn .25s ease" }}>
+        {isProcessing ? <Spin /> : <Icon size={28} color={tone.fg} />}
+      </div>
+      <div style={{ color: C.white, fontSize: 15, fontWeight: 700, ...fDisplay }}>{title || cfg.title}</div>
+      {(message || cfg.message) && (
+        <div style={{ color: "rgba(255,255,255,.72)", fontSize: 12.5, marginTop: 6, lineHeight: 1.5, ...fBody }}>{message || cfg.message}</div>
+      )}
+    </div>
+  );
+}
+
+function Spin() {
+  return <span style={{ width: 24, height: 24, borderRadius: "50%", border: "2.5px solid rgba(255,255,255,.3)", borderTopColor: C.white, display: "inline-block", animation: "clSpin .7s linear infinite" }} />;
+}
+
+/* -------------------------------------------------------------------------
+   InlineStatus — a tiny icon + label, for use inline in lists/rows.
+   ------------------------------------------------------------------------- */
+export function InlineStatus({ state, params, label }) {
+  const cfg = resolveState(state, params);
+  const tone = TONES[cfg.tone] || TONES.neutral;
+  const Icon = cfg.icon || Info;
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 700, color: tone.fg, ...fBody }}>
+      <Icon size={12} /> {label || cfg.title}
+    </span>
+  );
+}
+
+/* -------------------------------------------------------------------------
+   Notification bell button — reusable trigger with an unread-count dot.
+   ------------------------------------------------------------------------- */
+export function NotificationBellButton({ count = 0, onClick }) {
+  return (
+    <button onClick={onClick} style={{ background: "none", border: "none", cursor: "pointer" }}>
+      <div style={{ position: "relative" }}>
+        <Bell size={22} color={C.jet} />
+        {count > 0 && (
+          <span style={{
+            position: "absolute", top: -4, right: -6, minWidth: 15, height: 15, padding: "0 3px",
+            background: C.orange, borderRadius: 99, border: `1.5px solid ${C.white}`,
+            display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9.5, fontWeight: 700, color: C.white, ...fBody,
+          }}>
+            {count}
+          </span>
+        )}
+      </div>
+    </button>
+  );
+}
+
+/* -------------------------------------------------------------------------
+   useLiveNotifications — merges live, app-generated notifications (pushed
+   as real actions happen: bookings accepted, payments made, etc) on top of
+   a screen's seed/mock list, newest first, without duplicating on re-render.
+   ------------------------------------------------------------------------- */
+export function useLiveNotifications(runtime = [], initialSeed = []) {
+  const [items, setItems] = useState(initialSeed);
+  const seen = useRef(new Set());
+  useEffect(() => {
+    const fresh = runtime.filter((n) => !seen.current.has(n.id));
+    if (fresh.length) {
+      fresh.forEach((n) => seen.current.add(n.id));
+      setItems((arr) => [...fresh, ...arr]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [runtime]);
+  return [items, setItems];
+}
+
+/* -------------------------------------------------------------------------
+   ActionFlow — a tiny horizontal trail showing Action -> Processing ->
+   Result -> Notify, used on detail screens so the pattern is always visible.
+   ------------------------------------------------------------------------- */
+export function ActionFlow({ steps, activeIndex }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 14 }}>
+      {steps.map((s, i) => (
+        <React.Fragment key={s}>
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <span style={{
+              width: 16, height: 16, borderRadius: 99, flexShrink: 0,
+              background: i <= activeIndex ? C.orange : C.border,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              {i < activeIndex && <CheckCircle2 size={11} color={C.white} />}
+            </span>
+            <span style={{ fontSize: 10.5, fontWeight: 700, color: i <= activeIndex ? C.jet : C.slateLight, ...fBody, whiteSpace: "nowrap" }}>{s}</span>
+          </div>
+          {i < steps.length - 1 && <div style={{ flex: 1, height: 1, background: i < activeIndex ? C.orange : C.border, minWidth: 8 }} />}
+        </React.Fragment>
+      ))}
+    </div>
+  );
+}
