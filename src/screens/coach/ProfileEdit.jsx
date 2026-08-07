@@ -11,7 +11,6 @@ import {
   SearchMultiSelect, SearchSelect, ScrollFadeRow,
 } from "../../components/ui/Primitives";
 import { CoverBanner } from "../client/CoachProfile";
-import { StatusBanner } from "../../systems/StateSystem";
 
 const LOCATION_OPTIONS = AU_SUBURBS.map((s) => `${s.suburb}, ${s.state}`);
 
@@ -156,7 +155,7 @@ function ProfilePreview({ coach, data, packages, bookingType }) {
   );
 }
 
-export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage, removePackage, biometric, setBiometric, coachMedia = [] }) {
+export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage, removePackage, biometric, setBiometric, coachMedia = [], coachAvailableNow, setCoachAvailableNow }) {
   const coach = COACHES[1];
 
   const [profile, setProfile] = useState({
@@ -228,31 +227,10 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
   const closeSheet = () => setSheet(null);
   const [showPw, setShowPw] = useState(false);
 
-  // Profile publish state — a coach isn't visible to clients until the
-  // essentials are filled in and at least one bookable service is active.
-  const missingFields = [
-    !profile.displayName?.trim() && "display name",
-    (!profile.bio || profile.bio.trim().length < 40) && "a bio (40+ characters)",
-    (!profile.sports || profile.sports.length === 0) && "at least one sport",
-    !profile.location?.trim() && "a location",
-    !coachPackages?.some((p) => p.active !== false) && "an active service",
-  ].filter(Boolean);
-  const isPublished = missingFields.length === 0;
-
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "18px 20px 0", flex: 1, overflowY: "auto", paddingBottom: 100 }}>
         <div style={{ fontSize: 22, fontWeight: 600, color: C.jet, marginBottom: 18, ...fDisplay }}>My coaching profile</div>
-
-        <div style={{ marginBottom: 18 }}>
-          <StatusBanner
-            state={isPublished ? "profilePublished" : "profileIncomplete"}
-            message={isPublished ? "Clients can find and book you." : `Add ${missingFields.join(", ")} to publish your profile.`}
-            onPrimary={!isPublished ? openEditProfile : undefined}
-            primaryLabel="Finish profile"
-            compact
-          />
-        </div>
 
         <div style={{ display: "flex", gap: 14, marginBottom: 22 }}>
           <Avatar name={profile.displayName} size={58} />
@@ -263,18 +241,18 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
             </div>
 
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
-              {coach.verified.identity && <Badge tone="success" icon={ShieldCheck}>ID verified</Badge>}
-              {coach.verified.wwcc && <Badge tone="success" icon={ShieldCheck}>WWCC verified</Badge>}
-              {coach.verified.quals && <Badge tone="success" icon={BadgeCheck}>Quals checked</Badge>}
-            </div>
-
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
               {profile.sports.map((s) => <SportTag key={s} sport={s} />)}
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 8 }}>
               <MapPin size={12.5} color={C.slateLight} />
               <span style={{ fontSize: 12, color: C.slate, ...fBody }}>{profile.location}</span>
+            </div>
+
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+              {coach.verified.identity && <Badge tone="success" icon={ShieldCheck}>ID verified</Badge>}
+              {coach.verified.wwcc && <Badge tone="success" icon={ShieldCheck}>WWCC verified</Badge>}
+              {coach.verified.quals && <Badge tone="success" icon={BadgeCheck}>Quals checked</Badge>}
             </div>
           </div>
         </div>
@@ -297,6 +275,33 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
             <Btn full variant="outline" size="sm" icon={Eye} onClick={() => openPreview(profile)}>Preview profile</Btn>
           </div>
         </div>
+
+     {/* Available for bookings toggle */}
+        <Card style={{ marginBottom: 18, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+            <div style={{ width: 34, height: 34, borderRadius: 10, background: coachAvailableNow ? C.successTint : C.fog, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <span style={{ width: 9, height: 9, borderRadius: 99, background: coachAvailableNow ? C.success : C.slateLight }} />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: C.jet, ...fBody }}>
+                {coachAvailableNow ? "Available for bookings" : "Unavailable for bookings"}
+              </div>
+              <div style={{ fontSize: 11, color: C.slateLight, ...fBody }}>
+                {coachAvailableNow ? "Clients can send new requests" : "Your profile shows as unavailable"}
+              </div>
+            </div>
+          </div>
+          <Toggle
+            on={coachAvailableNow}
+            onClick={() => {
+              const next = !coachAvailableNow;
+              setCoachAvailableNow(next);
+              toast(next ? "You're now available for bookings" : "You're now marked unavailable");
+            }}
+          />
+        </Card>
+
+
 
         <SectionLabel>Reels & photos</SectionLabel>
         {coachMedia.length === 0 ? (
