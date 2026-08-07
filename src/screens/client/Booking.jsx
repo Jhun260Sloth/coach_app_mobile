@@ -243,7 +243,6 @@ export function ScreenBookingDateTime({ nav, params, setDraft, bookings = [] }) 
         return sameCalendarDay(bd, sd) && normTime(b.time) === normTime(formatTime12(time));
       })
     : null;
-=======
   const daySlots = selectedDate ? slotsForDate(selectedDate, coach) : [];
   const grouped = groupSlotsByPeriod(daySlots);
   const periodIcons = { Morning: Sunrise, Afternoon: Sun, Evening: Moon };
