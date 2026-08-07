@@ -7,7 +7,6 @@ import {
   ChevronLeft, ChevronRight, Sunrise, Sun, Moon, Repeat as RepeatIcon,
 } from "lucide-react";
 import { C, fDisplay, fBody } from "../../theme/theme";
-import { COACHES, CONFIG } from "../../data/mockData";
 import {
   Avatar, Card, Chip, SectionLabel, Btn, TopBar, Toggle, Field, Row, RadioRow, Spinner,
 } from "../../components/ui/Primitives";
