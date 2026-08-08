@@ -30,7 +30,7 @@ export const SPORT_ICON = {
 export const COACHES = [
   {
     id: "c1", name: "Isla Ferguson", sport: "Netball", tags: ["Shooting circle", "Game sense"],
-    suburb: "Fitzroy, Melbourne", distanceKm: 2.1, rating: 4.9, reviews: 132,
+    suburb: "Surry Hills, Sydney", lat: -33.8846, lng: 151.2109, distanceKm: 2.1, rating: 4.9, reviews: 132,
     verified: { identity: true, wwcc: true, quals: true }, instantBook: true,
     experience: "8 yrs coaching", style: "High-energy, drill-based sessions focused on positioning and decision-making.",
     bio: "Former state league goal attack turned full-time coach. I work with players from age 8 through adult club level, building game sense that holds up under pressure.",
@@ -50,7 +50,7 @@ export const COACHES = [
   },
   {
     id: "c2", name: "Noah Kelly", sport: "CrossFit", tags: ["Metcon programming", "Injury return"],
-    suburb: "Fremantle, Perth", distanceKm: 4.6, rating: 4.8, reviews: 96,
+    suburb: "Chatswood, Sydney", lat: -33.7969, lng: 151.1830, distanceKm: 8.4, rating: 4.8, reviews: 96,
     verified: { identity: true, wwcc: false, quals: true }, instantBook: false,
     experience: "6 yrs coaching", style: "Programming-first — every block is periodised and tracked.",
     bio: "Accredited functional fitness coach working with amateur athletes and everyday members. Specialising in safe return-to-training after injury.",
@@ -80,7 +80,7 @@ export const COACHES = [
   },
   {
     id: "c3", name: "Ruby Hendricks", sport: "Surfing", tags: ["Beginner coaching", "Wave reading"],
-    suburb: "Manly, Sydney", distanceKm: 6.3, rating: 5.0, reviews: 58,
+    suburb: "Manly, Sydney", lat: -33.7969, lng: 151.2870, distanceKm: 9.4, rating: 5.0, reviews: 58,
     verified: { identity: true, wwcc: true, quals: true }, instantBook: true,
     experience: "10 yrs coaching", style: "Patient, safety-first, big on ocean awareness before technique.",
     bio: "Ex-competitive longboarder. I coach juniors through adult beginners, with a focus on reading conditions and building confidence in the water.",
@@ -98,7 +98,7 @@ export const COACHES = [
   },
   {
     id: "c4", name: "Marcus Ude", sport: "Boxing", tags: ["Pad work", "Fitness boxing"],
-    suburb: "South Yarra, Melbourne", distanceKm: 3.0, rating: 4.7, reviews: 74,
+    suburb: "Glebe, Sydney", lat: -33.8795, lng: 151.1852, distanceKm: 3.4, rating: 4.7, reviews: 74,
     verified: { identity: true, wwcc: true, quals: false }, instantBook: true,
     experience: "5 yrs coaching", style: "Technique-first sessions built around footwork and combinations.",
     bio: "Former amateur boxer now coaching juniors and adult fitness clients. Sessions are filmed so you can see what changed.",
@@ -116,7 +116,7 @@ export const COACHES = [
   },
   {
     id: "c5", name: "Chloe Dawson", sport: "Golf", tags: ["Short game", "Swing mechanics"],
-    suburb: "Newtown, Sydney", distanceKm: 1.4, rating: 4.9, reviews: 210,
+    suburb: "Redfern, Sydney", lat: -33.8930, lng: 151.2044, distanceKm: 3.1, rating: 4.9, reviews: 210,
     verified: { identity: true, wwcc: false, quals: true }, instantBook: true,
     experience: "9 yrs coaching", style: "Video-led lessons, adaptable to every level from first-timers to club players.",
     bio: "PGA-accredited instructor. I teach 1:1 and small group lessons with a focus on building a repeatable, low-maintenance swing.",
@@ -135,7 +135,7 @@ export const COACHES = [
   },
   {
     id: "c6", name: "Liam O'Connor", sport: "Cycling", tags: ["Road racing", "Power training"],
-    suburb: "Brunswick, Melbourne", distanceKm: 5.8, rating: 4.6, reviews: 41,
+    suburb: "Parramatta, Sydney", lat: -33.8150, lng: 151.0011, distanceKm: 23.9, rating: 4.6, reviews: 41,
     verified: { identity: true, wwcc: true, quals: true }, instantBook: false,
     experience: "4 yrs coaching", style: "Data-driven coaching — training built around power zones and race goals.",
     bio: "Former state road cyclist turned coach. I work with complete beginners through to riders training for their first crit or gran fondo.",
