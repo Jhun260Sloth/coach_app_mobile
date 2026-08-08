@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Bell, Search, Filter, Navigation, Star, MapPin, Heart, Sparkles, Calendar, MessageCircle, Percent, Check, X, Plus, Minus, CreditCard } from "lucide-react";
+import { Bell, Search, Filter, Navigation, Star, MapPin, Heart, Sparkles, Calendar, MessageCircle, Percent, Check, X, CreditCard } from "lucide-react";
 import { C, fDisplay, fBody } from "../../theme/theme";
 import { COACHES, SPORTS, ALL_SUBURBS } from "../../data/mockData";
 import { Card, Chip, Badge, SegTabs, SectionLabel, Avatar, Btn, TopBar, BottomSheet, EmptyState } from "../../components/ui/Primitives";
 import { useLiveNotifications, NotificationBellButton, StatusBanner } from "../../systems/StateSystem";
+import { CoachMapView } from "../../components/map/CoachMapView";
 
 // Only the current in-app coach (Josh Whitfield, c2) has a live "available now"
 // toggle driven by app state — every other coach in the directory is static
@@ -11,12 +12,8 @@ import { useLiveNotifications, NotificationBellButton, StatusBanner } from "../.
 const LIVE_AVAILABILITY_COACH_ID = "c2";
 
 const NOTIF_ICON = { booking: Calendar, message: MessageCircle, review: Star, availability: Sparkles, promo: Percent, payment: CreditCard };
-const MAP_PINS = [[20,30],[60,15],[40,55],[78,45],[25,70],[65,75],[50,40],[15,55],[85,20],[35,80]];
-const MAP_SIZE = 1000;
 const DEFAULT_FILTERS = { sports: [], areas: [], maxPrice: 150, minRating: 0 };
 
-// Single-line text helper: keeps every field in the card to one line, truncating with ellipsis
-// instead of wrapping, so card heights stay consistent no matter how long a name/suburb is.
 const oneLine = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
 
 export function CoachListCard({ coach, onOpen, unavailable }) {
@@ -76,116 +73,6 @@ export function CoachListCard({ coach, onOpen, unavailable }) {
         </div>
       </div>
     </Card>
-  );
-}
-
-export function PannableMapView({ coaches = [], onOpen, onClose }) {
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
-  const [searchText, setSearchText] = useState("");
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const dragRef = useRef(null);
-  const movedRef = useRef(false);
-
-  const getPoint = e => e.touches ? e.touches[0] : e;
-  const startDrag = e => { const p = getPoint(e); dragRef.current = { startX: p.clientX, startY: p.clientY, panX: pan.x, panY: pan.y }; movedRef.current = false; };
-  const moveDrag = e => {
-    if (!dragRef.current) return;
-    const p = getPoint(e);
-    const dx = p.clientX - dragRef.current.startX, dy = p.clientY - dragRef.current.startY;
-    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) movedRef.current = true;
-    setPan({ x: dragRef.current.panX + dx, y: dragRef.current.panY + dy });
-  };
-  const endDrag = () => { dragRef.current = null; };
-  const handleWheel = e => { e.preventDefault(); setZoom(z => Math.min(2.5, Math.max(0.5, z - e.deltaY * 0.001))); };
-
-  const visibleCoaches = searchText.trim()
-    ? coaches.filter(c => { const q = searchText.trim().toLowerCase(); return c.suburb.toLowerCase().includes(q) || c.name.toLowerCase().includes(q) || c.sport.toLowerCase().includes(q); })
-    : coaches;
-
-  const suggestions = searchText.trim().length > 0
-    ? [...new Set([...coaches.map(c => c.suburb), ...coaches.map(c => c.name), ...coaches.map(c => c.sport)])]
-        .filter(s => s.toLowerCase().includes(searchText.trim().toLowerCase())).slice(0, 5)
-    : [];
-
-  useEffect(() => {
-    if (!visibleCoaches.length) return;
-    const offsets = visibleCoaches.slice(0, 10).map((_, i) => { const [px, py] = MAP_PINS[i % MAP_PINS.length]; return { x: (px / 100) * MAP_SIZE - MAP_SIZE / 2, y: (py / 100) * MAP_SIZE - MAP_SIZE / 2 }; });
-    setPan({ x: -(offsets.reduce((s, o) => s + o.x, 0) / offsets.length), y: -(offsets.reduce((s, o) => s + o.y, 0) / offsets.length) });
-  }, [searchText]);
-
-  const selectSuggestion = s => { setSearchText(s); setShowSuggestions(false); setZoom(1.4); };
-  const clearSearch = () => { setSearchText(""); setPan({ x: 0, y: 0 }); setZoom(1); };
-
-  const btnBase = { background: "none", border: "none", cursor: "pointer", display: "flex" };
-  const shadowBox = { boxShadow: "0 4px 12px rgba(0,0,0,0.08)" };
-
-  return (
-    <div style={{ position: "absolute", inset: 0, zIndex: 999, background: C.fog }}>
-      {/* MAP */}
-      <div onMouseDown={startDrag} onMouseMove={moveDrag} onMouseUp={endDrag} onMouseLeave={endDrag}
-        onTouchStart={startDrag} onTouchMove={moveDrag} onTouchEnd={endDrag} onWheel={handleWheel}
-        style={{ position: "absolute", inset: 0, overflow: "hidden", cursor: "grab" }}>
-        <div style={{
-          position: "absolute", left: "50%", top: "50%", width: MAP_SIZE, height: MAP_SIZE,
-          marginLeft: -MAP_SIZE / 2, marginTop: -MAP_SIZE / 2,
-          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: "center",
-          backgroundImage: "linear-gradient(#E9EAEE 1px,transparent 1px),linear-gradient(90deg,#E9EAEE 1px,transparent 1px)",
-          backgroundSize: "40px 40px",
-        }}>
-          {visibleCoaches.slice(0, 10).map((c, i) => {
-            const [px, py] = MAP_PINS[i % MAP_PINS.length];
-            const x = (px / 100) * MAP_SIZE - MAP_SIZE / 2, y = (py / 100) * MAP_SIZE - MAP_SIZE / 2;
-            return (
-              <button key={c.id} onClick={e => { e.stopPropagation(); onOpen?.(c.id); }}
-                style={{ position: "absolute", left: `calc(50% + ${x}px)`, top: `calc(50% + ${y}px)`, transform: "translate(-50%,-100%)", ...btnBase, flexDirection: "column", alignItems: "center" }}>
-                <div style={{ background: C.jet, color: C.white, fontSize: 11, fontWeight: 700, padding: "5px 9px", borderRadius: 10, whiteSpace: "nowrap", marginBottom: 2, maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", ...fBody }}>{c.name}</div>
-                <MapPin size={22} color={C.orange} fill={C.orange} />
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* SEARCH BAR */}
-      <div style={{ position: "absolute", top: 16, left: 16, right: 16, zIndex: 2, display: "flex", alignItems: "center", gap: 10 }}>
-        <button onClick={onClose} style={{ width: 42, height: 42, borderRadius: 12, background: C.white, border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, ...shadowBox }}>
-          <X size={18} color={C.jet} />
-        </button>
-        <div style={{ position: "relative", flex: 1 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.white, borderRadius: 12, padding: "0 12px", height: 42, ...shadowBox }}>
-            <Search size={15} color={C.slateLight} />
-            <input value={searchText} onChange={e => { setSearchText(e.target.value); setShowSuggestions(true); }}
-              onFocus={() => setShowSuggestions(true)} onBlur={() => setTimeout(() => setShowSuggestions(false), 120)}
-              placeholder="Search location..." style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13, color: C.jet, ...fBody }} />
-            {searchText && <button onMouseDown={e => e.preventDefault()} onClick={clearSearch} style={btnBase}><X size={14} color={C.slateLight} /></button>}
-          </div>
-          {showSuggestions && suggestions.length > 0 && (
-            <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, zIndex: 20, background: C.white, borderRadius: 12, border: `1px solid ${C.border}`, overflow: "hidden", ...shadowBox }}>
-              {suggestions.map(s => (
-                <button key={s} onMouseDown={() => selectSuggestion(s)} style={{ width: "100%", textAlign: "left", padding: "10px 14px", background: "none", border: "none", borderBottom: `1px solid ${C.border}`, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.jet, ...fBody }}>
-                  <MapPin size={13} color={C.slateLight} />{s}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ZOOM */}
-      <div style={{ position: "absolute", top: 74, left: 16, zIndex: 2, display: "flex", flexDirection: "column", borderRadius: 12, overflow: "hidden", ...shadowBox }}>
-        {[{ icon: Plus, fn: z => Math.min(2.5, z + 0.25), border: `1px solid ${C.border}` }, { icon: Minus, fn: z => Math.max(0.5, z - 0.25), border: "none" }].map(({ icon: Icon, fn, border }) => (
-          <button key={border} onClick={() => setZoom(fn)} style={{ width: 34, height: 34, background: C.white, border: "none", borderBottom: border, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-            <Icon size={15} color={C.jet} />
-          </button>
-        ))}
-      </div>
-
-      {/* LOCATION */}
-      <div style={{ position: "absolute", bottom: 24, left: 16, background: C.white, borderRadius: 10, padding: "5px 9px", fontSize: 10.5, color: C.slate, display: "flex", alignItems: "center", gap: 4, ...fBody, pointerEvents: "none" }}>
-        <Navigation size={11} color={C.orange} /> Using your location
-      </div>
-    </div>
   );
 }
 
@@ -314,7 +201,7 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
         })}
       </BottomSheet>
 
-      {view === "map" && <PannableMapView coaches={filtered} onOpen={id => nav("coach-profile", { id })} onClose={() => setView("list")} />}
+      {view === "map" && <CoachMapView coaches={filtered} onOpen={id => nav("coach-profile", { id })} onClose={() => setView("list")} />}
     </div>
   );
 }
