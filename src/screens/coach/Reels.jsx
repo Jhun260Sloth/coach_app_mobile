@@ -1,6 +1,6 @@
 import React, { useRef, useState } from "react";
 import { UploadCloud, Play, Image as ImageIcon, Trash2, Film, Camera } from "lucide-react";
-import { C, fDisplay, fBody } from "../../theme/theme";
+import { C, fDisplay, fBody, T } from "../../theme/theme";
 import { COACHES, SPORTS } from "../../data/mockData";
 import { TopBar, Btn, Card, Chip, Field, BottomSheet, EmptyState, Badge } from "../../components/ui/Primitives";
 
@@ -43,10 +43,10 @@ function MediaTile({ item, onDelete }) {
         </button>
       </div>
       <div style={{ marginTop: 6 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: C.jet, ...fBody, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.caption || (isReel ? "Untitled reel" : "Untitled photo")}</div>
+        <div style={{ fontSize: T.label, fontWeight: 600, color: C.jet, ...fBody, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.caption || (isReel ? "Untitled reel" : "Untitled photo")}</div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
           <Badge tone="neutral">{isReel ? "Reel" : "Photo"}</Badge>
-          {item.sport && <span style={{ fontSize: 11, color: C.slateLight, ...fBody }}>{item.sport}</span>}
+          {item.sport && <span style={{ fontSize: T.caption, color: C.slateLight, ...fBody }}>{item.sport}</span>}
         </div>
       </div>
     </div>
@@ -82,7 +82,7 @@ export function ScreenCoachReels({ nav, toast, coachMedia = [], addMedia, remove
       <TopBar title="Reels & photos" onBack={() => nav("coach-profile-edit")} />
 
       <div style={{ flex: 1, overflowY: "auto", paddingBottom: 30 }}>
-        <div style={{ fontSize: 12.5, color: C.slate, marginBottom: 16, lineHeight: 1.5, ...fBody }}>
+        <div style={{ fontSize: T.labelLg, color: C.slate, marginBottom: 16, lineHeight: 1.5, ...fBody }}>
           Show athletes what a session with you looks like. Reels and photos appear on your public profile in the order you add them.
         </div>
 
@@ -126,7 +126,7 @@ export function ScreenCoachReels({ nav, toast, coachMedia = [], addMedia, remove
               />
 
               <div>
-                <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Sport</div>
+                <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Sport</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                   {SPORTS.map((s) => (
                     <Chip key={s} active={pendingUpload.sport === s} onClick={() => setPendingUpload((d) => ({ ...d, sport: s }))}>{s}</Chip>

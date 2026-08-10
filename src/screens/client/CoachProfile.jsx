@@ -3,7 +3,7 @@ import {
   ChevronLeft, Heart, Share2, Star, ShieldCheck, BadgeCheck, Play, MessageCircle, CheckCircle2, Trophy,
   Clock, TrendingUp, Repeat, MapPin, Navigation, Award, Users, XCircle,
 } from "lucide-react";
-import { C, fDisplay, fBody } from "../../theme/theme";
+import { C, fDisplay, fBody, T } from "../../theme/theme";
 import { COACHES, REVIEWS, SPORT_ICON } from "../../data/mockData";
 import { Avatar, Badge, SegTabs, SectionLabel, Card, Btn, StarRow } from "../../components/ui/Primitives";
 import { StatusBanner } from "../../systems/StateSystem";
@@ -58,14 +58,14 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav, coachAva
         <div style={{ height: 40 }} />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginTop: 10 }}>
           <div>
-            <div style={{ fontSize: 20, fontWeight: 600, color: C.jet, ...fDisplay }}>{coach.name}</div>
-            <div style={{ fontSize: 13, color: C.slate, ...fBody }}>{coach.sport} · {coach.suburb}</div>
+            <div style={{ fontSize: T.headingLg, fontWeight: 600, color: C.jet, ...fDisplay }}>{coach.name}</div>
+            <div style={{ fontSize: T.body, color: C.slate, ...fBody }}>{coach.sport} · {coach.suburb}</div>
           </div>
           <div style={{ textAlign: "right" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 4, fontWeight: 700, color: C.jet, ...fBody }}>
               <Star size={14} fill={C.orange} color={C.orange} /> {coach.rating}
             </div>
-            <div style={{ fontSize: 11.5, color: C.slate, ...fBody }}>{coach.reviews} reviews</div>
+            <div style={{ fontSize: T.captionLg, color: C.slate, ...fBody }}>{coach.reviews} reviews</div>
           </div>
         </div>
 
@@ -95,8 +95,8 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav, coachAva
           ].map((s, i) => (
             <div key={i} style={{ flex: 1, background: C.fog, borderRadius: 14, padding: "10px 10px" }}>
               <s.icon size={14} color={C.orange} />
-              <div style={{ fontSize: 13, fontWeight: 700, color: C.jet, marginTop: 6, ...fDisplay }}>{s.value}</div>
-              <div style={{ fontSize: 10.5, color: C.slate, marginTop: 1, lineHeight: 1.3, ...fBody }}>{s.label}</div>
+              <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, marginTop: 6, ...fDisplay }}>{s.value}</div>
+              <div style={{ fontSize: T.tiny, color: C.slate, marginTop: 1, lineHeight: 1.3, ...fBody }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -111,26 +111,26 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav, coachAva
         {tab === "about" && (
           <div style={{ marginTop: 16 }}>
             <SectionLabel>Bio</SectionLabel>
-            <p style={{ fontSize: 13.5, color: C.slate, lineHeight: 1.6, marginBottom: 16, ...fBody }}>{coach.bio}</p>
+            <p style={{ fontSize: T.bodyLg, color: C.slate, lineHeight: 1.6, marginBottom: 16, ...fBody }}>{coach.bio}</p>
             <SectionLabel>Coaching style</SectionLabel>
-            <p style={{ fontSize: 13.5, color: C.slate, lineHeight: 1.6, marginBottom: 16, ...fBody }}>{coach.style}</p>
+            <p style={{ fontSize: T.bodyLg, color: C.slate, lineHeight: 1.6, marginBottom: 16, ...fBody }}>{coach.style}</p>
             <SectionLabel>Experience</SectionLabel>
-            <p style={{ fontSize: 13.5, color: C.slate, marginBottom: 16, ...fBody }}>{coach.experience}</p>
+            <p style={{ fontSize: T.bodyLg, color: C.slate, marginBottom: 16, ...fBody }}>{coach.experience}</p>
 
             <SectionLabel>Location & travel</SectionLabel>
             <Card style={{ marginBottom: 16 }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
                 <MapPin size={15} color={C.orange} style={{ marginTop: 1, flexShrink: 0 }} />
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: C.jet, ...fBody }}>{coach.venue}</div>
-                  <div style={{ fontSize: 11.5, color: C.slate, marginTop: 1, ...fBody }}>{coach.suburb}</div>
+                  <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{coach.venue}</div>
+                  <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 1, ...fBody }}>{coach.suburb}</div>
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                 <Navigation size={15} color={C.orange} style={{ marginTop: 1, flexShrink: 0 }} />
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: C.jet, ...fBody }}>Travels up to {coach.travelRadiusKm}km</div>
-                  <div style={{ fontSize: 11.5, color: C.slate, marginTop: 1, ...fBody }}>
+                  <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>Travels up to {coach.travelRadiusKm}km</div>
+                  <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 1, ...fBody }}>
                     {coach.willingToTravel ? "Willing to travel to your location" : "In-venue sessions only — travel not offered"}
                   </div>
                 </div>
@@ -142,13 +142,13 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav, coachAva
               {coach.qualifications.map((q, i) => (
                 <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: i === coach.qualifications.length - 1 ? "none" : `1px solid ${C.border}` }}>
                   <Award size={14} color={C.success} style={{ flexShrink: 0 }} />
-                  <span style={{ fontSize: 13, color: C.jet, ...fBody }}>{q}</span>
+                  <span style={{ fontSize: T.body, color: C.jet, ...fBody }}>{q}</span>
                 </div>
               ))}
             </Card>
 
             <SectionLabel>Cancellation policy</SectionLabel>
-            <p style={{ fontSize: 13.5, color: C.slate, lineHeight: 1.6, marginBottom: 6, ...fBody }}>{coach.cancellationPolicy}</p>
+            <p style={{ fontSize: T.bodyLg, color: C.slate, lineHeight: 1.6, marginBottom: 6, ...fBody }}>{coach.cancellationPolicy}</p>
           </div>
         )}
 
@@ -183,29 +183,29 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav, coachAva
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                     <div>
-                      <div style={{ fontWeight: 600, fontSize: 14, color: C.jet, ...fDisplay }}>{p.name}</div>
-                      <div style={{ fontSize: 12, color: C.slate, marginTop: 3, ...fBody }}>{p.type} · {p.duration} min · {p.mode}</div>
+                      <div style={{ fontWeight: 600, fontSize: T.subtitle, color: C.jet, ...fDisplay }}>{p.name}</div>
+                      <div style={{ fontSize: T.label, color: C.slate, marginTop: 3, ...fBody }}>{p.type} · {p.duration} min · {p.mode}</div>
                       <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 5 }}>
                         <Users size={11.5} color={C.slateLight} />
-                        <span style={{ fontSize: 11.5, color: C.slate, ...fBody }}>
+                        <span style={{ fontSize: T.captionLg, color: C.slate, ...fBody }}>
                           {p.maxParticipants ? `Up to ${p.maxParticipants} participant${p.maxParticipants > 1 ? "s" : ""}` : "1 participant"}
                         </span>
                       </div>
                     </div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: C.jet, ...fDisplay }}>${p.price}</div>
+                    <div style={{ fontSize: T.title, fontWeight: 700, color: C.jet, ...fDisplay }}>${p.price}</div>
                   </div>
                   <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8 }}>
                     {unavailable ? (
                       <>
                         <XCircle size={14} color={C.slateLight} />
-                        <span style={{ fontSize: 12.5, fontWeight: 600, color: C.slateLight, ...fBody }}>Currently unavailable</span>
+                        <span style={{ fontSize: T.labelLg, fontWeight: 600, color: C.slateLight, ...fBody }}>Currently unavailable</span>
                       </>
                     ) : (
                       <>
                         <div style={{ width: 18, height: 18, borderRadius: 18, border: `1.5px solid ${selected ? C.orange : C.border}`, background: selected ? C.orange : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                           {selected && <CheckCircle2 size={11} color={C.white} />}
                         </div>
-                        <span style={{ fontSize: 12.5, fontWeight: 600, color: selected ? C.orange : C.slate, ...fBody }}>{selected ? "Selected" : "Select this service"}</span>
+                        <span style={{ fontSize: T.labelLg, fontWeight: 600, color: selected ? C.orange : C.slate, ...fBody }}>{selected ? "Selected" : "Select this service"}</span>
                       </>
                     )}
                   </div>
@@ -223,13 +223,13 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav, coachAva
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <Avatar name={r.name} size={30} />
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: C.jet, ...fBody }}>{r.name}</div>
-                      <div style={{ fontSize: 11, color: C.slateLight, ...fBody }}>{r.date}</div>
+                      <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{r.name}</div>
+                      <div style={{ fontSize: T.caption, color: C.slateLight, ...fBody }}>{r.date}</div>
                     </div>
                   </div>
                   <StarRow value={r.rating} />
                 </div>
-                <p style={{ fontSize: 13, color: C.slate, marginTop: 8, lineHeight: 1.55, ...fBody }}>{r.text}</p>
+                <p style={{ fontSize: T.body, color: C.slate, marginTop: 8, lineHeight: 1.55, ...fBody }}>{r.text}</p>
                 {r.verified && <Badge tone="neutral" icon={CheckCircle2}>Verified booking</Badge>}
               </Card>
             ))}
@@ -245,8 +245,8 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav, coachAva
         ) : selectedPkg ? (
           <>
             <div>
-              <div style={{ fontSize: 17, fontWeight: 700, color: C.jet, ...fDisplay }}>${selectedPkg.price}</div>
-              <div style={{ fontSize: 11, color: C.slate, maxWidth: 120, ...fBody }}>{selectedPkg.name}</div>
+              <div style={{ fontSize: T.titleLg, fontWeight: 700, color: C.jet, ...fDisplay }}>${selectedPkg.price}</div>
+              <div style={{ fontSize: T.caption, color: C.slate, maxWidth: 120, ...fBody }}>{selectedPkg.name}</div>
             </div>
             <div style={{ flex: 1 }}>
               <Btn full onClick={() => nav("package-detail", { coachId: coach.id, packageId: selectedPkg.id })}>

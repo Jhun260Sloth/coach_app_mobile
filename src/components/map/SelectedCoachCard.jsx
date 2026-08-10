@@ -1,6 +1,6 @@
 import React from "react";
 import { Navigation, ChevronRight, X } from "lucide-react";
-import { C, fDisplay, fBody } from "../../theme/theme";
+import { C, fDisplay, fBody, T } from "../../theme/theme";
 import { Avatar } from "../ui/Primitives";
 
 // Isolated so route-fetch progress (`routing`/`routeInfo`) only re-renders this
@@ -15,9 +15,9 @@ function SelectedCoachCardBase({ coach, routing, routeInfo, onOpen, onClose }) {
     }}>
       <Avatar name={coach.name} size={46} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 700, fontSize: 14, color: C.jet, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", ...fDisplay }}>{coach.name}</div>
-        <div style={{ fontSize: 12, color: C.orange, fontWeight: 700, marginTop: 1, ...fDisplay }}>{coach.sport} · ${coach.packages[0].price}/session</div>
-        <div style={{ fontSize: 11.5, color: C.slate, marginTop: 3, display: "flex", alignItems: "center", gap: 4, ...fBody }}>
+        <div style={{ fontWeight: 700, fontSize: T.subtitle, color: C.jet, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", ...fDisplay }}>{coach.name}</div>
+        <div style={{ fontSize: T.label, color: C.orange, fontWeight: 700, marginTop: 1, ...fDisplay }}>{coach.sport} · ${coach.packages[0].price}/session</div>
+        <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 3, display: "flex", alignItems: "center", gap: 4, ...fBody }}>
           <Navigation size={11} color={C.slateLight} />
           {routing ? "Finding route…" : routeInfo ? `${routeInfo.distanceKm.toFixed(1)} km · ${Math.round(routeInfo.durationMin)} min drive` : `${coach.distanceKm} km away`}
         </div>

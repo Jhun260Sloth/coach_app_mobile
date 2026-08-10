@@ -2,7 +2,7 @@ import React from "react";
 import {
   Clock, DollarSign, Users, MapPin, Wrench, Tag, Info, XCircle,
 } from "lucide-react";
-import { C, fDisplay, fBody } from "../../theme/theme";
+import { C, fDisplay, fBody, T } from "../../theme/theme";
 import { COACHES } from "../../data/mockData";
 import { Avatar, Card, SectionLabel, Btn, TopBar } from "../../components/ui/Primitives";
 import { packageLocationLabel } from "../../components/ui/ServicePackageForm";
@@ -42,27 +42,27 @@ export function ScreenPackageDetail({ nav, params }) {
         <Card style={{ marginBottom: 16, display: "flex", gap: 12, alignItems: "center", border: `1px solid ${C.border}` }}>
           <Avatar name={coach.name} size={44} />
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: C.jet, ...fDisplay }}>{coach.name}</div>
-            <div style={{ fontSize: 12, color: C.slate, marginTop: 2, ...fBody }}>{coach.sport} · {coach.suburb}</div>
+            <div style={{ fontSize: T.subtitleLg, fontWeight: 700, color: C.jet, ...fDisplay }}>{coach.name}</div>
+            <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>{coach.sport} · {coach.suburb}</div>
           </div>
         </Card>
 
         <div style={{ marginBottom: 4 }}>
-          <div style={{ fontSize: 19, fontWeight: 700, color: C.jet, ...fDisplay }}>{pkg.name}</div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: C.jet, marginTop: 4, ...fDisplay }}>${pkg.price}</div>
+          <div style={{ fontSize: T.heading, fontWeight: 700, color: C.jet, ...fDisplay }}>{pkg.name}</div>
+          <div style={{ fontSize: T.headingLg, fontWeight: 800, color: C.jet, marginTop: 4, ...fDisplay }}>${pkg.price}</div>
         </div>
 
         {unavailable && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.fog, borderRadius: 12, padding: 12, marginTop: 12 }}>
             <XCircle size={15} color={C.slateLight} />
-            <span style={{ fontSize: 12.5, color: C.slate, fontWeight: 600, ...fBody }}>This package isn't currently accepting new bookings.</span>
+            <span style={{ fontSize: T.labelLg, color: C.slate, fontWeight: 600, ...fBody }}>This package isn't currently accepting new bookings.</span>
           </div>
         )}
 
         {pkg.description && (
           <div style={{ marginTop: 16 }}>
             <SectionLabel>Description</SectionLabel>
-            <p style={{ fontSize: 13.5, color: C.slate, lineHeight: 1.6, ...fBody }}>{pkg.description}</p>
+            <p style={{ fontSize: T.bodyLg, color: C.slate, lineHeight: 1.6, ...fBody }}>{pkg.description}</p>
           </div>
         )}
 
@@ -73,8 +73,8 @@ export function ScreenPackageDetail({ nav, params }) {
               <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "9px 0", borderBottom: i === rows.length - 1 ? "none" : `1px solid ${C.border}` }}>
                 <r.icon size={15} color={C.orange} style={{ marginTop: 1, flexShrink: 0 }} />
                 <div>
-                  <div style={{ fontSize: 11, color: C.slateLight, ...fBody }}>{r.label}</div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: C.jet, marginTop: 1, ...fBody }}>{r.value}</div>
+                  <div style={{ fontSize: T.caption, color: C.slateLight, ...fBody }}>{r.label}</div>
+                  <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, marginTop: 1, ...fBody }}>{r.value}</div>
                 </div>
               </div>
             ))}
@@ -83,7 +83,7 @@ export function ScreenPackageDetail({ nav, params }) {
 
         <div style={{ display: "flex", alignItems: "flex-start", gap: 8, background: C.fog, borderRadius: 12, padding: 12, marginTop: 16 }}>
           <Info size={14} color={C.slate} style={{ marginTop: 2, flexShrink: 0 }} />
-          <span style={{ fontSize: 12, color: C.slate, lineHeight: 1.5, ...fBody }}>Cancellation policy: {coach.cancellationPolicy}</span>
+          <span style={{ fontSize: T.label, color: C.slate, lineHeight: 1.5, ...fBody }}>Cancellation policy: {coach.cancellationPolicy}</span>
         </div>
       </div>
 

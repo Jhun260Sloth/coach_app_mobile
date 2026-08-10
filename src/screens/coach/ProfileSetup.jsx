@@ -1,6 +1,6 @@
 import React, { useRef, useState } from "react";
 import { Camera, Plus, X, FileCheck2, Upload } from "lucide-react";
-import { C, fDisplay, fBody } from "../../theme/theme";
+import { C, fDisplay, fBody, T } from "../../theme/theme";
 import { Avatar, SectionLabel, Chip, Card, Btn, TopBar } from "../../components/ui/Primitives";
 
 const SPORT_OPTIONS = [
@@ -60,7 +60,7 @@ export function ScreenCoachProfileSetup({ nav, toast }) {
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "18px 20px 0", flex: 1, overflowY: "auto", paddingBottom: 100 }}>
         <TopBar title="Profile setup" />
-        <div style={{ fontSize: 13, color: C.slate, marginBottom: 18, ...fBody }}>
+        <div style={{ fontSize: T.body, color: C.slate, marginBottom: 18, ...fBody }}>
           Tell clients who you are — this shows up on your public coach profile.
         </div>
 
@@ -76,7 +76,7 @@ export function ScreenCoachProfileSetup({ nav, toast }) {
             </button>
           </div>
           <input ref={avatarInputRef} type="file" accept="image/*" onChange={onAvatarChange} style={{ display: "none" }} />
-          <div style={{ fontSize: 11.5, color: C.slateLight, marginTop: 8, ...fBody }}>Tap the camera icon to upload a profile photo</div>
+          <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: 8, ...fBody }}>Tap the camera icon to upload a profile photo</div>
         </div>
 
         <SectionLabel>Bio</SectionLabel>
@@ -85,7 +85,7 @@ export function ScreenCoachProfileSetup({ nav, toast }) {
           onChange={(e) => setBio(e.target.value)}
           placeholder="Tell clients about your coaching background, philosophy and what makes you unique…"
           rows={4}
-          style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 14, padding: 13, fontSize: 13, resize: "none", outline: "none", marginBottom: 18, boxSizing: "border-box", ...fBody }}
+          style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 14, padding: 13, fontSize: T.body, resize: "none", outline: "none", marginBottom: 18, boxSizing: "border-box", ...fBody }}
         />
 
         <SectionLabel>Sports coached</SectionLabel>
@@ -103,7 +103,7 @@ export function ScreenCoachProfileSetup({ nav, toast }) {
             onChange={(e) => setCustomSport(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomSport(); } }}
             placeholder="Add another sport…"
-            style={{ flex: 1, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "10px 13px", fontSize: 13, outline: "none", boxSizing: "border-box", ...fBody }}
+            style={{ flex: 1, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "10px 13px", fontSize: T.body, outline: "none", boxSizing: "border-box", ...fBody }}
           />
           <Btn size="sm" variant="outline" icon={Plus} onClick={addCustomSport}>Add</Btn>
         </div>
@@ -120,7 +120,7 @@ export function ScreenCoachProfileSetup({ nav, toast }) {
           <Card key={i} style={{ marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
               <FileCheck2 size={16} color={C.orange} style={{ flexShrink: 0 }} />
-              <span style={{ fontSize: 12.5, color: C.jet, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", ...fBody }}>{c.name}</span>
+              <span style={{ fontSize: T.labelLg, color: C.jet, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", ...fBody }}>{c.name}</span>
             </div>
             <button onClick={() => removeCert(i)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", flexShrink: 0 }}>
               <X size={15} color={C.slateLight} />
@@ -129,7 +129,7 @@ export function ScreenCoachProfileSetup({ nav, toast }) {
         ))}
         <button onClick={() => certInputRef.current?.click()} style={{ width: "100%", border: `1.5px dashed ${C.border}`, borderRadius: 14, padding: 14, background: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", marginBottom: 18, boxSizing: "border-box" }}>
           <Upload size={15} color={C.slate} />
-          <span style={{ fontSize: 12.5, color: C.slate, fontWeight: 600, ...fBody }}>Upload certification (PDF or image)</span>
+          <span style={{ fontSize: T.labelLg, color: C.slate, fontWeight: 600, ...fBody }}>Upload certification (PDF or image)</span>
         </button>
         <input ref={certInputRef} type="file" accept=".pdf,image/*" multiple onChange={onCertsChange} style={{ display: "none" }} />
 
@@ -152,13 +152,13 @@ export function ScreenCoachProfileSetup({ nav, toast }) {
           </button>
         </div>
         <input ref={mediaInputRef} type="file" accept="image/*,video/*" multiple onChange={onMediaChange} style={{ display: "none" }} />
-        <div style={{ fontSize: 11, color: C.slateLight, marginBottom: 22, ...fBody }}>Upload photos or short video reels that showcase your coaching in action.</div>
+        <div style={{ fontSize: T.caption, color: C.slateLight, marginBottom: 22, ...fBody }}>Upload photos or short video reels that showcase your coaching in action.</div>
 
         <Btn full disabled={!complete} onClick={() => { toast("Profile details saved"); nav("coach-services-setup"); }}>
           Continue to Services Setup
         </Btn>
         {!complete && (
-          <div style={{ fontSize: 11, color: C.slateLight, textAlign: "center", marginTop: 8, ...fBody }}>
+          <div style={{ fontSize: T.caption, color: C.slateLight, textAlign: "center", marginTop: 8, ...fBody }}>
             Add a bio, at least one sport and your experience level to continue.
           </div>
         )}

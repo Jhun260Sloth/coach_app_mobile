@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Trash2 } from "lucide-react";
-import { C, fDisplay, fBody } from "../../theme/theme";
+import { C, fDisplay, fBody, T } from "../../theme/theme";
 import { SectionLabel, Card, Btn, TopBar, StepProgress } from "../../components/ui/Primitives";
 import { ServicePackageForm, packageSummary, packageFormToRecord } from "../../components/ui/ServicePackageForm";
 
@@ -30,10 +30,10 @@ export function ScreenCoachServicesSetup({ nav, toast, savePackage, removePackag
         <TopBar title="Coaching services" onBack={() => nav("verification-pending")} />
         <StepProgress step={1} total={3} label="Services" />
 
-        <div style={{ fontSize: 15, fontWeight: 600, color: C.jet, marginBottom: 6, ...fDisplay }}>
+        <div style={{ fontSize: T.subtitleLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fDisplay }}>
           Add coaching services
         </div>
-        <div style={{ fontSize: 13, color: C.slate, marginBottom: 18, lineHeight: 1.5, ...fBody }}>
+        <div style={{ fontSize: T.body, color: C.slate, marginBottom: 18, lineHeight: 1.5, ...fBody }}>
           Create the coaching services athletes can book. Define your session types, pricing, duration, and delivery method to showcase what you offer.
         </div>
 
@@ -41,16 +41,16 @@ export function ScreenCoachServicesSetup({ nav, toast, savePackage, removePackag
           <Card key={s.id} style={{ marginBottom: 10 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: C.jet, ...fDisplay }}>{s.name}</div>
-                <div style={{ fontSize: 11.5, color: C.slate, marginTop: 2, ...fBody }}>{packageSummary(s)}</div>
+                <div style={{ fontSize: T.subtitle, fontWeight: 600, color: C.jet, ...fDisplay }}>{s.name}</div>
+                <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{packageSummary(s)}</div>
                 {s.venue && (
-                  <div style={{ fontSize: 11.5, color: C.slateLight, marginTop: 2, ...fBody }}>{s.venue}</div>
+                  <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: 2, ...fBody }}>{s.venue}</div>
                 )}
                 {s.equipment && (
-                  <div style={{ fontSize: 11.5, color: C.slateLight, marginTop: 2, ...fBody }}>Equipment: {s.equipment}</div>
+                  <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: 2, ...fBody }}>Equipment: {s.equipment}</div>
                 )}
                 {s.description && (
-                  <div style={{ fontSize: 11.5, color: C.slateLight, marginTop: 4, lineHeight: 1.5, ...fBody }}>{s.description}</div>
+                  <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: 4, lineHeight: 1.5, ...fBody }}>{s.description}</div>
                 )}
               </div>
               <button onClick={() => removeService(s.id)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", flexShrink: 0, marginLeft: 8 }}>
@@ -73,7 +73,7 @@ export function ScreenCoachServicesSetup({ nav, toast, savePackage, removePackag
           Continue
         </Btn>
         {!canContinue && (
-          <div style={{ fontSize: 11, color: C.slateLight, textAlign: "center", marginTop: 8, ...fBody }}>
+          <div style={{ fontSize: T.caption, color: C.slateLight, textAlign: "center", marginTop: 8, ...fBody }}>
             Add at least one coaching service to continue.
           </div>
         )}
