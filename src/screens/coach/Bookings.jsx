@@ -3,7 +3,7 @@ import {
   User, ClipboardList, ShieldCheck, Info, MessagesSquare, MessageCircle,
   ChevronLeft, ChevronRight, CalendarX2, MapPin,
 } from "lucide-react";
-import { C, fDisplay, fBody } from "../../theme/theme";
+import { C, fDisplay, fBody, T } from "../../theme/theme";
 import { CLIENT_PROFILES, BOOKING_ENQUIRY_MESSAGES, CONFIG } from "../../data/mockData";
 import {
   Avatar, Card, SegTabs, EmptyState, StatusPill, Btn, TopBar, Row, SectionLabel, Badge,
@@ -72,7 +72,7 @@ export function ScreenCoachBookings({ nav, coachBookings }) {
   const [cursor, setCursor] = useState(initialDate);
   const [selectedDate, setSelectedDate] = useState(initialDate);
 
-  const list = coachBookings.filter((b) => tab === "pending" ? b.status === "pending" : tab === "upcoming" ? b.status === "confirmed" : b.status === "completed");
+  const list = coachBookings.filter((b) => tab === "pending" ? b.status === "pending" : tab === "upcoming" ? b.status === "confirmed" : ["completed", "declined", "expired"].includes(b.status));
   const bookingsOnDate = (d) => dated.filter((b) => b._date && sameDay(b._date, d));
 
   const weeks = calMode === "month" ? buildMonthGrid(cursor) : [Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(cursor), i))];
@@ -89,7 +89,7 @@ export function ScreenCoachBookings({ nav, coachBookings }) {
         <Btn size="sm" variant="primary" full icon={User} onClick={(e) => { e.stopPropagation(); nav("coach-booking-detail", { id: b.id }); }}>View details</Btn>
       </div>
       {b.status === "completed" && (
-        <div style={{ marginTop: 8, fontSize: 12, color: C.success, fontWeight: 600, ...fBody }}>
+        <div style={{ marginTop: 8, fontSize: T.label, color: C.success, fontWeight: 600, ...fBody }}>
           Payout released: ${Math.round(b.price * (1 - CONFIG.commissionRate))}
         </div>
       )}
@@ -99,7 +99,7 @@ export function ScreenCoachBookings({ nav, coachBookings }) {
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "18px 20px 0" }}>
-        <div style={{ fontSize: 22, fontWeight: 600, color: C.jet, marginBottom: 14, ...fDisplay }}>Bookings</div>
+        <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, marginBottom: 14, ...fDisplay }}>Bookings</div>
         <div style={{ marginBottom: 10 }}>
           <SegTabs value={view} onChange={setView} items={[{ value: "list", label: "List" }, { value: "calendar", label: "Calendar" }]} />
         </div>
@@ -112,7 +112,7 @@ export function ScreenCoachBookings({ nav, coachBookings }) {
               <button onClick={goPrev} style={{ width: 30, height: 30, borderRadius: 10, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                 <ChevronLeft size={16} color={C.jet} />
               </button>
-              <span style={{ fontSize: 13.5, fontWeight: 700, color: C.jet, ...fDisplay }}>{headerLabel}</span>
+              <span style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...fDisplay }}>{headerLabel}</span>
               <button onClick={goNext} style={{ width: 30, height: 30, borderRadius: 10, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                 <ChevronRight size={16} color={C.jet} />
               </button>
@@ -133,7 +133,7 @@ export function ScreenCoachBookings({ nav, coachBookings }) {
           <>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 6 }}>
               {WEEKDAY_HEADERS.map((d) => (
-                <div key={d} style={{ textAlign: "center", fontSize: 10.5, fontWeight: 700, color: C.slateLight, ...fBody }}>{d}</div>
+                <div key={d} style={{ textAlign: "center", fontSize: T.tiny, fontWeight: 700, color: C.slateLight, ...fBody }}>{d}</div>
               ))}
             </div>
             {weeks.map((row, ri) => (
@@ -150,7 +150,7 @@ export function ScreenCoachBookings({ nav, coachBookings }) {
                       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3,
                       opacity: inRange ? 1 : 0.35,
                     }}>
-                      <span style={{ fontSize: 12, fontWeight: isSelected ? 700 : 500, color: C.jet, ...fBody }}>{d.getDate()}</span>
+                      <span style={{ fontSize: T.label, fontWeight: isSelected ? 700 : 500, color: C.jet, ...fBody }}>{d.getDate()}</span>
                       <span style={{ width: 5, height: 5, borderRadius: 99, background: count > 0 ? C.orange : "transparent" }} />
                     </button>
                   );
@@ -176,10 +176,25 @@ export function ScreenCoachBookingDetail({ nav, params, coachBookings, respondBo
   const booking = coachBookings.find((b) => b.id === params.id);
   const [responding, setResponding] = useState(null);
   const respond = (status) => {
+    // Guard against double-submits (e.g. a stale screen re-fired after the
+    // request was already handled elsewhere) — surface it as an invalid-action
+    // state instead of silently overwriting a decision that already happened.
+    if (!booking || booking.status !== "pending") {
+      toast("This request has already been handled");
+      nav("coach-bookings");
+      return;
+    }
     setResponding(status);
     setTimeout(() => {
       respondBooking(booking.id, status);
       toast(status === "confirmed" ? "Booking accepted" : "Booking declined");
+      pushNotification?.({
+        audience: "client", type: "booking",
+        title: status === "confirmed" ? "Booking confirmed" : "Booking declined",
+        body: status === "confirmed"
+          ? `Your session with ${booking.coachName || "your coach"} is confirmed for ${booking.date}, ${booking.time}.`
+          : `Your request for ${booking.service} on ${booking.date} was declined.`,
+      });
       nav("coach-bookings");
     }, 600);
   };
@@ -195,18 +210,18 @@ export function ScreenCoachBookingDetail({ nav, params, coachBookings, respondBo
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <Avatar name={booking.clientName} size={50} />
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 15.5, fontWeight: 600, color: C.jet, ...fDisplay }}>{booking.clientName}</div>
-              <div style={{ fontSize: 12, color: C.slate, ...fBody }}>{profile.homeSuburb}</div>
+              <div style={{ fontSize: T.subtitleLg, fontWeight: 600, color: C.jet, ...fDisplay }}>{booking.clientName}</div>
+              <div style={{ fontSize: T.label, color: C.slate, ...fBody }}>{profile.homeSuburb}</div>
             </div>
             {/* {profile.verifiedPayment && <Badge tone="success" icon={ShieldCheck}>Payment verified</Badge>} */}
           </div>
           <div style={{ display: "flex", gap: 24, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.border}` }}>
-            <div  style={{flex: 1,textAlign: "center",}}>
+            <div style={{ flex: 1, textAlign: "center" }}>
               <div style={{ fontSize: 16, fontWeight: 700, color: C.jet, ...fDisplay }}>{profile.totalSessions}</div>
               <div style={{ fontSize: 11, color: C.slate, ...fBody }}>Sessions with you</div>
             </div>
-            <div style={{width: 1,alignSelf: "stretch",background: C.border,}} />
-                <div  style={{flex: 1,textAlign: "center",}}>
+            <div style={{ width: 1, alignSelf: "stretch", background: C.border }} />
+            <div style={{ flex: 1, textAlign: "center" }}>
               <div style={{ fontSize: 16, fontWeight: 700, color: C.jet, ...fDisplay }}>{profile.memberSince}</div>
               <div style={{ fontSize: 11, color: C.slate, ...fBody }}>Client since</div>
             </div>
@@ -214,7 +229,7 @@ export function ScreenCoachBookingDetail({ nav, params, coachBookings, respondBo
           {profile.notes && (
             <div style={{ display: "flex", gap: 8, marginTop: 12, background: C.fog, borderRadius: 12, padding: 10 }}>
               <Info size={13} color={C.slate} style={{ marginTop: 1, flexShrink: 0 }} />
-              <span style={{ fontSize: 12, color: C.slate, lineHeight: 1.5, ...fBody }}>{profile.notes}</span>
+              <span style={{ fontSize: T.label, color: C.slate, lineHeight: 1.5, ...fBody }}>{profile.notes}</span>
             </div>
           )}
         </Card>
@@ -232,7 +247,7 @@ export function ScreenCoachBookingDetail({ nav, params, coachBookings, respondBo
           <>
             <SectionLabel>Client notes</SectionLabel>
             <Card style={{ marginBottom: 14 }}>
-              <p style={{ fontSize: 13, color: C.slate, lineHeight: 1.6, ...fBody }}>{booking.notes}</p>
+              <p style={{ fontSize: T.body, color: C.slate, lineHeight: 1.6, ...fBody }}>{booking.notes}</p>
             </Card>
           </>
         )}
@@ -243,8 +258,8 @@ export function ScreenCoachBookingDetail({ nav, params, coachBookings, respondBo
             <MessagesSquare size={17} color={C.orange} />
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: C.jet, ...fBody }}>Message {booking.clientName.split(" ")[0]}</div>
-            <div style={{ fontSize: 11.5, color: C.slate, ...fBody }}>{hasThread ? "You have an existing conversation" : "Clarify details before responding"}</div>
+            <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>Message {booking.clientName.split(" ")[0]}</div>
+            <div style={{ fontSize: T.captionLg, color: C.slate, ...fBody }}>{hasThread ? "You have an existing conversation" : "Clarify details before responding"}</div>
           </div>
           <Btn size="sm" variant="secondary" icon={MessageCircle} onClick={() => nav("chat-thread", { name: booking.clientName, context: `${booking.service} · ${booking.date}`, bookingId: booking.id, backTo: "coach-booking-detail", backParams: { id: booking.id } })}>Chat</Btn>
         </Card>
@@ -252,10 +267,10 @@ export function ScreenCoachBookingDetail({ nav, params, coachBookings, respondBo
         {booking.status === "pending" && (
           <div style={{ display: "flex", gap: 8, marginTop: 4, alignItems: "center" }}>
             <div style={{ flex: 1 }}>
-              <Btn full variant="outline" loading={responding === "cancelled"} loadingText="Declining…" disabled={responding === "confirmed"} onClick={() => respond("cancelled")}>Decline</Btn>
+              <Btn full variant="outline" loading={responding === "declined"} loadingText="Declining…" disabled={responding === "confirmed"} onClick={() => respond("declined")}>Decline</Btn>
             </div>
             <div style={{ flex: 1 }}>
-              <Btn full loading={responding === "confirmed"} loadingText="Accepting…" disabled={responding === "cancelled"} onClick={() => respond("confirmed")}>Accept</Btn>
+              <Btn full loading={responding === "confirmed"} loadingText="Accepting…" disabled={responding === "declined"} onClick={() => respond("confirmed")}>Accept</Btn>
             </div>
           </div>
         )}

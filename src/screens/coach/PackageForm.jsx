@@ -1,6 +1,6 @@
 import React from "react";
 import { Trash2 } from "lucide-react";
-import { C, fBody } from "../../theme/theme";
+import { C, fBody, T } from "../../theme/theme";
 import { TopBar } from "../../components/ui/Primitives";
 import { ServicePackageForm, recordToPackageForm, packageFormToRecord } from "../../components/ui/ServicePackageForm";
 
@@ -37,7 +37,7 @@ export function ScreenCoachPackageForm({ nav, params, toast, coachPackages, save
         ) : null}
       />
       <div style={{ flex: 1, overflowY: "auto", paddingBottom: 30 }}>
-        <div style={{ fontSize: 12, color: C.slate, marginBottom: 16, lineHeight: 1.5, ...fBody }}>
+        <div style={{ fontSize: T.label, color: C.slate, marginBottom: 16, lineHeight: 1.5, ...fBody }}>
           Package name, price, duration, location and description are all shown to clients when they browse and book.
         </div>
         <ServicePackageForm

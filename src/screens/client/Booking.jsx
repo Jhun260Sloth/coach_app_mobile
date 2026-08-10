@@ -1,14 +1,27 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { COACHES, CONFIG } from "../../data/mockData";
+
 import {
   Info, Fingerprint, CreditCard, CheckCircle2, Plus, Lock, Calendar, Navigation, MessageCircle,
   Users, User, ShieldCheck, Phone, Stethoscope, AlertTriangle, UserPlus, MapPin, Send,
   ChevronLeft, ChevronRight, Sunrise, Sun, Moon, Repeat as RepeatIcon, Home,
 } from "lucide-react";
-import { C, fDisplay, fBody } from "../../theme/theme";
-import { COACHES, CONFIG } from "../../data/mockData";
+import { C, fDisplay, fBody, T } from "../../theme/theme";
 import {
-  Avatar, Card, Chip, SectionLabel, Btn, TopBar, Toggle, Field, Row, RadioRow,
+  Avatar, Card, Chip, SectionLabel, Btn, TopBar, Toggle, Field, Row, RadioRow, Spinner,
 } from "../../components/ui/Primitives";
+import { StatusBanner, ResultOverlay } from "../../systems/StateSystem";
+
+const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+function parseShortDate(str, year = 2026) {
+  const m = /(\d{1,2})\s+([A-Za-z]{3})/.exec(str || "");
+  if (!m) return null;
+  const month = MONTH_ABBR.indexOf(m[2]);
+  if (month < 0) return null;
+  return new Date(year, month, parseInt(m[1], 10));
+}
+function sameCalendarDay(a, b) { return a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
+function normTime(t) { return (t || "").replace(/\s+/g, "").toLowerCase(); }
 
 /* ---- calendar helpers for the "Select Date & Time" screen ---- */
 function addDays(d, n) { const r = new Date(d); r.setDate(d.getDate() + n); return r; }
@@ -147,10 +160,10 @@ export function ScreenBookingParticipants({ nav, params, children = [] }) {
       <Card style={{ marginBottom: 22, display: "flex", gap: 12, alignItems: "center", border: `1px solid ${C.border}`, boxShadow: "0 1px 2px rgba(22,24,29,.04)" }}>
         <Avatar name={coach.name} size={44} />
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: C.jet, letterSpacing: "-0.1px", ...fDisplay }}>{pkg.name}</div>
-          <div style={{ fontSize: 12.5, color: C.slate, marginTop: 2, ...fBody }}>with {coach.name}</div>
+          <div style={{ fontSize: T.subtitleLg, fontWeight: 700, color: C.jet, letterSpacing: "-0.1px", ...fDisplay }}>{pkg.name}</div>
+          <div style={{ fontSize: T.labelLg, color: C.slate, marginTop: 2, ...fBody }}>with {coach.name}</div>
         </div>
-        <div style={{ marginLeft: "auto", fontSize: 16, fontWeight: 800, color: C.jet, whiteSpace: "nowrap", ...fDisplay }}>
+        <div style={{ marginLeft: "auto", fontSize: T.title, fontWeight: 800, color: C.jet, whiteSpace: "nowrap", ...fDisplay }}>
           ${pkg.price}
         </div>
       </Card>
@@ -158,11 +171,11 @@ export function ScreenBookingParticipants({ nav, params, children = [] }) {
       <div style={{ flex: 1, overflowY: "auto" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
           <SectionLabel>Select who's coming</SectionLabel>
-          <span style={{ fontSize: 11, fontWeight: 600, color: C.slateLight, ...fBody }}>
+          <span style={{ fontSize: T.caption, fontWeight: 600, color: C.slateLight, ...fBody }}>
             {participants.length}/{maxParticipants} max
           </span>
         </div>
-        <div style={{ fontSize: 12.5, color: C.slate, marginBottom: 14, lineHeight: 1.5, ...fBody }}>
+        <div style={{ fontSize: T.labelLg, color: C.slate, marginBottom: 14, lineHeight: 1.5, ...fBody }}>
           {allowsMultiple
             ? `This is a group session — up to ${maxParticipants} participant${maxParticipants > 1 ? "s" : ""} can join. Select yourself, one child, or several. Each participant keeps their own booking history.`
             : "This is a 1:1 session, so pick a single participant — yourself or one child profile."}
@@ -183,7 +196,7 @@ export function ScreenBookingParticipants({ nav, params, children = [] }) {
         {children.length === 0 && (
           <button onClick={() => nav("client-profile")} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", marginTop: 14, padding: 0 }}>
             <UserPlus size={13} color={C.orange} />
-            <span style={{ fontSize: 12, color: C.orange, fontWeight: 600, ...fBody }}>Add a child profile from Account to book for them</span>
+            <span style={{ fontSize: T.label, color: C.orange, fontWeight: 600, ...fBody }}>Add a child profile from Account to book for them</span>
           </button>
         )}
       </div>
@@ -195,13 +208,14 @@ export function ScreenBookingParticipants({ nav, params, children = [] }) {
   );
 }
 
-export function ScreenBookingDateTime({ nav, params, setDraft }) {
+export function ScreenBookingDateTime({ nav, params, setDraft, bookings = [] }) {
   const coach = COACHES.find((c) => c.id === params.coachId);
   const pkg = coach.packages.find((p) => p.id === params.packageId);
 
   const [cursor, setCursor] = useState(() => { const d = new Date(); d.setDate(1); return d; });
   const [selectedDate, setSelectedDate] = useState(null);
   const [time, setTime] = useState(null);
+  const [checking, setChecking] = useState(false);
 
   // Repeat booking (optional)
   const [repeatFreq, setRepeatFreq] = useState("once");
@@ -222,6 +236,24 @@ export function ScreenBookingDateTime({ nav, params, setDraft }) {
     setTime(null);
   };
 
+  // Simulate a short "checking availability" pause whenever a new time is picked.
+  useEffect(() => {
+    if (!time) { setChecking(false); return; }
+    setChecking(true);
+    const t = setTimeout(() => setChecking(false), 600);
+    return () => clearTimeout(t);
+  }, [time, selectedDate]);
+
+  // Schedule conflict — does the client already have a pending/confirmed session
+  // at this exact day & time (with any coach)?
+  const conflictBooking = time && !checking
+    ? bookings.find((b) => {
+        if (!["pending", "confirmed"].includes(b.status)) return false;
+        const bd = parseShortDate(b.date);
+        return sameCalendarDay(bd, selectedDate) && normTime(b.time) === normTime(formatTime12(time));
+      })
+    : null;
+
   const daySlots = selectedDate ? slotsForDate(selectedDate, coach) : [];
   const grouped = groupSlotsByPeriod(daySlots);
   const periodIcons = { Morning: Sunrise, Afternoon: Sun, Evening: Moon };
@@ -235,17 +267,17 @@ export function ScreenBookingDateTime({ nav, params, setDraft }) {
       <TopBar title="Select Date & Time" onBack={() => nav("booking-participants", { coachId: coach.id, packageId: pkg.id, participants: params.participants })} />
 
       <div style={{ flex: 1, overflowY: "auto", paddingBottom: 8 }}>
-        <div style={{ fontSize: 12.5, color: C.slate, lineHeight: 1.5, marginBottom: 18, ...fBody }}>
+        <div style={{ fontSize: T.labelLg, color: C.slate, lineHeight: 1.5, marginBottom: 18, ...fBody }}>
           Choose your preferred session date and time. Only available dates and time slots are shown.
         </div>
 
         <Card style={{ marginBottom: 20, display: "flex", gap: 12, alignItems: "center", border: `1px solid ${C.border}` }}>
           <Avatar name={coach.name} size={40} />
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: C.jet, ...fDisplay }}>{pkg.name}</div>
-            <div style={{ fontSize: 12, color: C.slate, marginTop: 2, ...fBody }}>with {coach.name} · {pkg.duration} min</div>
+            <div style={{ fontSize: T.subtitle, fontWeight: 700, color: C.jet, ...fDisplay }}>{pkg.name}</div>
+            <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>with {coach.name} · {pkg.duration} min</div>
           </div>
-          <div style={{ marginLeft: "auto", fontSize: 15, fontWeight: 800, color: C.jet, whiteSpace: "nowrap", ...fDisplay }}>${pkg.price}</div>
+          <div style={{ marginLeft: "auto", fontSize: T.subtitleLg, fontWeight: 800, color: C.jet, whiteSpace: "nowrap", ...fDisplay }}>${pkg.price}</div>
         </Card>
 
         {/* 1. Choose the day */}
@@ -255,7 +287,7 @@ export function ScreenBookingDateTime({ nav, params, setDraft }) {
             <button onClick={goPrevMonth} disabled={isCurrentMonth} style={{ width: 30, height: 30, borderRadius: 10, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: isCurrentMonth ? "default" : "pointer", opacity: isCurrentMonth ? 0.4 : 1 }}>
               <ChevronLeft size={16} color={C.jet} />
             </button>
-            <span style={{ fontSize: 13.5, fontWeight: 700, color: C.jet, ...fDisplay }}>{monthLabel}</span>
+            <span style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...fDisplay }}>{monthLabel}</span>
             <button onClick={goNextMonth} style={{ width: 30, height: 30, borderRadius: 10, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
               <ChevronRight size={16} color={C.jet} />
             </button>
@@ -263,7 +295,7 @@ export function ScreenBookingDateTime({ nav, params, setDraft }) {
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 6 }}>
             {WEEKDAY_HEADERS.map((d) => (
-              <div key={d} style={{ textAlign: "center", fontSize: 10, fontWeight: 700, color: C.slateLight, ...fBody }}>{d}</div>
+              <div key={d} style={{ textAlign: "center", fontSize: T.micro, fontWeight: 700, color: C.slateLight, ...fBody }}>{d}</div>
             ))}
           </div>
 
@@ -300,7 +332,7 @@ export function ScreenBookingDateTime({ nav, params, setDraft }) {
                       boxSizing: "border-box",
                     }}
                   >
-                    <span style={{ fontSize: 12, fontWeight: isSelected || isToday ? 700 : 500, color, ...fBody }}>{d.getDate()}</span>
+                    <span style={{ fontSize: T.label, fontWeight: isSelected || isToday ? 700 : 500, color, ...fBody }}>{d.getDate()}</span>
                     {inRange && state === "limited" && !isSelected && (
                       <span style={{ width: 4, height: 4, borderRadius: 99, background: C.strong }} />
                     )}
@@ -311,29 +343,52 @@ export function ScreenBookingDateTime({ nav, params, setDraft }) {
           ))}
 
           <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap", justifyContent: "center" }}>
-            <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10.5, color: C.slate, ...fBody }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: T.tiny, color: C.slate, ...fBody }}>
               <span style={{ width: 9, height: 9, borderRadius: 3, border: `1.5px solid ${C.orange}` }} /> Available
             </span>
-            <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10.5, color: C.slate, ...fBody }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: T.tiny, color: C.slate, ...fBody }}>
               <span style={{ width: 9, height: 9, borderRadius: 3, border: `1.5px solid ${C.strong}` }} /> Limited
             </span>
-            <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10.5, color: C.slate, ...fBody }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: T.tiny, color: C.slate, ...fBody }}>
               <span style={{ width: 9, height: 9, borderRadius: 3, background: C.fog, border: `1.5px solid ${C.border}` }} /> Unavailable
             </span>
-            <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10.5, color: C.slate, ...fBody }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: T.tiny, color: C.slate, ...fBody }}>
               <span style={{ width: 9, height: 9, borderRadius: 3, background: C.orange }} /> Selected
             </span>
           </div>
         </Card>
 
+        {time && conflictBooking && (
+          <div style={{ marginBottom: 18 }}>
+            <StatusBanner
+              state="scheduleConflict"
+              message={`You already have ${conflictBooking.service} with ${conflictBooking.coachName} at this time.`}
+              onPrimary={() => { setTime(null); }}
+              onSecondary={() => nav("client-booking-detail", { id: conflictBooking.id })}
+            />
+          </div>
+        )}
+        {time && !conflictBooking && (
+          <Card style={{ marginBottom: 18, background: checking ? C.fog : C.orangeTint, border: "none" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              {checking ? <Spinner size={16} color={C.slate} /> : <Calendar size={16} color={C.orange} />}
+              <span style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>
+                {checking
+                  ? `Checking availability for ${formatFullDateFromDate(selectedDate)} at ${formatTime12(time)}…`
+                  : `${formatFullDateFromDate(selectedDate)} at ${formatTime12(time)} — confirmed available`}
+              </span>
+            </div>
+          </Card>
+        )}
+
         {/* 2. Available Time Slots */}
         {selectedDate && (
           <>
             <SectionLabel>2. Available Time Slots</SectionLabel>
-            <div style={{ fontSize: 12, color: C.slate, marginBottom: 12, ...fBody }}>{formatFullDateFromDate(selectedDate)}</div>
+            <div style={{ fontSize: T.label, color: C.slate, marginBottom: 12, ...fBody }}>{formatFullDateFromDate(selectedDate)}</div>
             {daySlots.length === 0 ? (
               <Card style={{ marginBottom: 18, textAlign: "center" }}>
-                <span style={{ fontSize: 12.5, color: C.slate, ...fBody }}>No time slots available on this day.</span>
+                <span style={{ fontSize: T.labelLg, color: C.slate, ...fBody }}>No time slots available on this day.</span>
               </Card>
             ) : (
               <div style={{ marginBottom: 18 }}>
@@ -343,7 +398,7 @@ export function ScreenBookingDateTime({ nav, params, setDraft }) {
                     <div key={period} style={{ marginBottom: 14 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
                         <PeriodIcon size={13} color={C.slateLight} />
-                        <span style={{ fontSize: 11.5, fontWeight: 700, color: C.slate, ...fBody }}>{period}</span>
+                        <span style={{ fontSize: T.captionLg, fontWeight: 700, color: C.slate, ...fBody }}>{period}</span>
                       </div>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                         {grouped[period].map((t) => {
@@ -356,7 +411,7 @@ export function ScreenBookingDateTime({ nav, params, setDraft }) {
                                 display: "inline-flex", alignItems: "center", gap: 5,
                                 padding: "10px 16px", borderRadius: 999, border: `1.5px solid ${active ? C.jet : C.border}`,
                                 background: active ? C.jet : C.white, color: active ? C.white : C.jet,
-                                fontWeight: active ? 700 : 600, fontSize: 13, cursor: "pointer",
+                                fontWeight: active ? 700 : 600, fontSize: T.body, cursor: "pointer",
                                 transition: "background .15s ease", ...fBody,
                               }}
                             >
@@ -379,32 +434,32 @@ export function ScreenBookingDateTime({ nav, params, setDraft }) {
           <>
             <SectionLabel>Repeat Booking (Optional)</SectionLabel>
             <Card style={{ marginBottom: 18 }}>
-              <div style={{ fontSize: 12, color: C.slate, marginBottom: 10, ...fBody }}>How often would you like to repeat this session?</div>
+              <div style={{ fontSize: T.label, color: C.slate, marginBottom: 10, ...fBody }}>How often would you like to repeat this session?</div>
               {REPEAT_OPTIONS.map((o) => (
                 <RadioRow key={o.value} label={o.label} selected={repeatFreq === o.value} onClick={() => setRepeatFreq(o.value)} />
               ))}
 
               {repeatFreq === "weekly" && (
                 <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
-                  <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Repeat every</div>
+                  <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Repeat every</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "9px 13px", marginBottom: 14 }}>
                     <RepeatIcon size={14} color={C.slateLight} />
                     <input
                       type="number" min={1} value={repeatEvery}
                       onChange={(e) => setRepeatEvery(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                      style={{ border: "none", outline: "none", width: 40, fontSize: 13, ...fBody }}
+                      style={{ border: "none", outline: "none", width: 40, fontSize: T.body, ...fBody }}
                     />
-                    <span style={{ fontSize: 12.5, color: C.slate, ...fBody }}>week{repeatEvery > 1 ? "s" : ""}</span>
+                    <span style={{ fontSize: T.labelLg, color: C.slate, ...fBody }}>week{repeatEvery > 1 ? "s" : ""}</span>
                   </div>
 
-                  <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>End after</div>
+                  <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>End after</div>
                   {END_AFTER_OPTIONS.map((o) => (
                     <RadioRow key={o.value} label={o.label} selected={endAfterType === o.value} onClick={() => setEndAfterType(o.value)} />
                   ))}
                   {endAfterType === "date" && (
                     <input
                       type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
-                      style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "10px 13px", fontSize: 13, outline: "none", boxSizing: "border-box", marginTop: 6, ...fBody }}
+                      style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "10px 13px", fontSize: T.body, outline: "none", boxSizing: "border-box", marginTop: 6, ...fBody }}
                     />
                   )}
                 </div>
@@ -426,7 +481,7 @@ export function ScreenBookingDateTime({ nav, params, setDraft }) {
 
         <div style={{ display: "flex", alignItems: "flex-start", gap: 8, background: C.fog, borderRadius: 12, padding: 12, marginBottom: 16 }}>
           <Info size={14} color={C.slate} style={{ marginTop: 2, flexShrink: 0 }} />
-          <span style={{ fontSize: 12, color: C.slate, lineHeight: 1.5, ...fBody }}>Only real-time open slots are shown — {coach.name.split(" ")[0]}'s calendar updates automatically once you book.</span>
+          <span style={{ fontSize: T.label, color: C.slate, lineHeight: 1.5, ...fBody }}>Only real-time open slots are shown — {coach.name.split(" ")[0]}'s calendar updates automatically once you book.</span>
         </div>
       </div>
 
@@ -519,8 +574,8 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast, children = []
         </Card>
 
         <Card style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: C.jet, marginBottom: 6, ...fDisplay }}>Cancellation policy</div>
-          <div style={{ fontSize: 12.5, color: C.slate, lineHeight: 1.55, ...fBody }}>{draft.coach.cancellationPolicy}</div>
+          <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, marginBottom: 6, ...fDisplay }}>Cancellation policy</div>
+          <div style={{ fontSize: T.labelLg, color: C.slate, lineHeight: 1.55, ...fBody }}>{draft.coach.cancellationPolicy}</div>
         </Card>
 
         {includesMinor && (
@@ -528,8 +583,8 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast, children = []
             <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 12 }}>
               <ShieldCheck size={16} color={C.orange} style={{ flexShrink: 0, marginTop: 1 }} />
               <div>
-                <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fDisplay }}>Child safety details</div>
-                <div style={{ fontSize: 12, color: C.slate, marginTop: 2, lineHeight: 1.55, ...fBody }}>
+                <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Child safety details</div>
+                <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, lineHeight: 1.55, ...fBody }}>
                   This booking includes a participant under 18, so we share a few extra details with your coach to keep sessions safe. {draft.coach.name.split(" ")[0]} holds the required Working with Children Check, and this information is shared with them only as needed for the session.
                 </div>
               </div>
@@ -556,11 +611,11 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast, children = []
                   )}
                   <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 8 }}>
                     {hasSavedSafetyInfo ? (
-                      <span style={{ fontSize: 11, color: C.success, fontWeight: 600, ...fBody }}>Pulled from {c.name || "this"}'s profile</span>
+                      <span style={{ fontSize: T.caption, color: C.success, fontWeight: 600, ...fBody }}>Pulled from {c.name || "this"}'s profile</span>
                     ) : (
                       <button onClick={() => nav("client-profile")} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center", gap: 4 }}>
                         <AlertTriangle size={12} color={C.orange} />
-                        <span style={{ fontSize: 11, color: C.orange, fontWeight: 600, ...fBody }}>No safety details saved on this profile yet — add them below or from Account</span>
+                        <span style={{ fontSize: T.caption, color: C.orange, fontWeight: 600, ...fBody }}>No safety details saved on this profile yet — add them below or from Account</span>
                       </button>
                     )}
                   </div>
@@ -595,7 +650,7 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast, children = []
                       onChange={(e) => setConditions(e.target.value)}
                       placeholder="e.g. asthma (carries inhaler), peanut allergy — leave blank if none"
                       rows={2}
-                      style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13.5, color: C.jet, resize: "none", ...fBody }}
+                      style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: T.bodyLg, color: C.jet, resize: "none", ...fBody }}
                     />
                   </div>
                 </div>
@@ -604,14 +659,14 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast, children = []
 
             <div style={{ marginTop: 14, borderTop: `1px solid ${C.border}`, paddingTop: 14 }}>
               <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 10, background: C.warnTint, borderRadius: 12, padding: 10 }}>
-                <AlertTriangle size={14} color="#B8860B" style={{ flexShrink: 0, marginTop: 1 }} />
-                <span style={{ fontSize: 11.5, color: C.jet, lineHeight: 1.5, ...fBody }}>Safeguarding: sessions involving minors require a checked-in guardian or approved drop-off arrangement, and any concerns can be reported to CoachLink support at any time.</span>
+                <AlertTriangle size={14} color={C.warnStrong} style={{ flexShrink: 0, marginTop: 1 }} />
+                <span style={{ fontSize: T.captionLg, color: C.jet, lineHeight: 1.5, ...fBody }}>Safeguarding: sessions involving minors require a checked-in guardian or approved drop-off arrangement, and any concerns can be reported to CoachLink support at any time.</span>
               </div>
               <button onClick={() => setConsent(!consent)} style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}>
                 <div style={{ width: 18, height: 18, borderRadius: 5, border: `1.5px solid ${consent ? C.orange : C.border}`, background: consent ? C.orange : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
                   {consent && <CheckCircle2 size={12} color={C.white} />}
                 </div>
-                <span style={{ fontSize: 12, color: C.jet, lineHeight: 1.5, ...fBody }}>I confirm I am the parent or legal guardian and consent to this booking, including CoachLink's handling of the participant's data.</span>
+                <span style={{ fontSize: T.label, color: C.jet, lineHeight: 1.5, ...fBody }}>I confirm I am the parent or legal guardian and consent to this booking, including CoachLink's handling of the participant's data.</span>
               </button>
             </div>
           </Card>
@@ -658,43 +713,81 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast, children = []
   );
 }
 
-export function ScreenPayment({ nav, draft, toast, addBooking, biometric }) {
+export function ScreenPayment({ nav, params, draft, toast, addBooking, markBookingPaid, pushNotification, biometric, offline }) {
   const [confirming, setConfirming] = useState(false);
   const [processing, setProcessing] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const busy = confirming || processing || success;
+  const [result, setResult] = useState(null); // null | "success" | "failed" | "cancelled"
+  const busy = confirming || processing || result === "success";
 
-  const pay = () => {
+  const pay = (forceFail = false) => {
     if (busy) return;
-    if (biometric) { setConfirming(true); setTimeout(() => { setConfirming(false); processAndFinish(); }, 1100); }
-    else processAndFinish();
+    if (offline) { toast("You're offline — reconnect to pay"); return; }
+    setResult(null);
+    if (biometric) { setConfirming(true); setTimeout(() => { setConfirming(false); processAndFinish(forceFail); }, 1100); }
+    else processAndFinish(forceFail);
   };
-  // Simulates submitting the charge to the payment processor before we show success —
+  // Simulates submitting the charge to the payment processor before we show success/failure —
   // without this, tapping Pay looked identical whether the charge went through or not.
-  const processAndFinish = () => {
+  const processAndFinish = (forceFail) => {
     setProcessing(true);
     setTimeout(() => {
       setProcessing(false);
-      addBooking(draft);
+      if (forceFail) {
+        setResult("failed");
+        return;
+      }
+      if (params?.bookingId) {
+        markBookingPaid?.(params.bookingId);
+      } else {
+        addBooking(draft);
+        pushNotification?.({ audience: "coach", type: "booking", title: "Payment received", body: `Payment of $${draft.total.toFixed(2)} received for ${draft.pkg.name}.` });
+      }
       toast("Payment confirmed");
-      setSuccess(true);
-      setTimeout(() => nav("booking-confirmation"), 700);
+      setResult("success");
+      setTimeout(() => nav(params?.bookingId ? "client-booking-detail" : "booking-confirmation", params?.bookingId ? { id: params.bookingId } : {}), 700);
     }, 900);
   };
+
+  const cancelPayment = () => {
+    if (busy) return;
+    setResult("cancelled");
+  };
+
   return (
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
       <TopBar title="Payment" onBack={() => nav("booking-review")} />
       <div style={{ flex: 1, overflowY: "auto" }}>
-        <Btn full variant="dark" disabled={busy} onClick={pay}>Pay ${draft.total.toFixed(2)} with  Pay</Btn>
+        {offline && (
+          <div style={{ marginBottom: 16 }}>
+            <StatusBanner state="actionBlockedOffline" compact />
+          </div>
+        )}
+        {result === "failed" && (
+          <div style={{ marginBottom: 16 }}>
+            <StatusBanner
+              state="paymentFailed"
+              onPrimary={() => pay(false)}
+              onSecondary={cancelPayment}
+              primaryLabel="Try again"
+              secondaryLabel="Cancel payment"
+            />
+          </div>
+        )}
+        {result === "cancelled" && (
+          <div style={{ marginBottom: 16 }}>
+            <StatusBanner state="paymentCancelled" onPrimary={() => setResult(null)} primaryLabel="Resume payment" />
+          </div>
+        )}
+        <Btn full variant="dark" disabled={busy || offline} onClick={() => pay(false)}>Pay ${draft.total.toFixed(2)} with  Pay</Btn>
         <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "16px 0" }}>
-          <div style={{ flex: 1, height: 1, background: C.border }} /><span style={{ fontSize: 11.5, color: C.slateLight, ...fBody }}>or pay by card</span><div style={{ flex: 1, height: 1, background: C.border }} />
+          <div style={{ flex: 1, height: 1, background: C.border }} /><span style={{ fontSize: T.captionLg, color: C.slateLight, ...fBody }}>or pay by card</span><div style={{ flex: 1, height: 1, background: C.border }} />
         </div>
         <SectionLabel>Saved payment methods</SectionLabel>
         <Card style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 34, height: 24, borderRadius: 5, background: C.jet, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <CreditCard size={13} color={C.white} />
           </div>
-          <div style={{ fontSize: 13, color: C.jet, fontWeight: 500, ...fBody }}>Visa •••• 4821</div>
+          <div style={{ fontSize: T.body, color: C.jet, fontWeight: 500, ...fBody }}>Visa •••• 4821</div>
           <CheckCircle2 size={16} color={C.orange} style={{ marginLeft: "auto" }} />
         </Card>
         <Btn variant="outline" size="sm" icon={Plus}>Add new card</Btn>
@@ -708,11 +801,26 @@ export function ScreenPayment({ nav, draft, toast, addBooking, biometric }) {
         </Card>
         <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginTop: 14 }}>
           <Lock size={13} color={C.slateLight} style={{ marginTop: 2, flexShrink: 0 }} />
-          <span style={{ fontSize: 11.5, color: C.slateLight, lineHeight: 1.5, ...fBody }}>Funds are held securely and only released to {draft.coach.name.split(" ")[0]} once you confirm the session is complete.</span>
+          <span style={{ fontSize: T.captionLg, color: C.slateLight, lineHeight: 1.5, ...fBody }}>Funds are held securely and only released to {draft.coach.name.split(" ")[0]} once you confirm the session is complete.</span>
         </div>
+
+        <button
+          onClick={() => pay(true)}
+          disabled={busy || offline}
+          style={{ display: "block", margin: "18px auto 0", background: "none", border: "none", cursor: busy || offline ? "default" : "pointer", fontSize: T.caption, color: C.slateLight, textDecoration: "underline", ...fBody }}
+        >
+          Use a test card that declines (simulate failure)
+        </button>
       </div>
-      <div style={{ padding: "14px 0" }}>
-        <Btn full loading={processing} loadingText="Processing payment…" disabled={busy && !processing} onClick={pay}>Pay & confirm booking</Btn>
+      <div style={{ padding: "14px 0", display: "flex", gap: 10 }}>
+        {result !== "failed" && result !== "cancelled" && (
+          <button onClick={cancelPayment} disabled={busy} style={{ background: "none", border: "none", cursor: busy ? "default" : "pointer", fontSize: T.labelLg, color: C.slate, fontWeight: 600, padding: "0 4px", ...fBody }}>
+            Cancel
+          </button>
+        )}
+        <div style={{ flex: 1 }}>
+          <Btn full loading={processing} loadingText="Processing payment…" disabled={(busy && !processing) || offline} onClick={() => pay(false)}>Pay & confirm booking</Btn>
+        </div>
       </div>
 
       {confirming && (
@@ -720,18 +828,11 @@ export function ScreenPayment({ nav, draft, toast, addBooking, biometric }) {
           <div style={{ width: 64, height: 64, borderRadius: 20, background: "rgba(255,255,255,.1)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
             <Fingerprint size={30} color={C.white} />
           </div>
-          <div style={{ color: C.white, fontSize: 14, fontWeight: 600, ...fBody }}>Confirm with Face ID</div>
+          <div style={{ color: C.white, fontSize: T.subtitle, fontWeight: 600, ...fBody }}>Confirm with Face ID</div>
         </div>
       )}
-
-      {success && (
-        <div style={{ position: "absolute", inset: 0, background: "rgba(22,24,29,.85)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 70, borderRadius: 0 }}>
-          <div style={{ width: 64, height: 64, borderRadius: 20, background: C.successTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14, animation: "clPopIn .25s ease" }}>
-            <CheckCircle2 size={30} color={C.success} />
-          </div>
-          <div style={{ color: C.white, fontSize: 14, fontWeight: 600, ...fBody }}>Payment confirmed</div>
-        </div>
-      )}
+      <ResultOverlay open={processing} state="paymentProcessing" />
+      <ResultOverlay open={result === "success"} state="paymentSuccess" title="Payment confirmed" message="Funds are held securely until the session is complete." />
     </div>
   );
 }
@@ -745,10 +846,10 @@ export function ScreenBookingConfirmation({ nav, draft, toast }) {
         <div style={{ width: 60, height: 60, borderRadius: 20, background: C.successTint, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
           <CheckCircle2 size={28} color={C.success} />
         </div>
-        <div style={{ fontSize: 20, fontWeight: 600, color: C.jet, ...fDisplay }}>
+        <div style={{ fontSize: T.headingLg, fontWeight: 600, color: C.jet, ...fDisplay }}>
           {draft.coach.instantBook ? "Booking confirmed" : "Request sent"}
         </div>
-        <div style={{ fontSize: 13, color: C.slate, marginTop: 4, ...fBody }}>
+        <div style={{ fontSize: T.body, color: C.slate, marginTop: 4, ...fBody }}>
           {draft.coach.instantBook ? `You're all set with ${draft.coach.name}.` : `${draft.coach.name} will respond within 24 hours.`}
         </div>
       </div>
@@ -764,7 +865,7 @@ export function ScreenBookingConfirmation({ nav, draft, toast }) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <Calendar size={16} color={C.jet} />
-            <span style={{ fontSize: 13, color: C.jet, fontWeight: 500, ...fBody }}>Sync to device calendar</span>
+            <span style={{ fontSize: T.body, color: C.jet, fontWeight: 500, ...fBody }}>Sync to device calendar</span>
           </div>
           <Toggle on={synced} onClick={() => { setSynced((v) => !v); toast(!synced ? "Added to your calendar" : "Removed from calendar"); }} />
         </div>
@@ -773,7 +874,7 @@ export function ScreenBookingConfirmation({ nav, draft, toast }) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <Navigation size={16} color={C.jet} />
-            <span style={{ fontSize: 13, color: C.jet, fontWeight: 500, ...fBody }}>Share live location during session</span>
+            <span style={{ fontSize: T.body, color: C.jet, fontWeight: 500, ...fBody }}>Share live location during session</span>
           </div>
           <Toggle on={locShare} onClick={() => setLocShare((v) => !v)} />
         </div>
@@ -800,8 +901,8 @@ export function ScreenBookingRequestSent({ nav, params }) {
         <div style={{ width: 60, height: 60, borderRadius: 20, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
           <Send size={26} color={C.orange} />
         </div>
-        <div style={{ fontSize: 20, fontWeight: 600, color: C.jet, ...fDisplay }}>Booking Request Sent</div>
-        <div style={{ fontSize: 13, color: C.slate, marginTop: 8, lineHeight: 1.6, maxWidth: 300, marginLeft: "auto", marginRight: "auto", ...fBody }}>
+        <div style={{ fontSize: T.headingLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Booking Request Sent</div>
+        <div style={{ fontSize: T.body, color: C.slate, marginTop: 8, lineHeight: 1.6, maxWidth: 300, marginLeft: "auto", marginRight: "auto", ...fBody }}>
           Your booking request has been sent to the coach for review. You'll receive a notification once the coach accepts, requests more information, or declines your request.
         </div>
       </div>

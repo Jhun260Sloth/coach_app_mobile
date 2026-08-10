@@ -1,13 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Search, Users, Mail, Eye, EyeOff, Fingerprint, Check,
   Upload, CheckCircle2, ClipboardList, Clock, Lock, Camera, MapPin, LocateFixed,
   Plus, Trash2, CreditCard, ScanFace, FileCheck2, Smartphone,
 } from "lucide-react";
-import { C, fDisplay, fBody, LOGO_WHITE_SRC } from "../../theme/theme";
+import { C, fDisplay, fBody, LOGO_WHITE_SRC, T } from "../../theme/theme";
 import {
   Btn, Card, Badge, Toggle, TopBar, Field, StepProgress, CheckboxRow, RadioRow,
-  SearchMultiSelect, Avatar, Chip, BottomSheet,
+  SearchMultiSelect, Avatar, Chip, BottomSheet, Spinner,
 } from "../../components/ui/Primitives";
 import { LogoMark } from "../../components/ui/Primitives";
 import {
@@ -19,9 +19,9 @@ import {
 
 const inputStyle = {
   width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px",
-  fontSize: 13.5, outline: "none", boxSizing: "border-box", ...fBody,
+  fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", ...fBody,
 };
-const labelStyle = { fontSize: 12.5, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
+const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
 
 function AppleIcon({ size = 16, color = "currentColor" }) {
   return (
@@ -59,7 +59,7 @@ function LegalSheet({ open, onClose }) {
   return (
     <BottomSheet open={open} onClose={onClose} title="Terms & Conditions" heightPct={60}>
       <Badge tone="neutral">Version 2.1 · Updated Jun 2026</Badge>
-      <div style={{ marginTop: 14, fontSize: 13, color: C.slate, lineHeight: 1.7, ...fBody }}>
+      <div style={{ marginTop: 14, fontSize: T.body, color: C.slate, lineHeight: 1.7, ...fBody }}>
         {TERMS_POINTS.map((t, i) => (
           <div key={i} style={{ display: "flex", gap: 8, marginBottom: 10 }}>
             <Check size={14} color={C.orange} style={{ flexShrink: 0, marginTop: 2 }} />
@@ -72,57 +72,83 @@ function LegalSheet({ open, onClose }) {
 }
 
 export function ScreenSplash({ nav }) {
+  // Splash is purely branding + loading — it establishes the brand while the
+  // app "warms up", then hands off automatically. No auth actions live here.
+  useEffect(() => {
+    const t = setTimeout(() => nav("get-started"), 1600);
+    return () => clearTimeout(t);
+  }, [nav]);
+
   return (
     <div style={{ height: "100%", background: C.white, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 28, textAlign: "center" }}>
       <div style={{ animation: "clFadeUp .5s ease" }}>
         <img src={LOGO_WHITE_SRC} alt="CoachLink" style={{ width: 120, height: "auto" }} />
       </div>
-      <div style={{ color: "#9CA0AC", fontSize: 14, marginTop: 22, lineHeight: 1.5, ...fBody }}>
+      {/* <div style={{ color: C.onDarkMuted, fontSize: T.subtitle, marginTop: 22, lineHeight: 1.5, ...fBody }}>
         Find a coach you trust, or build your coaching business — all in one place.
-      </div>
-      <div style={{ marginTop: 40, width: "100%", display: "flex", gap: 10 }}>
-        <div style={{ flex: 1 }}>
-          <Btn full variant="primary" onClick={() => nav("role-select")}>Sign up</Btn>
-        </div>
-        <div style={{ flex: 1 }}>
-          <Btn full variant="secondary" onClick={() => nav("auth", { mode: "login" })}>Log in</Btn>
-        </div>
+      </div> */}
+      <div style={{ marginTop: 34 }}>
+        <Spinner size={22} color="#C7CAD3" />
       </div>
     </div>
   );
 }
 
-export function ScreenRoleSelect({ nav, setRole }) {
-  const Option = ({ role, title, body, icon: Icon }) => (
-    <button onClick={() => { setRole(role); nav(role === "coach" ? "coach-register" : "auth", { mode: "signup" }); }}
-      style={{ width: "100%", textAlign: "left", background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 18, padding: 16, display: "flex", gap: 14, alignItems: "flex-start", cursor: "pointer", marginBottom: 12 }}>
-      <div style={{ width: 44, height: 44, borderRadius: 13, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-        <Icon size={20} color={C.orange} />
-      </div>
-      <div>
-        <div style={{ fontWeight: 600, color: C.jet, fontSize: 15.5, marginBottom: 3, ...fDisplay }}>{title}</div>
-        <div style={{ fontSize: 12.5, color: C.slate, lineHeight: 1.5, ...fBody }}>{body}</div>
-      </div>
-    </button>
-  );
+export function ScreenGetStarted({ nav }) {
   return (
-    <div style={{ padding: "24px 20px", height: "100%", display: "flex", flexDirection: "column" }}>
-      <LogoMark size={34} />
-      <div style={{ fontSize: 24, fontWeight: 600, color: C.jet, marginTop: 22, ...fDisplay }}>What brings you<br />to CoachLink?</div>
-      <div style={{ fontSize: 13.5, color: C.slate, marginTop: 6, marginBottom: 22, ...fBody }}>You can add a coaching profile later from the same account.</div>
-      <Option role="client" icon={Search} title="Find a coach" body="Search, book and pay for sessions with verified coaches near you." />
-      <Option role="coach" icon={Users} title="Coach others" body="List your services, manage bookings and get paid automatically." />
-      <div style={{ marginTop: "auto", textAlign: "center" }}>
-        <button onClick={() => nav("auth", { mode: "login" })} style={{ background: "none", border: "none", color: C.slate, fontSize: 13.5, cursor: "pointer", ...fBody }}>
-          Already have an account? <span style={{ color: C.orange, fontWeight: 600 }}>Log in</span>
+    <div style={{ height: "100%", background: C.white, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 28, textAlign: "center" }}>
+      <div style={{ animation: "clFadeUp .5s ease" }}>
+        <img src={LOGO_WHITE_SRC} alt="CoachLink" style={{ width: 96, height: "auto" }} />
+      </div>
+      <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, marginTop: 24, ...fDisplay }}>
+        Welcome to CoachLink
+      </div>
+      <div style={{ color: C.slate, fontSize: T.subtitle, marginTop: 10, lineHeight: 1.55, maxWidth: 280, ...fBody }}>
+        Find a coach you trust, or build your coaching business — all in one place.
+      </div>
+      <div style={{ marginTop: 36, width: "100%" }}>
+        <Btn full variant="primary" onClick={() => nav("role-select")}>Get Started</Btn>
+      </div>
+      <div style={{ marginTop: 16 }}>
+        <button onClick={() => nav("role-select")} style={{ background: "none", border: "none", color: C.slate, fontSize: T.bodyLg, cursor: "pointer", ...fBody }}>
+          Already have an account? <span style={{ color: C.orange, fontWeight: 600 }}>Sign In</span>
         </button>
       </div>
     </div>
   );
 }
 
+export function ScreenRoleSelect({ nav, setRole }) {
+  // Whichever role is picked here, the login screen comes next (see ScreenAuth) —
+  // new accounts are created from the "Create an account" link on that screen.
+  const Option = ({ role, title, body, icon: Icon }) => (
+    <button onClick={() => { setRole(role); nav("auth", { mode: "login" }); }}
+      style={{ width: "100%", textAlign: "left", background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 18, padding: 16, display: "flex", gap: 14, alignItems: "flex-start", cursor: "pointer", marginBottom: 12 }}>
+      <div style={{ width: 44, height: 44, borderRadius: 13, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <Icon size={20} color={C.orange} />
+      </div>
+      <div>
+        <div style={{ fontWeight: 600, color: C.jet, fontSize: T.subtitleLg, marginBottom: 3, ...fDisplay }}>{title}</div>
+        <div style={{ fontSize: T.labelLg, color: C.slate, lineHeight: 1.5, ...fBody }}>{body}</div>
+      </div>
+    </button>
+  );
+  return (
+    <div style={{ padding: "24px 20px", height: "100%", display: "flex", flexDirection: "column" }}>
+      <LogoMark size={34} />
+      <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, marginTop: 22, ...fDisplay }}>What brings you<br />to CoachLink?</div>
+      <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 6, marginBottom: 22, ...fBody }}>You can add a coaching profile later from the same account.</div>
+      <Option role="client" icon={Search} title="Find a coach" body="Search, book and pay for sessions with verified coaches near you." />
+      <Option role="coach" icon={Users} title="Coach others" body="List your services, manage bookings and get paid automatically." />
+    </div>
+  );
+}
+
 export function ScreenAuth({ nav, params, role, toast, biometric }) {
-  const [mode, setMode] = useState(params?.mode || "signup");
+  // Login is the default landing point after role selection — "Create an account"
+  // is what reveals the registration flow (a dedicated screen for coaches, since
+  // that signup needs extra fields; an inline form for clients).
+  const [mode, setMode] = useState(params?.mode || "login");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -144,12 +170,22 @@ export function ScreenAuth({ nav, params, role, toast, biometric }) {
     nav("enable-biometric", { next: role === "coach" ? "coach-info" : "about-you-profile" });
   };
 
+  const goCreateAccount = () => {
+    // Coaches have a dedicated multi-field registration screen; clients can
+    // register inline on this same screen.
+    if (role === "coach") { nav("coach-register"); return; }
+    setMode("signup");
+  };
+
   return (
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="" onBack={() => nav("role-select")} />
-      <div style={{ fontSize: 24, fontWeight: 600, color: C.jet, ...fDisplay }}>{mode === "signup" ? "Create your account" : "Welcome back"}</div>
-      <div style={{ fontSize: 13.5, color: C.slate, marginTop: 6, marginBottom: 20, ...fBody }}>
-        {role === "coach" ? "Signing up as a Coach." : "Signing up as a Client."} <button onClick={() => nav("role-select")} style={{ background: "none", border: "none", color: C.orange, fontWeight: 600, cursor: "pointer", fontSize: 13.5 }}>Change</button>
+      <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>{mode === "signup" ? "Create your account" : "Welcome back"}</div>
+      <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 6, marginBottom: 20, ...fBody }}>
+        {mode === "signup"
+          ? (role === "coach" ? "Signing up as a Coach." : "Signing up as a Client.")
+          : (role === "coach" ? "Signing in as a Coach." : "Signing in as a Client.")}{" "}
+        <button onClick={() => nav("role-select")} style={{ background: "none", border: "none", color: C.orange, fontWeight: 600, cursor: "pointer", fontSize: T.bodyLg}}>Change</button>
       </div>
 
        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -171,18 +207,26 @@ export function ScreenAuth({ nav, params, role, toast, biometric }) {
           <div>
             <Field label="Confirm password" placeholder="••••••••" type={showConfirmPw ? "text" : "password"} rightIcon={showConfirmPw ? EyeOff : Eye} onRight={() => setShowConfirmPw((s) => !s)} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
             {confirmPassword.length > 0 && !passwordsMatch && (
-              <div style={{ fontSize: 11.5, color: "#D64545", marginTop: 6, ...fBody }}>Passwords don't match</div>
+              <div style={{ fontSize: T.captionLg, color: C.danger, marginTop: 6, ...fBody }}>Passwords don't match</div>
             )}
           </div>
         )}
       </div>
+
+      {mode === "login" && (
+        <div style={{ textAlign: "right", marginTop: 10 }}>
+          <button onClick={() => nav("forgot-password", { role })} style={{ background: "none", border: "none", color: C.orange, fontWeight: 600, fontSize: T.labelLg, cursor: "pointer", ...fBody }}>
+            Forgot password?
+          </button>
+        </div>
+      )}
 
       {mode === "signup" && (
         <button onClick={() => setAgree((v) => !v)} style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "none", border: "none", cursor: "pointer", textAlign: "left", marginTop: 14, padding: "6px 0" }}>
           <div style={{ width: 19, height: 19, borderRadius: 6, border: `1.5px solid ${agree ? C.orange : C.border}`, background: agree ? C.orange : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
             {agree && <Check size={12} color={C.white} />}
           </div>
-          <span style={{ fontSize: 12.5, color: C.jet, lineHeight: 1.5, ...fBody }}>
+          <span style={{ fontSize: T.labelLg, color: C.jet, lineHeight: 1.5, ...fBody }}>
             I agree to the{" "}
             <span onClick={(e) => { e.stopPropagation(); setShowTerms(true); }} style={{ color: C.orange, fontWeight: 600, textDecoration: "underline" }}>Terms & Conditions</span>
           </span>
@@ -190,12 +234,12 @@ export function ScreenAuth({ nav, params, role, toast, biometric }) {
       )}
 
       <div style={{ marginTop: 18 }}>
-        <Btn full disabled={!canSubmit} onClick={proceedAfterAuth}>{mode === "signup" ? "Create account" : "Log in"}</Btn>
+        <Btn full disabled={!canSubmit} onClick={proceedAfterAuth}>{mode === "signup" ? "Create account" : "Sign in"}</Btn>
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "18px 0" }}>
         <div style={{ flex: 1, height: 1, background: C.border }} />
-        <span style={{ fontSize: 12, color: C.slateLight, ...fBody }}>or</span>
+        <span style={{ fontSize: T.label, color: C.slateLight, ...fBody }}>or</span>
         <div style={{ flex: 1, height: 1, background: C.border }} />
       </div>
 
@@ -214,13 +258,158 @@ export function ScreenAuth({ nav, params, role, toast, biometric }) {
       </div>
 
       <div style={{ marginTop: "auto", textAlign: "center", paddingBottom: 22 }}>
-        <button onClick={() => setMode(mode === "signup" ? "login" : "signup")} style={{ background: "none", border: "none", color: C.slate, fontSize: 13, cursor: "pointer", ...fBody }}>
+        <button onClick={mode === "signup" ? () => setMode("login") : goCreateAccount} style={{ background: "none", border: "none", color: C.slate, fontSize: T.body, cursor: "pointer", ...fBody }}>
           {mode === "signup" ? "Already have an account? " : "New to CoachLink? "}
-          <span style={{ color: C.orange, fontWeight: 600 }}>{mode === "signup" ? "Log in" : "Sign up"}</span>
+          <span style={{ color: C.orange, fontWeight: 600 }}>{mode === "signup" ? "Sign in" : "Create an account"}</span>
         </button>
       </div>
 
       <LegalSheet open={showTerms} onClose={() => setShowTerms(false)} />
+    </div>
+  );
+}
+
+/* =========================================================================
+   FORGOT PASSWORD — three-step reset flow shared by both roles: email →
+   6-digit code → new password. Prototype scope, so any well-formed input
+   is accepted and simply advances the flow (mirrors login/signup here).
+   ========================================================================= */
+export function ScreenForgotPassword({ nav, params, role, toast }) {
+  const effectiveRole = params?.role || role;
+  const [email, setEmail] = useState("");
+  const [sending, setSending] = useState(false);
+  const canSubmit = email.trim().length > 3 && email.includes("@");
+
+  const submit = () => {
+    if (!canSubmit || sending) return;
+    setSending(true);
+    setTimeout(() => {
+      setSending(false);
+      toast(`Reset code sent to ${email}`);
+      nav("reset-code", { email, role: effectiveRole });
+    }, 900);
+  };
+
+  return (
+    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
+      <TopBar title="" onBack={() => nav("auth", { mode: "login" })} />
+      <div style={{ width: 52, height: 52, borderRadius: 16, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
+        <Lock size={22} color={C.orange} />
+      </div>
+      <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Forgot your password?</div>
+      <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 6, marginBottom: 24, lineHeight: 1.55, ...fBody }}>
+        Enter the email on your {effectiveRole === "coach" ? "coach" : "client"} account and we'll send you a 6-digit code to reset it.
+      </div>
+      <Field label="Email address" placeholder="you@email.com" icon={Mail} value={email} onChange={(e) => setEmail(e.target.value)} />
+      <div style={{ marginTop: 22 }}>
+        <Btn full disabled={!canSubmit} loading={sending} loadingText="Sending…" onClick={submit}>Send reset code</Btn>
+      </div>
+      <div style={{ marginTop: "auto", textAlign: "center", paddingBottom: 22 }}>
+        <button onClick={() => nav("auth", { mode: "login" })} style={{ background: "none", border: "none", color: C.slate, fontSize: T.body, cursor: "pointer", ...fBody }}>
+          Remembered it? <span style={{ color: C.orange, fontWeight: 600 }}>Back to sign in</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function ScreenResetCode({ nav, params, toast }) {
+  const email = params?.email || "";
+  const role = params?.role;
+  const [digits, setDigits] = useState(["", "", "", "", "", ""]);
+  const inputsRef = React.useRef([]);
+  const code = digits.join("");
+  const canSubmit = code.length === 6;
+
+  const setDigit = (i, raw) => {
+    const v = raw.replace(/[^0-9]/g, "").slice(-1);
+    setDigits((d) => { const n = [...d]; n[i] = v; return n; });
+    if (v && i < 5) inputsRef.current[i + 1]?.focus();
+  };
+  const onKeyDown = (i, e) => {
+    if (e.key === "Backspace" && !digits[i] && i > 0) inputsRef.current[i - 1]?.focus();
+  };
+
+  return (
+    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
+      <TopBar title="" onBack={() => nav("forgot-password", { role })} />
+      <div style={{ width: 52, height: 52, borderRadius: 16, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
+        <Smartphone size={22} color={C.orange} />
+      </div>
+      <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Enter the code</div>
+      <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 6, marginBottom: 26, lineHeight: 1.55, ...fBody }}>
+        We sent a 6-digit code to <span style={{ color: C.jet, fontWeight: 600 }}>{email || "your email"}</span>.
+      </div>
+      <div style={{ display: "flex", gap: 8, justifyContent: "space-between" }}>
+        {digits.map((d, i) => (
+          <input
+            key={i}
+            ref={(el) => (inputsRef.current[i] = el)}
+            value={d}
+            onChange={(e) => setDigit(i, e.target.value)}
+            onKeyDown={(e) => onKeyDown(i, e)}
+            inputMode="numeric"
+            maxLength={1}
+            style={{
+              width: 44, height: 54, textAlign: "center", fontSize: T.headingLg, fontWeight: 700,
+              border: `1.5px solid ${d ? C.orange : C.border}`, borderRadius: 13, outline: "none",
+              color: C.jet, boxSizing: "border-box", ...fDisplay,
+            }}
+          />
+        ))}
+      </div>
+      <div style={{ marginTop: 24 }}>
+        <Btn full disabled={!canSubmit} onClick={() => nav("reset-password", { email, role })}>Verify code</Btn>
+      </div>
+      <div style={{ marginTop: 16, textAlign: "center" }}>
+        <button onClick={() => toast(`Code resent to ${email || "your email"}`)} style={{ background: "none", border: "none", color: C.slate, fontSize: T.body, cursor: "pointer", ...fBody }}>
+          Didn't get it? <span style={{ color: C.orange, fontWeight: 600 }}>Resend code</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function ScreenResetPassword({ nav, params, toast }) {
+  const role = params?.role;
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const match = password.length > 0 && password === confirm;
+  const canSubmit = password.length >= 6 && match;
+
+  const submit = () => {
+    if (!canSubmit) return;
+    toast("Password reset — sign in with your new password");
+    nav("auth", { mode: "login" });
+  };
+
+  return (
+    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
+      <TopBar title="" onBack={() => nav("reset-code", { role })} />
+      <div style={{ width: 52, height: 52, borderRadius: 16, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
+        <Check size={22} color={C.orange} />
+      </div>
+      <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Set a new password</div>
+      <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 6, marginBottom: 22, lineHeight: 1.55, ...fBody }}>
+        Choose a new password for your account.
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <Field label="New password" placeholder="••••••••" type={showPw ? "text" : "password"} rightIcon={showPw ? EyeOff : Eye} onRight={() => setShowPw((s) => !s)} value={password} onChange={(e) => setPassword(e.target.value)} />
+        <div>
+          <Field label="Confirm new password" placeholder="••••••••" type={showConfirm ? "text" : "password"} rightIcon={showConfirm ? EyeOff : Eye} onRight={() => setShowConfirm((s) => !s)} value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+          {confirm.length > 0 && !match && (
+            <div style={{ fontSize: T.captionLg, color: C.danger, marginTop: 6, ...fBody }}>Passwords don't match</div>
+          )}
+          {password.length > 0 && password.length < 6 && (
+            <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: 6, ...fBody }}>Use at least 6 characters</div>
+          )}
+        </div>
+      </div>
+      <div style={{ marginTop: 22 }}>
+        <Btn full disabled={!canSubmit} onClick={submit}>Reset password</Btn>
+      </div>
     </div>
   );
 }
@@ -252,8 +441,8 @@ export function ScreenCoachRegister({ nav, toast, updateCoachOnboarding }) {
       <div style={{ flex: 1, overflowY: "auto", paddingBottom: 24 }}>
         <StepProgress step={1} total={4} label="Account" />
 
-        <div style={{ fontSize: 23, fontWeight: 600, color: C.jet, ...fDisplay }}>Create your coach account</div>
-        <div style={{ fontSize: 13.5, color: C.slate, marginTop: 8, marginBottom: 20, lineHeight: 1.55, ...fBody }}>
+        <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Create your coach account</div>
+        <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 8, marginBottom: 20, lineHeight: 1.55, ...fBody }}>
           Join thousands of coaches growing their business through secure bookings, payments and client management.
         </div>
 
@@ -273,7 +462,7 @@ export function ScreenCoachRegister({ nav, toast, updateCoachOnboarding }) {
             <div style={labelStyle}>Email address</div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
               <Mail size={15} color={C.slateLight} />
-              <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="you@email.com" style={{ border: "none", outline: "none", flex: 1, fontSize: 13.5, minWidth: 0, ...fBody }} />
+              <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="you@email.com" style={{ border: "none", outline: "none", flex: 1, fontSize: T.bodyLg, minWidth: 0, ...fBody }} />
             </div>
           </div>
 
@@ -281,14 +470,14 @@ export function ScreenCoachRegister({ nav, toast, updateCoachOnboarding }) {
             <div style={labelStyle}>Mobile number</div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
               <Smartphone size={15} color={C.slateLight} />
-              <input value={mobile} onChange={(e) => setMobile(e.target.value.replace(/[^0-9+\s]/g, ""))} placeholder="04XX XXX XXX" inputMode="tel" style={{ border: "none", outline: "none", flex: 1, fontSize: 13.5, minWidth: 0, ...fBody }} />
+              <input value={mobile} onChange={(e) => setMobile(e.target.value.replace(/[^0-9+\s]/g, ""))} placeholder="04XX XXX XXX" inputMode="tel" style={{ border: "none", outline: "none", flex: 1, fontSize: T.bodyLg, minWidth: 0, ...fBody }} />
             </div>
           </div>
 
           <div>
             <div style={labelStyle}>Password</div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
-              <input value={password} onChange={(e) => setPassword(e.target.value)} type={showPw ? "text" : "password"} placeholder="At least 6 characters" style={{ border: "none", outline: "none", flex: 1, fontSize: 13.5, minWidth: 0, ...fBody }} />
+              <input value={password} onChange={(e) => setPassword(e.target.value)} type={showPw ? "text" : "password"} placeholder="At least 6 characters" style={{ border: "none", outline: "none", flex: 1, fontSize: T.bodyLg, minWidth: 0, ...fBody }} />
               <button onClick={() => setShowPw((s) => !s)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}>
                 {showPw ? <EyeOff size={15} color={C.slateLight} /> : <Eye size={15} color={C.slateLight} />}
               </button>
@@ -297,14 +486,14 @@ export function ScreenCoachRegister({ nav, toast, updateCoachOnboarding }) {
 
           <div>
             <div style={labelStyle}>Confirm password</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${confirmPassword && !passwordsMatch ? "#E8A5A5" : C.border}`, borderRadius: 13, padding: "11px 13px" }}>
-              <input value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} type={showConfirmPw ? "text" : "password"} placeholder="Re-enter your password" style={{ border: "none", outline: "none", flex: 1, fontSize: 13.5, minWidth: 0, ...fBody }} />
+            <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${confirmPassword && !passwordsMatch ? C.dangerBorderSoft : C.border}`, borderRadius: 13, padding: "11px 13px" }}>
+              <input value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} type={showConfirmPw ? "text" : "password"} placeholder="Re-enter your password" style={{ border: "none", outline: "none", flex: 1, fontSize: T.bodyLg, minWidth: 0, ...fBody }} />
               <button onClick={() => setShowConfirmPw((s) => !s)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}>
                 {showConfirmPw ? <EyeOff size={15} color={C.slateLight} /> : <Eye size={15} color={C.slateLight} />}
               </button>
             </div>
             {confirmPassword && !passwordsMatch && (
-              <div style={{ fontSize: 11, color: "#D64545", marginTop: 5, ...fBody }}>Passwords don't match.</div>
+              <div style={{ fontSize: T.caption, color: C.danger, marginTop: 5, ...fBody }}>Passwords don't match.</div>
             )}
           </div>
         </div>
@@ -314,7 +503,7 @@ export function ScreenCoachRegister({ nav, toast, updateCoachOnboarding }) {
             <div style={{ width: 19, height: 19, borderRadius: 6, border: `1.5px solid ${agreeTerms ? C.orange : C.border}`, background: agreeTerms ? C.orange : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
               {agreeTerms && <Check size={12} color={C.white} />}
             </div>
-            <span style={{ fontSize: 12.5, color: C.jet, ...fBody }}>
+            <span style={{ fontSize: T.labelLg, color: C.jet, ...fBody }}>
               I agree to the{" "}
               <span onClick={(e) => { e.stopPropagation(); setShowTerms(true); }} style={{ color: C.orange, fontWeight: 600, textDecoration: "underline" }}>Terms & Conditions</span>
             </span>
@@ -327,7 +516,7 @@ export function ScreenCoachRegister({ nav, toast, updateCoachOnboarding }) {
 
         <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "16px 0" }}>
           <div style={{ flex: 1, height: 1, background: C.border }} />
-          <span style={{ fontSize: 12, color: C.slateLight, ...fBody }}>or</span>
+          <span style={{ fontSize: T.label, color: C.slateLight, ...fBody }}>or</span>
           <div style={{ flex: 1, height: 1, background: C.border }} />
         </div>
 
@@ -341,7 +530,7 @@ export function ScreenCoachRegister({ nav, toast, updateCoachOnboarding }) {
         </div>
 
         <div style={{ textAlign: "center", marginTop: 20, paddingBottom: 8 }}>
-          <button onClick={() => nav("auth", { mode: "login" })} style={{ background: "none", border: "none", color: C.slate, fontSize: 13, cursor: "pointer", ...fBody }}>
+          <button onClick={() => nav("auth", { mode: "login" })} style={{ background: "none", border: "none", color: C.slate, fontSize: T.body, cursor: "pointer", ...fBody }}>
             Already have an account? <span style={{ color: C.orange, fontWeight: 600 }}>Login</span>
           </button>
         </div>
@@ -368,8 +557,8 @@ export function ScreenEnableBiometric({ nav, params, toast, biometric, setBiomet
         <div style={{ width: 84, height: 84, borderRadius: 24, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 22 }}>
           <ScanFace size={38} color={C.orange} />
         </div>
-        <div style={{ fontSize: 22, fontWeight: 600, color: C.jet, ...fDisplay }}>Set up Face ID</div>
-        <div style={{ fontSize: 13.5, color: C.slate, marginTop: 10, lineHeight: 1.6, maxWidth: 280, ...fBody }}>
+        <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, ...fDisplay }}>Set up Face ID</div>
+        <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 10, lineHeight: 1.6, maxWidth: 280, ...fBody }}>
           Your account is ready. Turn on Face ID to sign in instantly next time — no password needed.
         </div>
       </div>
@@ -427,8 +616,8 @@ export function ScreenCoachInfo({ nav, toast, coachOnboarding, updateCoachOnboar
       <div style={{ flex: 1, overflowY: "auto", paddingBottom: 24 }}>
         <StepProgress step={2} total={4} label="Coach info" />
 
-        <div style={{ fontSize: 23, fontWeight: 600, color: C.jet, ...fDisplay }}>Coach information</div>
-        <div style={{ fontSize: 13.5, color: C.slate, marginTop: 8, marginBottom: 20, lineHeight: 1.55, ...fBody }}>
+        <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Coach information</div>
+        <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 8, marginBottom: 20, lineHeight: 1.55, ...fBody }}>
           This is what clients see first — your photo, name and story help them decide if you're the right coach for them.
         </div>
 
@@ -444,7 +633,7 @@ export function ScreenCoachInfo({ nav, toast, coachOnboarding, updateCoachOnboar
             </button>
           </div>
           <input ref={photoInputRef} type="file" accept="image/*" onChange={onPhotoChange} style={{ display: "none" }} />
-          <div style={{ fontSize: 11.5, color: C.slateLight, marginTop: 8, ...fBody }}>Tap to upload a profile photo</div>
+          <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: 8, ...fBody }}>Tap to upload a profile photo</div>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -479,10 +668,10 @@ export function ScreenCoachInfo({ nav, toast, coachOnboarding, updateCoachOnboar
               <div style={{ border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", display: "flex", alignItems: "center", gap: 10 }}>
                 <MapPin size={16} color={C.orange} style={{ flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: C.jet, ...fBody }}>{location.suburb}, {location.state}</div>
-                  <div style={{ fontSize: 11.5, color: C.slate, ...fBody }}>Postcode {location.postcode}</div>
+                  <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{location.suburb}, {location.state}</div>
+                  <div style={{ fontSize: T.captionLg, color: C.slate, ...fBody }}>Postcode {location.postcode}</div>
                 </div>
-                <button onClick={() => setLocation(null)} style={{ background: "none", border: "none", color: C.orange, fontSize: 12, fontWeight: 600, cursor: "pointer", ...fBody }}>Change</button>
+                <button onClick={() => setLocation(null)} style={{ background: "none", border: "none", color: C.orange, fontSize: T.label, fontWeight: 600, cursor: "pointer", ...fBody }}>Change</button>
               </div>
             ) : (
               <>
@@ -495,7 +684,7 @@ export function ScreenCoachInfo({ nav, toast, coachOnboarding, updateCoachOnboar
                       onFocus={() => setLocationOpen(true)}
                       onBlur={() => setTimeout(() => setLocationOpen(false), 150)}
                       placeholder="Search suburb, city or postcode…"
-                      style={{ border: "none", outline: "none", flex: 1, fontSize: 13.5, minWidth: 0, ...fBody }}
+                      style={{ border: "none", outline: "none", flex: 1, fontSize: T.bodyLg, minWidth: 0, ...fBody }}
                     />
                   </div>
                   {locationOpen && filteredSuburbs.length > 0 && (
@@ -505,7 +694,7 @@ export function ScreenCoachInfo({ nav, toast, coachOnboarding, updateCoachOnboar
                           key={`${s.suburb}-${s.postcode}`}
                           onMouseDown={(e) => e.preventDefault()}
                           onClick={() => pickLocation(s)}
-                          style={{ display: "flex", justifyContent: "space-between", width: "100%", textAlign: "left", padding: "10px 13px", background: "none", border: "none", cursor: "pointer", fontSize: 13, color: C.jet, ...fBody }}
+                          style={{ display: "flex", justifyContent: "space-between", width: "100%", textAlign: "left", padding: "10px 13px", background: "none", border: "none", cursor: "pointer", fontSize: T.body, color: C.jet, ...fBody }}
                         >
                           <span>{s.suburb}, {s.state}</span>
                           <span style={{ color: C.slateLight }}>{s.postcode}</span>
@@ -514,7 +703,7 @@ export function ScreenCoachInfo({ nav, toast, coachOnboarding, updateCoachOnboar
                     </div>
                   )}
                 </div>
-                <button onClick={useCurrentLocation} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: C.orange, fontSize: 12.5, fontWeight: 600, marginTop: 8, padding: 0, ...fBody }}>
+                <button onClick={useCurrentLocation} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: C.orange, fontSize: T.labelLg, fontWeight: 600, marginTop: 8, padding: 0, ...fBody }}>
                   <LocateFixed size={14} /> Use current location
                 </button>
               </>
@@ -558,53 +747,53 @@ export function ScreenCoachExpertise({ nav, coachOnboarding, updateCoachOnboardi
       <div style={{ flex: 1, overflowY: "auto", paddingBottom: 24 }}>
         <StepProgress step={3} total={4} label="Expertise" />
 
-        <div style={{ fontSize: 23, fontWeight: 600, color: C.jet, ...fDisplay }}>Coaching expertise</div>
-        <div style={{ fontSize: 13.5, color: C.slate, marginTop: 8, marginBottom: 20, lineHeight: 1.55, ...fBody }}>
+        <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Coaching expertise</div>
+        <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 8, marginBottom: 20, lineHeight: 1.55, ...fBody }}>
           Help clients find you by sharing the sports, formats and skill levels you coach.
         </div>
 
-        <div style={{ marginBottom: 4, fontSize: 16, fontWeight: 700, color: C.jet, ...fDisplay }}>Primary sport</div>
-        <div style={{ fontSize: 11.5, color: C.slate, marginBottom: 8, ...fBody }}>Select the main sport or discipline you specialise in.</div>
+        <div style={{ marginBottom: 4, fontSize: T.title, fontWeight: 700, color: C.jet, ...fDisplay }}>Primary sport</div>
+        <div style={{ fontSize: T.captionLg, color: C.slate, marginBottom: 8, ...fBody }}>Select the main sport or discipline you specialise in.</div>
         <SearchMultiSelect options={SPORT_OPTIONS_FULL} value={primarySports} onChange={setPrimarySports} placeholder="Search sports…" />
 
-        <div style={{ marginTop: 20, marginBottom: 4, fontSize: 16, fontWeight: 700, color: C.jet, ...fDisplay }}>Secondary sports (optional)</div>
-        <div style={{ fontSize: 11.5, color: C.slate, marginBottom: 8, ...fBody }}>Add any additional sports or disciplines you coach.</div>
+        <div style={{ marginTop: 20, marginBottom: 4, fontSize: T.title, fontWeight: 700, color: C.jet, ...fDisplay }}>Secondary sports (optional)</div>
+        <div style={{ fontSize: T.captionLg, color: C.slate, marginBottom: 8, ...fBody }}>Add any additional sports or disciplines you coach.</div>
         <SearchMultiSelect options={SPORT_OPTIONS_FULL.filter((s) => !primarySports.includes(s))} value={secondarySports} onChange={setSecondarySports} placeholder="Search sports…" />
 
-        <div style={{ marginTop: 22, marginBottom: 2, fontSize: 16, fontWeight: 700, color: C.jet, ...fDisplay }}>Coaching categories</div>
-        <div style={{ fontSize: 11.5, color: C.slate, marginBottom: 4, ...fBody }}>Select all coaching services you provide.</div>
+        <div style={{ marginTop: 22, marginBottom: 2, fontSize: T.title, fontWeight: 700, color: C.jet, ...fDisplay }}>Coaching categories</div>
+        <div style={{ fontSize: T.captionLg, color: C.slate, marginBottom: 4, ...fBody }}>Select all coaching services you provide.</div>
         <div>
           {COACHING_CATEGORY_OPTIONS.map((c) => (
             <CheckboxRow key={c} label={c} checked={categories.includes(c)} onClick={() => toggleIn(setCategories, categories, c)} />
           ))}
         </div>
 
-        <div style={{ marginTop: 18, marginBottom: 2, fontSize: 15, fontWeight: 700, color: C.jet, ...fDisplay }}>Athlete skill levels</div>
-        <div style={{ fontSize: 11.5, color: C.slate, marginBottom: 4, ...fBody }}>Select the experience levels you coach.</div>
+        <div style={{ marginTop: 18, marginBottom: 2, fontSize: T.subtitleLg, fontWeight: 700, color: C.jet, ...fDisplay }}>Athlete skill levels</div>
+        <div style={{ fontSize: T.captionLg, color: C.slate, marginBottom: 4, ...fBody }}>Select the experience levels you coach.</div>
         <div>
           {SKILL_LEVEL_OPTIONS.map((s) => (
             <CheckboxRow key={s} label={s} checked={skillLevels.includes(s)} onClick={() => toggleIn(setSkillLevels, skillLevels, s)} />
           ))}
         </div>
 
-        <div style={{ marginTop: 18, marginBottom: 2, fontSize: 15, fontWeight: 700, color: C.jet, ...fDisplay }}>Age groups</div>
-        <div style={{ fontSize: 11.5, color: C.slate, marginBottom: 4, ...fBody }}>Select the age groups you work with.</div>
+        <div style={{ marginTop: 18, marginBottom: 2, fontSize: T.subtitleLg, fontWeight: 700, color: C.jet, ...fDisplay }}>Age groups</div>
+        <div style={{ fontSize: T.captionLg, color: C.slate, marginBottom: 4, ...fBody }}>Select the age groups you work with.</div>
         <div>
           {AGE_GROUP_OPTIONS.map((a) => (
             <CheckboxRow key={a} label={a} checked={ageGroups.includes(a)} onClick={() => toggleIn(setAgeGroups, ageGroups, a)} />
           ))}
         </div>
 
-        <div style={{ marginTop: 18, marginBottom: 2, fontSize: 12.5, fontWeight: 700, color: C.jet, ...fDisplay }}>Coaching experience</div>
-        <div style={{ fontSize: 11.5, color: C.slate, marginBottom: 4, ...fBody }}>Specify your level of coaching experience.</div>
+        <div style={{ marginTop: 18, marginBottom: 2, fontSize: T.labelLg, fontWeight: 700, color: C.jet, ...fDisplay }}>Coaching experience</div>
+        <div style={{ fontSize: T.captionLg, color: C.slate, marginBottom: 4, ...fBody }}>Specify your level of coaching experience.</div>
         <div>
           {COACHING_EXPERIENCE_LEVELS.map((l) => (
             <RadioRow key={l} label={l} selected={experienceLevel === l} onClick={() => setExperienceLevel(l)} />
           ))}
         </div>
 
-        <div style={{ marginTop: 18, marginBottom: 2, fontSize: 12.5, fontWeight: 700, color: C.jet, ...fDisplay }}>Preferred coaching format</div>
-        <div style={{ fontSize: 11.5, color: C.slate, marginBottom: 4, ...fBody }}>Select how you deliver coaching sessions.</div>
+        <div style={{ marginTop: 18, marginBottom: 2, fontSize: T.labelLg, fontWeight: 700, color: C.jet, ...fDisplay }}>Preferred coaching format</div>
+        <div style={{ fontSize: T.captionLg, color: C.slate, marginBottom: 4, ...fBody }}>Select how you deliver coaching sessions.</div>
         <div style={{ marginBottom: 8 }}>
           {COACHING_FORMAT_OPTIONS.map((f) => (
             <CheckboxRow key={f} label={f} checked={formats.includes(f)} onClick={() => toggleIn(setFormats, formats, f)} />
@@ -648,12 +837,12 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
       <div style={{ flex: 1, overflowY: "auto", paddingBottom: 24 }}>
         <StepProgress step={4} total={4} label="Verification" />
 
-        <div style={{ fontSize: 23, fontWeight: 600, color: C.jet, ...fDisplay }}>Get verified</div>
-        <div style={{ fontSize: 13.5, color: C.slate, marginTop: 8, marginBottom: 18, lineHeight: 1.55, ...fBody }}>
+        <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Get verified</div>
+        <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 8, marginBottom: 18, lineHeight: 1.55, ...fBody }}>
           Verification builds trust with clients and unlocks bookings. Most reviews complete within 2 business days.
         </div>
 
-        <div style={{ fontSize: 12.5, fontWeight: 700, color: C.jet, marginBottom: 8, ...fDisplay }}>Government-issued photo ID</div>
+        <div style={{ fontSize: T.labelLg, fontWeight: 700, color: C.jet, marginBottom: 8, ...fDisplay }}>Government-issued photo ID</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
           {ID_TYPE_OPTIONS.map((t) => (
             <Chip key={t} active={idType === t} onClick={() => { setIdType(t); setIdUploaded(false); }}>{t}</Chip>
@@ -666,8 +855,8 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
                 <CreditCard size={16} color={C.orange} />
               </div>
               <div>
-                <div style={{ fontWeight: 600, fontSize: 13.5, color: C.jet, ...fBody }}>{idType || "Select an ID type above"}</div>
-                <div style={{ fontSize: 11.5, color: C.slate, marginTop: 1, ...fBody }}>Front & back, clear and unedited</div>
+                <div style={{ fontWeight: 600, fontSize: T.bodyLg, color: C.jet, ...fBody }}>{idType || "Select an ID type above"}</div>
+                <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 1, ...fBody }}>Front & back, clear and unedited</div>
               </div>
             </div>
             {idUploaded ? <Badge tone="success" icon={CheckCircle2}>Uploaded</Badge> :
@@ -675,7 +864,7 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
           </div>
         </Card>
 
-        <div style={{ fontSize: 12.5, fontWeight: 700, color: C.jet, marginBottom: 8, ...fDisplay }}>Selfie verification</div>
+        <div style={{ fontSize: T.labelLg, fontWeight: 700, color: C.jet, marginBottom: 8, ...fDisplay }}>Selfie verification</div>
         <Card style={{ marginBottom: 18 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div style={{ display: "flex", gap: 10, alignItems: "center", minWidth: 0 }}>
@@ -683,8 +872,8 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
                 <ScanFace size={16} color={C.orange} />
               </div>
               <div>
-                <div style={{ fontWeight: 600, fontSize: 13.5, color: C.jet, ...fBody }}>Take or upload a selfie</div>
-                <div style={{ fontSize: 11.5, color: C.slate, marginTop: 1, ...fBody }}>We'll match it against your ID</div>
+                <div style={{ fontWeight: 600, fontSize: T.bodyLg, color: C.jet, ...fBody }}>Take or upload a selfie</div>
+                <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 1, ...fBody }}>We'll match it against your ID</div>
               </div>
             </div>
             {selfieUploaded ? <Badge tone="success" icon={CheckCircle2}>Uploaded</Badge> :
@@ -692,11 +881,11 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
           </div>
         </Card>
 
-        <div style={{ fontSize: 12.5, fontWeight: 700, color: C.jet, marginBottom: 4, ...fDisplay }}>Working with Children Check (WWCC)</div>
-        <div style={{ fontSize: 11.5, color: C.slate, marginBottom: 8, ...fBody }}>Required if you coach athletes under 18.</div>
+        <div style={{ fontSize: T.labelLg, fontWeight: 700, color: C.jet, marginBottom: 4, ...fDisplay }}>Working with Children Check (WWCC)</div>
+        <div style={{ fontSize: T.captionLg, color: C.slate, marginBottom: 8, ...fBody }}>Required if you coach athletes under 18.</div>
         <Card style={{ marginBottom: worksWithMinors ? 12 : 18 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fBody }}>Do you coach athletes under 18 years of age?</div>
+            <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>Do you coach athletes under 18 years of age?</div>
             <Toggle on={worksWithMinors} onClick={() => setWorksWithMinors((v) => !v)} />
           </div>
         </Card>
@@ -712,7 +901,7 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
               <input type="date" value={wwccExpiry} onChange={(e) => setWwccExpiry(e.target.value)} style={inputStyle} />
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div style={{ fontSize: 12.5, color: C.slate, ...fBody }}>WWCC certificate</div>
+              <div style={{ fontSize: T.labelLg, color: C.slate, ...fBody }}>WWCC certificate</div>
               {wwccUploaded ? <Badge tone="success" icon={CheckCircle2}>Uploaded</Badge> :
                 <Btn size="sm" variant="secondary" icon={Upload} onClick={() => setWwccUploaded(true)}>Upload</Btn>}
             </div>
@@ -720,16 +909,16 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
         )}
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
-          <div style={{ fontSize: 12.5, fontWeight: 700, color: C.jet, ...fDisplay }}>Coaching qualifications</div>
+          <div style={{ fontSize: T.labelLg, fontWeight: 700, color: C.jet, ...fDisplay }}>Coaching qualifications</div>
         </div>
-        <div style={{ fontSize: 11.5, color: C.slate, marginBottom: 10, ...fBody }}>Add your coaching accreditations, First Aid, CPR or sports-specific certifications.</div>
+        <div style={{ fontSize: T.captionLg, color: C.slate, marginBottom: 10, ...fBody }}>Add your coaching accreditations, First Aid, CPR or sports-specific certifications.</div>
 
         {qualifications.map((q, i) => (
           <Card key={q.id} style={{ marginBottom: 10 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-              <div style={{ fontSize: 12.5, fontWeight: 700, color: C.slate, ...fBody }}>Qualification {i + 1}</div>
+              <div style={{ fontSize: T.labelLg, fontWeight: 700, color: C.slate, ...fBody }}>Qualification {i + 1}</div>
               {qualifications.length > 1 && (
-                <button onClick={() => removeQualification(q.id)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, color: C.slateLight, fontSize: 11.5, ...fBody }}>
+                <button onClick={() => removeQualification(q.id)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, color: C.slateLight, fontSize: T.captionLg, ...fBody }}>
                   <Trash2 size={13} /> Remove
                 </button>
               )}
@@ -747,7 +936,7 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
               <input value={q.name} onChange={(e) => updateQual(q.id, { name: e.target.value })} placeholder="e.g. Tennis Australia Club Professional" style={inputStyle} />
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div style={{ fontSize: 11, color: C.slateLight, ...fBody }}>PDF, JPG or PNG · Max 10MB</div>
+              <div style={{ fontSize: T.caption, color: C.slateLight, ...fBody }}>PDF, JPG or PNG · Max 10MB</div>
               {q.uploaded ? (
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <Badge tone="success" icon={FileCheck2}>Uploaded</Badge>
@@ -776,7 +965,7 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
             Submit for review
           </Btn>
           {!allDone && (
-            <div style={{ fontSize: 11, color: C.slateLight, textAlign: "center", marginTop: 8, ...fBody }}>
+            <div style={{ fontSize: T.caption, color: C.slateLight, textAlign: "center", marginTop: 8, ...fBody }}>
               Complete your ID, selfie{worksWithMinors ? ", WWCC" : ""} and qualification details to submit.
             </div>
           )}
@@ -802,10 +991,10 @@ export function ScreenVerificationPending({ nav, verificationStatus, setReachedD
         }}>
           {approved ? <CheckCircle2 size={28} color={C.success} /> : <ClipboardList size={28} color={C.orange} />}
         </div>
-        <div style={{ fontSize: 20, fontWeight: 600, color: C.jet, ...fDisplay }}>
+        <div style={{ fontSize: T.headingLg, fontWeight: 600, color: C.jet, ...fDisplay }}>
           {approved ? "Your application has been successfully verified" : "Verification submitted"}
         </div>
-        <div style={{ fontSize: 13.5, color: C.slate, marginTop: 8, lineHeight: 1.6, maxWidth: 300, marginLeft: "auto", marginRight: "auto", ...fBody }}>
+        <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 8, lineHeight: 1.6, maxWidth: 300, marginLeft: "auto", marginRight: "auto", ...fBody }}>
           {approved
             ? "An admin has reviewed and approved your documents. You now have full access to the Coach dashboard and can start accepting bookings."
             : "Your documents have been submitted successfully and are now awaiting review by a CoachLink administrator. This usually takes up to 2 business days — we'll notify you as soon as a decision is made."}
@@ -825,7 +1014,7 @@ export function ScreenVerificationPending({ nav, verificationStatus, setReachedD
       <div style={{ marginTop: "auto", padding: "14px 0", display: "flex", flexDirection: "column", gap: 10 }}>
         <Btn full disabled={!approved} onClick={goToSetup}>Proceed to setup</Btn>
         {!approved && (
-          <div style={{ fontSize: 11.5, color: C.slateLight, textAlign: "center", lineHeight: 1.5, ...fBody }}>
+          <div style={{ fontSize: T.captionLg, color: C.slateLight, textAlign: "center", lineHeight: 1.5, ...fBody }}>
             This unlocks once an admin approves your application.
           </div>
         )}
@@ -842,14 +1031,14 @@ export function ScreenAdminLogin({ nav, toast }) {
       <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
         <div style={{ textAlign: "center", marginBottom: 30 }}>
           <img src={LOGO_WHITE_SRC} alt="CoachLink" style={{ width: 120, height: "auto", marginBottom: 20 }} />
-          <div style={{ fontSize: 13, color: "#9CA0AC", marginTop: 4, ...fBody }}>Sign in with your CoachLink admin credentials</div>
+          <div style={{ fontSize: T.body, color: C.onDarkMuted, marginTop: 4, ...fBody }}>Sign in with your CoachLink admin credentials</div>
         </div>
 
 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
   <div>
     <div
       style={{
-        fontSize: 12,
+        fontSize: T.label,
         fontWeight: 600,
         color: C.jet,
         marginBottom: 6,
@@ -879,7 +1068,7 @@ export function ScreenAdminLogin({ nav, toast }) {
           border: "none",
           outline: "none",
           flex: 1,
-          fontSize: 14,
+          fontSize: T.subtitle,
           background: "transparent",
           color: C.jet,
           ...fBody,
@@ -891,7 +1080,7 @@ export function ScreenAdminLogin({ nav, toast }) {
   <div>
     <div
       style={{
-        fontSize: 12,
+        fontSize: T.label,
         fontWeight: 600,
         color: C.jet,
         marginBottom: 6,
@@ -921,7 +1110,7 @@ export function ScreenAdminLogin({ nav, toast }) {
           border: "none",
           outline: "none",
           flex: 1,
-          fontSize: 14,
+          fontSize: T.subtitle,
           background: "transparent",
           color: C.jet,
           ...fBody,
@@ -953,7 +1142,7 @@ export function ScreenAdminLogin({ nav, toast }) {
         background: "none",
         border: "none",
         color: C.orange,
-        fontSize: 12.5,
+        fontSize: T.labelLg,
         fontWeight: 600,
         cursor: "pointer",
         ...fBody,
@@ -969,9 +1158,9 @@ export function ScreenAdminLogin({ nav, toast }) {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "18px 0" }}>
-          <div style={{ flex: 1, height: 1, background: "#2B2E38" }} />
-          <span style={{ fontSize: 11.5, color: "#6F7280", ...fBody }}>or</span>
-          <div style={{ flex: 1, height: 1, background: "#2B2E38" }} />
+          <div style={{ flex: 1, height: 1, background: C.onDarkDivider }} />
+          <span style={{ fontSize: T.captionLg, color: C.onDarkFaint, ...fBody }}>or</span>
+          <div style={{ flex: 1, height: 1, background: C.onDarkDivider }} />
         </div>
 
         <Btn full variant="secondary" icon={Fingerprint} onClick={() => { toast("Face ID recognised — welcome back"); nav("admin-home"); }}>
@@ -979,7 +1168,7 @@ export function ScreenAdminLogin({ nav, toast }) {
         </Btn>
       </div>
 
-      <div style={{ textAlign: "center", fontSize: 11.5, color: "#6F7280", lineHeight: 1.6, ...fBody }}>
+      <div style={{ textAlign: "center", fontSize: T.captionLg, color: C.onDarkFaint, lineHeight: 1.6, ...fBody }}>
         Admin access is restricted to authorised CoachLink staff and is logged for audit purposes.
       </div>
     </div>

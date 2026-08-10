@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   ChevronLeft, Star, CheckCircle2, Search,
 } from "lucide-react";
-import { C, fDisplay, fBody } from "../../theme/theme";
+import { C, fDisplay, fBody, T } from "../../theme/theme";
 import { initials, hashColor } from "../../data/mockData";
 
 /* =========================================================================
@@ -31,7 +31,7 @@ export function Btn({ children, onClick, variant = "primary", full, icon: Icon, 
     border: "1px solid transparent", transition: "opacity .15s ease",
     opacity: disabled ? 0.5 : 1, width: full ? "100%" : "auto",
     padding: size === "sm" ? "9px 14px" : "13px 18px",
-    fontSize: size === "sm" ? 13 : 15, ...fBody,
+    fontSize: size === "sm" ? T.body : T.subtitleLg, ...fBody,
   };
   const variants = {
     primary: { background: C.orange, color: C.white },
@@ -39,7 +39,7 @@ export function Btn({ children, onClick, variant = "primary", full, icon: Icon, 
     secondary: { background: C.fog, color: C.jet },
     outline: { background: "transparent", color: C.jet, border: `1px solid ${C.border}` },
     ghost: { background: "transparent", color: C.slate },
-    danger: { background: "transparent", color: "#D64545", border: "1px solid #F3D2D2" },
+    danger: { background: "transparent", color: C.danger, border: `1px solid ${C.dangerBorder}` },
   };
   return (
     <button type={type} disabled={disabled || loading} aria-busy={loading || undefined} onClick={(disabled || loading) ? undefined : onClick} style={{ ...base, ...variants[variant] }}>
@@ -110,7 +110,7 @@ export function Chip({ children, active, onClick, icon: Icon }) {
       onClick={onClick}
       style={{
         display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 13px", borderRadius: 999,
-        fontSize: 13, fontWeight: 500, whiteSpace: "nowrap", border: `1px solid ${active ? C.orange : C.border}`,
+        fontSize: T.body, fontWeight: 500, whiteSpace: "nowrap", border: `1px solid ${active ? C.orange : C.border}`,
         background: active ? C.orangeTint : C.white, color: active ? C.orange : C.jet, ...fBody,
       }}
     >
@@ -136,7 +136,7 @@ export function Badge({ tone = "neutral", children, icon: Icon, style }) {
         gap: 4,
         background: t.bg,
         color: t.fg,
-        fontSize: 11.5,
+        fontSize: T.captionLg,
         fontWeight: 600,
         padding: "4px 8px",
         borderRadius: 8,
@@ -158,7 +158,7 @@ export function StepProgress({ step, total, label }) {
           <div key={i} style={{ flex: 1, height: 4, borderRadius: 99, background: i < step ? C.orange : C.border }} />
         ))}
       </div>
-      <div style={{ fontSize: 11.5, fontWeight: 600, color: C.slateLight, ...fBody }}>
+      <div style={{ fontSize: T.captionLg, fontWeight: 600, color: C.slateLight, ...fBody }}>
         Step {step} of {total}{label ? ` — ${label}` : ""}
       </div>
     </div>
@@ -181,7 +181,7 @@ export function CheckboxRow({ label, checked, onClick }) {
       }}>
         {checked && <CheckCircle2Fill />}
       </div>
-      <span style={{ fontSize: 13.5, color: C.jet, ...fBody }}>{label}</span>
+      <span style={{ fontSize: T.bodyLg, color: C.jet, ...fBody }}>{label}</span>
     </button>
   );
 }
@@ -210,7 +210,7 @@ export function RadioRow({ label, selected, onClick }) {
       }}>
         {selected && <div style={{ width: 10, height: 10, borderRadius: 99, background: C.orange }} />}
       </div>
-      <span style={{ fontSize: 13.5, color: C.jet, ...fBody }}>{label}</span>
+      <span style={{ fontSize: T.bodyLg, color: C.jet, ...fBody }}>{label}</span>
     </button>
   );
 }
@@ -234,7 +234,7 @@ export function SearchMultiSelect({ options, value, onChange, placeholder = "Sea
           {value.map((v) => (
             <span key={v} style={{
               display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 999,
-              fontSize: 12.5, fontWeight: 500, border: `1px solid ${C.orange}`, background: C.orangeTint, color: C.orange, ...fBody,
+              fontSize: T.labelLg, fontWeight: 500, border: `1px solid ${C.orange}`, background: C.orangeTint, color: C.orange, ...fBody,
             }}>
               {v}
               <button onClick={() => remove(v)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 0, color: C.orange }}>
@@ -253,7 +253,7 @@ export function SearchMultiSelect({ options, value, onChange, placeholder = "Sea
             onFocus={() => setOpen(true)}
             onBlur={() => setTimeout(() => setOpen(false), 150)}
             placeholder={placeholder}
-            style={{ border: "none", outline: "none", flex: 1, fontSize: 13.5, minWidth: 0, ...fBody }}
+            style={{ border: "none", outline: "none", flex: 1, fontSize: T.bodyLg, minWidth: 0, ...fBody }}
           />
         </div>
         {open && filtered.length > 0 && (
@@ -263,7 +263,7 @@ export function SearchMultiSelect({ options, value, onChange, placeholder = "Sea
                 key={o}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => add(o)}
-                style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 13px", background: "none", border: "none", cursor: "pointer", fontSize: 13, color: C.jet, ...fBody }}
+                style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 13px", background: "none", border: "none", cursor: "pointer", fontSize: T.body, color: C.jet, ...fBody }}
               >
                 {o}
               </button>
@@ -297,7 +297,7 @@ export function SearchSelect({ options, value, onChange, placeholder = "Search�
   if (value) {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
-        <span style={{ fontSize: 13.5, color: C.jet, fontWeight: 500, ...fBody }}>{value}</span>
+        <span style={{ fontSize: T.bodyLg, color: C.jet, fontWeight: 500, ...fBody }}>{value}</span>
         <button onClick={clear} aria-label="Clear" style={{ background: "none", border: "none", cursor: "pointer", display: "flex", color: C.slateLight, flexShrink: 0 }}>
           <svg width={13} height={13} viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth={2.3} strokeLinecap="round" /></svg>
         </button>
@@ -315,7 +315,7 @@ export function SearchSelect({ options, value, onChange, placeholder = "Search�
           onFocus={() => setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
           placeholder={placeholder}
-          style={{ border: "none", outline: "none", flex: 1, fontSize: 13.5, minWidth: 0, ...fBody }}
+          style={{ border: "none", outline: "none", flex: 1, fontSize: T.bodyLg, minWidth: 0, ...fBody }}
         />
       </div>
       {open && (filtered.length > 0 || showAddCustom) && (
@@ -325,7 +325,7 @@ export function SearchSelect({ options, value, onChange, placeholder = "Search�
               key={o}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => choose(o)}
-              style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 13px", background: "none", border: "none", cursor: "pointer", fontSize: 13, color: C.jet, ...fBody }}
+              style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 13px", background: "none", border: "none", cursor: "pointer", fontSize: T.body, color: C.jet, ...fBody }}
             >
               {o}
             </button>
@@ -334,7 +334,7 @@ export function SearchSelect({ options, value, onChange, placeholder = "Search�
             <button
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => choose(trimmed)}
-              style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 13px", background: "none", border: "none", borderTop: filtered.length ? `1px solid ${C.border}` : "none", cursor: "pointer", fontSize: 13, color: C.orange, fontWeight: 600, ...fBody }}
+              style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 13px", background: "none", border: "none", borderTop: filtered.length ? `1px solid ${C.border}` : "none", cursor: "pointer", fontSize: T.body, color: C.orange, fontWeight: 600, ...fBody }}
             >
               Add "{trimmed}"
             </button>
@@ -351,14 +351,24 @@ export function StatusPill({ status }) {
     confirmed: { label: "Confirmed", tone: "success" },
     completed: { label: "Completed", tone: "neutral" },
     cancelled: { label: "Cancelled", tone: "neutral" },
+    declined: { label: "Declined", tone: "danger" },
+    expired: { label: "Expired", tone: "neutral" },
+    failed: { label: "Failed", tone: "danger" },
+    refunded: { label: "Refunded", tone: "success" },
     live: { label: "Live now", tone: "orange", pulse: true },
   };
   const m = map[status] || map.pending;
+  const colors = {
+    orange: { bg: C.orangeTint, fg: C.orange },
+    success: { bg: C.successTint, fg: C.success },
+    neutral: { bg: C.fog, fg: C.slate },
+    danger: { bg: C.dangerTint, fg: C.danger },
+  }[m.tone];
   return (
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 5,
       color: m.tone === "orange" ? C.orange : m.tone === "success" ? C.success : C.slate,
-      fontSize: 11.5, fontWeight: 700, padding: "4px,8px", borderRadius: 8, ...fBody,
+      fontSize: T.captionLg, fontWeight: 700, padding: "4px,8px", borderRadius: 8, ...fBody,
     }}>
       <span style={{ width: 6, height: 6, borderRadius: 99, background: "currentColor", animation: m.pulse ? "clPulse 1.4s infinite" : "none" }} />
       {m.label}
@@ -407,7 +417,7 @@ export function SegTabs({ items, value, onChange, strong }) {
               flex: 1, padding: "8px 6px", borderRadius: 10, border: "none", cursor: "pointer",
               background: active ? (strong ? C.jet : C.white) : "transparent",
               color: active ? (strong ? C.white : C.jet) : C.slate,
-              fontWeight: active ? 700 : 600, fontSize: 12.5,
+              fontWeight: active ? 700 : 600, fontSize: T.labelLg,
               boxShadow: active && !strong ? "0 1px 3px rgba(0,0,0,.08)" : "none",
               transition: "background .15s ease, color .15s ease", ...fBody,
             }}>
@@ -429,7 +439,7 @@ export function TopBar({ title, onBack, right }) {
           </button>
         )}
       </div>
-      <div style={{ fontSize: 17, fontWeight: 600, color: C.jet, ...fDisplay }}>{title}</div>
+      <div style={{ fontSize: T.titleLg, fontWeight: 600, color: C.jet, ...fDisplay }}>{title}</div>
       <div style={{ width: 34, display: "flex", justifyContent: "flex-end" }}>{right}</div>
     </div>
   );
@@ -442,7 +452,7 @@ export function EmptyState({ icon: Icon, title, body }) {
         <Icon size={22} color={C.slateLight} />
       </div>
       <div style={{ fontWeight: 600, color: C.jet, marginBottom: 4, ...fDisplay }}>{title}</div>
-      <div style={{ fontSize: 13, lineHeight: 1.5 }}>{body}</div>
+      <div style={{ fontSize: T.body, lineHeight: 1.5 }}>{body}</div>
     </div>
   );
 }
@@ -452,7 +462,7 @@ export function Toast({ toast }) {
   return (
     <div style={{
       position: "absolute", bottom: 96, left: 16, right: 16, background: C.jet, color: C.white,
-      padding: "12px 14px", borderRadius: 14, fontSize: 13, fontWeight: 500, display: "flex",
+      padding: "12px 14px", borderRadius: 14, fontSize: T.body, fontWeight: 500, display: "flex",
       alignItems: "center", gap: 8, zIndex: 60, boxShadow: "0 8px 24px rgba(0,0,0,.25)", ...fBody,
     }}>
       <CheckCircle2 size={16} color={C.orange} />
@@ -481,7 +491,7 @@ export function Wordmark({ size = 20, dark }) {
   return (
     <span style={{ fontSize: size, fontWeight: 600, ...fDisplay }}>
       <span style={{ color: dark ? C.white : C.jet }}>Coach</span>
-      <span style={{ color: dark ? "#B9BCC4" : C.slateLight, fontWeight: 500 }}>Link</span>
+      <span style={{ color: dark ? C.onDark : C.slateLight, fontWeight: 500 }}>Link</span>
     </span>
   );
 }
@@ -502,7 +512,7 @@ export function BottomTabs({ items, value, onChange }) {
               <span style={{ position: "absolute", top: -1, right: "28%", width: 7, height: 7, borderRadius: 99, background: C.orange }} />
             ) : null}
             <Icon size={20} strokeWidth={active ? 2.4 : 1.9} color={active ? C.orange : C.slateLight} />
-            <span style={{ fontSize: 10.5, fontWeight: active ? 700 : 500, color: active ? C.jet : C.slateLight, ...fBody }}>{it.label}</span>
+            <span style={{ fontSize: T.tiny, fontWeight: active ? 700 : 500, color: active ? C.jet : C.slateLight, ...fBody }}>{it.label}</span>
           </button>
         );
       })}
@@ -511,14 +521,14 @@ export function BottomTabs({ items, value, onChange }) {
 }
 
 export function SectionLabel({ children }) {
-  return <div style={{ fontSize: 12.5, fontWeight: 700, color: C.jet, marginBottom: 10, ...fDisplay }}>{children}</div>;
+  return <div style={{ fontSize: T.labelLg, fontWeight: 700, color: C.jet, marginBottom: 10, ...fDisplay }}>{children}</div>;
 }
 
 export function Row({ label, value, bold, last }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderBottom: last ? "none" : `1px solid ${C.border}` }}>
-      <span style={{ fontSize: 13, color: C.slate, ...fBody }}>{label}</span>
-      <span style={{ fontSize: 13, color: C.jet, fontWeight: bold ? 700 : 500, ...fBody }}>{value}</span>
+      <span style={{ fontSize: T.body, color: C.slate, ...fBody }}>{label}</span>
+      <span style={{ fontSize: T.body, color: C.jet, fontWeight: bold ? 700 : 500, ...fBody }}>{value}</span>
     </div>
   );
 }
@@ -527,10 +537,10 @@ export function Field({ label, placeholder, type = "text", icon: Icon, rightIcon
   if (!show) return null;
   return (
     <div>
-      <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>{label}</div>
+      <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>{label}</div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
         {Icon && <Icon size={16} color={C.slateLight} />}
-        <input placeholder={placeholder} type={type} value={value} onChange={onChange} style={{ border: "none", outline: "none", flex: 1, fontSize: 14, ...fBody }} />
+        <input placeholder={placeholder} type={type} value={value} onChange={onChange} style={{ border: "none", outline: "none", flex: 1, fontSize: T.subtitle, ...fBody }} />
         {RightIcon && <button onClick={onRight} style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}><RightIcon size={16} color={C.slateLight} /></button>}
       </div>
     </div>
@@ -562,7 +572,7 @@ export function BottomSheet({ open, onClose, title, children, heightPct = 70 }) 
           <div style={{ width: 36, height: 4, borderRadius: 99, background: C.border }} />
         </button>
         {title && (
-          <div style={{ padding: "6px 20px 10px", fontSize: 16, fontWeight: 600, color: C.jet, ...fDisplay }}>{title}</div>
+          <div style={{ padding: "6px 20px 10px", fontSize: T.title, fontWeight: 600, color: C.jet, ...fDisplay }}>{title}</div>
         )}
         <div style={{ overflowY: "auto", padding: "4px 20px 24px", flex: 1 }}>{children}</div>
       </div>
@@ -572,11 +582,11 @@ export function BottomSheet({ open, onClose, title, children, heightPct = 70 }) 
 
 export function StatusBar({ dark }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 24px 6px", fontSize: 13, fontWeight: 600, color: dark ? C.white : C.jet, ...fBody }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 24px 6px", fontSize: T.body, fontWeight: 600, color: dark ? C.white : C.jet, ...fBody }}>
       <span>9:41</span>
       <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
-        <span style={{ fontSize: 10 }}>●●●●</span>
-        <span style={{ fontSize: 10 }}>Wi‑Fi</span>
+        <span style={{ fontSize: T.micro}}>●●●●</span>
+        <span style={{ fontSize: T.micro}}>Wi‑Fi</span>
         <span style={{ border: `1.3px solid ${dark ? C.white : C.jet}`, borderRadius: 3, width: 20, height: 10, position: "relative", display: "inline-block" }}>
           <span style={{ position: "absolute", inset: 1.5, right: 3, background: dark ? C.white : C.jet, borderRadius: 1 }} />
         </span>

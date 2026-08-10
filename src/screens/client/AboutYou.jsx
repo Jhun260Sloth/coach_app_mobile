@@ -3,7 +3,7 @@ import {
   MapPin, Phone, Camera, ShieldCheck, Plus, Users, User, CalendarDays,
   AlertTriangle, LocateFixed, Search, Stethoscope, UserCheck,
 } from "lucide-react";
-import { C, fDisplay, fBody } from "../../theme/theme";
+import { C, fDisplay, fBody, T } from "../../theme/theme";
 import { AU_SUBURBS, GENDER_OPTIONS } from "../../data/mockData";
 import { Chip, SectionLabel, Btn, TopBar, Field, Card, Avatar, Badge } from "../../components/ui/Primitives";
 
@@ -27,17 +27,17 @@ function StepHeader({ step, title, subtitle, onBack }) {
           <StepDots step={step} />
         </div>
       )}
-      <div style={{ fontSize: 22, fontWeight: 600, color: C.jet, ...fDisplay, marginBottom: 6, marginTop: step === undefined && !onBack ? 8 : 0 }}>{title}</div>
-      <div style={{ fontSize: 13, color: C.slate, ...fBody, marginBottom: 20, lineHeight: 1.5 }}>{subtitle}</div>
+      <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, ...fDisplay, marginBottom: 6, marginTop: step === undefined && !onBack ? 8 : 0 }}>{title}</div>
+      <div style={{ fontSize: T.body, color: C.slate, ...fBody, marginBottom: 20, lineHeight: 1.5 }}>{subtitle}</div>
     </div>
   );
 }
 
 const inputStyle = {
   width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px",
-  fontSize: 13.5, outline: "none", boxSizing: "border-box", ...fBody,
+  fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", ...fBody,
 };
-const labelStyle = { fontSize: 12.5, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
+const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
 
 /* Step 1 of 3 — build your profile (mobile, age, postal code, profile pic) */
 function calcAge(dobStr) {
@@ -96,54 +96,54 @@ export function ScreenAboutYouProfile({ nav, onComplete }) {
 
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
           <div>
-            <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Mobile number</div>
+            <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Mobile number</div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.fog, borderRadius: 14, padding: "12px 14px" }}>
               <Phone size={16} color={C.slateLight} />
               <input
                 value={mobile}
                 onChange={(e) => setMobile(e.target.value)}
                 placeholder="04XX XXX XXX"
-                style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13.5, color: C.jet, ...fBody }}
+                style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: T.bodyLg, color: C.jet, ...fBody }}
               />
             </div>
           </div>
 
           <div>
-            <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Postal code</div>
+            <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Postal code</div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.fog, borderRadius: 14, padding: "12px 14px" }}>
               <MapPin size={16} color={C.slateLight} />
               <input
                 value={postalCode}
                 onChange={(e) => setPostalCode(e.target.value)}
                 placeholder="e.g. 2026"
-                style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13.5, color: C.jet, ...fBody }}
+                style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: T.bodyLg, color: C.jet, ...fBody }}
               />
             </div>
           </div>
         </div>
 
         <div style={{ marginBottom: isUnder18 ? 14 : 20 }}>
-          <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Date of birth</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.fog, borderRadius: 14, padding: "12px 14px", border: isUnder18 ? "1.5px solid #D64545" : "1.5px solid transparent" }}>
+          <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Date of birth</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.fog, borderRadius: 14, padding: "12px 14px", border: isUnder18 ? `1.5px solid ${C.danger}` : "1.5px solid transparent" }}>
             <CalendarDays size={16} color={C.slateLight} />
             <input
               type="date"
               value={dob}
               max={new Date().toISOString().slice(0, 10)}
               onChange={(e) => setDob(e.target.value)}
-              style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13.5, color: C.jet, ...fBody }}
+              style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: T.bodyLg, color: C.jet, ...fBody }}
             />
           </div>
-          <div style={{ fontSize: 11.5, color: C.slateLight, marginTop: 6, ...fBody }}>
+          <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: 6, ...fBody }}>
             We verify your date of birth — a self-tick isn't enough. CoachLink accounts can only be held by someone 18 or older.
           </div>
         </div>
 
         {isUnder18 && (
-          <Card style={{ marginBottom: 20, background: "#FDECEC", border: "1px solid #F3D2D2" }}>
+          <Card style={{ marginBottom: 20, background: C.dangerTint, border: `1px solid ${C.dangerBorder}` }}>
             <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-              <AlertTriangle size={16} color="#D64545" style={{ flexShrink: 0, marginTop: 1 }} />
-              <div style={{ fontSize: 12, color: C.jet, lineHeight: 1.6, ...fBody }}>
+              <AlertTriangle size={16} color={C.danger} style={{ flexShrink: 0, marginTop: 1 }} />
+              <div style={{ fontSize: T.label, color: C.jet, lineHeight: 1.6, ...fBody }}>
                 <strong>You need to be 18+ to hold a CoachLink account.</strong> If you're under 18, ask a parent or guardian to sign up — once they're set up, they can add you as a participant profile and manage your bookings for you.
               </div>
             </div>
@@ -153,7 +153,7 @@ export function ScreenAboutYouProfile({ nav, onComplete }) {
         <Card style={{ marginBottom: 20, background: C.fog, border: "none" }}>
           <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
             <ShieldCheck size={16} color={C.orange} style={{ flexShrink: 0, marginTop: 1 }} />
-            <div style={{ fontSize: 12, color: C.slate, lineHeight: 1.6, ...fBody }}>
+            <div style={{ fontSize: T.label, color: C.slate, lineHeight: 1.6, ...fBody }}>
               <strong style={{ color: C.jet }}>Why we ask:</strong> your postal code helps us match you with coaches nearby, your date of birth confirms you're old enough to hold your own account, and your photo helps coaches recognise you at sessions. None of this is shown publicly without your permission.
             </div>
           </div>
@@ -226,7 +226,7 @@ export function ParticipantFields({ draft, setDraft, showGuardianInfo = false })
               value={draft.dob}
               max={new Date().toISOString().slice(0, 10)}
               onChange={(e) => patch({ dob: e.target.value })}
-              style={{ flex: 1, border: "none", outline: "none", fontSize: 13.5, color: C.jet, ...fBody }}
+              style={{ flex: 1, border: "none", outline: "none", fontSize: T.bodyLg, color: C.jet, ...fBody }}
             />
           </div>
         </div>
@@ -234,7 +234,7 @@ export function ParticipantFields({ draft, setDraft, showGuardianInfo = false })
         <div>
           <div style={labelStyle}>Age</div>
           <div style={{ border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", background: C.fog }}>
-            <span style={{ fontSize: 13.5, color: age !== null ? C.jet : C.slateLight, ...fBody }}>
+            <span style={{ fontSize: T.bodyLg, color: age !== null ? C.jet : C.slateLight, ...fBody }}>
               {age !== null ? `${age} years old` : "Auto-calculated from date of birth"}
             </span>
           </div>
@@ -257,8 +257,8 @@ export function ParticipantFields({ draft, setDraft, showGuardianInfo = false })
           {draft.postalCode ? (
             <div style={{ display: "flex", alignItems: "center", gap: 10, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
               <MapPin size={16} color={C.orange} style={{ flexShrink: 0 }} />
-              <span style={{ flex: 1, fontSize: 13.5, color: C.jet, fontWeight: 500, ...fBody }}>{draft.postalCode}</span>
-              <button onClick={() => patch({ postalCode: "" })} style={{ background: "none", border: "none", color: C.orange, fontSize: 12, fontWeight: 600, cursor: "pointer", ...fBody }}>Change</button>
+              <span style={{ flex: 1, fontSize: T.bodyLg, color: C.jet, fontWeight: 500, ...fBody }}>{draft.postalCode}</span>
+              <button onClick={() => patch({ postalCode: "" })} style={{ background: "none", border: "none", color: C.orange, fontSize: T.label, fontWeight: 600, cursor: "pointer", ...fBody }}>Change</button>
             </div>
           ) : (
             <>
@@ -270,20 +270,20 @@ export function ParticipantFields({ draft, setDraft, showGuardianInfo = false })
                   onFocus={() => setLocationOpen(true)}
                   onBlur={() => setTimeout(() => setLocationOpen(false), 150)}
                   placeholder="Search suburb or postcode…"
-                  style={{ border: "none", outline: "none", flex: 1, fontSize: 13.5, minWidth: 0, ...fBody }}
+                  style={{ border: "none", outline: "none", flex: 1, fontSize: T.bodyLg, minWidth: 0, ...fBody }}
                 />
               </div>
               {locationOpen && filteredSuburbs.length > 0 && (
                 <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.white, border: `1px solid ${C.border}`, borderRadius: 13, boxShadow: "0 10px 24px rgba(0,0,0,.10)", zIndex: 30, maxHeight: 190, overflowY: "auto" }}>
                   {filteredSuburbs.map((s) => (
-                    <button key={`${s.suburb}-${s.postcode}`} onMouseDown={(e) => e.preventDefault()} onClick={() => pickLocation(s)} style={{ display: "flex", justifyContent: "space-between", width: "100%", textAlign: "left", padding: "10px 13px", background: "none", border: "none", cursor: "pointer", fontSize: 13, color: C.jet, ...fBody }}>
+                    <button key={`${s.suburb}-${s.postcode}`} onMouseDown={(e) => e.preventDefault()} onClick={() => pickLocation(s)} style={{ display: "flex", justifyContent: "space-between", width: "100%", textAlign: "left", padding: "10px 13px", background: "none", border: "none", cursor: "pointer", fontSize: T.body, color: C.jet, ...fBody }}>
                       <span>{s.suburb}, {s.state}</span>
                       <span style={{ color: C.slateLight }}>{s.postcode}</span>
                     </button>
                   ))}
                 </div>
               )}
-              <button onClick={useCurrentLocation} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: C.orange, fontSize: 12.5, fontWeight: 600, marginTop: 8, padding: 0, ...fBody }}>
+              <button onClick={useCurrentLocation} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: C.orange, fontSize: T.labelLg, fontWeight: 600, marginTop: 8, padding: 0, ...fBody }}>
                 <LocateFixed size={14} /> Use current location
               </button>
             </>
@@ -294,7 +294,7 @@ export function ParticipantFields({ draft, setDraft, showGuardianInfo = false })
       {showGuardianInfo && (
         <>
           <SectionLabel>Guardian information</SectionLabel>
-          <div style={{ fontSize: 11.5, color: C.slateLight, marginTop: -6, marginBottom: 12, lineHeight: 1.5, ...fBody }}>
+          <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: -6, marginBottom: 12, lineHeight: 1.5, ...fBody }}>
             The parent or legal guardian responsible for this participant. This is who coaches and CoachLink will contact about the booking.
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
@@ -331,7 +331,7 @@ export function ParticipantFields({ draft, setDraft, showGuardianInfo = false })
           <Btn size="sm" onClick={addCustomSport}>Add</Btn>
         </div>
       ) : (
-        <button onClick={() => setAddingSport(true)} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: C.orange, fontSize: 12.5, fontWeight: 600, marginBottom: 20, padding: 0, ...fBody }}>
+        <button onClick={() => setAddingSport(true)} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: C.orange, fontSize: T.labelLg, fontWeight: 600, marginBottom: 20, padding: 0, ...fBody }}>
           <Plus size={14} /> Add another sport
         </button>
       )}

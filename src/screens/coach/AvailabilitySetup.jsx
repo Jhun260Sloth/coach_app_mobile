@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Plus, X, CalendarDays } from "lucide-react";
-import { C, fDisplay, fBody } from "../../theme/theme";
+import { C, fDisplay, fBody, T } from "../../theme/theme";
 import { SectionLabel, Card, Btn, TopBar, StepProgress, Toggle, Badge } from "../../components/ui/Primitives";
 
 const DAYS = [
@@ -27,7 +27,7 @@ function defaultAvailability() {
 }
 
 const timeInputStyle = {
-  border: `1.5px solid ${C.border}`, borderRadius: 11, padding: "8px 10px", fontSize: 12.5,
+  border: `1.5px solid ${C.border}`, borderRadius: 11, padding: "8px 10px", fontSize: T.labelLg,
   outline: "none", flex: 1, minWidth: 0, boxSizing: "border-box", ...fBody,
 };
 
@@ -39,8 +39,8 @@ function SyncRow({ label, synced, onToggle }) {
           <CalendarDays size={16} color={C.slate} />
         </div>
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: C.jet, ...fBody }}>{label}</div>
-          <div style={{ fontSize: 11, color: C.slateLight, ...fBody }}>{synced ? "Connected" : "Not connected"}</div>
+          <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{label}</div>
+          <div style={{ fontSize: T.caption, color: C.slateLight, ...fBody }}>{synced ? "Connected" : "Not connected"}</div>
         </div>
       </div>
       <Btn size="sm" variant={synced ? "secondary" : "outline"} onClick={onToggle}>{synced ? "Synced" : "Sync"}</Btn>
@@ -103,10 +103,10 @@ export function ScreenCoachAvailabilitySetup({ nav, toast }) {
         <TopBar title="Availability setup" onBack={() => nav("coach-services-setup")} />
         <StepProgress step={2} total={3} label="Availability" />
 
-        <div style={{ fontSize: 15, fontWeight: 600, color: C.jet, marginBottom: 6, ...fDisplay }}>
+        <div style={{ fontSize: T.subtitleLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fDisplay }}>
           Availability Setup
         </div>
-        <div style={{ fontSize: 13, color: C.slate, marginBottom: 18, lineHeight: 1.5, ...fBody }}>
+        <div style={{ fontSize: T.body, color: C.slate, marginBottom: 18, lineHeight: 1.5, ...fBody }}>
           Configure your recurring weekly schedule. Enable the days you coach and set the time windows athletes can book.
         </div>
 
@@ -116,7 +116,7 @@ export function ScreenCoachAvailabilitySetup({ nav, toast }) {
           return (
             <Card key={d.key} style={{ marginBottom: 10 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: day.enabled ? 10 : 0 }}>
-                <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fBody }}>{d.label}</div>
+                <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>{d.label}</div>
                 <Toggle on={day.enabled} onClick={() => toggleDay(d.key)} />
               </div>
               {day.enabled && (
@@ -124,7 +124,7 @@ export function ScreenCoachAvailabilitySetup({ nav, toast }) {
                   {day.slots.map((s) => (
                     <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                       <input type="time" value={s.start} onChange={(e) => updateSlot(d.key, s.id, { start: e.target.value })} style={timeInputStyle} />
-                      <span style={{ fontSize: 12, color: C.slateLight, ...fBody }}>to</span>
+                      <span style={{ fontSize: T.label, color: C.slateLight, ...fBody }}>to</span>
                       <input type="time" value={s.end} onChange={(e) => updateSlot(d.key, s.id, { end: e.target.value })} style={timeInputStyle} />
                       {day.slots.length > 1 && (
                         <button onClick={() => removeSlot(d.key, s.id)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", flexShrink: 0 }}>
@@ -135,7 +135,7 @@ export function ScreenCoachAvailabilitySetup({ nav, toast }) {
                   ))}
                   <button onClick={() => addSlot(d.key)} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", cursor: "pointer", padding: "2px 0" }}>
                     <Plus size={13} color={C.orange} />
-                    <span style={{ fontSize: 12, color: C.orange, fontWeight: 600, ...fBody }}>Add time slot</span>
+                    <span style={{ fontSize: T.label, color: C.orange, fontWeight: 600, ...fBody }}>Add time slot</span>
                   </button>
                 </div>
               )}
@@ -151,7 +151,7 @@ export function ScreenCoachAvailabilitySetup({ nav, toast }) {
             </Btn>
 
             <Card style={{ padding: 12 }}>
-              <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, marginBottom: 8, ...fBody }}>Block holiday</div>
+              <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 8, ...fBody }}>Block holiday</div>
               <div style={{ display: "flex", gap: 8, marginBottom: blockedHolidays.length ? 10 : 0 }}>
                 <input type="date" value={holidayDraft} onChange={(e) => setHolidayDraft(e.target.value)} style={timeInputStyle} />
                 <Btn size="sm" variant="outline" onClick={blockHoliday}>Block</Btn>
@@ -171,7 +171,7 @@ export function ScreenCoachAvailabilitySetup({ nav, toast }) {
             </Card>
 
             <Card style={{ padding: 12 }}>
-              <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, marginBottom: 8, ...fBody }}>Add One-off Unavailable Date</div>
+              <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 8, ...fBody }}>Add One-off Unavailable Date</div>
               <div style={{ display: "flex", gap: 8, marginBottom: unavailableDates.length ? 10 : 0 }}>
                 <input type="date" value={oneOffDraft} onChange={(e) => setOneOffDraft(e.target.value)} style={timeInputStyle} />
                 <Btn size="sm" variant="outline" onClick={addOneOff}>Add</Btn>
@@ -199,7 +199,7 @@ export function ScreenCoachAvailabilitySetup({ nav, toast }) {
           Continue
         </Btn>
         {!canContinue && (
-          <div style={{ fontSize: 11, color: C.slateLight, textAlign: "center", marginTop: 8, ...fBody }}>
+          <div style={{ fontSize: T.caption, color: C.slateLight, textAlign: "center", marginTop: 8, ...fBody }}>
             Enable availability on at least one day to continue.
           </div>
         )}

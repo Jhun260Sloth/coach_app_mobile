@@ -1,14 +1,14 @@
 import React, { useState } from "react";
 import { User, Landmark, Hash, FileText } from "lucide-react";
-import { C, fDisplay, fBody } from "../../theme/theme";
+import { C, fDisplay, fBody, T } from "../../theme/theme";
 import { TopBar, StepProgress, Btn } from "../../components/ui/Primitives";
 
-const labelStyle = { fontSize: 12.5, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
+const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
 const fieldWrapStyle = {
   display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`,
   borderRadius: 13, padding: "11px 13px", marginBottom: 16, boxSizing: "border-box",
 };
-const fieldInputStyle = { border: "none", outline: "none", flex: 1, fontSize: 14, minWidth: 0, ...fBody };
+const fieldInputStyle = { border: "none", outline: "none", flex: 1, fontSize: T.subtitle, minWidth: 0, ...fBody };
 
 export function ScreenCoachPayoutSetup({ nav, toast }) {
   const [accountHolder, setAccountHolder] = useState("");
@@ -26,10 +26,10 @@ export function ScreenCoachPayoutSetup({ nav, toast }) {
         <TopBar title="Payout setup" onBack={() => nav("coach-availability-setup")} />
         <StepProgress step={3} total={3} label="Payout" />
 
-        <div style={{ fontSize: 15, fontWeight: 600, color: C.jet, marginBottom: 6, ...fDisplay }}>
+        <div style={{ fontSize: T.subtitleLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fDisplay }}>
           Payout Setup
         </div>
-        <div style={{ fontSize: 13, color: C.slate, marginBottom: 18, lineHeight: 1.5, ...fBody }}>
+        <div style={{ fontSize: T.body, color: C.slate, marginBottom: 18, lineHeight: 1.5, ...fBody }}>
           Add your bank account information to receive payments for completed coaching sessions.
         </div>
 
@@ -62,7 +62,7 @@ export function ScreenCoachPayoutSetup({ nav, toast }) {
           <FileText size={16} color={C.slateLight} />
           <input value={taxInfo} onChange={(e) => setTaxInfo(e.target.value)} placeholder="e.g. ABN or Tax File Number" style={fieldInputStyle} />
         </div>
-        <div style={{ fontSize: 11, color: C.slateLight, marginBottom: 22, ...fBody }}>
+        <div style={{ fontSize: T.caption, color: C.slateLight, marginBottom: 22, ...fBody }}>
           Only required in some regions — leave blank if it doesn't apply to you.
         </div>
 
@@ -70,7 +70,7 @@ export function ScreenCoachPayoutSetup({ nav, toast }) {
           Complete Setup
         </Btn>
         {!canContinue && (
-          <div style={{ fontSize: 11, color: C.slateLight, textAlign: "center", marginTop: 8, ...fBody }}>
+          <div style={{ fontSize: T.caption, color: C.slateLight, textAlign: "center", marginTop: 8, ...fBody }}>
             Add your account holder name, bank name, account number and BSB / routing number to finish.
           </div>
         )}

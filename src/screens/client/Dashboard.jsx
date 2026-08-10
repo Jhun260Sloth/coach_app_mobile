@@ -3,11 +3,12 @@ import {
   WifiOff, Calendar, ClipboardList, Heart, Download, Clock, MessageCircle, Star, CheckCircle2,
   AlertTriangle, CreditCard, ShieldCheck, LifeBuoy, Hourglass, RefreshCcw, ChevronLeft, ChevronRight, CalendarX2,
 } from "lucide-react";
-import { C, fDisplay, fBody } from "../../theme/theme";
+import { C, fDisplay, fBody, T } from "../../theme/theme";
 import { COACHES } from "../../data/mockData";
 import {
   Avatar, Card, Badge, SegTabs, SectionLabel, Btn, TopBar, EmptyState, StatusPill, Chip, BottomSheet, Row, ScrollFadeRow,
 } from "../../components/ui/Primitives";
+import { StatusBanner } from "../../systems/StateSystem";
 
 /* ---- date helpers for the calendar view (booking dates look like "Tue, 22 Jul") ---- */
 const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -130,9 +131,9 @@ export function ScreenClientDashboard({ nav, bookings, offline, toast, cancelBoo
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
       <div style={{ padding: "18px 20px 0" }}>
-        <div style={{ fontSize: 22, fontWeight: 600, color: C.jet, ...fDisplay }}>My sessions</div>
+        <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, ...fDisplay }}>My sessions</div>
         {offline && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.jet, color: C.white, padding: "9px 12px", borderRadius: 12, marginTop: 12, fontSize: 12, ...fBody }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.jet, color: C.white, padding: "9px 12px", borderRadius: 12, marginTop: 12, fontSize: T.label, ...fBody }}>
             <WifiOff size={14} color={C.orange} /> You're offline — showing your last saved sessions.
           </div>
         )}
@@ -150,7 +151,7 @@ export function ScreenClientDashboard({ nav, bookings, offline, toast, cancelBoo
               <button onClick={goPrev} style={{ width: 30, height: 30, borderRadius: 10, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                 <ChevronLeft size={16} color={C.jet} />
               </button>
-              <span style={{ fontSize: 13.5, fontWeight: 700, color: C.jet, ...fDisplay }}>{headerLabel}</span>
+              <span style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...fDisplay }}>{headerLabel}</span>
               <button onClick={goNext} style={{ width: 30, height: 30, borderRadius: 10, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                 <ChevronRight size={16} color={C.jet} />
               </button>
@@ -173,7 +174,7 @@ export function ScreenClientDashboard({ nav, bookings, offline, toast, cancelBoo
           <>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 6 }}>
               {WEEKDAY_HEADERS.map((d) => (
-                <div key={d} style={{ textAlign: "center", fontSize: 10.5, fontWeight: 700, color: C.slateLight, ...fBody }}>{d}</div>
+                <div key={d} style={{ textAlign: "center", fontSize: T.tiny, fontWeight: 700, color: C.slateLight, ...fBody }}>{d}</div>
               ))}
             </div>
             {weeks.map((row, ri) => (
@@ -190,7 +191,7 @@ export function ScreenClientDashboard({ nav, bookings, offline, toast, cancelBoo
                       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3,
                       opacity: inRange ? 1 : 0.35,
                     }}>
-                      <span style={{ fontSize: 12, fontWeight: isSelected ? 700 : 500, color: C.jet, ...fBody }}>{d.getDate()}</span>
+                      <span style={{ fontSize: T.label, fontWeight: isSelected ? 700 : 500, color: C.jet, ...fBody }}>{d.getDate()}</span>
                       <span style={{ width: 5, height: 5, borderRadius: 99, background: count > 0 ? C.orange : "transparent" }} />
                     </button>
                   );
@@ -251,8 +252,8 @@ function RescheduleSheet({ booking, onClose, onConfirm }) {
           <Card style={{ marginBottom: 16, display: "flex", gap: 12, alignItems: "center" }}>
             <Avatar name={booking.coachName} size={40} />
             <div>
-              <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fDisplay }}>{booking.service}</div>
-              <div style={{ fontSize: 12, color: C.slate, ...fBody }}>Currently {booking.date} · {booking.time}</div>
+              <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fDisplay }}>{booking.service}</div>
+              <div style={{ fontSize: T.label, color: C.slate, ...fBody }}>Currently {booking.date} · {booking.time}</div>
             </div>
           </Card>
 
@@ -271,7 +272,7 @@ function RescheduleSheet({ booking, onClose, onConfirm }) {
                   <button key={t} onClick={() => setTime(t)} style={{
                     padding: "12px 0", borderRadius: 12, border: `1.5px solid ${time === t ? C.orange : C.border}`,
                     background: time === t ? C.orangeTint : C.white, color: time === t ? C.orange : C.jet,
-                    fontWeight: 600, fontSize: 13.5, cursor: "pointer", ...fBody,
+                    fontWeight: 600, fontSize: T.bodyLg, cursor: "pointer", ...fBody,
                   }}>{t}</button>
                 ))}
               </div>
@@ -281,7 +282,7 @@ function RescheduleSheet({ booking, onClose, onConfirm }) {
               </Btn>
             </>
           ) : (
-            <div style={{ fontSize: 13, color: C.slate, lineHeight: 1.6, ...fBody, marginBottom: 16 }}>
+            <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.6, ...fBody, marginBottom: 16 }}>
               This coach's live availability isn't accessible right now. Message them directly to arrange a new time.
             </div>
           )}
@@ -308,14 +309,14 @@ function CancelSheet({ booking, onClose, onConfirm, pending }) {
             <Card style={{ marginBottom: 14, display: "flex", gap: 12, alignItems: "center" }}>
               <Avatar name={booking.coachName} size={40} />
               <div>
-                <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fDisplay }}>{booking.service}</div>
-                <div style={{ fontSize: 12, color: C.slate, ...fBody }}>{booking.date} · {booking.time} with {booking.coachName}</div>
+                <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fDisplay }}>{booking.service}</div>
+                <div style={{ fontSize: T.label, color: C.slate, ...fBody }}>{booking.date} · {booking.time} with {booking.coachName}</div>
               </div>
             </Card>
 
             <div style={{ display: "flex", alignItems: "flex-start", gap: 8, background: C.warnTint, borderRadius: 12, padding: 12, marginBottom: 18 }}>
               <AlertTriangle size={14} color={C.orange} style={{ marginTop: 2, flexShrink: 0 }} />
-              <span style={{ fontSize: 12, color: C.slate, lineHeight: 1.5, ...fBody }}>
+              <span style={{ fontSize: T.label, color: C.slate, lineHeight: 1.5, ...fBody }}>
                 {booking.coachName.split(" ")[0]} hasn't responded to this request yet — withdrawing it now won't incur any charge.
               </span>
             </div>
@@ -341,7 +342,7 @@ function CancelSheet({ booking, onClose, onConfirm, pending }) {
     <BottomSheet open={!!booking} onClose={onClose} title="Review Cancellation" heightPct={92}>
       {booking && (
         <>
-          <div style={{ fontSize: 12.5, color: C.slate, lineHeight: 1.55, marginBottom: 18, ...fBody }}>
+          <div style={{ fontSize: T.labelLg, color: C.slate, lineHeight: 1.55, marginBottom: 18, ...fBody }}>
             Please review the cancellation outcome before confirming. Refunds and fees are calculated based on the coach's cancellation policy.
           </div>
 
@@ -363,23 +364,23 @@ function CancelSheet({ booking, onClose, onConfirm, pending }) {
           ) : (
             <div style={{ display: "flex", alignItems: "flex-start", gap: 8, background: C.fog, borderRadius: 12, padding: 12, marginBottom: 16 }}>
               <CreditCard size={14} color={C.slate} style={{ marginTop: 2, flexShrink: 0 }} />
-              <span style={{ fontSize: 12, color: C.slate, lineHeight: 1.5, ...fBody }}>No payment has been collected for this booking yet — cancelling now won't incur any charge.</span>
+              <span style={{ fontSize: T.label, color: C.slate, lineHeight: 1.5, ...fBody }}>No payment has been collected for this booking yet — cancelling now won't incur any charge.</span>
             </div>
           )}
 
           <SectionLabel>Refund amount</SectionLabel>
           <Card style={{ marginBottom: 16, background: alreadyPaid && refundAmount > 0 ? C.successTint : C.warnTint }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: C.jet, ...fBody }}>{alreadyPaid ? "You'll be refunded" : "Amount owed"}</span>
-              <span style={{ fontSize: 18, fontWeight: 700, color: C.jet, ...fDisplay }}>${(alreadyPaid ? refundAmount : 0).toFixed(2)}</span>
+              <span style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{alreadyPaid ? "You'll be refunded" : "Amount owed"}</span>
+              <span style={{ fontSize: T.heading, fontWeight: 700, color: C.jet, ...fDisplay }}>${(alreadyPaid ? refundAmount : 0).toFixed(2)}</span>
             </div>
-            <div style={{ fontSize: 11.5, color: C.slate, marginTop: 6, lineHeight: 1.5, ...fBody }}>
+            <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 6, lineHeight: 1.5, ...fBody }}>
               {alreadyPaid ? outcome.ruleLabel : "No charge applies since payment hasn't been sent."}
             </div>
           </Card>
 
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
-            <span style={{ fontSize: 12, color: C.slate, ...fBody }}>Resulting booking status:</span>
+            <span style={{ fontSize: T.label, color: C.slate, ...fBody }}>Resulting booking status:</span>
             <StatusPill status="cancelled" />
           </div>
 
@@ -387,7 +388,7 @@ function CancelSheet({ booking, onClose, onConfirm, pending }) {
             <div style={{ width: 18, height: 18, borderRadius: 5, border: `1.5px solid ${understood ? C.orange : C.border}`, background: understood ? C.orange : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
               {understood && <CheckCircle2 size={12} color={C.white} />}
             </div>
-            <span style={{ fontSize: 12, color: C.jet, lineHeight: 1.5, ...fBody }}>I understand the cancellation policy and refund outcome.</span>
+            <span style={{ fontSize: T.label, color: C.jet, lineHeight: 1.5, ...fBody }}>I understand the cancellation policy and refund outcome.</span>
           </button>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -412,8 +413,8 @@ export function ReceiptSheet({ booking, onClose }) {
             <div style={{ width: 52, height: 52, borderRadius: 16, background: C.successTint, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px" }}>
               <CheckCircle2 size={24} color={C.success} />
             </div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: C.jet, ...fDisplay }}>${booking.price.toFixed(2)}</div>
-            <div style={{ fontSize: 12, color: C.slate, marginTop: 2, ...fBody }}>
+            <div style={{ fontSize: T.headingLg, fontWeight: 700, color: C.jet, ...fDisplay }}>${booking.price.toFixed(2)}</div>
+            <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>
               {booking.status === "cancelled" ? "Cancelled" : "Paid"} · {booking.date}
             </div>
           </div>
@@ -436,7 +437,7 @@ export function ReceiptSheet({ booking, onClose }) {
             <div style={{ width: 34, height: 24, borderRadius: 5, background: C.jet, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <CreditCard size={13} color={C.white} />
             </div>
-            <div style={{ fontSize: 13, color: C.jet, fontWeight: 500, ...fBody }}>Visa •••• 4821</div>
+            <div style={{ fontSize: T.body, color: C.jet, fontWeight: 500, ...fBody }}>Visa •••• 4821</div>
           </Card>
 
           <Btn full variant="outline" icon={Download}>Download receipt</Btn>
@@ -458,9 +459,9 @@ export function BookingCard({ b, nav, past, onReschedule, onCancel, onPay }) {
         <div style={{ display: "flex", gap: 10, minWidth: 0 }}>
           <Avatar name={b.coachName || b.clientName} size={42} />
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: C.jet, letterSpacing: "-0.1px", ...fDisplay }}>{b.service}</div>
-            <div style={{ fontSize: 12.5, color: C.slate, marginTop: 3, ...fBody }}>{b.coachName || b.clientName}</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: C.slateLight, marginTop: 6, ...fBody }}>
+            <div style={{ fontSize: T.subtitleLg, fontWeight: 700, color: C.jet, letterSpacing: "-0.1px", ...fDisplay }}>{b.service}</div>
+            <div style={{ fontSize: T.labelLg, color: C.slate, marginTop: 3, ...fBody }}>{b.coachName || b.clientName}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: T.label, color: C.slateLight, marginTop: 6, ...fBody }}>
               <Clock size={11} /> {b.date} · {b.time}
             </div>
           </div>
@@ -470,7 +471,7 @@ export function BookingCard({ b, nav, past, onReschedule, onCancel, onPay }) {
       {paymentDue && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.orangeTint, borderRadius: 12, padding: "9px 12px", marginTop: 12 }} onClick={(e) => e.stopPropagation()}>
           <CreditCard size={14} color={C.orange} style={{ flexShrink: 0 }} />
-          <span style={{ flex: 1, fontSize: 12, color: C.jet, lineHeight: 1.4, ...fBody }}>{(b.coachName || "Your coach").split(" ")[0]} accepted — send your payment to lock in the session.</span>
+          <span style={{ flex: 1, fontSize: T.label, color: C.jet, lineHeight: 1.4, ...fBody }}>{(b.coachName || "Your coach").split(" ")[0]} accepted — send your payment to lock in the session.</span>
           <Btn size="sm" variant="dark" onClick={onPay}>Pay now</Btn>
         </div>
       )}
@@ -515,7 +516,7 @@ export function BookingCard({ b, nav, past, onReschedule, onCancel, onPay }) {
 /* Booking details — the client-side counterpart to the coach's booking detail page.
    Surfaces the same categories of information (party info, session details, notes,
    booking policy) but never exposes the Accept/Decline workflow, which is coach-only. */
-export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancelBooking, rescheduleBooking, payBooking }) {
+export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancelBooking, rescheduleBooking, setDraft, payBooking }) {
   const booking = bookings.find((b) => b.id === params.id);
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -572,8 +573,8 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <Avatar name={booking.coachName} size={50} />
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 15.5, fontWeight: 600, color: C.jet, ...fDisplay }}>{booking.coachName}</div>
-              {coach && <div style={{ fontSize: 12, color: C.slate, ...fBody }}>{coach.suburb}</div>}
+              <div style={{ fontSize: T.subtitleLg, fontWeight: 600, color: C.jet, ...fDisplay }}>{booking.coachName}</div>
+              {coach && <div style={{ fontSize: T.label, color: C.slate, ...fBody }}>{coach.suburb}</div>}
             </div>
             <StatusPill status={booking.status} />
           </div>
@@ -599,7 +600,7 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
           <>
             <SectionLabel>Your notes to the coach</SectionLabel>
             <Card style={{ marginBottom: 14 }}>
-              <p style={{ fontSize: 13, color: C.slate, lineHeight: 1.6, ...fBody }}>{booking.notes}</p>
+              <p style={{ fontSize: T.body, color: C.slate, lineHeight: 1.6, ...fBody }}>{booking.notes}</p>
             </Card>
           </>
         )}
@@ -609,8 +610,8 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
           <div style={{ display: "flex", gap: 10, alignItems: "flex-start", paddingBottom: 12, marginBottom: 12, borderBottom: `1px solid ${C.border}` }}>
             <Calendar size={15} color={C.slate} style={{ marginTop: 1, flexShrink: 0 }} />
             <div>
-              <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, marginBottom: 2, ...fBody }}>Cancellation policy</div>
-              <div style={{ fontSize: 12, color: C.slate, lineHeight: 1.5, ...fBody }}>
+              <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 2, ...fBody }}>Cancellation policy</div>
+              <div style={{ fontSize: T.label, color: C.slate, lineHeight: 1.5, ...fBody }}>
                 {coach?.cancellationPolicy || "Cancellation terms will be confirmed with your coach."}
               </div>
             </div>
@@ -618,8 +619,8 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
           <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
             <AlertTriangle size={15} color={C.slate} style={{ marginTop: 1, flexShrink: 0 }} />
             <div>
-              <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, marginBottom: 2, ...fBody }}>No-show policy</div>
-              <div style={{ fontSize: 12, color: C.slate, lineHeight: 1.5, ...fBody }}>
+              <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 2, ...fBody }}>No-show policy</div>
+              <div style={{ fontSize: T.label, color: C.slate, lineHeight: 1.5, ...fBody }}>
                 {coach?.noShowPolicy || "Failing to attend without notice may forfeit some or all of your session fee."}
               </div>
             </div>
@@ -638,8 +639,8 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
             <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
               <CreditCard size={16} color={C.orange} style={{ flexShrink: 0, marginTop: 1 }} />
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: C.jet, ...fBody }}>{booking.coachName.split(" ")[0]} accepted your request</div>
-                <div style={{ fontSize: 12, color: C.slate, marginTop: 2, lineHeight: 1.5, ...fBody }}>Send your payment to lock in the session — funds are held securely until it's complete.</div>
+                <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{booking.coachName.split(" ")[0]} accepted your request</div>
+                <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, lineHeight: 1.5, ...fBody }}>Send your payment to lock in the session — funds are held securely until it's complete.</div>
               </div>
             </div>
             <div style={{ marginTop: 10 }}>
@@ -670,6 +671,8 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
         )}
         {isPast && booking.status === "cancelled" && (
           <div style={{ marginBottom: 14 }}>
+            {booking.refundStatus === "processing" && <div style={{ marginBottom: 10 }}><StatusBanner state="refundProcessing" compact /></div>}
+            {booking.refundStatus === "refunded" && <div style={{ marginBottom: 10 }}><StatusBanner state="paymentRefunded" message={`$${Number(booking.price).toFixed(2)} was refunded to your original payment method.`} compact /></div>}
             <Btn full variant="secondary" icon={RefreshCcw} onClick={() => nav("coach-profile", { id: booking.coachId })}>Book again</Btn>
           </div>
         )}
@@ -702,7 +705,7 @@ export function ScreenLeaveReview({ nav, params, toast }) {
       <TopBar title="Leave a review" onBack={() => nav("client-dashboard")} />
       <div style={{ textAlign: "center", marginTop: 6, marginBottom: 20 }}>
         <Avatar name={params.name} size={54} />
-        <div style={{ fontSize: 15, fontWeight: 600, color: C.jet, marginTop: 10, ...fDisplay }}>{params.name}</div>
+        <div style={{ fontSize: T.subtitleLg, fontWeight: 600, color: C.jet, marginTop: 10, ...fDisplay }}>{params.name}</div>
         <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 12 }}>
           {[1, 2, 3, 4, 5].map((i) => (
             <button key={i} onClick={() => setRating(i)} style={{ background: "none", border: "none", cursor: "pointer" }}>
@@ -716,8 +719,8 @@ export function ScreenLeaveReview({ nav, params, toast }) {
         {options.map((t) => <Chip key={t} active={tags.includes(t)} onClick={() => toggle(t)}>{t}</Chip>)}
       </div>
       <textarea placeholder="Tell other clients about your session..." rows={4}
-        style={{ border: `1.5px solid ${C.border}`, borderRadius: 14, padding: 13, fontSize: 13.5, resize: "none", outline: "none", ...fBody }} />
-      <div style={{ fontSize: 11, color: C.slateLight, marginTop: 10, ...fBody }}>Only clients with a verified booking can leave a review. Your review is moderated before it appears publicly.</div>
+        style={{ border: `1.5px solid ${C.border}`, borderRadius: 14, padding: 13, fontSize: T.bodyLg, resize: "none", outline: "none", ...fBody }} />
+      <div style={{ fontSize: T.caption, color: C.slateLight, marginTop: 10, ...fBody }}>Only clients with a verified booking can leave a review. Your review is moderated before it appears publicly.</div>
       <div style={{ marginTop: "auto", padding: "14px 0" }}>
         <Btn full onClick={() => { toast("Review submitted for moderation"); nav("client-dashboard"); }}>Submit review</Btn>
       </div>

@@ -11,7 +11,7 @@ import {
   WifiOff, RefreshCcw,
 } from "lucide-react";
 
-import { C, fBody, fDisplay, useFonts, KEYFRAMES } from "./theme/theme";
+import { C, fBody, fDisplay, useFonts, KEYFRAMES, T } from "./theme/theme";
 import {
   INITIAL_BOOKINGS, COACH_BOOKINGS, ADMIN_VERIFICATION_QUEUE, ADMIN_DISPUTES,
   COACHES, INITIAL_AVAILABILITY_BLOCKS, CLIENT_NOTIFICATIONS, COACH_NOTIFICATIONS, CONFIG,
@@ -20,9 +20,10 @@ import { LogoMark, Toast, BottomTabs, StatusBar } from "./components/ui/Primitiv
 
 // Onboarding / auth
 import {
-  ScreenSplash, ScreenRoleSelect, ScreenAuth, ScreenCoachRegister, ScreenCoachInfo,
+  ScreenSplash, ScreenGetStarted, ScreenRoleSelect, ScreenAuth, ScreenCoachRegister, ScreenCoachInfo,
   ScreenCoachExpertise, ScreenEnableBiometric, ScreenVerification,
   ScreenVerificationPending, ScreenAdminLogin,
+  ScreenForgotPassword, ScreenResetCode, ScreenResetPassword,
 } from "./screens/onboarding/OnboardingScreens";
 
 // Client
@@ -34,7 +35,7 @@ import {
   ScreenBookingConfirmation, ScreenBookingRequestSent,
 } from "./screens/client/Booking";
 import { ScreenClientDashboard, ScreenLeaveReview, ScreenClientBookingDetail } from "./screens/client/Dashboard";
-import { ScreenClientProfile, ScreenPaymentHistory } from "./screens/client/Account";
+import { ScreenClientProfile, ScreenClientHistory } from "./screens/client/Account";
 import { ScreenClientSetupComplete } from "./screens/client/SetupComplete";
 
 // Coach
@@ -45,6 +46,7 @@ import { ScreenCoachProfileEdit } from "./screens/coach/ProfileEdit";
 import { ScreenCoachReels } from "./screens/coach/Reels";
 import { ScreenCoachPackageForm } from "./screens/coach/PackageForm";
 import { ScreenCoachEarnings } from "./screens/coach/Earnings";
+import { ScreenCoachHistory } from "./screens/coach/History";
 import { ScreenCoachServicesSetup } from "./screens/coach/ServicesSetup";
 import { ScreenCoachAvailabilitySetup } from "./screens/coach/AvailabilitySetup";
 import { ScreenCoachPayoutSetup } from "./screens/coach/PayoutSetup";
@@ -102,8 +104,6 @@ export default function App() {
   const [draft, setDraft] = useState(null);
   const [bookings, setBookings] = useState(INITIAL_BOOKINGS);
   const [coachBookings, setCoachBookings] = useState(COACH_BOOKINGS);
-  const [clientNotifications, setClientNotifications] = useState(CLIENT_NOTIFICATIONS);
-  const [coachNotifications, setCoachNotifications] = useState(COACH_NOTIFICATIONS);
   const [coachPackages, setCoachPackages] = useState(COACHES[1].packages);
   const [coachMedia, setCoachMedia] = useState(
     Array.from({ length: COACHES[1].reelsCount }, (_, i) => ({
@@ -122,12 +122,30 @@ export default function App() {
   const [coachOnboarding, setCoachOnboarding] = useState({});
   const updateCoachOnboarding = (patch) => setCoachOnboarding((c) => ({ ...c, ...patch }));
 
+  // Whether the current coach (Josh Whitfield) is open to new bookings right now.
+  // Drives the "Coach available / unavailable" state on his profile, Discover
+  // card and dashboard toggle.
+  const [coachAvailableNow, setCoachAvailableNow] = useState(true);
+
+  // Global notification log — a single source of truth that real in-app actions
+  // (booking accepted/declined, payment received, verification decided...) push
+  // into, tagged with who it's for. Screens merge this on top of their seed/mock
+  // notification lists via useLiveNotifications() so the bell badge and sheet
+  // reflect what's actually happening in the prototype, not just static mock data.
+  const [notifications, setNotifications] = useState([]);
+  const pushNotification = ({ audience, type = "booking", title, body }) => {
+    setNotifications((n) => [
+      { id: `rt${Date.now()}${Math.random().toString(36).slice(2, 6)}`, audience, type, title, body, time: "Just now", unread: true },
+      ...n,
+    ]);
+  };
+  const clientNotifications = notifications.filter((n) => n.audience === "client");
+  const coachNotifications = notifications.filter((n) => n.audience === "coach");
+
   const toast = (msg) => { setToastMsg(msg); setTimeout(() => setToastMsg(null), 2200); };
   const nav = (s, p = {}) => { setHistory((h) => [...h, screen]); setScreen(s); setParams(p); };
   const goBack = () => { setHistory((h) => { const n = [...h]; const last = n.pop(); if (last) setScreen(last); return n; }); };
   const toggleFav = (id) => setFavorites((f) => f.includes(id) ? f.filter((x) => x !== id) : [...f, id]);
-  const addClientNotification = (n) => setClientNotifications((arr) => [{ id: "n" + Date.now(), unread: true, time: "Just now", ...n }, ...arr]);
-  const addCoachNotification = (n) => setCoachNotifications((arr) => [{ id: "cn" + Date.now(), unread: true, time: "Just now", ...n }, ...arr]);
 
   // Every booking now starts life as a pending request — no payment is collected
   // until the coach has reviewed it and accepted. `d.id`, when supplied, keeps
@@ -144,19 +162,53 @@ export default function App() {
     const venue = d.venue || d.pkg.venue || d.coach.venue;
     const repeatText = d.repeatText || "One-time session";
     const fee = typeof d.fee === "number" ? d.fee : Math.round(d.pkg.price * CONFIG.serviceFeeRate * 100) / 100;
-    setBookings((b) => [{ id, coachId, coachName: d.coach.name, clientName: "Sarah Lin", service: d.pkg.name, date: d.day, time: d.time, mode: d.mode, status: "pending", price: d.total, reviewed: false, participants: d.participants || "You", notes: d.conditions || "", sport, venue, repeatText, fee }, ...b]);
+    setBookings((b) => [{ id, coachId, coachName: d.coach.name, clientName: "Sarah Lin", service: d.pkg.name, date: d.day, time: d.time, mode: d.mode, status: "pending", price: d.total, paid: false, reviewed: false, participants: d.participants || "You", notes: d.conditions || "", sport, venue, repeatText, fee }, ...b]);
     // The prototype's Coach role is always Josh Whitfield (c2) — mirror the
     // request into their Bookings pending queue so it's reviewable, and let
     // them chat with the client about it, from the coach side too.
     if (coachId === "c2") {
       setCoachBookings((cb) => [{ id, clientName: "Sarah Lin", service: d.pkg.name, date: d.day, time: d.time, mode: d.mode, status: "pending", price: d.total, notes: d.conditions || "", sport, venue, repeatText, fee }, ...cb]);
-      addCoachNotification({ type: "booking", title: "New booking request", body: `Sarah Lin requested a ${d.pkg.name} for ${d.day}, ${d.time}.` });
     }
+    pushNotification({ audience: "coach", type: "booking", title: "New booking request", body: `Sarah Lin requested a ${d.pkg.name} for ${d.day}, ${d.time}.` });
   };
-  const cancelBooking = (id) => setBookings((bs) => bs.map((b) => (b.id === id ? { ...b, status: "cancelled" } : b)));
-  // Simulated payment step for a just-accepted booking (see respondBooking below).
-  const payBooking = (id) => setBookings((bs) => bs.map((b) => (b.id === id ? { ...b, paymentDue: false } : b)));
+
+  // Client cancels (or withdraws a pending request). Looks the booking up first
+  // so we can notify the coach with real details, and — if it had already been
+  // paid for — kicks off a simulated refund: cancelled now, refunded a moment
+  // later, matching the Payment processing -> success pattern used elsewhere.
+  const cancelBooking = (id) => {
+    setBookings((bs) => {
+      const target = bs.find((b) => b.id === id);
+      if (target) {
+        pushNotification({
+          audience: "coach", type: "booking",
+          title: target.status === "pending" ? "Request withdrawn" : "Booking cancelled",
+          body: `${target.clientName || "A client"} ${target.status === "pending" ? "withdrew their request for" : "cancelled"} ${target.service}${target.date ? ` on ${target.date}` : ""}.`,
+        });
+        setCoachBookings((cb) => cb.map((b) => (b.id === id ? { ...b, status: "cancelled" } : b)));
+        if (target.status === "confirmed" && target.paid) {
+          setTimeout(() => {
+            setBookings((later) => later.map((b) => (b.id === id ? { ...b, refundStatus: "refunded" } : b)));
+            toast(`$${Number(target.price).toFixed(2)} refunded`);
+          }, 1400);
+          return bs.map((b) => (b.id === id ? { ...b, status: "cancelled", refundStatus: "processing" } : b));
+        }
+      }
+      return bs.map((b) => (b.id === id ? { ...b, status: "cancelled" } : b));
+    });
+  };
+
   const rescheduleBooking = (id, { date, time }) => setBookings((bs) => bs.map((b) => (b.id === id ? { ...b, date, time } : b)));
+
+  // Marks a confirmed booking as paid once ScreenPayment succeeds, and lets the
+  // coach know a charge actually landed (distinct from just "confirmed").
+  const markBookingPaid = (id) => setBookings((bs) => {
+    const target = bs.find((b) => b.id === id);
+    if (target) {
+      pushNotification({ audience: "coach", type: "booking", title: "Payment received", body: `Payment of $${Number(target.price).toFixed(2)} received for ${target.service}.` });
+    }
+    return bs.map((b) => (b.id === id ? { ...b, paid: true, paymentDue: false } : b));
+  });
 
   // Shared accept/decline handler for a coach's booking request — called from
   // both the Bookings tab and the coach dashboard's quick-action cards. Keeps
@@ -165,18 +217,23 @@ export default function App() {
   const respondBooking = (id, status) => {
     setCoachBookings((arr) => arr.map((b) => (b.id === id ? { ...b, status } : b)));
     const cb = coachBookings.find((b) => b.id === id);
+    // Only mirror the status change (and notify) on the client side when this
+    // request actually corresponds to the logged-in client's own booking —
+    // several seeded coach bookings belong to other clients (Marcus Webb, the
+    // Chen family, etc.) that don't exist in `bookings` at all.
     const matchesClient = bookings.some((b) => b.id === id);
     if (matchesClient) {
       setBookings((arr) => arr.map((b) => (b.id === id ? { ...b, status, paymentDue: status === "confirmed" ? true : b.paymentDue } : b)));
       if (cb) {
         if (status === "confirmed") {
-          addClientNotification({ type: "payment", title: "Booking accepted", body: `${COACHES[1].name} accepted your ${cb.service} request — send payment to confirm your session on ${cb.date}.`, bookingId: id });
-        } else if (status === "cancelled") {
-          addClientNotification({ type: "booking", title: "Booking declined", body: `${COACHES[1].name} declined your ${cb.service} request for ${cb.date}.`, bookingId: id });
+          pushNotification({ audience: "client", type: "payment", title: "Send your payment", body: `${COACHES[1].name} accepted your ${cb.service} request — send payment to confirm your session on ${cb.date}.`, bookingId: id });
+        } else if (status === "declined") {
+          pushNotification({ audience: "client", type: "booking", title: "Booking declined", body: `${COACHES[1].name} declined your ${cb.service} request for ${cb.date}.`, bookingId: id });
         }
       }
     }
   };
+
   const handleClientPrefs = (prefs) => {
     setClientPrefs(prefs);
     // Participant profiles created during onboarding become managed child profiles.
@@ -222,6 +279,11 @@ export default function App() {
     if (applicant && applicant.submittedByUser) {
       setVerificationStatus(approve ? "approved" : "rejected");
       if (approve) setVerified(true);
+      pushNotification({
+        audience: "coach", type: "verification",
+        title: approve ? "You're verified!" : "Verification rejected",
+        body: approve ? "Your verification was approved. You can now accept bookings." : "One or more documents couldn't be confirmed — please resubmit.",
+      });
     }
     toast(approve ? `${applicant ? applicant.name : "Coach"} approved` : `${applicant ? applicant.name : "Coach"} rejected`);
     nav("admin-verify");
@@ -253,14 +315,18 @@ export default function App() {
   const activeTabScreen = TAB_ALIASES[screen] || screen;
   const showTabs = tabsForRole.some((t) => t.value === activeTabScreen);
 
-  const screenProps = { nav, params, toast, role, favorites, toggleFav, biometric, setBiometric, verified, verificationStatus, reachedDashboardAfterVerification, setReachedDashboardAfterVerification, offline, draft, setDraft, addBooking, cancelBooking, rescheduleBooking, respondBooking, payBooking, bookings, setBookings, coachBookings, setCoachBookings, clientNotifications, setClientNotifications, addClientNotification, coachNotifications, setCoachNotifications, addCoachNotification, setRole, addCoachRole: () => setHasCoachRole(true), submitVerification, verificationQueue, decideVerification, disputes, resolveDispute, clientPrefs, onComplete: handleClientPrefs, children, addChild, updateChild, removeChild, coachOnboarding, updateCoachOnboarding, coachPackages, savePackage, removePackage, availabilityBlocks, setAvailabilityBlocks, coachMedia, addMedia, removeMedia };
+  const screenProps = { nav, params, toast, role, favorites, toggleFav, biometric, setBiometric, verified, verificationStatus, reachedDashboardAfterVerification, setReachedDashboardAfterVerification, offline, draft, setDraft, addBooking, cancelBooking, rescheduleBooking, respondBooking, markBookingPaid, bookings, setBookings, coachBookings, setCoachBookings, setRole, addCoachRole: () => setHasCoachRole(true), submitVerification, verificationQueue, decideVerification, disputes, resolveDispute, clientPrefs, onComplete: handleClientPrefs, children, addChild, updateChild, removeChild, coachOnboarding, updateCoachOnboarding, coachPackages, savePackage, removePackage, availabilityBlocks, setAvailabilityBlocks, coachMedia, addMedia, removeMedia, coachAvailableNow, setCoachAvailableNow, pushNotification, clientNotifications, coachNotifications };
 
 
   function renderScreen() {
     switch (screen) {
       case "splash": return <ScreenSplash nav={nav} />;
+      case "get-started": return <ScreenGetStarted nav={nav} />;
       case "role-select": return <ScreenRoleSelect nav={nav} setRole={setRole} />;
       case "auth": return <ScreenAuth {...screenProps} />;
+      case "forgot-password": return <ScreenForgotPassword {...screenProps} />;
+      case "reset-code": return <ScreenResetCode {...screenProps} />;
+      case "reset-password": return <ScreenResetPassword {...screenProps} />;
       case "enable-biometric": return <ScreenEnableBiometric {...screenProps} />;
       case "coach-register": return <ScreenCoachRegister {...screenProps} />;
       case "coach-info": return <ScreenCoachInfo {...screenProps} />;
@@ -287,7 +353,7 @@ export default function App() {
       case "leave-review": return <ScreenLeaveReview {...screenProps} />;
       case "client-messages": return <ScreenMessages {...screenProps} />;
       case "client-profile": return <ScreenClientProfile {...screenProps} />;
-      case "client-payment-history": return <ScreenPaymentHistory {...screenProps} />;
+      case "client-history": return <ScreenClientHistory {...screenProps} />;
 
       case "coach-dashboard": return <ScreenCoachDashboard {...screenProps} />;
       case "coach-services-setup": return <ScreenCoachServicesSetup {...screenProps} />;
@@ -303,6 +369,7 @@ export default function App() {
       case "coach-edit-package":
         return <ScreenCoachPackageForm {...screenProps} />;
       case "coach-earnings": return <ScreenCoachEarnings {...screenProps} />;
+      case "coach-history": return <ScreenCoachHistory {...screenProps} />;
       case "coach-messages": return <ScreenMessages {...screenProps} />;
 
       case "chat-thread": return <ScreenChatThread {...screenProps} />;
@@ -327,11 +394,11 @@ export default function App() {
       <div style={{ width: 393, maxWidth: "100%", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <LogoMark size={20} />
-          <span style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, ...fDisplay }}>CoachLink — interactive prototype</span>
+          <span style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, ...fDisplay }}>CoachLink — interactive prototype</span>
         </div>
       </div>
       <div style={{ width: 393, maxWidth: "100%", background: C.white, border: `1px solid ${C.border}`, borderRadius: 16, padding: 10, marginBottom: 16, display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
-        <span style={{ fontSize: 11, color: C.slateLight, fontWeight: 600, ...fBody }}>VIEW AS</span>
+        <span style={{ fontSize: T.caption, color: C.slateLight, fontWeight: 600, ...fBody }}>VIEW AS</span>
         {["client", "coach", "admin"].map((r) => (
           <button key={r} onClick={() => {
             setRole(r); setHistory([]);
@@ -342,18 +409,18 @@ export default function App() {
               setScreen(r === "admin" ? "admin-login" : "client-home");
             }
           }}
-            style={{ padding: "6px 12px", borderRadius: 999, border: `1px solid ${role === r ? C.orange : C.border}`, background: role === r ? C.orangeTint : C.white, color: role === r ? C.orange : C.jet, fontSize: 12, fontWeight: 600, cursor: "pointer", textTransform: "capitalize", ...fBody }}>
+            style={{ padding: "6px 12px", borderRadius: 999, border: `1px solid ${role === r ? C.orange : C.border}`, background: role === r ? C.orangeTint : C.white, color: role === r ? C.orange : C.jet, fontSize: T.label, fontWeight: 600, cursor: "pointer", textTransform: "capitalize", ...fBody }}>
             {r}
           </button>
         ))}
         <div style={{ flex: 1 }} />
         <button onClick={() => setOffline((v) => !v)} title="Simulate offline"
-          style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 999, border: `1px solid ${offline ? C.orange : C.border}`, background: offline ? C.orangeTint : C.white, color: offline ? C.orange : C.slate, fontSize: 11.5, fontWeight: 600, cursor: "pointer", ...fBody }}>
+          style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 999, border: `1px solid ${offline ? C.orange : C.border}`, background: offline ? C.orangeTint : C.white, color: offline ? C.orange : C.slate, fontSize: T.captionLg, fontWeight: 600, cursor: "pointer", ...fBody }}>
           <WifiOff size={12} /> Offline
         </button>
-        <button onClick={() => { setScreen(role === "admin" ? "admin-login" : "splash"); setHistory([]); setBookings(INITIAL_BOOKINGS); setCoachBookings(COACH_BOOKINGS); setClientNotifications(CLIENT_NOTIFICATIONS); setCoachNotifications(COACH_NOTIFICATIONS); setVerified(false); setVerificationStatus("none"); setReachedDashboardAfterVerification(false); setVerificationQueue(ADMIN_VERIFICATION_QUEUE); setDisputes(ADMIN_DISPUTES); setClientPrefs(null); setChildren([]); setCoachOnboarding({}); setBiometric(false); setCoachPackages(COACHES[1].packages); setAvailabilityBlocks(INITIAL_AVAILABILITY_BLOCKS); setCoachMedia(Array.from({ length: COACHES[1].reelsCount }, (_, i) => ({ id: `m${i + 1}`, type: i % 4 === 3 ? "photo" : "reel", caption: i % 4 === 3 ? "Training photo" : "Session highlight", sport: COACHES[1].sport, url: null }))); }}
+        <button onClick={() => { setScreen(role === "admin" ? "admin-login" : "splash"); setHistory([]); setBookings(INITIAL_BOOKINGS); setCoachBookings(COACH_BOOKINGS); setNotifications([]); setVerified(false); setVerificationStatus("none"); setReachedDashboardAfterVerification(false); setVerificationQueue(ADMIN_VERIFICATION_QUEUE); setDisputes(ADMIN_DISPUTES); setClientPrefs(null); setChildren([]); setCoachOnboarding({}); setBiometric(false); setCoachPackages(COACHES[1].packages); setAvailabilityBlocks(INITIAL_AVAILABILITY_BLOCKS); setCoachMedia(Array.from({ length: COACHES[1].reelsCount }, (_, i) => ({ id: `m${i + 1}`, type: i % 4 === 3 ? "photo" : "reel", caption: i % 4 === 3 ? "Training photo" : "Session highlight", sport: COACHES[1].sport, url: null }))); }}
 
-          style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 999, border: `1px solid ${C.border}`, background: C.white, color: C.slate, fontSize: 11.5, fontWeight: 600, cursor: "pointer", ...fBody }}>
+          style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 999, border: `1px solid ${C.border}`, background: C.white, color: C.slate, fontSize: T.captionLg, fontWeight: 600, cursor: "pointer", ...fBody }}>
           <RefreshCcw size={12} /> Reset
         </button>
       </div>
@@ -362,7 +429,7 @@ export default function App() {
       <div style={{ width: 393, maxWidth: "100%", height: 852, maxHeight: "88vh", background: "linear-gradient(160deg,#3a3d45,#101114)", borderRadius: 58, padding: 14, boxShadow: "0 30px 60px -20px rgba(22,24,29,.4)", position: "relative" }}>
         <div style={{ width: "100%", height: "100%", background: isDarkScreen ? C.jet : C.white, borderRadius: 46, overflow: "hidden", position: "relative", border: "1px solid rgba(255,255,255,.08)" }}>
           {/* Dynamic Island */}
-          <div style={{ position: "absolute", top: 11, left: "50%", transform: "translateX(-50%)", width: 126, height: 37, background: "#000", borderRadius: 20, zIndex: 100 }} />
+          <div style={{ position: "absolute", top: 11, left: "50%", transform: "translateX(-50%)", width: 126, height: 37, background: C.black, borderRadius: 20, zIndex: 100 }} />
           <StatusBar dark={isDarkScreen} />
           <div style={{ height: "calc(100% - 34px)", position: "relative" }}>
             {renderScreen()}
@@ -372,7 +439,7 @@ export default function App() {
         </div>
       </div>
 
-      <div style={{ width: 393, maxWidth: "100%", marginTop: 14, fontSize: 11.5, color: C.slateLight, textAlign: "center", lineHeight: 1.6, ...fBody }}>
+      <div style={{ width: 393, maxWidth: "100%", marginTop: 14, fontSize: T.captionLg, color: C.slateLight, textAlign: "center", lineHeight: 1.6, ...fBody }}>
         High-fidelity front-end prototype with mock data — booking, payments and verification flows are simulated for demonstration.
       </div>
     </div>

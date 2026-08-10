@@ -1,59 +1,72 @@
-
 import React, { useState, useRef, useEffect } from "react";
-import { Bell, Search, Filter, Navigation, Star, MapPin, Heart, Sparkles, Calendar, MessageCircle, Percent, Check, X, Plus, Minus, CreditCard } from "lucide-react";
-import { C, fDisplay, fBody } from "../../theme/theme";
+import { Bell, Search, Filter, Navigation, Star, MapPin, Heart, Sparkles, Calendar, MessageCircle, Percent, Check, X, CreditCard } from "lucide-react";
+import { C, fDisplay, fBody, T } from "../../theme/theme";
 import { COACHES, SPORTS, ALL_SUBURBS } from "../../data/mockData";
 import { Card, Chip, Badge, SegTabs, SectionLabel, Avatar, Btn, TopBar, BottomSheet, EmptyState } from "../../components/ui/Primitives";
+import { useLiveNotifications, NotificationBellButton, StatusBanner } from "../../systems/StateSystem";
+import { CoachMapView } from "../../components/map/CoachMapView";
+
+// Only the current in-app coach (Josh Whitfield, c2) has a live "available now"
+// toggle driven by app state — every other coach in the directory is static
+// mock data, so this is the one card that can actually flip to "unavailable".
+const LIVE_AVAILABILITY_COACH_ID = "c2";
 
 const NOTIF_ICON = { booking: Calendar, message: MessageCircle, review: Star, availability: Sparkles, promo: Percent, payment: CreditCard };
-const MAP_PINS = [[20,30],[60,15],[40,55],[78,45],[25,70],[65,75],[50,40],[15,55],[85,20],[35,80]];
-const MAP_SIZE = 1000;
 const DEFAULT_FILTERS = { sports: [], areas: [], maxPrice: 150, minRating: 0 };
 
-// Single-line text helper: keeps every field in the card to one line, truncating with ellipsis
-// instead of wrapping, so card heights stay consistent no matter how long a name/suburb is.
 const oneLine = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
 
-export function CoachListCard({ coach, onOpen }) {
+export function CoachListCard({ coach, onOpen, unavailable }) {
   return (
     <Card
       onClick={onOpen}
-      style={{ marginBottom: 14, border: `1px solid ${C.border}`, boxShadow: "0 1px 2px rgba(22,24,29,.04)" }}
+      style={{ marginBottom: 14, border: `1px solid ${C.border}`, boxShadow: "0 1px 2px rgba(22,24,29,.04)", opacity: unavailable ? 0.8 : 1 }}
     >
       <div style={{ display: "flex", gap: 12 }}>
-        <Avatar name={coach.name} size={54} />
+        <div style={{ position: "relative", flexShrink: 0 }}>
+          <Avatar name={coach.name} size={54} />
+          {unavailable && (
+            <span style={{ position: "absolute", right: -2, bottom: -2, width: 16, height: 16, borderRadius: 99, background: C.slateLight, border: `2px solid ${C.white}` }} />
+          )}
+        </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           {/* Identity + price: price sits top-right, same visual weight as the name, so it's
               one of the first two things scanned — not something buried at the bottom of the card. */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
             <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ fontWeight: 700, fontSize: 16, color: C.jet, letterSpacing: "-0.1px", ...oneLine, ...fDisplay }}>{coach.name}</div>
+              <div style={{ fontWeight: 700, fontSize: T.title, color: C.jet, letterSpacing: "-0.1px", ...oneLine, ...fDisplay }}>{coach.name}</div>
               {/* Sport category — bumped up in size/weight and given the brand colour so a
                   client's eye lands on "what this coach does" as fast as on their name. */}
-              <div style={{ fontSize: 14, fontWeight: 700, color: C.orange, marginTop: 2, ...oneLine, ...fDisplay }}>{coach.sport}</div>
+              <div style={{ fontSize: T.subtitle, fontWeight: 700, color: C.orange, marginTop: 2, ...oneLine, ...fDisplay }}>{coach.sport}</div>
             </div>
-            <div style={{ fontSize: 17, fontWeight: 800, color: C.jet, whiteSpace: "nowrap", flexShrink: 0, ...fDisplay }}>
-              ${coach.packages[0].price}<span style={{ fontSize: 11, fontWeight: 500, color: C.slateLight }}>/session</span>
+            <div style={{ fontSize: T.titleLg, fontWeight: 800, color: C.jet, whiteSpace: "nowrap", flexShrink: 0, ...fDisplay }}>
+              ${coach.packages[0].price}<span style={{ fontSize: T.caption, fontWeight: 500, color: C.slateLight }}>/session</span>
             </div>
           </div>
 
           <div style={{ marginTop: 10 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5, color: C.jet, fontWeight: 600, ...fBody }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: T.labelLg, color: C.jet, fontWeight: 600, ...fBody }}>
               <Star size={12} fill={C.orange} color={C.orange} /> {coach.rating}
               <span style={{ color: C.slateLight, fontWeight: 400 }}>({coach.reviews})</span>
             </div>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 4, fontSize: 12.5, color: C.slate, marginTop: 4, ...fBody }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 4, fontSize: T.labelLg, color: C.slate, marginTop: 4, ...fBody }}>
               <MapPin size={12} style={{ flexShrink: 0, marginTop: 1 }} /> <span style={{ minWidth: 0 }}>{coach.suburb} · {coach.distanceKm} km</span>
             </div>
           </div>
 
-          {coach.instantBook && (
+          {(coach.instantBook || unavailable) && (
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
-              {coach.verified.identity && (
-                <span style={{ fontSize: 11, fontWeight: 700, padding: "4px 9px", borderRadius: 8, background: C.successTint, color: C.success, ...fBody }}>Verified</span>
-              )}
-              {coach.instantBook && (
-                <span style={{ fontSize: 11, fontWeight: 700, padding: "4px 9px", borderRadius: 8, background: C.orangeTint, color: C.orange, ...fBody }}>Instant book</span>
+              {unavailable ? (
+                <span style={{ fontSize: T.caption, fontWeight: 700, padding: "4px 9px", borderRadius: 8, background: C.fog, color: C.slate, ...fBody }}>Currently unavailable</span>
+              ) : (
+                <>
+                  {coach.verified.identity && (
+                    <span style={{ fontSize: T.caption, fontWeight: 700, padding: "4px 9px", borderRadius: 8, background: C.successTint, color: C.success, ...fBody }}>Verified</span>
+                  )}
+                  {coach.instantBook && (
+                    <span style={{ fontSize: T.caption, fontWeight: 700, padding: "4px 9px", borderRadius: 8, background: C.orangeTint, color: C.orange, ...fBody }}>Instant book</span>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -63,117 +76,7 @@ export function CoachListCard({ coach, onOpen }) {
   );
 }
 
-export function PannableMapView({ coaches = [], onOpen, onClose }) {
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
-  const [searchText, setSearchText] = useState("");
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const dragRef = useRef(null);
-  const movedRef = useRef(false);
-
-  const getPoint = e => e.touches ? e.touches[0] : e;
-  const startDrag = e => { const p = getPoint(e); dragRef.current = { startX: p.clientX, startY: p.clientY, panX: pan.x, panY: pan.y }; movedRef.current = false; };
-  const moveDrag = e => {
-    if (!dragRef.current) return;
-    const p = getPoint(e);
-    const dx = p.clientX - dragRef.current.startX, dy = p.clientY - dragRef.current.startY;
-    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) movedRef.current = true;
-    setPan({ x: dragRef.current.panX + dx, y: dragRef.current.panY + dy });
-  };
-  const endDrag = () => { dragRef.current = null; };
-  const handleWheel = e => { e.preventDefault(); setZoom(z => Math.min(2.5, Math.max(0.5, z - e.deltaY * 0.001))); };
-
-  const visibleCoaches = searchText.trim()
-    ? coaches.filter(c => { const q = searchText.trim().toLowerCase(); return c.suburb.toLowerCase().includes(q) || c.name.toLowerCase().includes(q) || c.sport.toLowerCase().includes(q); })
-    : coaches;
-
-  const suggestions = searchText.trim().length > 0
-    ? [...new Set([...coaches.map(c => c.suburb), ...coaches.map(c => c.name), ...coaches.map(c => c.sport)])]
-        .filter(s => s.toLowerCase().includes(searchText.trim().toLowerCase())).slice(0, 5)
-    : [];
-
-  useEffect(() => {
-    if (!visibleCoaches.length) return;
-    const offsets = visibleCoaches.slice(0, 10).map((_, i) => { const [px, py] = MAP_PINS[i % MAP_PINS.length]; return { x: (px / 100) * MAP_SIZE - MAP_SIZE / 2, y: (py / 100) * MAP_SIZE - MAP_SIZE / 2 }; });
-    setPan({ x: -(offsets.reduce((s, o) => s + o.x, 0) / offsets.length), y: -(offsets.reduce((s, o) => s + o.y, 0) / offsets.length) });
-  }, [searchText]);
-
-  const selectSuggestion = s => { setSearchText(s); setShowSuggestions(false); setZoom(1.4); };
-  const clearSearch = () => { setSearchText(""); setPan({ x: 0, y: 0 }); setZoom(1); };
-
-  const btnBase = { background: "none", border: "none", cursor: "pointer", display: "flex" };
-  const shadowBox = { boxShadow: "0 4px 12px rgba(0,0,0,0.08)" };
-
-  return (
-    <div style={{ position: "absolute", inset: 0, zIndex: 999, background: C.fog }}>
-      {/* MAP */}
-      <div onMouseDown={startDrag} onMouseMove={moveDrag} onMouseUp={endDrag} onMouseLeave={endDrag}
-        onTouchStart={startDrag} onTouchMove={moveDrag} onTouchEnd={endDrag} onWheel={handleWheel}
-        style={{ position: "absolute", inset: 0, overflow: "hidden", cursor: "grab" }}>
-        <div style={{
-          position: "absolute", left: "50%", top: "50%", width: MAP_SIZE, height: MAP_SIZE,
-          marginLeft: -MAP_SIZE / 2, marginTop: -MAP_SIZE / 2,
-          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: "center",
-          backgroundImage: "linear-gradient(#E9EAEE 1px,transparent 1px),linear-gradient(90deg,#E9EAEE 1px,transparent 1px)",
-          backgroundSize: "40px 40px",
-        }}>
-          {visibleCoaches.slice(0, 10).map((c, i) => {
-            const [px, py] = MAP_PINS[i % MAP_PINS.length];
-            const x = (px / 100) * MAP_SIZE - MAP_SIZE / 2, y = (py / 100) * MAP_SIZE - MAP_SIZE / 2;
-            return (
-              <button key={c.id} onClick={e => { e.stopPropagation(); onOpen?.(c.id); }}
-                style={{ position: "absolute", left: `calc(50% + ${x}px)`, top: `calc(50% + ${y}px)`, transform: "translate(-50%,-100%)", ...btnBase, flexDirection: "column", alignItems: "center" }}>
-                <div style={{ background: C.jet, color: C.white, fontSize: 11, fontWeight: 700, padding: "5px 9px", borderRadius: 10, whiteSpace: "nowrap", marginBottom: 2, maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", ...fBody }}>{c.name}</div>
-                <MapPin size={22} color={C.orange} fill={C.orange} />
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* SEARCH BAR */}
-      <div style={{ position: "absolute", top: 16, left: 16, right: 16, zIndex: 2, display: "flex", alignItems: "center", gap: 10 }}>
-        <button onClick={onClose} style={{ width: 42, height: 42, borderRadius: 12, background: C.white, border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, ...shadowBox }}>
-          <X size={18} color={C.jet} />
-        </button>
-        <div style={{ position: "relative", flex: 1 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.white, borderRadius: 12, padding: "0 12px", height: 42, ...shadowBox }}>
-            <Search size={15} color={C.slateLight} />
-            <input value={searchText} onChange={e => { setSearchText(e.target.value); setShowSuggestions(true); }}
-              onFocus={() => setShowSuggestions(true)} onBlur={() => setTimeout(() => setShowSuggestions(false), 120)}
-              placeholder="Search location..." style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13, color: C.jet, ...fBody }} />
-            {searchText && <button onMouseDown={e => e.preventDefault()} onClick={clearSearch} style={btnBase}><X size={14} color={C.slateLight} /></button>}
-          </div>
-          {showSuggestions && suggestions.length > 0 && (
-            <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, zIndex: 20, background: C.white, borderRadius: 12, border: `1px solid ${C.border}`, overflow: "hidden", ...shadowBox }}>
-              {suggestions.map(s => (
-                <button key={s} onMouseDown={() => selectSuggestion(s)} style={{ width: "100%", textAlign: "left", padding: "10px 14px", background: "none", border: "none", borderBottom: `1px solid ${C.border}`, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.jet, ...fBody }}>
-                  <MapPin size={13} color={C.slateLight} />{s}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ZOOM */}
-      <div style={{ position: "absolute", top: 74, left: 16, zIndex: 2, display: "flex", flexDirection: "column", borderRadius: 12, overflow: "hidden", ...shadowBox }}>
-        {[{ icon: Plus, fn: z => Math.min(2.5, z + 0.25), border: `1px solid ${C.border}` }, { icon: Minus, fn: z => Math.max(0.5, z - 0.25), border: "none" }].map(({ icon: Icon, fn, border }) => (
-          <button key={border} onClick={() => setZoom(fn)} style={{ width: 34, height: 34, background: C.white, border: "none", borderBottom: border, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-            <Icon size={15} color={C.jet} />
-          </button>
-        ))}
-      </div>
-
-      {/* LOCATION */}
-      <div style={{ position: "absolute", bottom: 24, left: 16, background: C.white, borderRadius: 10, padding: "5px 9px", fontSize: 10.5, color: C.slate, display: "flex", alignItems: "center", gap: 4, ...fBody, pointerEvents: "none" }}>
-        <Navigation size={11} color={C.orange} /> Using your location
-      </div>
-    </div>
-  );
-}
-
-export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFiltersChange, clientNotifications: notifications, setClientNotifications: setNotifications }) {
+export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFiltersChange, clientNotifications: notifications, setClientNotifications: setNotifications, coachAvailableNow }) {
   const [view, setView] = useState("list");
   const [notifOpen, setNotifOpen] = useState(false);
   const [searchText, setSearchText] = useState("");
@@ -211,15 +114,10 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
       <div style={{ padding: "18px 20px 0" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <div style={{ fontSize: 12.5, color: C.slate, ...fBody }}>Good morning</div>
-            <div style={{ fontSize: 22, fontWeight: 600, color: C.jet, ...fDisplay }}>Find your coach</div>
+            <div style={{ fontSize: T.labelLg, color: C.slate, ...fBody }}>Good morning</div>
+            <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, ...fDisplay }}>Find your coach</div>
           </div>
-          <button onClick={() => setNotifOpen(true)} style={{ background: "none", border: "none", cursor: "pointer" }}>
-            <div style={{ position: "relative" }}>
-              <Bell size={22} color={C.jet} />
-              {unreadCount > 0 && <span style={{ position: "absolute", top: -4, right: -6, minWidth: 15, height: 15, padding: "0 3px", background: C.orange, borderRadius: 99, border: `1.5px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9.5, fontWeight: 700, color: C.white, ...fBody }}>{unreadCount}</span>}
-            </div>
-          </button>
+          <NotificationBellButton count={unreadCount} onClick={() => setNotifOpen(true)} />
         </div>
 
         <div style={{ position: "relative", marginTop: 18 }}>
@@ -227,7 +125,7 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
             <Search size={16} color={C.slateLight} />
             <input value={searchText} onChange={e => { setSearchText(e.target.value); setShowSuggestions(true); }}
               onFocus={() => setShowSuggestions(true)} onBlur={() => setTimeout(() => setShowSuggestions(false), 120)}
-              placeholder="Sport, coach name or suburb" style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13.5, color: C.jet, ...fBody }} />
+              placeholder="Sport, coach name or suburb" style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: T.bodyLg, color: C.jet, ...fBody }} />
             {searchText && <button onClick={() => setSearchText("")} style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}><X size={14} color={C.slateLight} /></button>}
             <button onClick={() => nav("search-filters", { initialFilters: appliedFilters, onApply: setAppliedFilters })} style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}>
               <Filter size={15} color={C.slate} />
@@ -236,7 +134,7 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
           {showSuggestions && suggestions.length > 0 && (
             <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, zIndex: 20, background: C.white, borderRadius: 14, border: `1px solid ${C.border}`, boxShadow: "0 8px 24px rgba(0,0,0,0.08)", overflow: "hidden" }}>
               {suggestions.map(s => (
-                <button key={s} onMouseDown={() => selectSuggestion(s)} style={{ width: "100%", textAlign: "left", padding: "10px 14px", background: "none", border: "none", borderBottom: `1px solid ${C.border}`, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.jet, ...fBody }}>
+                <button key={s} onMouseDown={() => selectSuggestion(s)} style={{ width: "100%", textAlign: "left", padding: "10px 14px", background: "none", border: "none", borderBottom: `1px solid ${C.border}`, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: T.body, color: C.jet, ...fBody }}>
                   <MapPin size={13} color={C.slateLight} /> {s}
                 </button>
               ))}
@@ -246,16 +144,16 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
 
         {appliedFilters.areas.length > 0 && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-            <span style={{ fontSize: 11.5, color: C.slate, ...fBody }}>Areas:</span>
+            <span style={{ fontSize: T.captionLg, color: C.slate, ...fBody }}>Areas:</span>
             {appliedFilters.areas.map(a => (
-              <span key={a} style={{ display: "flex", alignItems: "center", gap: 4, background: C.orangeTint, color: C.orange, borderRadius: 99, padding: "4px 9px", fontSize: 11.5, fontWeight: 600, ...fBody }}>{a}</span>
+              <span key={a} style={{ display: "flex", alignItems: "center", gap: 4, background: C.orangeTint, color: C.orange, borderRadius: 99, padding: "4px 9px", fontSize: T.captionLg, fontWeight: 600, ...fBody }}>{a}</span>
             ))}
-            <button onClick={() => setAppliedFilters({ ...appliedFilters, areas: [] })} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11.5, color: C.slateLight, textDecoration: "underline", ...fBody }}>Clear</button>
+            <button onClick={() => setAppliedFilters({ ...appliedFilters, areas: [] })} style={{ background: "none", border: "none", cursor: "pointer", fontSize: T.captionLg, color: C.slateLight, textDecoration: "underline", ...fBody }}>Clear</button>
           </div>
         )}
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 20, marginBottom: 14 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, color: C.jet, ...fDisplay }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: T.body, fontWeight: 600, color: C.jet, ...fDisplay }}>
             {view === "favorites" ? <><Heart size={13} color={C.orange} /> Your favorites</> : <><Navigation size={13} color={C.orange} /> Coaches near you</>}
           </div>
           <SegTabs strong value={view} onChange={setView} items={[{ value: "list", label: "List" }, { value: "map", label: "Map" }, { value: "favorites", label: "Favorites" }]} />
@@ -268,14 +166,20 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
             ? <EmptyState icon={Heart} title="No favorites yet" body="Tap the heart on a coach's card or profile to save them here." />
             : favCoaches.map(c => <CoachListCard key={c.id} coach={c} onOpen={() => nav("coach-profile", { id: c.id })} />)
         ) : filtered.length === 0
-          ? <div style={{ textAlign: "center", padding: "40px 20px", color: C.slate, fontSize: 13, ...fBody }}>No coaches match your search. Try a different suburb or clear filters.</div>
-          : filtered.map(c => <CoachListCard key={c.id} coach={c} onOpen={() => nav("coach-profile", { id: c.id })} />)
+          ? (
+            <StatusBanner
+              state="noResults"
+              style={{ marginTop: 10 }}
+              onPrimary={() => { setSearchText(""); setAppliedFilters(DEFAULT_FILTERS); }}
+            />
+          )
+          : filtered.map(c => <CoachListCard key={c.id} coach={c} unavailable={c.id === LIVE_AVAILABILITY_COACH_ID && !coachAvailableNow} onOpen={() => nav("coach-profile", { id: c.id })} />)
         }
       </div>
 
       <BottomSheet open={notifOpen} onClose={() => setNotifOpen(false)} title="Notifications" heightPct={72}>
         {unreadCount > 0 && (
-          <button onClick={markAllRead} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", color: C.orange, fontSize: 12.5, fontWeight: 600, cursor: "pointer", marginBottom: 10, padding: "2px 0", ...fBody }}>
+          <button onClick={markAllRead} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", color: C.orange, fontSize: T.labelLg, fontWeight: 600, cursor: "pointer", marginBottom: 10, padding: "2px 0", ...fBody }}>
             <Check size={13} /> Mark all as read
           </button>
         )}
@@ -286,10 +190,10 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
               <div style={{ width: 36, height: 36, borderRadius: 11, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon size={16} color={C.orange} /></div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: C.jet, ...fBody }}>{n.title}</span>
-                  <span style={{ fontSize: 10.5, color: C.slateLight, flexShrink: 0, ...fBody }}>{n.time}</span>
+                  <span style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{n.title}</span>
+                  <span style={{ fontSize: T.tiny, color: C.slateLight, flexShrink: 0, ...fBody }}>{n.time}</span>
                 </div>
-                <div style={{ fontSize: 12.5, color: C.slate, marginTop: 3, lineHeight: 1.45, ...fBody }}>{n.body}</div>
+                <div style={{ fontSize: T.labelLg, color: C.slate, marginTop: 3, lineHeight: 1.45, ...fBody }}>{n.body}</div>
               </div>
               {n.unread && <span style={{ width: 8, height: 8, borderRadius: 99, background: C.orange, flexShrink: 0, marginTop: 5 }} />}
             </button>
@@ -297,7 +201,7 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
         })}
       </BottomSheet>
 
-      {view === "map" && <PannableMapView coaches={filtered} onOpen={id => nav("coach-profile", { id })} onClose={() => setView("list")} />}
+      {view === "map" && <CoachMapView coaches={filtered} onOpen={id => nav("coach-profile", { id })} onClose={() => setView("list")} />}
     </div>
   );
 }
@@ -331,11 +235,11 @@ export function ScreenSearchFilters({ nav, initialFilters, onApply }) {
         <div style={{ marginBottom: 20 }}>
           <div style={{ position: "relative" }}>
             <input value={areaInput} onChange={e => setAreaInput(e.target.value)} placeholder="Add a suburb or area"
-              style={{ width: "100%", boxSizing: "border-box", background: C.fog, border: "none", borderRadius: 12, padding: "11px 14px", fontSize: 13.5, color: C.jet, outline: "none", ...fBody }} />
+              style={{ width: "100%", boxSizing: "border-box", background: C.fog, border: "none", borderRadius: 12, padding: "11px 14px", fontSize: T.bodyLg, color: C.jet, outline: "none", ...fBody }} />
             {areaSuggestions.length > 0 && (
               <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, zIndex: 20, background: C.white, borderRadius: 12, border: `1px solid ${C.border}`, boxShadow: "0 8px 24px rgba(0,0,0,0.08)", overflow: "hidden" }}>
                 {areaSuggestions.map(s => (
-                  <button key={s} onClick={() => addArea(s)} style={{ width: "100%", textAlign: "left", padding: "10px 14px", background: "none", border: "none", borderBottom: `1px solid ${C.border}`, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.jet, ...fBody }}>
+                  <button key={s} onClick={() => addArea(s)} style={{ width: "100%", textAlign: "left", padding: "10px 14px", background: "none", border: "none", borderBottom: `1px solid ${C.border}`, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: T.body, color: C.jet, ...fBody }}>
                     <MapPin size={13} color={C.slateLight} /> {s}
                   </button>
                 ))}
@@ -345,7 +249,7 @@ export function ScreenSearchFilters({ nav, initialFilters, onApply }) {
           {areas.length > 0 && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
               {areas.map(a => (
-                <span key={a} style={{ display: "flex", alignItems: "center", gap: 6, background: C.orangeTint, color: C.orange, borderRadius: 99, padding: "6px 10px", fontSize: 12.5, fontWeight: 600, ...fBody }}>
+                <span key={a} style={{ display: "flex", alignItems: "center", gap: 6, background: C.orangeTint, color: C.orange, borderRadius: 99, padding: "6px 10px", fontSize: T.labelLg, fontWeight: 600, ...fBody }}>
                   {a}
                   <button onClick={() => setAreas(areas.filter(x => x !== a))} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 0 }}><X size={12} color={C.orange} /></button>
                 </span>

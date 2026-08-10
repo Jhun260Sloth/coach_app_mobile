@@ -10,8 +10,8 @@ import {
   Check,
   Percent,
 } from "lucide-react";
-import { C, fDisplay, fBody } from "../../theme/theme";
-import { REVIEWS, CONFIG } from "../../data/mockData";
+import { C, fDisplay, fBody, T } from "../../theme/theme";
+import { REVIEWS, CONFIG, COACH_NOTIFICATIONS } from "../../data/mockData";
 import {
   Avatar,
   Card,
@@ -22,6 +22,7 @@ import {
   BottomSheet,
 } from "../../components/ui/Primitives";
 import { CoachBookingListCard } from "./Bookings";
+import { useLiveNotifications } from "../../systems/StateSystem";
 
 const NOTIF_ICON = {
   message: MessageCircle,
@@ -37,7 +38,7 @@ export function StatMini({ label, value, icon: Icon }) {
       <Icon size={15} color={C.orange} style={{ margin: "0 auto 6px" }} />
       <div
         style={{
-          fontSize: 16,
+          fontSize: T.title,
           fontWeight: 700,
           color: C.jet,
           ...fDisplay,
@@ -47,7 +48,7 @@ export function StatMini({ label, value, icon: Icon }) {
       </div>
       <div
         style={{
-          fontSize: 10.5,
+          fontSize: T.tiny,
           color: C.slate,
           ...fBody,
         }}
@@ -62,14 +63,18 @@ export function ScreenCoachDashboard({
   nav,
   coachBookings,
   respondBooking,
-  coachNotifications: notifications,
-  setCoachNotifications: setNotifications,
+  coachNotifications,
   verified,
   toast,
   offline,
+  pushNotification,
 }) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [respondingId, setRespondingId] = useState(null);
+  // Merges real, in-app-generated notifications (bookings actioned, etc) on
+  // top of the seed list — which already includes the verification-expiry
+  // notice — so expiry warnings surface here instead of as a dashboard banner.
+  const [notifications, setNotifications] = useLiveNotifications(coachNotifications, COACH_NOTIFICATIONS);
 
   const pending = coachBookings.filter((b) => b.status === "pending");
   const upcoming = coachBookings.filter((b) => b.status === "confirmed");
@@ -82,12 +87,26 @@ export function ScreenCoachDashboard({
   const unreadCount = notifications.filter((n) => n.unread).length;
 
   const respondWithFeedback = (id, status, message) => {
+    // Guard against acting on a request that's no longer pending (already
+    // handled from the full Bookings screen, for instance).
+    const target = coachBookings.find((b) => b.id === id);
+    if (!target || target.status !== "pending") {
+      toast("This request has already been handled");
+      return;
+    }
     setRespondingId(id);
 
     setTimeout(() => {
       respondBooking(id, status);
       setRespondingId(null);
       toast(message);
+      pushNotification?.({
+        audience: "client", type: "booking",
+        title: status === "confirmed" ? "Booking confirmed" : "Booking declined",
+        body: status === "confirmed"
+          ? `Your session with ${target.coachName || "your coach"} is confirmed for ${target.date}, ${target.time}.`
+          : `Your request for ${target.service} on ${target.date} was declined.`,
+      });
     }, 600);
   };
 
@@ -154,7 +173,7 @@ export function ScreenCoachDashboard({
           <div>
             <div
               style={{
-                fontSize: 12.5,
+                fontSize: T.labelLg,
                 color: C.slate,
                 ...fBody,
               }}
@@ -164,7 +183,7 @@ export function ScreenCoachDashboard({
 
             <div
               style={{
-                fontSize: 22,
+                fontSize: T.display,
                 fontWeight: 600,
                 color: C.jet,
                 ...fDisplay,
@@ -212,7 +231,7 @@ export function ScreenCoachDashboard({
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      fontSize: 9.5,
+                      fontSize: T.micro,
                       fontWeight: 700,
                       color: C.white,
                       ...fBody,
@@ -250,7 +269,7 @@ export function ScreenCoachDashboard({
               padding: "9px 12px",
               borderRadius: 12,
               marginTop: 14,
-              fontSize: 12,
+              fontSize: T.label,
               ...fBody,
             }}
           >
@@ -277,8 +296,8 @@ export function ScreenCoachDashboard({
           >
             <div
               style={{
-                fontSize: 11,
-                color: "#9CA0AC",
+                fontSize: T.caption,
+                color: C.onDarkMuted,
                 ...fBody,
               }}
             >
@@ -287,7 +306,7 @@ export function ScreenCoachDashboard({
 
             <div
               style={{
-                fontSize: 26,
+                fontSize: T.hero,
                 fontWeight: 700,
                 color: C.white,
                 marginTop: 4,
@@ -307,7 +326,7 @@ export function ScreenCoachDashboard({
           >
             <div
               style={{
-                fontSize: 11,
+                fontSize: T.caption,
                 color: C.orange,
                 fontWeight: 600,
                 ...fBody,
@@ -318,7 +337,7 @@ export function ScreenCoachDashboard({
 
             <div
               style={{
-                fontSize: 26,
+                fontSize: T.hero,
                 fontWeight: 700,
                 color: C.jet,
                 marginTop: 4,
@@ -375,7 +394,7 @@ export function ScreenCoachDashboard({
               background: "none",
               border: "none",
               color: C.orange,
-              fontSize: 12,
+              fontSize: T.label,
               fontWeight: 600,
               cursor: "pointer",
               ...fBody,
@@ -388,7 +407,7 @@ export function ScreenCoachDashboard({
         {pending.length === 0 && (
           <div
             style={{
-              fontSize: 12.5,
+              fontSize: T.labelLg,
               color: C.slateLight,
               marginBottom: 6,
               ...fBody,
@@ -442,7 +461,7 @@ export function ScreenCoachDashboard({
                     e.stopPropagation();
                     respondWithFeedback(
                       b.id,
-                      "cancelled",
+                      "declined",
                       "Booking declined"
                     );
                   }}
@@ -467,7 +486,7 @@ export function ScreenCoachDashboard({
         {upcoming.length === 0 ? (
           <div
             style={{
-              fontSize: 12.5,
+              fontSize: T.labelLg,
               color: C.slateLight,
               ...fBody,
             }}
@@ -509,7 +528,7 @@ export function ScreenCoachDashboard({
             >
               <div
                 style={{
-                  fontSize: 13,
+                  fontSize: T.body,
                   fontWeight: 600,
                   color: C.jet,
                   ...fBody,
@@ -523,7 +542,7 @@ export function ScreenCoachDashboard({
 
             <p
               style={{
-                fontSize: 12.5,
+                fontSize: T.labelLg,
                 color: C.slate,
                 marginTop: 4,
                 lineHeight: 1.5,
@@ -553,7 +572,7 @@ export function ScreenCoachDashboard({
               background: "none",
               border: "none",
               color: C.orange,
-              fontSize: 12.5,
+              fontSize: T.labelLg,
               fontWeight: 600,
               cursor: "pointer",
               marginBottom: 10,
@@ -619,7 +638,7 @@ export function ScreenCoachDashboard({
                 >
                   <span
                     style={{
-                      fontSize: 13,
+                      fontSize: T.body,
                       fontWeight: 600,
                       color: C.jet,
                       ...fBody,
@@ -630,7 +649,7 @@ export function ScreenCoachDashboard({
 
                   <span
                     style={{
-                      fontSize: 10.5,
+                      fontSize: T.tiny,
                       color: C.slateLight,
                       flexShrink: 0,
                       ...fBody,
@@ -642,7 +661,7 @@ export function ScreenCoachDashboard({
 
                 <div
                   style={{
-                    fontSize: 12.5,
+                    fontSize: T.labelLg,
                     color: C.slate,
                     marginTop: 3,
                     lineHeight: 1.45,
