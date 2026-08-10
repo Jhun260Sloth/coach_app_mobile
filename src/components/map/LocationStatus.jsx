@@ -1,6 +1,6 @@
 import React from "react";
 import { Navigation } from "lucide-react";
-import { C, fBody } from "../../theme/theme";
+import { C, fBody, T } from "../../theme/theme";
 import { Spinner } from "../ui/Primitives";
 
 // Two tiny, independently-memoised pills: one while we're waiting on the first
@@ -12,7 +12,7 @@ function LocationStatusBase({ locating, fixed }) {
   return (
     <div style={{
       position: "absolute", top: 78, left: 16, zIndex: 401, display: "flex", alignItems: "center", gap: 6,
-      background: C.white, borderRadius: 99, padding: "6px 11px", fontSize: 11.5, fontWeight: 600, color: C.jet,
+      background: C.white, borderRadius: 99, padding: "6px 11px", fontSize: T.captionLg, fontWeight: 600, color: C.jet,
       boxShadow: "0 4px 12px rgba(0,0,0,0.08)", ...fBody,
     }}>
       {locating ? (
@@ -22,8 +22,8 @@ function LocationStatusBase({ locating, fixed }) {
       ) : (
         <>
           <span style={{ position: "relative", width: 8, height: 8, flexShrink: 0 }}>
-            <span style={{ position: "absolute", inset: 0, borderRadius: 99, background: "#22C55E" }} />
-            <span style={{ position: "absolute", inset: -3, borderRadius: 99, border: "1.5px solid #22C55E", animation: "clFixedBlink 1.8s ease-in-out infinite" }} />
+            <span style={{ position: "absolute", inset: 0, borderRadius: 99, background: C.live }} />
+            <span style={{ position: "absolute", inset: -3, borderRadius: 99, border: `1.5px solid ${C.live}`, animation: "clFixedBlink 1.8s ease-in-out infinite" }} />
           </span>
           <Navigation size={11} color={C.slate} /> Live location
         </>

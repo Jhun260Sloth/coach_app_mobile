@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Layers, Check } from "lucide-react";
-import { C, fBody } from "../../theme/theme";
+import { C, fBody, T } from "../../theme/theme";
 import { MAP_STYLES } from "../../lib/mapUtils";
 
 // Sits directly above the "Locate Me" button, bottom-right. Collapsed it's a
@@ -19,7 +19,7 @@ function MapStyleSwitcherBase({ styleId, onChange, bottom }) {
           boxShadow: "0 8px 24px rgba(0,0,0,0.16)", border: `1px solid ${C.border}`,
           maxHeight: 320, overflowY: "auto",
         }}>
-          <div style={{ padding: "6px 8px 8px", fontSize: 11, fontWeight: 700, color: C.slate, textTransform: "uppercase", letterSpacing: 0.4, ...fBody }}>
+          <div style={{ padding: "6px 8px 8px", fontSize: T.caption, fontWeight: 700, color: C.slate, textTransform: "uppercase", letterSpacing: 0.4, ...fBody }}>
             Map style
           </div>
           {MAP_STYLES.map(s => {
@@ -36,8 +36,8 @@ function MapStyleSwitcherBase({ styleId, onChange, bottom }) {
               >
                 <span style={{ width: 26, height: 26, borderRadius: 7, background: s.swatch, flexShrink: 0, border: `1px solid ${C.border}` }} />
                 <span style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12.5, fontWeight: 700, color: C.jet, ...fBody }}>{s.label}</div>
-                  <div style={{ fontSize: 10.5, color: C.slate, lineHeight: 1.3, ...fBody }}>{s.description}</div>
+                  <div style={{ fontSize: T.labelLg, fontWeight: 700, color: C.jet, ...fBody }}>{s.label}</div>
+                  <div style={{ fontSize: T.tiny, color: C.slate, lineHeight: 1.3, ...fBody }}>{s.description}</div>
                 </span>
                 {active && <Check size={15} color={C.orange} style={{ flexShrink: 0 }} />}
               </button>

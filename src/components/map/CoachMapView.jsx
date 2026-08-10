@@ -104,7 +104,7 @@ export function CoachMapView({ coaches = [], onOpen, onClose }) {
     setRouting(false);
     if (routeLayerRef.current) map.removeLayer(routeLayerRef.current);
     routeLayerRef.current = L.polyline(route.points, {
-      color: "#2563EB", weight: 5, opacity: 0.92, lineCap: "round", lineJoin: "round", className: "cl-route-glow",
+      color: C.info, weight: 5, opacity: 0.92, lineCap: "round", lineJoin: "round", className: "cl-route-glow",
     }).addTo(map);
     setRouteInfo(route.fallback ? null : { distanceKm: route.distanceKm, durationMin: route.durationMin });
   };
@@ -217,7 +217,7 @@ export function CoachMapView({ coaches = [], onOpen, onClose }) {
     if (radiusKm == null) return;
     const origin = userLocationRef.current || FALLBACK_USER_LOCATION;
     radiusCircleRef.current = L.circle([origin.lat, origin.lng], {
-      radius: radiusKm * 1000, color: "#2563EB", weight: 1.5, opacity: 0.4, fillColor: "#2563EB", fillOpacity: 0.07,
+      radius: radiusKm * 1000, color: C.info, weight: 1.5, opacity: 0.4, fillColor: C.info, fillOpacity: 0.07,
     }).addTo(map);
     map.flyToBounds(radiusCircleRef.current.getBounds(), { padding: [40, 40], duration: 0.6 });
   }, [ready, radiusKm]);

@@ -10,7 +10,7 @@ import {
   Check,
   Percent,
 } from "lucide-react";
-import { C, fDisplay, fBody } from "../../theme/theme";
+import { C, fDisplay, fBody, T } from "../../theme/theme";
 import { REVIEWS, CONFIG, COACH_NOTIFICATIONS } from "../../data/mockData";
 import {
   Avatar,
@@ -37,7 +37,7 @@ export function StatMini({ label, value, icon: Icon }) {
       <Icon size={15} color={C.orange} style={{ margin: "0 auto 6px" }} />
       <div
         style={{
-          fontSize: 16,
+          fontSize: T.title,
           fontWeight: 700,
           color: C.jet,
           ...fDisplay,
@@ -47,7 +47,7 @@ export function StatMini({ label, value, icon: Icon }) {
       </div>
       <div
         style={{
-          fontSize: 10.5,
+          fontSize: T.tiny,
           color: C.slate,
           ...fBody,
         }}
@@ -172,7 +172,7 @@ export function ScreenCoachDashboard({
           <div>
             <div
               style={{
-                fontSize: 12.5,
+                fontSize: T.labelLg,
                 color: C.slate,
                 ...fBody,
               }}
@@ -182,7 +182,7 @@ export function ScreenCoachDashboard({
 
             <div
               style={{
-                fontSize: 22,
+                fontSize: T.display,
                 fontWeight: 600,
                 color: C.jet,
                 ...fDisplay,
@@ -230,7 +230,7 @@ export function ScreenCoachDashboard({
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      fontSize: 9.5,
+                      fontSize: T.micro,
                       fontWeight: 700,
                       color: C.white,
                       ...fBody,
@@ -268,7 +268,7 @@ export function ScreenCoachDashboard({
               padding: "9px 12px",
               borderRadius: 12,
               marginTop: 14,
-              fontSize: 12,
+              fontSize: T.label,
               ...fBody,
             }}
           >
@@ -295,8 +295,8 @@ export function ScreenCoachDashboard({
           >
             <div
               style={{
-                fontSize: 11,
-                color: "#9CA0AC",
+                fontSize: T.caption,
+                color: C.onDarkMuted,
                 ...fBody,
               }}
             >
@@ -305,7 +305,7 @@ export function ScreenCoachDashboard({
 
             <div
               style={{
-                fontSize: 26,
+                fontSize: T.hero,
                 fontWeight: 700,
                 color: C.white,
                 marginTop: 4,
@@ -325,7 +325,7 @@ export function ScreenCoachDashboard({
           >
             <div
               style={{
-                fontSize: 11,
+                fontSize: T.caption,
                 color: C.orange,
                 fontWeight: 600,
                 ...fBody,
@@ -336,7 +336,7 @@ export function ScreenCoachDashboard({
 
             <div
               style={{
-                fontSize: 26,
+                fontSize: T.hero,
                 fontWeight: 700,
                 color: C.jet,
                 marginTop: 4,
@@ -393,7 +393,7 @@ export function ScreenCoachDashboard({
               background: "none",
               border: "none",
               color: C.orange,
-              fontSize: 12,
+              fontSize: T.label,
               fontWeight: 600,
               cursor: "pointer",
               ...fBody,
@@ -406,7 +406,7 @@ export function ScreenCoachDashboard({
         {pending.length === 0 && (
           <div
             style={{
-              fontSize: 12.5,
+              fontSize: T.labelLg,
               color: C.slateLight,
               marginBottom: 6,
               ...fBody,
@@ -443,7 +443,7 @@ export function ScreenCoachDashboard({
               >
                 <div
                   style={{
-                    fontSize: 13.5,
+                    fontSize: T.bodyLg,
                     fontWeight: 600,
                     color: C.jet,
                     ...fDisplay,
@@ -454,7 +454,7 @@ export function ScreenCoachDashboard({
 
                 <div
                   style={{
-                    fontSize: 12,
+                    fontSize: T.label,
                     color: C.slate,
                     ...fBody,
                   }}
@@ -465,7 +465,7 @@ export function ScreenCoachDashboard({
 
               <div
                 style={{
-                  fontSize: 14,
+                  fontSize: T.subtitle,
                   fontWeight: 700,
                   color: C.jet,
                   ...fDisplay,
@@ -533,7 +533,7 @@ export function ScreenCoachDashboard({
         {upcoming.length === 0 ? (
           <div
             style={{
-              fontSize: 12.5,
+              fontSize: T.labelLg,
               color: C.slateLight,
               ...fBody,
             }}
@@ -563,7 +563,7 @@ export function ScreenCoachDashboard({
                 <div>
                   <div
                     style={{
-                      fontSize: 13,
+                      fontSize: T.body,
                       fontWeight: 600,
                       color: C.jet,
                       ...fBody,
@@ -574,7 +574,7 @@ export function ScreenCoachDashboard({
 
                   <div
                     style={{
-                      fontSize: 11.5,
+                      fontSize: T.captionLg,
                       color: C.slate,
                       ...fBody,
                     }}
@@ -614,7 +614,7 @@ export function ScreenCoachDashboard({
             >
               <div
                 style={{
-                  fontSize: 13,
+                  fontSize: T.body,
                   fontWeight: 600,
                   color: C.jet,
                   ...fBody,
@@ -628,7 +628,7 @@ export function ScreenCoachDashboard({
 
             <p
               style={{
-                fontSize: 12.5,
+                fontSize: T.labelLg,
                 color: C.slate,
                 marginTop: 4,
                 lineHeight: 1.5,
@@ -658,7 +658,7 @@ export function ScreenCoachDashboard({
               background: "none",
               border: "none",
               color: C.orange,
-              fontSize: 12.5,
+              fontSize: T.labelLg,
               fontWeight: 600,
               cursor: "pointer",
               marginBottom: 10,
@@ -724,7 +724,7 @@ export function ScreenCoachDashboard({
                 >
                   <span
                     style={{
-                      fontSize: 13,
+                      fontSize: T.body,
                       fontWeight: 600,
                       color: C.jet,
                       ...fBody,
@@ -735,7 +735,7 @@ export function ScreenCoachDashboard({
 
                   <span
                     style={{
-                      fontSize: 10.5,
+                      fontSize: T.tiny,
                       color: C.slateLight,
                       flexShrink: 0,
                       ...fBody,
@@ -747,7 +747,7 @@ export function ScreenCoachDashboard({
 
                 <div
                   style={{
-                    fontSize: 12.5,
+                    fontSize: T.labelLg,
                     color: C.slate,
                     marginTop: 3,
                     lineHeight: 1.45,

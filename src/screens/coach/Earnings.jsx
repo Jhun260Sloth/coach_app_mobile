@@ -1,6 +1,6 @@
 import React from "react";
 import { Banknote, Percent, Wallet, ChevronRight, Download } from "lucide-react";
-import { C, fDisplay, fBody } from "../../theme/theme";
+import { C, fDisplay, fBody, T } from "../../theme/theme";
 import { CONFIG } from "../../data/mockData";
 import { Card, Badge, SectionLabel, Row } from "../../components/ui/Primitives";
 
@@ -12,11 +12,11 @@ export function ScreenCoachEarnings({ nav, coachBookings }) {
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "18px 20px 0", flex: 1, overflowY: "auto", paddingBottom: 100 }}>
-        <div style={{ fontSize: 22, fontWeight: 600, color: C.jet, marginBottom: 16, ...fDisplay }}>Earnings</div>
+        <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, marginBottom: 16, ...fDisplay }}>Earnings</div>
 
         <div style={{ background: C.jet, borderRadius: 20, padding: 20, marginBottom: 16 }}>
-          <div style={{ fontSize: 11.5, color: "#9CA0AC", ...fBody }}>Available for payout</div>
-          <div style={{ fontSize: 34, fontWeight: 800, color: C.white, marginTop: 4, ...fDisplay }}>${net}</div>
+          <div style={{ fontSize: T.captionLg, color: C.onDarkMuted, ...fBody }}>Available for payout</div>
+          <div style={{ fontSize: T.heroLg, fontWeight: 800, color: C.white, marginTop: 4, ...fDisplay }}>${net}</div>
           <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
             <Badge tone="dark" icon={Banknote}>Next payout Fri</Badge>
             <Badge tone="dark" icon={Percent}>{Math.round(CONFIG.commissionRate * 100)}% commission</Badge>
@@ -32,20 +32,30 @@ export function ScreenCoachEarnings({ nav, coachBookings }) {
         <SectionLabel>Payout method</SectionLabel>
         <Card style={{ marginBottom: 20, display: "flex", alignItems: "center", gap: 10 }}>
           <Wallet size={17} color={C.jet} />
-          <span style={{ fontSize: 13, color: C.jet, fontWeight: 500, ...fBody }}>Bank account •••• 2210</span>
+          <span style={{ fontSize: T.body, color: C.jet, fontWeight: 500, ...fBody }}>Bank account •••• 2210</span>
           <ChevronRight size={15} color={C.slateLight} style={{ marginLeft: "auto" }} />
         </Card>
 
-        <SectionLabel>Transaction history</SectionLabel>
-        {coachBookings.filter((b) => b.status === "completed").map((b) => (
-          <Card key={b.id} style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <SectionLabel>Recent transactions</SectionLabel>
+          {completed.length > 0 && (
+            <button onClick={() => nav("coach-history")} style={{ background: "none", border: "none", color: C.orange, fontWeight: 600, fontSize: T.label, cursor: "pointer", ...fBody }}>
+              View all
+            </button>
+          )}
+        </div>
+        {completed.length === 0 && (
+          <div style={{ fontSize: T.labelLg, color: C.slate, padding: "6px 2px 2px", ...fBody }}>No completed sessions yet.</div>
+        )}
+        {completed.slice(0, 3).map((b) => (
+          <Card key={b.id} onClick={() => nav("coach-history")} style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: C.jet, ...fBody }}>{b.service}</div>
-              <div style={{ fontSize: 11.5, color: C.slate, ...fBody }}>{b.date} · {b.clientName}</div>
+              <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{b.service}</div>
+              <div style={{ fontSize: T.captionLg, color: C.slate, ...fBody }}>{b.date} · {b.clientName}</div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 13.5, fontWeight: 700, color: C.success, ...fDisplay }}>+${Math.round(b.price * (1 - CONFIG.commissionRate))}</span>
-              <Download size={14} color={C.slateLight} />
+              <span style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.success, ...fDisplay }}>+${Math.round(b.price * (1 - CONFIG.commissionRate))}</span>
+              <ChevronRight size={14} color={C.slateLight} />
             </div>
           </Card>
         ))}
@@ -53,3 +63,4 @@ export function ScreenCoachEarnings({ nav, coachBookings }) {
     </div>
   );
 }
+

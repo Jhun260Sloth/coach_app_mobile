@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
-import { HelpCircle, ChevronLeft, Paperclip, MapPin, Send, MoreVertical, Flag, Ban, Check, CheckCircle2, Calendar, FileText, Navigation, AlertCircle, RotateCcw } from "lucide-react";
-import { C, fDisplay, fBody } from "../../theme/theme";
+import { HelpCircle, ChevronLeft, Paperclip, MapPin, Send, MoreVertical, Flag, Ban, Check, CheckCircle2, Calendar, FileText, Navigation, AlertCircle, RotateCcw, Pin, PinOff, Trash2 } from "lucide-react";
+import { C, fDisplay, fBody, T } from "../../theme/theme";
 import { THREADS, COACH_THREADS, CHAT_MESSAGES, BOOKING_ENQUIRY_MESSAGES, COACHES } from "../../data/mockData";
 import { Avatar, BottomSheet, Btn } from "../../components/ui/Primitives";
 import { StatusBanner } from "../../systems/StateSystem";
@@ -22,6 +22,41 @@ function useBlockedThreads() {
   return { blocked, isBlocked: id => blocked.has(id), block: blockThread, unblock: unblockThread };
 }
 
+/* ── Pinned / Deleted Threads Store ────────────────────────────────────── */
+// Same lightweight module-level store pattern as blocked threads above, so
+// pin/delete state persists across screen visits within the session and stays
+// in sync for both the client and coach thread lists (ids are unique across
+// THREADS/COACH_THREADS, so one store safely covers both roles).
+
+let pinnedIds = new Set();
+const pinSubscribers = new Set();
+const emitPinned = () => pinSubscribers.forEach(cb => cb(new Set(pinnedIds)));
+const pinThread = id => id && (pinnedIds.add(id), emitPinned());
+const unpinThread = id => id && (pinnedIds.delete(id), emitPinned());
+
+function usePinnedThreads() {
+  const [pinned, setPinned] = useState(() => new Set(pinnedIds));
+  React.useEffect(() => {
+    pinSubscribers.add(setPinned);
+    return () => pinSubscribers.delete(setPinned);
+  }, []);
+  return { pinned, isPinned: id => pinned.has(id), pin: pinThread, unpin: unpinThread };
+}
+
+let deletedIds = new Set();
+const deleteSubscribers = new Set();
+const emitDeleted = () => deleteSubscribers.forEach(cb => cb(new Set(deletedIds)));
+const deleteThread = id => id && (deletedIds.add(id), emitDeleted());
+
+function useDeletedThreads() {
+  const [deleted, setDeleted] = useState(() => new Set(deletedIds));
+  React.useEffect(() => {
+    deleteSubscribers.add(setDeleted);
+    return () => deleteSubscribers.delete(setDeleted);
+  }, []);
+  return { deleted, isDeleted: id => deleted.has(id), remove: deleteThread };
+}
+
 /* ── Shared Styles ─────────────────────────────────────────────────────── */
 
 const iconBox = (bg) => ({
@@ -37,23 +72,29 @@ const sheetBtn = (extra = {}) => ({
 
 const cancelBtn = {
   padding: "14px 4px", background: "none", border: "none", cursor: "pointer",
-  textAlign: "left", fontSize: 13.5, fontWeight: 600, color: C.slate, ...fBody,
+  textAlign: "left", fontSize: T.bodyLg, fontWeight: 600, color: C.slate, ...fBody,
 };
 
 /* ── Messages Screen ───────────────────────────────────────────────────── */
 
 export function ScreenMessages({ nav, role }) {
   const { isBlocked, unblock } = useBlockedThreads();
+  const { isPinned, pin, unpin } = usePinnedThreads();
+  const { isDeleted, remove } = useDeletedThreads();
   const rawThreads = role === "coach" ? COACH_THREADS : THREADS;
-  // Prioritize threads with unread/new messages at the top; preserve relative order otherwise.
-  const threads = [...rawThreads].sort((a, b) => (b.unread > 0 ? 1 : 0) - (a.unread > 0 ? 1 : 0));
+  // Pinned threads first, then unread, then original order; deleted threads drop out entirely.
+  const threads = [...rawThreads]
+    .filter(t => !isDeleted(t.id))
+    .sort((a, b) => (isPinned(b.id) ? 1 : 0) - (isPinned(a.id) ? 1 : 0) || (b.unread > 0 ? 1 : 0) - (a.unread > 0 ? 1 : 0));
   const [blockedThread, setBlockedThread] = useState(null);
+  const [optionsThread, setOptionsThread] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "18px 20px 0" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ fontSize: 22, fontWeight: 600, color: C.jet, ...fDisplay }}>Messages</div>
+          <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, ...fDisplay }}>Messages</div>
           <button onClick={() => nav("support")} style={{ background: "none", border: "none", cursor: "pointer" }}>
             <HelpCircle size={22} color={C.jet} />
           </button>
@@ -61,20 +102,26 @@ export function ScreenMessages({ nav, role }) {
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "14px 20px 100px" }}>
+        {threads.length === 0 && (
+          <div style={{ textAlign: "center", padding: "60px 20px", color: C.slate, fontSize: T.body, ...fBody }}>No conversations here.</div>
+        )}
         {threads.map(t => {
           const blocked = isBlocked(t.id);
+          const pinned = isPinned(t.id);
           return (
-            <button
+            <div
               key={t.id}
+              role="button"
+              tabIndex={0}
               onClick={() => blocked
                 ? setBlockedThread(t)
                 : nav("chat-thread", { name: t.withName, context: t.context, threadId: t.id })
               }
               style={{
                 width: "100%", display: "flex", gap: 12, alignItems: "center",
-                padding: "12px 4px", background: "none", border: "none",
-                borderBottom: `1px solid ${C.border}`, cursor: "pointer",
-                textAlign: "left", opacity: blocked ? 0.68 : 1,
+                padding: "12px 4px", background: pinned ? C.fog : "none", borderRadius: pinned ? 13 : 0,
+                border: "none", borderBottom: pinned ? "none" : `1px solid ${C.border}`, cursor: "pointer",
+                textAlign: "left", opacity: blocked ? 0.68 : 1, marginBottom: pinned ? 4 : 0,
               }}
             >
               <div style={{ position: "relative", flexShrink: 0 }}>
@@ -93,23 +140,29 @@ export function ScreenMessages({ nav, role }) {
               </div>
 
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: blocked ? C.slate : C.jet, ...fDisplay }}>
-                    {t.withName}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
+                    {pinned && <Pin size={11} color={C.orange} style={{ flexShrink: 0 }} fill={C.orange} />}
+                    <span style={{ fontSize: T.subtitle, fontWeight: 600, color: blocked ? C.slate : C.jet, ...fDisplay, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {t.withName}
+                    </span>
                   </span>
-                  <span style={{ fontSize: 11, color: C.slateLight, ...fBody, flexShrink: 0 }}>{t.time}</span>
-                </div>
-                <div style={{ fontSize: 11, color: blocked ? C.slateLight : C.orange, fontWeight: 600, marginTop: 1, ...fBody }}>
-                  {t.context}
+                  <span style={{ fontSize: T.caption, color: C.slateLight, ...fBody, flexShrink: 0 }}>{t.time}</span>
                 </div>
                 {blocked ? (
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3, fontSize: 12.5, color: C.slateLight, fontWeight: 500, ...fBody }}>
-                    <Ban size={12} />
-                    <span style={{ textDecoration: "line-through" }}>Blocked</span>
-                    <span>· Tap to unblock</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3, fontSize: T.labelLg, color: C.slateLight, fontWeight: 500, ...fBody }}>
+                    <Ban size={11} style={{ flexShrink: 0 }} />
+                    <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      <span style={{ textDecoration: "line-through" }}>Blocked</span> · Tap to unblock
+                    </span>
                   </div>
                 ) : (
-                  <div style={{ fontSize: 12.5, color: C.slate, marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", ...fBody }}>
+                  <div style={{
+                    fontSize: T.labelLg, marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                    color: t.unread > 0 ? C.jet : C.slate, fontWeight: t.unread > 0 ? 600 : 400, ...fBody,
+                  }}>
+                    <span style={{ color: C.orange, fontWeight: 600 }}>{t.context}</span>
+                    <span style={{ color: C.slateLight, fontWeight: 400 }}> · </span>
                     {t.lastMsg}
                   </div>
                 )}
@@ -117,14 +170,21 @@ export function ScreenMessages({ nav, role }) {
 
               {!blocked && t.unread > 0 && (
                 <span style={{
-                  width: 19, height: 19, borderRadius: 99, background: C.orange,
-                  color: C.white, fontSize: 10.5, fontWeight: 700,
+                  width: 18, height: 18, borderRadius: 99, background: C.orange,
+                  color: C.white, fontSize: T.micro, fontWeight: 700,
                   display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
                 }}>
                   {t.unread}
                 </span>
               )}
-            </button>
+
+              <button
+                onClick={(e) => { e.stopPropagation(); setOptionsThread(t); }}
+                style={{ background: "none", border: "none", cursor: "pointer", padding: 4, flexShrink: 0, marginLeft: 2 }}
+              >
+                <MoreVertical size={16} color={C.slateLight} />
+              </button>
+            </div>
           );
         })}
       </div>
@@ -135,13 +195,65 @@ export function ScreenMessages({ nav, role }) {
           <button onClick={() => { unblock(blockedThread.id); setBlockedThread(null); }} style={sheetBtn()}>
             <div style={iconBox(C.successTint)}><CheckCircle2 size={16} color={C.success} /></div>
             <div>
-              <div style={{ fontSize: 13.5, fontWeight: 600, color: C.success, ...fBody }}>Unblock {blockedThread?.withName}</div>
-              <div style={{ fontSize: 12, color: C.slate, marginTop: 2, ...fBody }}>They can message and book you again</div>
+              <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.success, ...fBody }}>Unblock {blockedThread?.withName}</div>
+              <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>They can message and book you again</div>
             </div>
           </button>
           <button onClick={() => setBlockedThread(null)} style={cancelBtn}>Cancel</button>
         </div>
       </BottomSheet>
+
+      {/* Per-thread options: pin/unpin + delete */}
+      <BottomSheet open={!!optionsThread} onClose={() => setOptionsThread(null)}
+        title={optionsThread?.withName || "Conversation options"} heightPct={30}>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <button
+            onClick={() => {
+              isPinned(optionsThread.id) ? unpin(optionsThread.id) : pin(optionsThread.id);
+              setOptionsThread(null);
+            }}
+            style={sheetBtn()}
+          >
+            <div style={iconBox(C.orangeTint)}>
+              {isPinned(optionsThread?.id) ? <PinOff size={16} color={C.orange} /> : <Pin size={16} color={C.orange} />}
+            </div>
+            <div>
+              <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>
+                {isPinned(optionsThread?.id) ? "Unpin conversation" : "Pin conversation"}
+              </div>
+              <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>
+                {isPinned(optionsThread?.id) ? "Move it back with the rest" : "Keep it at the top of your list"}
+              </div>
+            </div>
+          </button>
+          <button
+            onClick={() => { setDeleteTarget(optionsThread); setOptionsThread(null); }}
+            style={sheetBtn()}
+          >
+            <div style={iconBox(C.dangerTint)}><Trash2 size={16} color={C.danger} /></div>
+            <div>
+              <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.danger, ...fBody }}>Delete conversation</div>
+              <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>Removes it from your messages</div>
+            </div>
+          </button>
+          <button onClick={() => setOptionsThread(null)} style={cancelBtn}>Cancel</button>
+        </div>
+      </BottomSheet>
+
+      {/* Delete confirmation */}
+      <ConfirmDialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)}>
+        <div style={{ textAlign: "center", marginBottom: 16 }}>
+          <div style={{ ...iconBox(C.dangerTint), margin: "0 auto 12px" }}><Trash2 size={18} color={C.danger} /></div>
+          <div style={{ fontSize: T.subtitleLg, fontWeight: 700, color: C.jet, ...fDisplay }}>Delete this conversation?</div>
+          <div style={{ fontSize: T.labelLg, color: C.slate, marginTop: 6, lineHeight: 1.5, ...fBody }}>
+            Your chat history with {deleteTarget?.withName} will be removed from Messages. This can't be undone.
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 10 }}>
+          <Btn full variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Btn>
+          <Btn full variant="danger" onClick={() => { remove(deleteTarget.id); setDeleteTarget(null); }}>Delete</Btn>
+        </div>
+      </ConfirmDialog>
     </div>
   );
 }
@@ -182,8 +294,8 @@ function ConversationOptionsFlow({ otherName, onReportSubmit, onBlockConfirm, is
           <button onClick={() => setStep("report-reason")} style={sheetBtn()}>
             <div style={iconBox(C.orangeTint)}><Flag size={16} color={C.orange} /></div>
             <div>
-              <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fBody }}>Report conversation</div>
-              <div style={{ fontSize: 12, color: C.slate, marginTop: 2, ...fBody }}>Flag this conversation for review by CoachLink Support</div>
+              <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>Report conversation</div>
+              <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>Flag this conversation for review by CoachLink Support</div>
             </div>
           </button>
 
@@ -191,16 +303,16 @@ function ConversationOptionsFlow({ otherName, onReportSubmit, onBlockConfirm, is
             <button onClick={() => { onUnblock(); closeAll(); }} style={sheetBtn()}>
               <div style={iconBox(C.successTint)}><CheckCircle2 size={16} color={C.success} /></div>
               <div>
-                <div style={{ fontSize: 13.5, fontWeight: 600, color: C.success, ...fBody }}>Unblock {otherName}</div>
-                <div style={{ fontSize: 12, color: C.slate, marginTop: 2, ...fBody }}>Allow them to message and book you again</div>
+                <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.success, ...fBody }}>Unblock {otherName}</div>
+                <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>Allow them to message and book you again</div>
               </div>
             </button>
           ) : (
             <button onClick={() => { setStep(null); setBlockStep("confirm"); }} style={sheetBtn()}>
-              <div style={iconBox("#FDE8E8")}><Ban size={16} color="#D64545" /></div>
+              <div style={iconBox(C.dangerTint)}><Ban size={16} color={C.danger} /></div>
               <div>
-                <div style={{ fontSize: 13.5, fontWeight: 600, color: "#D64545", ...fBody }}>Block {otherName}</div>
-                <div style={{ fontSize: 12, color: C.slate, marginTop: 2, ...fBody }}>They won't be able to message or book you</div>
+                <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.danger, ...fBody }}>Block {otherName}</div>
+                <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>They won't be able to message or book you</div>
               </div>
             </button>
           )}
@@ -214,7 +326,7 @@ function ConversationOptionsFlow({ otherName, onReportSubmit, onBlockConfirm, is
         heightPct={selectedReason === "Something else" ? 74 : 62}>
         <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
           <div style={{ flex: 1, overflowY: "auto" }}>
-            <div style={{ fontSize: 13, color: C.slate, marginBottom: 14, ...fBody }}>Why are you reporting this conversation?</div>
+            <div style={{ fontSize: T.body, color: C.slate, marginBottom: 14, ...fBody }}>Why are you reporting this conversation?</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {REPORT_REASONS.map(r => (
                 <button key={r} onClick={() => setSelectedReason(r)} style={{
@@ -223,7 +335,7 @@ function ConversationOptionsFlow({ otherName, onReportSubmit, onBlockConfirm, is
                   border: `1.5px solid ${selectedReason === r ? C.orange : C.border}`,
                   background: selectedReason === r ? C.orangeTint : C.white,
                 }}>
-                  <span style={{ fontSize: 13, color: C.jet, ...fBody }}>{r}</span>
+                  <span style={{ fontSize: T.body, color: C.jet, ...fBody }}>{r}</span>
                   {selectedReason === r && <Check size={16} color={C.orange} />}
                 </button>
               ))}
@@ -234,7 +346,7 @@ function ConversationOptionsFlow({ otherName, onReportSubmit, onBlockConfirm, is
                 style={{
                   width: "100%", boxSizing: "border-box", background: C.fog, marginTop: 14,
                   border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "12px 14px",
-                  fontSize: 13, color: C.jet, outline: "none", resize: "none", ...fBody,
+                  fontSize: T.body, color: C.jet, outline: "none", resize: "none", ...fBody,
                 }} />
             )}
           </div>
@@ -243,7 +355,7 @@ function ConversationOptionsFlow({ otherName, onReportSubmit, onBlockConfirm, is
               style={!canSubmit ? { opacity: 0.5, pointerEvents: "none" } : undefined}>
               Submit report
             </Btn>
-            <button onClick={closeAll} style={{ width: "100%", background: "none", border: "none", cursor: "pointer", padding: "10px 0", fontSize: 13.5, fontWeight: 600, color: C.slate, ...fBody }}>
+            <button onClick={closeAll} style={{ width: "100%", background: "none", border: "none", cursor: "pointer", padding: "10px 0", fontSize: T.bodyLg, fontWeight: 600, color: C.slate, ...fBody }}>
               Cancel
             </button>
           </div>
@@ -257,14 +369,14 @@ function ConversationOptionsFlow({ otherName, onReportSubmit, onBlockConfirm, is
 
       {/* Block Confirm Dialog */}
       <ConfirmDialog open={blockStep === "confirm"} onClose={closeAll}>
-        <div style={{ fontSize: 16.5, fontWeight: 600, color: C.jet, ...fDisplay, marginBottom: 8 }}>Block {otherName}?</div>
-        <div style={{ fontSize: 13, color: C.slate, lineHeight: 1.55, marginBottom: 20, ...fBody }}>
+        <div style={{ fontSize: T.titleLg, fontWeight: 600, color: C.jet, ...fDisplay, marginBottom: 8 }}>Block {otherName}?</div>
+        <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.55, marginBottom: 20, ...fBody }}>
           {otherName} won't be able to message you or book you. You can unblock them later in your settings.
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <Btn variant="outline" onClick={closeAll}>Cancel</Btn>
           <div style={{ flex: 1 }}>
-            <Btn full onClick={() => { onBlockConfirm(); setBlockStep("success"); }} style={{ background: "#D64545" }}>Block</Btn>
+            <Btn full onClick={() => { onBlockConfirm(); setBlockStep("success"); }} style={{ background: C.danger }}>Block</Btn>
           </div>
         </div>
       </ConfirmDialog>
@@ -285,8 +397,8 @@ function SuccessPanel({ title, body, onDone }) {
       <div style={{ ...iconBox(C.successTint), width: 56, height: 56, borderRadius: 18, margin: "0 auto 14px" }}>
         <CheckCircle2 size={26} color={C.success} />
       </div>
-      <div style={{ fontSize: 16.5, fontWeight: 600, color: C.jet, ...fDisplay, marginBottom: 6 }}>{title}</div>
-      <div style={{ fontSize: 13, color: C.slate, lineHeight: 1.5, marginBottom: 20, ...fBody }}>{body}</div>
+      <div style={{ fontSize: T.titleLg, fontWeight: 600, color: C.jet, ...fDisplay, marginBottom: 6 }}>{title}</div>
+      <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.5, marginBottom: 20, ...fBody }}>{body}</div>
       <Btn full onClick={onDone}>Done</Btn>
     </div>
   );
@@ -370,8 +482,8 @@ export function ScreenChatThread({ nav, params, role, toast, offline }) {
           </button>
           <Avatar name={params.name} size={38} />
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14.5, fontWeight: 600, color: C.jet, ...fDisplay }}>{params.name}</div>
-            {params.context && <div style={{ fontSize: 11, color: C.orange, fontWeight: 600, ...fBody }}>{params.context}</div>}
+            <div style={{ fontSize: T.subtitle, fontWeight: 600, color: C.jet, ...fDisplay }}>{params.name}</div>
+            {params.context && <div style={{ fontSize: T.caption, color: C.orange, fontWeight: 600, ...fBody }}>{params.context}</div>}
           </div>
           <button onClick={() => setStep("options")} style={{
             width: 34, height: 34, borderRadius: 11, background: "none", border: "none",
@@ -404,8 +516,8 @@ export function ScreenChatThread({ nav, params, role, toast, offline }) {
                   <FileText size={15} color={C.orange} />
                 </div>
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.fileName}</div>
-                  <div style={{ fontSize: 11, color: C.slate, marginTop: 1 }}>{Math.max(1, Math.round((m.fileSize || 0) / 1024))} KB</div>
+                  <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.fileName}</div>
+                  <div style={{ fontSize: T.caption, color: C.slate, marginTop: 1 }}>{Math.max(1, Math.round((m.fileSize || 0) / 1024))} KB</div>
                 </div>
               </div>
             ) : m.type === "location" ? (
@@ -422,7 +534,7 @@ export function ScreenChatThread({ nav, params, role, toast, offline }) {
                     <MapPin size={16} color={C.white} />
                   </div>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 12px", fontSize: 12.5, fontWeight: 600, color: C.jet, ...fBody }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 12px", fontSize: T.labelLg, fontWeight: 600, color: C.jet, ...fBody }}>
                   <Navigation size={12} color={C.orange} /> Live location shared
                 </div>
               </div>
@@ -432,21 +544,21 @@ export function ScreenChatThread({ nav, params, role, toast, offline }) {
                   padding: "10px 13px", borderRadius: 16,
                   borderBottomRightRadius: m.from === "me" ? 4 : 16,
                   borderBottomLeftRadius: m.from === "me" ? 16 : 4,
-                  background: m.status === "failed" ? "#FDECEC" : m.from === "me" ? C.orange : C.fog,
-                  color: m.status === "failed" ? "#D64545" : m.from === "me" ? C.white : C.jet,
-                  fontSize: 13.5, lineHeight: 1.45, ...fBody,
+                  background: m.status === "failed" ? C.dangerTint : m.from === "me" ? C.orange : C.fog,
+                  color: m.status === "failed" ? C.danger : m.from === "me" ? C.white : C.jet,
+                  fontSize: T.bodyLg, lineHeight: 1.45, ...fBody,
                 }}>
                   {m.text}
                 </div>
                 {m.from === "me" && m.status && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 4, fontSize: 10.5, fontWeight: 600, ...fBody,
-                    color: m.status === "failed" ? "#D64545" : m.status === "sending" ? C.slateLight : C.success }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 4, fontSize: T.tiny, fontWeight: 600, ...fBody,
+                    color: m.status === "failed" ? C.danger : m.status === "sending" ? C.slateLight : C.success }}>
                     {m.status === "sending" && <>Sending…</>}
                     {m.status === "sent" && <><Check size={10} /> Sent</>}
                     {m.status === "failed" && (
                       <>
                         <AlertCircle size={10} /> Not delivered
-                        <button onClick={() => retryMessage(m.id)} style={{ display: "flex", alignItems: "center", gap: 3, background: "none", border: "none", cursor: "pointer", color: "#D64545", fontWeight: 700, fontSize: 10.5, padding: 0, marginLeft: 4, ...fBody }}>
+                        <button onClick={() => retryMessage(m.id)} style={{ display: "flex", alignItems: "center", gap: 3, background: "none", border: "none", cursor: "pointer", color: C.danger, fontWeight: 700, fontSize: T.tiny, padding: 0, marginLeft: 4, ...fBody }}>
                           <RotateCcw size={10} /> Retry
                         </button>
                       </>
@@ -466,10 +578,10 @@ export function ScreenChatThread({ nav, params, role, toast, offline }) {
       )}
       {blocked ? (
         <div style={{ padding: "14px 16px 22px", borderTop: `1px solid ${C.border}` }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, background: C.fog, borderRadius: 12, padding: "12px 14px", fontSize: 12.5, color: C.slate, lineHeight: 1.5, ...fBody }}>
-            <Ban size={15} color="#D64545" style={{ flexShrink: 0 }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 10, background: C.fog, borderRadius: 12, padding: "12px 14px", fontSize: T.labelLg, color: C.slate, lineHeight: 1.5, ...fBody }}>
+            <Ban size={15} color={C.danger} style={{ flexShrink: 0 }} />
             <span style={{ flex: 1 }}>You blocked {params.name}.</span>
-            <button onClick={() => unblock(threadId)} style={{ fontSize: 12.5, fontWeight: 600, color: C.white, background: C.orange, border: "none", borderRadius: 8, padding: "6px 12px", cursor: "pointer", whiteSpace: "nowrap", ...fBody }}>
+            <button onClick={() => unblock(threadId)} style={{ fontSize: T.labelLg, fontWeight: 600, color: C.white, background: C.orange, border: "none", borderRadius: 8, padding: "6px 12px", cursor: "pointer", whiteSpace: "nowrap", ...fBody }}>
               Unblock
             </button>
           </div>
@@ -480,7 +592,7 @@ export function ScreenChatThread({ nav, params, role, toast, offline }) {
           <button onClick={() => fileInputRef.current?.click()} style={{ background: "none", border: "none", cursor: "pointer" }}><Paperclip size={19} color={C.slate} /></button>
           <button onClick={() => setLocationSheet(true)} style={{ background: "none", border: "none", cursor: "pointer" }}><MapPin size={19} color={C.slate} /></button>
           <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && send()}
-            placeholder="Message..." style={{ flex: 1, border: `1.5px solid ${C.border}`, borderRadius: 20, padding: "9px 14px", fontSize: 13.5, outline: "none", ...fBody }} />
+            placeholder="Message..." style={{ flex: 1, border: `1.5px solid ${C.border}`, borderRadius: 20, padding: "9px 14px", fontSize: T.bodyLg, outline: "none", ...fBody }} />
           <button onClick={send} style={{ width: 36, height: 36, borderRadius: 99, background: C.orange, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
             <Send size={15} color={C.white} />
           </button>
@@ -488,7 +600,7 @@ export function ScreenChatThread({ nav, params, role, toast, offline }) {
       )}
 
       <BottomSheet open={locationSheet} onClose={() => setLocationSheet(false)} title="Share your location" heightPct={34}>
-        <div style={{ fontSize: 13, color: C.slate, lineHeight: 1.55, marginBottom: 18, ...fBody }}>
+        <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.55, marginBottom: 18, ...fBody }}>
           {params.name} will be able to see your live location for this session. You can stop sharing at any time.
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

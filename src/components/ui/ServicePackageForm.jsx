@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { DollarSign, Users, MapPin } from "lucide-react";
-import { C, fBody } from "../../theme/theme";
+import { C, fBody, T } from "../../theme/theme";
 import { Chip, Btn, SearchSelect } from "./Primitives";
 
 export const PACKAGE_TYPE_OPTIONS = [
@@ -20,14 +20,14 @@ export const DELIVERY_MODE_OPTIONS = ["In-person", "Online", "Come to You"];
 
 const inputStyle = {
   width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "10px 13px",
-  fontSize: 13, outline: "none", boxSizing: "border-box", ...fBody,
+  fontSize: T.body, outline: "none", boxSizing: "border-box", ...fBody,
 };
 const fieldWrapStyle = {
   display: "flex", alignItems: "center", gap: 6, border: `1.5px solid ${C.border}`,
   borderRadius: 13, padding: "11px 13px", boxSizing: "border-box",
 };
-const fieldInputStyle = { border: "none", outline: "none", flex: 1, fontSize: 13, minWidth: 0, ...fBody };
-const labelStyle = { fontSize: 12.5, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
+const fieldInputStyle = { border: "none", outline: "none", flex: 1, fontSize: T.body, minWidth: 0, ...fBody };
+const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
 
 export function emptyPackage() {
   return {
@@ -161,7 +161,7 @@ export function ServicePackageForm({ initial, onSave, onCancel, saveLabel = "Add
       </div>
 
       <div style={labelStyle}>Package type</div>
-      <div style={{ fontSize: 11.5, color: C.slateLight, marginBottom: 8, marginTop: -6, ...fBody }}>
+      <div style={{ fontSize: T.captionLg, color: C.slateLight, marginBottom: 8, marginTop: -6, ...fBody }}>
         Select every format this service can be booked as — you can pick more than one.
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
@@ -233,11 +233,11 @@ export function ServicePackageForm({ initial, onSave, onCancel, saveLabel = "Add
           inputMode="decimal"
           style={fieldInputStyle}
         />
-        <span style={{ fontSize: 11.5, color: C.slateLight, ...fBody }}>per session</span>
+        <span style={{ fontSize: T.captionLg, color: C.slateLight, ...fBody }}>per session</span>
       </div>
 
       <div style={labelStyle}>Maximum participants per package</div>
-      <div style={{ fontSize: 11.5, color: C.slateLight, marginBottom: 8, marginTop: -6, ...fBody }}>
+      <div style={{ fontSize: T.captionLg, color: C.slateLight, marginBottom: 8, marginTop: -6, ...fBody }}>
         The most people who can join a single session of this specific package.
       </div>
       <div style={{ ...fieldWrapStyle, marginBottom: 16 }}>
@@ -249,11 +249,11 @@ export function ServicePackageForm({ initial, onSave, onCancel, saveLabel = "Add
           inputMode="numeric"
           style={fieldInputStyle}
         />
-        <span style={{ fontSize: 11.5, color: C.slateLight, ...fBody }}>max people</span>
+        <span style={{ fontSize: T.captionLg, color: C.slateLight, ...fBody }}>max people</span>
       </div>
 
       <div style={labelStyle}>Delivery & location</div>
-      <div style={{ fontSize: 11.5, color: C.slateLight, marginBottom: 8, marginTop: -6, ...fBody }}>
+      <div style={{ fontSize: T.captionLg, color: C.slateLight, marginBottom: 8, marginTop: -6, ...fBody }}>
         Each package can have its own location — this doesn't need to match your other packages.
       </div>
       <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
@@ -295,12 +295,12 @@ export function ServicePackageForm({ initial, onSave, onCancel, saveLabel = "Add
               style={fieldInputStyle}
             />
           </div>
-          <div style={{ fontSize: 11, color: C.slateLight, marginTop: 6, ...fBody }}>You'll travel to the client's location for this package.</div>
+          <div style={{ fontSize: T.caption, color: C.slateLight, marginTop: 6, ...fBody }}>You'll travel to the client's location for this package.</div>
         </div>
       )}
 
       {pkg.deliveryMode === "Online" && (
-        <div style={{ fontSize: 11.5, color: C.slateLight, marginBottom: 16, ...fBody }}>Delivered virtually — no physical location needed.</div>
+        <div style={{ fontSize: T.captionLg, color: C.slateLight, marginBottom: 16, ...fBody }}>Delivered virtually — no physical location needed.</div>
       )}
 
       <div style={labelStyle}>Equipment required (optional)</div>

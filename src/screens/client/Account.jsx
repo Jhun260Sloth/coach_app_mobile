@@ -2,13 +2,15 @@ import React, { useState } from "react";
 import {
   Edit3, Bell, CreditCard, Fingerprint, Lock, FileText, Shield, HelpCircle, LogOut, Users, ChevronRight,
   Mail, Phone, User, Plus, Trash2, Eye, EyeOff, AlertTriangle, Camera, MapPin, Target, Calendar, UserPlus, Download,
-  CalendarDays, CreditCard as CardIcon, Stethoscope, UserCheck,
+  CalendarDays, CreditCard as CardIcon, Stethoscope, UserCheck, History as HistoryIcon, MessageCircle, Star,
+  Sparkles, Percent, ShieldCheck,
 } from "lucide-react";
-import { C, fDisplay, fBody } from "../../theme/theme";
-import { Avatar, Btn, SectionLabel, Toggle, BottomSheet, Field, Chip, Card, Badge, EmptyState, TopBar } from "../../components/ui/Primitives";
-import { SPORTS } from "../../data/mockData";
+import { C, fDisplay, fBody, T } from "../../theme/theme";
+import { Avatar, Btn, SectionLabel, Toggle, BottomSheet, Field, Chip, Card, Badge, EmptyState, TopBar, SegTabs } from "../../components/ui/Primitives";
+import { SPORTS, CLIENT_NOTIFICATIONS } from "../../data/mockData";
 import { ReceiptSheet } from "./Dashboard";
 import { SKILL_LEVELS } from "./AboutYou";
+import { useLiveNotifications } from "../../systems/StateSystem";
 
 const emptyChildDraft = {
   name: "", age: "", sport: [], skillLevel: "", goals: "", postalCode: "", preferences: "", hasPhoto: false,
@@ -124,7 +126,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
   const Row2 = ({ icon: Icon, label, onClick, right }) => (
     <button onClick={onClick} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "13px 4px", background: "none", border: "none", borderBottom: `1px solid ${C.border}`, cursor: "pointer", textAlign: "left" }}>
       <Icon size={17} color={C.jet} />
-      <span style={{ flex: 1, fontSize: 13.5, color: C.jet, fontWeight: 500, ...fBody }}>{label}</span>
+      <span style={{ flex: 1, fontSize: T.bodyLg, color: C.jet, fontWeight: 500, ...fBody }}>{label}</span>
       {right || <ChevronRight size={16} color={C.slateLight} />}
     </button>
   );
@@ -132,8 +134,8 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
   const NotifRow = ({ label, sub, prefKey }) => (
     <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 4px", borderBottom: `1px solid ${C.border}` }}>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fBody }}>{label}</div>
-        {sub && <div style={{ fontSize: 12, color: C.slate, marginTop: 2, ...fBody }}>{sub}</div>}
+        <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>{label}</div>
+        {sub && <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>{sub}</div>}
       </div>
       <Toggle on={notifPrefs[prefKey]} onClick={() => toggleNotif(prefKey)} />
     </div>
@@ -142,21 +144,21 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "18px 20px 0", flex: 1, overflowY: "auto", paddingBottom: 100 }}>
-        <div style={{ fontSize: 22, fontWeight: 600, color: C.jet, marginBottom: 18, ...fDisplay }}>Account</div>
+        <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, marginBottom: 18, ...fDisplay }}>Account</div>
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 28 }}>
           <Avatar name={profile.name} size={58} />
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ fontSize: 16, fontWeight: 600, color: C.jet, ...fDisplay }}>{profile.name}</div>
+              <div style={{ fontSize: T.title, fontWeight: 600, color: C.jet, ...fDisplay }}>{profile.name}</div>
               <Badge tone="neutral">Client account</Badge>
             </div>
-            <div style={{ fontSize: 12.5, color: C.slate, marginTop: 2, ...fBody }}>{profile.email}</div>
+            <div style={{ fontSize: T.labelLg, color: C.slate, marginTop: 2, ...fBody }}>{profile.email}</div>
           </div>
         </div>
 
         <div style={{ marginTop: 32 }}>
           <SectionLabel>Family</SectionLabel>
-          <div style={{ fontSize: 12, color: C.slate, marginTop: -6, marginBottom: 12, lineHeight: 1.5, ...fBody }}>
+          <div style={{ fontSize: T.label, color: C.slate, marginTop: -6, marginBottom: 12, lineHeight: 1.5, ...fBody }}>
             Separate profiles for each child.
           </div>
           {children.map((child) => {
@@ -175,8 +177,8 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
               >
                 <Avatar name={child.name || "Child"} size={40} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fBody }}>{child.name || "Unnamed profile"}</div>
-                  <div style={{ fontSize: 12, color: C.slate, marginTop: 1, ...fBody }}>
+                  <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>{child.name || "Unnamed profile"}</div>
+                  <div style={{ fontSize: T.label, color: C.slate, marginTop: 1, ...fBody }}>
                     {ageLabel} · {sportLabel}
                   </div>
                 </div>
@@ -194,7 +196,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
           <Row2 icon={Edit3} label="Edit profile" onClick={openEditProfile} />
           <Row2 icon={Bell} label="Notification preferences" onClick={() => setSheet("notif")} />
           <Row2 icon={CreditCard} label="Payment methods" onClick={() => setSheet("payment")} />
-          <Row2 icon={Download} label="Payment history" onClick={() => nav("client-payment-history")} />
+          <Row2 icon={HistoryIcon} label="History" onClick={() => nav("client-history")} />
         </div>
 
         <div style={{ marginTop: 22 }}>
@@ -217,7 +219,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
         <div style={{ marginTop: 22 }}>
           <Row2 icon={LogOut} label="Log out" onClick={() => setSheet("logout")} />
           <button onClick={() => setSheet("deactivate")} style={{ width: "100%", textAlign: "left", padding: "13px 4px", background: "none", border: "none", cursor: "pointer" }}>
-            <span style={{ fontSize: 13, color: "#D64545", fontWeight: 500, ...fBody }}>Deactivate account</span>
+            <span style={{ fontSize: T.body, color: C.danger, fontWeight: 500, ...fBody }}>Deactivate account</span>
           </button>
         </div>
       </div>
@@ -254,7 +256,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
 
         <div style={{ marginTop: 4 }}>
           <SectionLabel>Guardian information</SectionLabel>
-          <div style={{ fontSize: 11.5, color: C.slateLight, marginTop: -6, marginBottom: 12, lineHeight: 1.5, ...fBody }}>
+          <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: -6, marginBottom: 12, lineHeight: 1.5, ...fBody }}>
             The parent or legal guardian responsible for this participant.
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -291,7 +293,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
               onChange={(e) => setChildDraft((d) => ({ ...d, goals: e.target.value }))}
               placeholder="e.g. build confidence for club trials"
               rows={2}
-              style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13.5, color: C.jet, resize: "none", ...fBody }}
+              style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: T.bodyLg, color: C.jet, resize: "none", ...fBody }}
             />
           </div>
         </div>
@@ -305,7 +307,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
               onChange={(e) => setChildDraft((d) => ({ ...d, preferences: e.target.value }))}
               placeholder="e.g. prefers a female coach, mornings only"
               rows={2}
-              style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13.5, color: C.jet, resize: "none", ...fBody }}
+              style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: T.bodyLg, color: C.jet, resize: "none", ...fBody }}
             />
           </div>
         </div>
@@ -316,13 +318,13 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
             <Field label="Medical conditions" placeholder="e.g. asthma" icon={Stethoscope} value={childDraft.medicalConditions} onChange={(e) => setChildDraft((d) => ({ ...d, medicalConditions: e.target.value }))} />
             <Field label="Allergies" placeholder="e.g. bee stings, peanuts" icon={AlertTriangle} value={childDraft.allergies} onChange={(e) => setChildDraft((d) => ({ ...d, allergies: e.target.value }))} />
             <div>
-              <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Additional notes</div>
+              <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Additional notes</div>
               <textarea
                 value={childDraft.medicalNotes}
                 onChange={(e) => setChildDraft((d) => ({ ...d, medicalNotes: e.target.value }))}
                 placeholder="Anything else a coach should know"
                 rows={2}
-                style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: 13.5, outline: "none", boxSizing: "border-box", resize: "none", ...fBody }}
+                style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", resize: "none", ...fBody }}
               />
             </div>
           </div>
@@ -343,14 +345,14 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
             {(() => {
               const history = bookings.filter((b) => b.participant === childDraft.name);
               if (history.length === 0) {
-                return <div style={{ fontSize: 12.5, color: C.slateLight, ...fBody }}>No sessions booked yet for {childDraft.name || "this profile"}.</div>;
+                return <div style={{ fontSize: T.labelLg, color: C.slateLight, ...fBody }}>No sessions booked yet for {childDraft.name || "this profile"}.</div>;
               }
               return history.map((b) => (
                 <Card key={b.id} style={{ marginBottom: 8 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: C.jet, ...fBody }}>{b.service}</div>
-                      <div style={{ fontSize: 11.5, color: C.slate, marginTop: 2, ...fBody }}>{b.coachName} · {b.date}</div>
+                      <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{b.service}</div>
+                      <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{b.coachName} · {b.date}</div>
                     </div>
                     <Badge tone={b.status === "completed" ? "success" : "orange"}>{b.status}</Badge>
                   </div>
@@ -389,7 +391,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
               <Field label="Address" placeholder="Enter your address" icon={MapPin} value={editDraft.address} onChange={(e) => setEditDraft((d) => ({ ...d, address: e.target.value }))} />
               <Field label="Postal code" placeholder="e.g. 2026" icon={MapPin} value={editDraft.postalCode} onChange={(e) => setEditDraft((d) => ({ ...d, postalCode: e.target.value }))} />
             </div>
-            <div style={{ fontSize: 11.5, color: C.slateLight, marginTop: -10, marginBottom: 20, lineHeight: 1.5, ...fBody }}>
+            <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: -10, marginBottom: 20, lineHeight: 1.5, ...fBody }}>
               We only use this to find coaches nearby — it's never shown to coaches or other clients.
             </div>
 
@@ -415,7 +417,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
                 onChange={(e) => setEditDraft((d) => ({ ...d, goals: e.target.value }))}
                 placeholder="e.g. build confidence for club trials, improve fitness, learn the basics..."
                 rows={3}
-                style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13.5, color: C.jet, resize: "none", ...fBody }}
+                style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: T.bodyLg, color: C.jet, resize: "none", ...fBody }}
               />
             </div>
 
@@ -424,13 +426,13 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
               <Field label="Medical conditions" placeholder="e.g. asthma" icon={Stethoscope} value={editDraft.medicalConditions} onChange={(e) => setEditDraft((d) => ({ ...d, medicalConditions: e.target.value }))} />
               <Field label="Allergies" placeholder="e.g. bee stings, peanuts" icon={AlertTriangle} value={editDraft.allergies} onChange={(e) => setEditDraft((d) => ({ ...d, allergies: e.target.value }))} />
               <div>
-                <div style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Additional notes</div>
+                <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Additional notes</div>
                 <textarea
                   value={editDraft.medicalNotes}
                   onChange={(e) => setEditDraft((d) => ({ ...d, medicalNotes: e.target.value }))}
                   placeholder="Anything else a coach should know"
                   rows={2}
-                  style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: 13.5, outline: "none", boxSizing: "border-box", resize: "none", ...fBody }}
+                  style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", resize: "none", ...fBody }}
                 />
               </div>
             </div>
@@ -468,11 +470,11 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
               <CreditCard size={15} color={C.jet} />
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fBody }}>{card.brand} •••• {card.last4}</div>
-              <div style={{ fontSize: 12, color: C.slate, marginTop: 2, ...fBody }}>Expires {card.exp}{card.isDefault ? " · Default" : ""}</div>
+              <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>{card.brand} •••• {card.last4}</div>
+              <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>Expires {card.exp}{card.isDefault ? " · Default" : ""}</div>
             </div>
             {!card.isDefault && (
-              <button onClick={() => makeDefault(card.id)} style={{ background: "none", border: "none", color: C.orange, fontSize: 12, fontWeight: 600, cursor: "pointer", ...fBody }}>Set default</button>
+              <button onClick={() => makeDefault(card.id)} style={{ background: "none", border: "none", color: C.orange, fontSize: T.label, fontWeight: 600, cursor: "pointer", ...fBody }}>Set default</button>
             )}
             <button onClick={() => removeCard(card.id)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 4 }}>
               <Trash2 size={15} color={C.slateLight} />
@@ -522,7 +524,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
             </div>
           </div>
         </div>
-        <div style={{ fontSize: 11.5, color: C.slateLight, marginTop: 14, lineHeight: 1.5, ...fBody }}>
+        <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: 14, lineHeight: 1.5, ...fBody }}>
           Payments are processed by our PCI-compliant payment partner — CoachLink never stores your full card number.
         </div>
         <div style={{ marginTop: 20 }}>
@@ -544,7 +546,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
 
       {/* Privacy policy */}
       <BottomSheet open={sheet === "privacy"} onClose={closeSheet} title="Privacy policy" heightPct={75}>
-        <div style={{ fontSize: 13, color: C.slate, lineHeight: 1.6, ...fBody }}>
+        <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.6, ...fBody }}>
           <p style={{ marginBottom: 12 }}>CoachLink collects only the information needed to connect you with coaches and manage your bookings, such as your profile details, session history, and payment information.</p>
           <p style={{ marginBottom: 12 }}>We never sell your personal data. Information is shared with coaches only as needed to fulfil a booking, and with payment processors to complete transactions securely.</p>
           <p>You can request a copy of your data or ask us to delete your account at any time from this Account tab.</p>
@@ -556,7 +558,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
 
       {/* Log out confirmation */}
       <BottomSheet open={sheet === "logout"} onClose={closeSheet} title="Log out" heightPct={38}>
-        <div style={{ fontSize: 13.5, color: C.slate, lineHeight: 1.55, marginBottom: 18, ...fBody }}>
+        <div style={{ fontSize: T.bodyLg, color: C.slate, lineHeight: 1.55, marginBottom: 18, ...fBody }}>
           Are you sure you want to log out of your account?
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -568,8 +570,8 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
       {/* Deactivate account confirmation */}
       <BottomSheet open={sheet === "deactivate"} onClose={closeSheet} title="Deactivate account" heightPct={46}>
         <div style={{ display: "flex", gap: 10, padding: 12, background: C.warnTint, borderRadius: 14, marginBottom: 16 }}>
-          <AlertTriangle size={17} color="#D64545" style={{ flexShrink: 0, marginTop: 1 }} />
-          <div style={{ fontSize: 12.5, color: C.jet, lineHeight: 1.5, ...fBody }}>
+          <AlertTriangle size={17} color={C.danger} style={{ flexShrink: 0, marginTop: 1 }} />
+          <div style={{ fontSize: T.labelLg, color: C.jet, lineHeight: 1.5, ...fBody }}>
             Deactivating your account will hide your profile and cancel any upcoming bookings. This can be undone by logging back in within 30 days.
           </div>
         </div>
@@ -584,36 +586,79 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
 }
 
 /* =========================================================================
-   PAYMENT HISTORY — full page (was a bottom sheet). Tapping a row still opens
-   the receipt as a bottom sheet, since that's a lightweight detail glance,
-   not something worth its own page.
+   HISTORY — full page covering both transaction history (Payments) and a
+   timeline of other completed activity (Activity), so it's a single place
+   to look back on the account rather than payments-only. Tapping a payment
+   row still opens the receipt as a bottom sheet — a lightweight detail
+   glance, not something worth its own page.
    ========================================================================= */
-export function ScreenPaymentHistory({ nav, bookings = [] }) {
+const CLIENT_ACTIVITY_ICON = { booking: Calendar, message: MessageCircle, review: Star, availability: Sparkles, promo: Percent, payment: CreditCard, verification: ShieldCheck };
+
+export function ScreenClientHistory({ nav, bookings = [], clientNotifications = [] }) {
+  const [tab, setTab] = useState("payments");
   const [receiptTarget, setReceiptTarget] = useState(null);
+  const [activity] = useLiveNotifications(clientNotifications, CLIENT_NOTIFICATIONS);
   const paidBookings = bookings.filter((b) => b.status === "confirmed" || b.status === "completed" || b.status === "cancelled");
 
   return (
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title="Payment history" onBack={() => nav("client-profile")} />
+      <TopBar title="History" onBack={() => nav("client-profile")} />
+      <div style={{ marginBottom: 16 }}>
+        <SegTabs
+          items={[{ value: "payments", label: "Payments" }, { value: "activity", label: "Activity" }]}
+          value={tab}
+          onChange={setTab}
+        />
+      </div>
+
       <div style={{ flex: 1, overflowY: "auto", paddingBottom: 20 }}>
-        {paidBookings.length === 0 && (
-          <EmptyState icon={CreditCard} title="No payments yet" body="Your session receipts will show up here." />
+        {tab === "payments" && (
+          <>
+            {paidBookings.length === 0 && (
+              <EmptyState icon={CreditCard} title="No payments yet" body="Your session receipts will show up here." />
+            )}
+            {paidBookings.map((b) => (
+              <Card key={b.id} onClick={() => setReceiptTarget(b)} style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <Avatar name={b.coachName} size={40} />
+                  <div>
+                    <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>{b.service}</div>
+                    <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{b.date} · {b.coachName}</div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ fontSize: T.subtitle, fontWeight: 700, color: b.status === "cancelled" ? C.slateLight : C.jet, ...fDisplay }}>${b.price}</div>
+                  <ChevronRight size={16} color={C.slateLight} />
+                </div>
+              </Card>
+            ))}
+          </>
         )}
-        {paidBookings.map((b) => (
-          <Card key={b.id} onClick={() => setReceiptTarget(b)} style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <Avatar name={b.coachName} size={40} />
-              <div>
-                <div style={{ fontSize: 13.5, fontWeight: 600, color: C.jet, ...fBody }}>{b.service}</div>
-                <div style={{ fontSize: 11.5, color: C.slate, marginTop: 2, ...fBody }}>{b.date} · {b.coachName}</div>
-              </div>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: b.status === "cancelled" ? C.slateLight : C.jet, ...fDisplay }}>${b.price}</div>
-              <ChevronRight size={16} color={C.slateLight} />
-            </div>
-          </Card>
-        ))}
+
+        {tab === "activity" && (
+          <>
+            {activity.length === 0 && (
+              <EmptyState icon={HistoryIcon} title="No activity yet" body="Booking updates, payments and other account activity will show up here." />
+            )}
+            {activity.map((n) => {
+              const Icon = CLIENT_ACTIVITY_ICON[n.type] || HistoryIcon;
+              return (
+                <Card key={n.id} style={{ marginBottom: 10, display: "flex", gap: 12, alignItems: "flex-start" }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 11, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Icon size={16} color={C.orange} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                      <span style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{n.title}</span>
+                      <span style={{ fontSize: T.tiny, color: C.slateLight, flexShrink: 0, ...fBody }}>{n.time}</span>
+                    </div>
+                    <div style={{ fontSize: T.labelLg, color: C.slate, marginTop: 3, lineHeight: 1.45, ...fBody }}>{n.body}</div>
+                  </div>
+                </Card>
+              );
+            })}
+          </>
+        )}
       </div>
 
       <ReceiptSheet booking={receiptTarget} onClose={() => setReceiptTarget(null)} />

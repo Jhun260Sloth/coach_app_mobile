@@ -1,6 +1,6 @@
 import React from "react";
 import { PartyPopper } from "lucide-react";
-import { C, fDisplay, fBody } from "../../theme/theme";
+import { C, fDisplay, fBody, T } from "../../theme/theme";
 import { Btn } from "../../components/ui/Primitives";
 
 export function ScreenCoachSetupComplete({ nav, setReachedDashboardAfterVerification }) {
@@ -18,8 +18,8 @@ export function ScreenCoachSetupComplete({ nav, setReachedDashboardAfterVerifica
         }}>
           <PartyPopper size={32} color={C.orange} />
         </div>
-        <div style={{ fontSize: 22, fontWeight: 600, color: C.jet, ...fDisplay }}>You're All Set!</div>
-        <div style={{ fontSize: 13.5, color: C.slate, marginTop: 10, lineHeight: 1.6, maxWidth: 300, marginLeft: "auto", marginRight: "auto", ...fBody }}>
+        <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, ...fDisplay }}>You're All Set!</div>
+        <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 10, lineHeight: 1.6, maxWidth: 300, marginLeft: "auto", marginRight: "auto", ...fBody }}>
           Congratulations! Your setup is complete and you're ready to go. You can now manage your services, bookings, availability, and earnings from your dashboard.
         </div>
       </div>

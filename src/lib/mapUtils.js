@@ -147,9 +147,9 @@ export function injectMapStyles() {
     @keyframes clFixedBlink { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
     .cl-user-dot-wrap { width: 20px; height: 20px; position: relative; }
     .cl-user-dot-wrap::before { content: ""; position: absolute; inset: -16px; border-radius: 50%; background: rgba(59,130,246,.38); animation: clLocatePulse 2.2s ease-out infinite; }
-    .cl-user-dot-wrap::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: #3B82F6; border: 3px solid #fff; box-shadow: 0 1px 5px rgba(0,0,0,.35); }
+    .cl-user-dot-wrap::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: #3B82F6; border: 3px solid ${C.white}; box-shadow: 0 1px 5px rgba(0,0,0,.35); }
     .cl-coach-pin { position: relative; width: 30px; height: 38px; cursor: pointer; }
-    .cl-coach-pin .cl-pin-tag { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 4px; background: ${C.jet}; color: #fff; font-size: 11px; font-weight: 700; padding: 5px 9px; border-radius: 10px; white-space: nowrap; max-width: 120px; overflow: hidden; text-overflow: ellipsis; font-family: 'Inter', sans-serif; box-shadow: 0 2px 6px rgba(0,0,0,.18); }
+    .cl-coach-pin .cl-pin-tag { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 4px; background: ${C.jet}; color: ${C.white}; font-size: 11px; font-weight: 700; padding: 5px 9px; border-radius: 10px; white-space: nowrap; max-width: 120px; overflow: hidden; text-overflow: ellipsis; font-family: 'Inter', sans-serif; box-shadow: 0 2px 6px rgba(0,0,0,.18); }
     .cl-coach-pin.selected .cl-pin-tag { background: ${C.orange}; color: ${C.jet}; }
     .cl-coach-pin .cl-pin-svg { filter: drop-shadow(0 2px 3px rgba(0,0,0,.28)); transition: transform .12s ease; }
     .cl-coach-pin.selected .cl-pin-svg { transform: scale(1.12); }

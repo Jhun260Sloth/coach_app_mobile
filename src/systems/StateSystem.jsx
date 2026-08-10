@@ -5,7 +5,7 @@ import {
   Send, MessageCircle, CreditCard, DollarSign, RotateCcw, Lock, UserX, Sparkles,
   PartyPopper, Info, TrendingUp, PauseCircle, Undo2, Search, ClipboardList, Radio,
 } from "lucide-react";
-import { C, fDisplay, fBody } from "../theme/theme";
+import { C, fDisplay, fBody, T } from "../theme/theme";
 
 /* =========================================================================
    STATE, FEEDBACK & NOTIFICATION SYSTEM
@@ -22,7 +22,7 @@ import { C, fDisplay, fBody } from "../theme/theme";
 export const TONES = {
   success: { fg: C.success, bg: C.successTint },
   warning: { fg: C.orange, bg: C.orangeTint },
-  danger: { fg: "#D64545", bg: "#FDECEC" },
+  danger: { fg: C.danger, bg: C.dangerTint },
   neutral: { fg: C.slate, bg: C.fog },
   info: { fg: C.jet, bg: C.fog },
 };
@@ -255,22 +255,22 @@ export function StatusBanner({ state, params, title, message, next, onPrimary, o
         <Icon size={compact ? 15 : 17} color={tone.fg} />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: compact ? 13 : 14, fontWeight: 700, color: C.jet, ...fDisplay }}>{title || cfg.title}</div>
+        <div style={{ fontSize: compact ? T.body : T.subtitle, fontWeight: 700, color: C.jet, ...fDisplay }}>{title || cfg.title}</div>
         {(message || cfg.message) && (
-          <div style={{ fontSize: compact ? 12 : 12.5, color: C.slate, marginTop: 3, lineHeight: 1.5, ...fBody }}>{message || cfg.message}</div>
+          <div style={{ fontSize: compact ? T.label : T.labelLg, color: C.slate, marginTop: 3, lineHeight: 1.5, ...fBody }}>{message || cfg.message}</div>
         )}
         {(next || cfg.next) && (
-          <div style={{ fontSize: 11.5, color: tone.fg, marginTop: 6, fontWeight: 600, ...fBody }}>Next: {next || cfg.next}</div>
+          <div style={{ fontSize: T.captionLg, color: tone.fg, marginTop: 6, fontWeight: 600, ...fBody }}>Next: {next || cfg.next}</div>
         )}
         {(onPrimary || onSecondary) && (
           <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
             {onPrimary && (
-              <button onClick={onPrimary} style={{ background: tone.fg, color: C.white, border: "none", borderRadius: 9, padding: "7px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", ...fBody }}>
+              <button onClick={onPrimary} style={{ background: tone.fg, color: C.white, border: "none", borderRadius: 9, padding: "7px 12px", fontSize: T.label, fontWeight: 700, cursor: "pointer", ...fBody }}>
                 {primaryLabel || cfg.primary || "Continue"}
               </button>
             )}
             {onSecondary && (
-              <button onClick={onSecondary} style={{ background: "none", color: C.jet, border: `1px solid ${C.border}`, borderRadius: 9, padding: "7px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer", ...fBody }}>
+              <button onClick={onSecondary} style={{ background: "none", color: C.jet, border: `1px solid ${C.border}`, borderRadius: 9, padding: "7px 12px", fontSize: T.label, fontWeight: 600, cursor: "pointer", ...fBody }}>
                 {secondaryLabel || cfg.secondary || "Cancel"}
               </button>
             )}
@@ -296,9 +296,9 @@ export function ResultOverlay({ open, state, params, title, message }) {
       <div style={{ width: 64, height: 64, borderRadius: 20, background: isProcessing ? "rgba(255,255,255,.1)" : tone.bg, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14, animation: isProcessing ? "none" : "clPopIn .25s ease" }}>
         {isProcessing ? <Spin /> : <Icon size={28} color={tone.fg} />}
       </div>
-      <div style={{ color: C.white, fontSize: 15, fontWeight: 700, ...fDisplay }}>{title || cfg.title}</div>
+      <div style={{ color: C.white, fontSize: T.subtitleLg, fontWeight: 700, ...fDisplay }}>{title || cfg.title}</div>
       {(message || cfg.message) && (
-        <div style={{ color: "rgba(255,255,255,.72)", fontSize: 12.5, marginTop: 6, lineHeight: 1.5, ...fBody }}>{message || cfg.message}</div>
+        <div style={{ color: "rgba(255,255,255,.72)", fontSize: T.labelLg, marginTop: 6, lineHeight: 1.5, ...fBody }}>{message || cfg.message}</div>
       )}
     </div>
   );
@@ -316,7 +316,7 @@ export function InlineStatus({ state, params, label }) {
   const tone = TONES[cfg.tone] || TONES.neutral;
   const Icon = cfg.icon || Info;
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 700, color: tone.fg, ...fBody }}>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: T.captionLg, fontWeight: 700, color: tone.fg, ...fBody }}>
       <Icon size={12} /> {label || cfg.title}
     </span>
   );
@@ -334,7 +334,7 @@ export function NotificationBellButton({ count = 0, onClick }) {
           <span style={{
             position: "absolute", top: -4, right: -6, minWidth: 15, height: 15, padding: "0 3px",
             background: C.orange, borderRadius: 99, border: `1.5px solid ${C.white}`,
-            display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9.5, fontWeight: 700, color: C.white, ...fBody,
+            display: "flex", alignItems: "center", justifyContent: "center", fontSize: T.micro, fontWeight: 700, color: C.white, ...fBody,
           }}>
             {count}
           </span>
@@ -380,7 +380,7 @@ export function ActionFlow({ steps, activeIndex }) {
             }}>
               {i < activeIndex && <CheckCircle2 size={11} color={C.white} />}
             </span>
-            <span style={{ fontSize: 10.5, fontWeight: 700, color: i <= activeIndex ? C.jet : C.slateLight, ...fBody, whiteSpace: "nowrap" }}>{s}</span>
+            <span style={{ fontSize: T.tiny, fontWeight: 700, color: i <= activeIndex ? C.jet : C.slateLight, ...fBody, whiteSpace: "nowrap" }}>{s}</span>
           </div>
           {i < steps.length - 1 && <div style={{ flex: 1, height: 1, background: i < activeIndex ? C.orange : C.border, minWidth: 8 }} />}
         </React.Fragment>

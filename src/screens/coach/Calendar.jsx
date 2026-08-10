@@ -1,13 +1,13 @@
 import React, { useState, useMemo } from "react";
 import { Calendar as CalendarIcon, Trash2, Plus, Clock, ChevronLeft, ChevronRight, Ban } from "lucide-react";
-import { C, fDisplay, fBody } from "../../theme/theme";
+import { C, fDisplay, fBody, T } from "../../theme/theme";
 import { Card, SectionLabel, Btn, Toggle, Chip, EmptyState, SegTabs } from "../../components/ui/Primitives";
 
 const DAY_OPTIONS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const WEEKDAY_HEADERS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const timeInputStyle = {
   width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "10px 12px",
-  fontSize: 13.5, outline: "none", boxSizing: "border-box", ...fBody,
+  fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", ...fBody,
 };
 
 // "14:30" -> "2:30 PM"
@@ -110,7 +110,7 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "18px 20px 0", flex: 1, overflowY: "auto", paddingBottom: 100 }}>
-        <div style={{ fontSize: 22, fontWeight: 600, color: C.jet, marginBottom: 14, ...fDisplay }}>Availability</div>
+        <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, marginBottom: 14, ...fDisplay }}>Availability</div>
 
         <div style={{ marginBottom: 16 }}>
           <SegTabs value={view} onChange={setView} items={[{ value: "list", label: "List" }, { value: "calendar", label: "Calendar" }]} />
@@ -123,7 +123,7 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
                 <button onClick={goPrev} style={{ width: 30, height: 30, borderRadius: 10, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                   <ChevronLeft size={16} color={C.jet} />
                 </button>
-                <span style={{ fontSize: 13.5, fontWeight: 700, color: C.jet, ...fDisplay }}>{headerLabel}</span>
+                <span style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...fDisplay }}>{headerLabel}</span>
                 <button onClick={goNext} style={{ width: 30, height: 30, borderRadius: 10, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                   <ChevronRight size={16} color={C.jet} />
                 </button>
@@ -131,7 +131,7 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
 
               <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 6 }}>
                 {WEEKDAY_HEADERS.map((d) => (
-                  <div key={d} style={{ textAlign: "center", fontSize: 10.5, fontWeight: 700, color: C.slateLight, ...fBody }}>{d}</div>
+                  <div key={d} style={{ textAlign: "center", fontSize: T.tiny, fontWeight: 700, color: C.slateLight, ...fBody }}>{d}</div>
                 ))}
               </div>
               {weeks.map((row, ri) => (
@@ -149,10 +149,10 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
                         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3,
                         opacity: inRange ? 1 : 0.35,
                       }}>
-                        <span style={{ fontSize: 12, fontWeight: isSelected ? 700 : 500, color: C.jet, ...fBody }}>{d.getDate()}</span>
+                        <span style={{ fontSize: T.label, fontWeight: isSelected ? 700 : 500, color: C.jet, ...fBody }}>{d.getDate()}</span>
                         <span style={{
                           width: 5, height: 5, borderRadius: 99,
-                          background: blocked ? "#D64545" : available ? C.success : "transparent",
+                          background: blocked ? C.danger : available ? C.success : "transparent",
                         }} />
                       </button>
                     );
@@ -161,22 +161,22 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
               ))}
 
               <div style={{ display: "flex", gap: 14, marginTop: 12, justifyContent: "center" }}>
-                <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: C.slate, ...fBody }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: T.caption, color: C.slate, ...fBody }}>
                   <span style={{ width: 6, height: 6, borderRadius: 99, background: C.success }} /> Available
                 </span>
-                <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: C.slate, ...fBody }}>
-                  <span style={{ width: 6, height: 6, borderRadius: 99, background: "#D64545" }} /> Blocked
+                <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: T.caption, color: C.slate, ...fBody }}>
+                  <span style={{ width: 6, height: 6, borderRadius: 99, background: C.danger }} /> Blocked
                 </span>
               </div>
             </Card>
 
             <SectionLabel>{selectedDate.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}</SectionLabel>
             {selectedException && (
-              <Card style={{ marginBottom: 10, background: "#FDECEC", border: "1px solid #F3D2D2", display: "flex", gap: 10, alignItems: "flex-start" }}>
-                <Ban size={16} color="#D64545" style={{ flexShrink: 0, marginTop: 1 }} />
+              <Card style={{ marginBottom: 10, background: C.dangerTint, border: `1px solid ${C.dangerBorder}`, display: "flex", gap: 10, alignItems: "flex-start" }}>
+                <Ban size={16} color={C.danger} style={{ flexShrink: 0, marginTop: 1 }} />
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: C.jet, ...fBody }}>Blocked all day</div>
-                  <div style={{ fontSize: 11.5, color: C.slate, ...fBody }}>Reason: {selectedException.reason}</div>
+                  <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>Blocked all day</div>
+                  <div style={{ fontSize: T.captionLg, color: C.slate, ...fBody }}>Reason: {selectedException.reason}</div>
                 </div>
               </Card>
             )}
@@ -187,11 +187,11 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
               <Card key={b.id} style={{ marginBottom: 10 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                   <Clock size={12} color={C.slate} />
-                  <span style={{ fontSize: 12.5, fontWeight: 600, color: C.jet, ...fBody }}>{to12h(b.start)} – {to12h(b.end)}</span>
+                  <span style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, ...fBody }}>{to12h(b.start)} – {to12h(b.end)}</span>
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
                   {packageMissing(b) ? (
-                    <span style={{ fontSize: 11.5, color: C.orange, fontWeight: 600, ...fBody }}>No packages selected</span>
+                    <span style={{ fontSize: T.captionLg, color: C.orange, fontWeight: 600, ...fBody }}>No packages selected</span>
                   ) : (
                     b.packageIds.map((id) => <Chip key={id} active>{packageName(id)}</Chip>)
                   )}
@@ -205,15 +205,15 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <CalendarIcon size={17} color={C.jet} />
             <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: C.jet, ...fBody }}>Sync with device calendar</div>
-              <div style={{ fontSize: 11, color: C.slate, ...fBody }}>{synced ? "Connected — Google Calendar" : "Not connected"}</div>
+              <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>Sync with device calendar</div>
+              <div style={{ fontSize: T.caption, color: C.slate, ...fBody }}>{synced ? "Connected — Google Calendar" : "Not connected"}</div>
             </div>
           </div>
           <Toggle on={synced} onClick={() => { setSynced((v) => !v); toast(!synced ? "Calendar connected" : "Calendar disconnected"); }} />
         </Card>
 
         <SectionLabel>Weekly availability</SectionLabel>
-        <div style={{ fontSize: 11.5, color: C.slateLight, marginBottom: 12, marginTop: -6, ...fBody }}>
+        <div style={{ fontSize: T.captionLg, color: C.slateLight, marginBottom: 12, marginTop: -6, ...fBody }}>
           Set exact times you're bookable, then choose which packages clients can book in each slot.
         </div>
 
@@ -225,10 +225,10 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
           <Card key={b.id} style={{ marginBottom: 10 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: C.jet, ...fBody }}>{b.days.join(", ")}</div>
+                <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{b.days.join(", ")}</div>
                 <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 2 }}>
                   <Clock size={12} color={C.slate} />
-                  <span style={{ fontSize: 12, color: C.slate, ...fBody }}>{to12h(b.start)} – {to12h(b.end)}</span>
+                  <span style={{ fontSize: T.label, color: C.slate, ...fBody }}>{to12h(b.start)} – {to12h(b.end)}</span>
                 </div>
               </div>
               <button onClick={() => removeBlock(b.id)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}>
@@ -237,7 +237,7 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
               {packageMissing(b) ? (
-                <span style={{ fontSize: 11.5, color: C.orange, fontWeight: 600, ...fBody }}>No packages selected</span>
+                <span style={{ fontSize: T.captionLg, color: C.orange, fontWeight: 600, ...fBody }}>No packages selected</span>
               ) : (
                 b.packageIds.map((id) => <Chip key={id} active>{packageName(id)}</Chip>)
               )}
@@ -250,7 +250,7 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
             <SectionLabel>New availability</SectionLabel>
 
             <div style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Days</div>
+              <div style={{ fontSize: T.label, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Days</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {DAY_OPTIONS.map((d) => <Chip key={d} active={days.includes(d)} onClick={() => toggleDay(d)}>{d}</Chip>)}
               </div>
@@ -258,19 +258,19 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
 
             <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Start time</div>
+                <div style={{ fontSize: T.label, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Start time</div>
                 <input type="time" value={start} onChange={(e) => setStart(e.target.value)} style={timeInputStyle} />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>End time</div>
+                <div style={{ fontSize: T.label, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>End time</div>
                 <input type="time" value={end} onChange={(e) => setEnd(e.target.value)} style={timeInputStyle} />
               </div>
             </div>
 
             <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Packages available in this slot</div>
+              <div style={{ fontSize: T.label, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Packages available in this slot</div>
               {coachPackages.length === 0 ? (
-                <div style={{ fontSize: 12, color: C.slateLight, ...fBody }}>Create a package first, then come back to set when it's bookable.</div>
+                <div style={{ fontSize: T.label, color: C.slateLight, ...fBody }}>Create a package first, then come back to set when it's bookable.</div>
               ) : (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                   {coachPackages.map((p) => <Chip key={p.id} active={pkgIds.includes(p.id)} onClick={() => togglePkg(p.id)}>{p.name}</Chip>)}
@@ -294,8 +294,8 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
           {exceptions.map((ex) => (
             <Card key={ex.id} style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: C.jet, ...fBody }}>{ex.date} — blocked</div>
-                <div style={{ fontSize: 11.5, color: C.slate, ...fBody }}>Reason: {ex.reason}</div>
+                <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{ex.date} — blocked</div>
+                <div style={{ fontSize: T.captionLg, color: C.slate, ...fBody }}>Reason: {ex.reason}</div>
               </div>
               <button onClick={() => removeException(ex.id)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}>
                 <Trash2 size={16} color={C.slateLight} />
@@ -307,14 +307,14 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
             <Card style={{ marginBottom: 10 }}>
               <SectionLabel>New exception</SectionLabel>
               <div style={{ marginBottom: 10 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Date</div>
+                <div style={{ fontSize: T.label, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Date</div>
                 <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)}
-                  style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "10px 12px", fontSize: 13.5, outline: "none", ...fBody }} />
+                  style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "10px 12px", fontSize: T.bodyLg, outline: "none", ...fBody }} />
               </div>
               <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Reason (optional)</div>
+                <div style={{ fontSize: T.label, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Reason (optional)</div>
                 <input value={newReason} onChange={(e) => setNewReason(e.target.value)} placeholder="e.g. Personal leave"
-                  style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "10px 12px", fontSize: 13.5, outline: "none", ...fBody }} />
+                  style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "10px 12px", fontSize: T.bodyLg, outline: "none", ...fBody }} />
               </div>
               <div style={{ display: "flex", gap: 8 }}>
                 <Btn variant="outline" size="sm" full onClick={() => { setShowExForm(false); setNewDate(""); setNewReason(""); }}>Cancel</Btn>
