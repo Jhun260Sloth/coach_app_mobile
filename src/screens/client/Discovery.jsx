@@ -1,8 +1,11 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { Bell, Search, Filter, Navigation, Star, MapPin, Heart, Sparkles, Calendar, MessageCircle, Percent, Check, X, CreditCard, LocateFixed } from "lucide-react";
+import { Search, Filter, Navigation, Star, MapPin, Heart, X, LocateFixed } from "lucide-react";
 import { C, fDisplay, fBody, T } from "../../theme/theme";
-import { COACHES, SPORTS, ALL_SUBURBS } from "../../data/mockData";
+
+import { COACHES, SPORTS, ALL_SUBURBS, SUBURB_COORDS } from "../../data/mockData";
 import { Card, Chip, Badge, SegTabs, SectionLabel, Avatar, Btn, TopBar, BottomSheet, EmptyState, Spinner, ScrollFadeRow } from "../../components/ui/Primitives";
+
+
 import { useLiveNotifications, NotificationBellButton, StatusBanner } from "../../systems/StateSystem";
 import { CoachMapView } from "../../components/map/CoachMapView";
 import { haversineKm, FALLBACK_USER_LOCATION, injectMapStyles, CUSTOM_RADIUS_MIN_KM, CUSTOM_RADIUS_MAX_KM } from "../../lib/mapUtils";
@@ -12,35 +15,10 @@ import { haversineKm, FALLBACK_USER_LOCATION, injectMapStyles, CUSTOM_RADIUS_MIN
 // mock data, so this is the one card that can actually flip to "unavailable".
 const LIVE_AVAILABILITY_COACH_ID = "c2";
 
-const NOTIF_ICON = { booking: Calendar, message: MessageCircle, review: Star, availability: Sparkles, promo: Percent, payment: CreditCard };
 // Dashboard silently defaults to the "Nearby" 0–5 km band; the actual radius
 // control (with presets + custom slider, same as the map) lives in Filters.
 const DEFAULT_FILTERS = { sports: [], areas: [], maxPrice: 150, minRating: 0, radiusKm: 5 };
 const NEARBY_RADIUS_PRESETS = [5, 10, 15, 25];
-
-// Lightweight geolocation read (falls back to the same default point the map
-// uses when permission is denied/unavailable). Exposes `requestLocation` so
-// the "Use my current location" control can trigger a fresh read on demand,
-// not just once on mount.
-function useUserLocation() {
-  const [userLocation, setUserLocation] = useState(null);
-  const [locating, setLocating] = useState(true);
-
-  const requestLocation = React.useCallback(() => {
-    setLocating(true);
-    if (!navigator.geolocation) { setUserLocation(FALLBACK_USER_LOCATION); setLocating(false); return; }
-    const fallbackTimer = setTimeout(() => { setUserLocation(FALLBACK_USER_LOCATION); setLocating(false); }, 6000);
-    navigator.geolocation.getCurrentPosition(
-      pos => { clearTimeout(fallbackTimer); setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setLocating(false); },
-      () => { clearTimeout(fallbackTimer); setUserLocation(FALLBACK_USER_LOCATION); setLocating(false); },
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
-    );
-  }, []);
-
-  useEffect(() => { requestLocation(); }, [requestLocation]);
-
-  return { userLocation, locating, requestLocation };
-}
 
 const oneLine = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
 
@@ -343,7 +321,6 @@ export function PersonalisedRecommendationModal({ open, onClose, onSubmit, userL
 
 export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFiltersChange, clientNotifications: notifications, setClientNotifications: setNotifications, coachAvailableNow, isFirstTimeClient, discoveryPrefs, setDiscoveryPrefs, showPostSignupGuide, setShowPostSignupGuide }) {
   const [view, setView] = useState("list");
-  const [notifOpen, setNotifOpen] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [prefsModalOpen, setPrefsModalOpen] = useState(false);
@@ -438,16 +415,6 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
   }, [appliedFilters]);
   const hasActiveFilters = activeFilterChips.length > 0;
 
-  const markAllRead = () => setNotifications(arr => arr.map(n => ({ ...n, unread: false })));
-  const openNotification = n => {
-    setNotifications(arr => arr.map(x => x.id === n.id ? { ...x, unread: false } : x));
-    setNotifOpen(false);
-    if (n.type === "message") nav("chat-thread", { name: n.coachName });
-    else if (n.type === "availability" && n.coachId) nav("coach-profile", { id: n.coachId });
-    else if (["booking", "review", "payment"].includes(n.type)) {
-      nav(n.bookingId ? "client-booking-detail" : "client-dashboard", n.bookingId ? { id: n.bookingId } : {});
-    }
-  };
   const selectSuggestion = s => { setSearchText(s); setShowSuggestions(false); };
 
   const notifSheet = (
@@ -539,12 +506,12 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
                     <span style={{ position: "absolute", inset: 0, borderRadius: 99, background: C.live }} />
                     <span style={{ position: "absolute", inset: -3, borderRadius: 99, border: `1.5px solid ${C.live}`, animation: "clFixedBlink 1.8s ease-in-out infinite" }} />
                   </span>
-                  <LocateFixed size={11} color={C.slate} /> Using your current location
+                  <LocateFixed size={11} color={C.slate} /> {manualLabel ? `Using ${manualLabel}` : "Using your current location"}
                 </>
               )}
             </div>
           </div>
-          <NotificationBellButton count={unreadCount} onClick={() => setNotifOpen(true)} />
+          <NotificationBellButton count={unreadCount} onClick={() => nav("notifications")} />
         </div>
 
         <div style={{ position: "relative", marginTop: 18 }}>
@@ -595,17 +562,17 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
         </ScrollFadeRow>
 
         {hasActiveFilters && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+          <div className="cl-hide-scrollbar" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "nowrap", overflowX: "auto", marginTop: 12, paddingBottom: 2 }}>
             {activeFilterChips.map(chip => (
-              <span key={chip.key} style={{ display: "flex", alignItems: "center", gap: 5, background: C.orangeTint, color: C.orange, borderRadius: 99, padding: "4px 6px 4px 10px", fontSize: T.captionLg, fontWeight: 600, ...fBody }}>
+              <span key={chip.key} style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0, whiteSpace: "nowrap", background: C.orangeTint, color: C.orange, borderRadius: 99, padding: "4px 6px 4px 10px", fontSize: T.captionLg, fontWeight: 600, ...fBody }}>
                 {chip.label}
-                <button onClick={chip.onRemove} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 15, height: 15, borderRadius: 99, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                <button onClick={chip.onRemove} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 15, height: 15, borderRadius: 99, background: "none", border: "none", cursor: "pointer", padding: 0, flexShrink: 0 }}>
                   <X size={11} color={C.orange} />
                 </button>
               </span>
             ))}
             {activeFilterChips.length > 1 && (
-              <button onClick={() => setAppliedFilters(DEFAULT_FILTERS)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: T.captionLg, color: C.slateLight, textDecoration: "underline", ...fBody }}>Clear all</button>
+              <button onClick={() => setAppliedFilters(DEFAULT_FILTERS)} style={{ flexShrink: 0, whiteSpace: "nowrap", background: "none", border: "none", cursor: "pointer", fontSize: T.captionLg, color: C.slateLight, textDecoration: "underline", ...fBody }}>Clear all</button>
             )}
           </div>
         )}
@@ -644,11 +611,13 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
   );
 }
 
-export function ScreenSearchFilters({ nav, initialFilters, onApply }) {
+export function ScreenSearchFilters({ nav, params, userLocation, locating, permissionDenied, manualLabel, requestLocation, setManualLocation }) {
+  // Nav params arrive nested under `params` (same as every other screen,
+  // e.g. CoachProfile's `params.id`) — not as top-level props.
+  const { initialFilters, onApply } = params || {};
   const base = initialFilters || DEFAULT_FILTERS;
   const [sports, setSports] = useState(base.sports || []);
   const [areas, setAreas] = useState(base.areas || []);
-  const [areaInput, setAreaInput] = useState("");
   const [price, setPrice] = useState(base.maxPrice || 100);
   const [minRating, setMinRating] = useState(base.minRating || 0);
   const [radiusKm, setRadiusKm] = useState(base.radiusKm ?? 5);
@@ -659,12 +628,19 @@ export function ScreenSearchFilters({ nav, initialFilters, onApply }) {
   // "Use my current location" is the same live GPS read the dashboard and
   // map already rely on for distance — surfaced here explicitly so it's an
   // obvious, tappable part of the Distance filter instead of implicit.
-  const { userLocation, locating, requestLocation } = useUserLocation();
   const origin = userLocation || FALLBACK_USER_LOCATION;
 
-  const areaSuggestions = areaInput.trim().length > 0
-    ? ALL_SUBURBS.filter(s => s.toLowerCase().includes(areaInput.trim().toLowerCase()) && !areas.includes(s)).slice(0, 5)
+  // Manual location entry — shown when GPS access is off, so there's always
+  // a way to get relevant "near me" results even without location permission.
+  const [locationInput, setLocationInput] = useState("");
+  const locationSuggestions = locationInput.trim().length > 0
+    ? ALL_SUBURBS.filter(s => s.toLowerCase().includes(locationInput.trim().toLowerCase())).slice(0, 5)
     : [];
+  const chooseManualLocation = suburb => {
+    const coords = SUBURB_COORDS[suburb];
+    if (coords) setManualLocation?.(coords, suburb);
+    setLocationInput("");
+  };
 
   // Live preview of how many coaches match everything currently selected —
   // this is what actually applies when "Show results" is tapped, so the
@@ -678,8 +654,7 @@ export function ScreenSearchFilters({ nav, initialFilters, onApply }) {
     return matchesSport && matchesAreas && matchesPrice && matchesRating && matchesRadius;
   }).length, [sports, areas, price, minRating, radiusKm, origin.lat, origin.lng]);
 
-  const addArea = s => { if (!areas.includes(s)) setAreas([...areas, s]); setAreaInput(""); };
-  const reset = () => { setSports([]); setAreas([]); setAreaInput(""); setPrice(100); setMinRating(0); setRadiusKm(5); setShowCustomRadius(false); };
+  const reset = () => { setSports([]); setAreas([]); setPrice(100); setMinRating(0); setRadiusKm(5); setShowCustomRadius(false); };
   const applyAndShow = () => { onApply?.({ sports, areas, maxPrice: price, minRating, radiusKm }); nav("client-home"); };
 
   return (
@@ -693,18 +668,68 @@ export function ScreenSearchFilters({ nav, initialFilters, onApply }) {
           {SPORTS.map(s => <Chip key={s} active={sports.includes(s)} onClick={() => setSports(arr => arr.includes(s) ? arr.filter(x => x !== s) : [...arr, s])}>{s}</Chip>)}
         </div>
 
-        <SectionLabel>Location Radius</SectionLabel>
+
+<SectionLabel>Location</SectionLabel>
+        <div style={{ marginBottom: 20 }}>
+          {/* Explicit control for the GPS read the Distance filter already runs on,
+              instead of that behaviour being implicit/hidden. */}
+          <button onClick={requestLocation} style={{
+            display: "flex", width: "100%", boxSizing: "border-box", alignItems: "center", gap: 8,
+            padding: "11px 14px", borderRadius: 12, border: `1px solid ${C.orange}`,
+            background: C.orangeTint, color: C.orange, fontWeight: 600, fontSize: T.bodyLg,
+            cursor: "pointer", marginBottom: 10, ...fBody,
+          }}>
+            {locating ? <Spinner size={13} color={C.orange} /> : <MapPin size={14} />}
+            {locating ? "Locating you…" : permissionDenied ? "Enable location access" : "Use my current location"}
+          </button>
+
+          {manualLabel && !locating && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: T.captionLg, color: C.slate, marginBottom: 10, ...fBody }}>
+              <LocateFixed size={11} /> Using {manualLabel} as your location
+            </div>
+          )}
+
+          {/* Location access is off (or unavailable) — offer manual entry so
+              distance-based results still work without GPS permission. */}
+          {permissionDenied && !locating && (
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: T.captionLg, color: C.slate, marginBottom: 8, ...fBody }}>
+                Location access is off. Enable it above, or enter your location manually:
+              </div>
+              <div style={{ position: "relative" }}>
+                <input value={locationInput} onChange={e => setLocationInput(e.target.value)} placeholder="Enter your suburb or area"
+                  style={{ width: "100%", boxSizing: "border-box", background: C.fog, border: "none", borderRadius: 12, padding: "11px 14px", fontSize: T.bodyLg, color: C.jet, outline: "none", ...fBody }} />
+                {locationSuggestions.length > 0 && (
+                  <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, zIndex: 20, background: C.white, borderRadius: 12, border: `1px solid ${C.border}`, boxShadow: "0 8px 24px rgba(0,0,0,0.08)", overflow: "hidden" }}>
+                    {locationSuggestions.map(s => (
+                      <button key={s} onClick={() => chooseManualLocation(s)} style={{ width: "100%", textAlign: "left", padding: "10px 14px", background: "none", border: "none", borderBottom: `1px solid ${C.border}`, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: T.body, color: C.jet, ...fBody }}>
+                        <MapPin size={13} color={C.slateLight} /> {s}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <SectionLabel>Distance</SectionLabel>
         <div style={{ marginBottom: 20 }}>
           {showCustomRadius ? (
             <div style={{ background: C.fog, borderRadius: 14, padding: "12px 14px" }}>
-              <div style={{ fontSize: T.label, fontWeight: 700, color: C.jet, marginBottom: 8, ...fBody }}>Custom radius</div>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <span style={{ fontSize: T.label, fontWeight: 700, color: C.jet, ...fBody }}>Custom radius</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <input
                   type="number" min={CUSTOM_RADIUS_MIN_KM} max={CUSTOM_RADIUS_MAX_KM} value={customRadius}
-                  onChange={e => setCustomRadius(Number(e.target.value))}
-                  style={{ flex: 1, boxSizing: "border-box", background: C.white, border: `1px solid ${C.border}`, borderRadius: 10, padding: "9px 12px", fontSize: T.bodyLg, color: C.jet, outline: "none", ...fBody }}
+                  onChange={e => {
+                    const v = Number(e.target.value);
+                    setCustomRadius(Number.isNaN(v) ? CUSTOM_RADIUS_MIN_KM : Math.min(CUSTOM_RADIUS_MAX_KM, Math.max(CUSTOM_RADIUS_MIN_KM, v)));
+                  }}
+                  style={{ flex: 1, boxSizing: "border-box", border: `1.5px solid ${C.border}`, borderRadius: 10, padding: "9px 12px", fontSize: T.bodyLg, color: C.jet, outline: "none", background: C.white, ...fBody }}
                 />
-                <span style={{ fontSize: T.bodyLg, color: C.slate, ...fBody }}>km</span>
+                <span style={{ fontSize: T.labelLg, fontWeight: 700, color: C.slate, ...fBody }}>km</span>
               </div>
               <button onClick={() => { setRadiusKm(customRadius); setShowCustomRadius(false); }} style={{ marginTop: 10, width: "100%", padding: "9px 0", borderRadius: 10, border: "none", background: C.orange, color: C.white, fontSize: T.labelLg, fontWeight: 700, cursor: "pointer", ...fBody }}>Apply</button>
             </div>
@@ -721,56 +746,12 @@ export function ScreenSearchFilters({ nav, initialFilters, onApply }) {
           )}
         </div>
 
-        <SectionLabel>Location</SectionLabel>
-        <div style={{ marginBottom: 20 }}>
-          {/* Explicit control for the GPS read the Distance filter already runs on,
-              instead of that behaviour being implicit/hidden. */}
-          <button onClick={requestLocation} style={{
-            display: "flex", width: "100%", boxSizing: "border-box", alignItems: "center", gap: 8,
-            padding: "11px 14px", borderRadius: 12, border: `1px solid ${C.orange}`,
-            background: C.orangeTint, color: C.orange, fontWeight: 600, fontSize: T.bodyLg,
-            cursor: "pointer", marginBottom: 10, ...fBody,
-          }}>
-            {locating ? <Spinner size={13} color={C.orange} /> : <MapPin size={14} />}
-            {locating ? "Locating you…" : "Use my current location"}
-          </button>
-
-          <div style={{ position: "relative" }}>
-            <input value={areaInput} onChange={e => setAreaInput(e.target.value)} placeholder="Search suburb or area"
-              style={{ width: "100%", boxSizing: "border-box", background: C.fog, border: "none", borderRadius: 12, padding: "11px 14px", fontSize: T.bodyLg, color: C.jet, outline: "none", ...fBody }} />
-            {areaSuggestions.length > 0 && (
-              <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, zIndex: 20, background: C.white, borderRadius: 12, border: `1px solid ${C.border}`, boxShadow: "0 8px 24px rgba(0,0,0,0.08)", overflow: "hidden" }}>
-                {areaSuggestions.map(s => (
-                  <button key={s} onClick={() => addArea(s)} style={{ width: "100%", textAlign: "left", padding: "10px 14px", background: "none", border: "none", borderBottom: `1px solid ${C.border}`, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: T.body, color: C.jet, ...fBody }}>
-                    <MapPin size={13} color={C.slateLight} /> {s}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          {areas.length > 0 && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
-              {areas.map(a => (
-                <span key={a} style={{ display: "flex", alignItems: "center", gap: 6, background: C.orangeTint, color: C.orange, borderRadius: 99, padding: "6px 10px", fontSize: T.labelLg, fontWeight: 600, ...fBody }}>
-                  {a}
-                  <button onClick={() => setAreas(areas.filter(x => x !== a))} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 0 }}><X size={12} color={C.orange} /></button>
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-
         <SectionLabel>Max price per session — ${price}</SectionLabel>
         <input type="range" min="20" max="150" step="5" value={price} onChange={e => setPrice(e.target.value)} style={{ width: "100%", accentColor: C.orange, marginBottom: 20 }} />
 
         <SectionLabel>Minimum rating</SectionLabel>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
           {[0, 3, 4, 4.5].map(r => <Chip key={r} active={minRating === r} onClick={() => setMinRating(r)}>{r === 0 ? "Any" : `${r}+`}</Chip>)}
-        </div>
-
-        <SectionLabel>Availability</SectionLabel>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
-          {["Today", "This week", "Weekends", "Mornings", "Evenings"].map(t => <Chip key={t}>{t}</Chip>)}
         </div>
       </div>
 

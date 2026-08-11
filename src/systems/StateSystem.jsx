@@ -6,6 +6,52 @@ import {
   PartyPopper, Info, TrendingUp, PauseCircle, Undo2, Search, ClipboardList, Radio,
 } from "lucide-react";
 import { C, fDisplay, fBody, T } from "../theme/theme";
+import { FALLBACK_USER_LOCATION } from "../lib/mapUtils";
+
+/* =========================================================================
+   LOCATION
+   -------------------------------------------------------------------------
+   Single shared GPS read, lifted to the app level so every screen (Discovery,
+   the map, Filters) agrees on where "you" are instead of each re-requesting
+   its own fix. Tracks whether the browser actually denied permission (vs.
+   just being slow) so the UI can offer "enable location" distinctly from
+   "enter it yourself", and exposes setManualLocation for the latter.
+   ========================================================================= */
+export function useUserLocation() {
+  const [userLocation, setUserLocation] = useState(null);
+  const [locating, setLocating] = useState(true);
+  const [permissionDenied, setPermissionDenied] = useState(false);
+  const [manualLabel, setManualLabel] = useState(null);
+
+  const requestLocation = React.useCallback(() => {
+    setLocating(true);
+    setPermissionDenied(false);
+    setManualLabel(null);
+    if (!navigator.geolocation) {
+      setUserLocation(FALLBACK_USER_LOCATION); setLocating(false); setPermissionDenied(true);
+      return;
+    }
+    const fallbackTimer = setTimeout(() => { setUserLocation(FALLBACK_USER_LOCATION); setLocating(false); }, 6000);
+    navigator.geolocation.getCurrentPosition(
+      pos => { clearTimeout(fallbackTimer); setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setLocating(false); },
+      err => { clearTimeout(fallbackTimer); setUserLocation(FALLBACK_USER_LOCATION); setLocating(false); setPermissionDenied(err?.code === 1); },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+    );
+  }, []);
+
+  // "Enter your location manually" — resolves a chosen suburb to a point so
+  // distance sorting/filtering still works without GPS access.
+  const setManualLocation = React.useCallback((loc, label) => {
+    setUserLocation(loc);
+    setManualLabel(label);
+    setLocating(false);
+    setPermissionDenied(false);
+  }, []);
+
+  useEffect(() => { requestLocation(); }, [requestLocation]);
+
+  return { userLocation, locating, permissionDenied, manualLabel, requestLocation, setManualLocation };
+}
 
 /* =========================================================================
    STATE, FEEDBACK & NOTIFICATION SYSTEM
