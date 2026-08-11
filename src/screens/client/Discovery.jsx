@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { Search, Filter, Navigation, Star, MapPin, Heart, X, LocateFixed, Calendar, MessageCircle, Sparkles, Check } from "lucide-react";
+import { Search, Filter, Navigation, Star, MapPin, Heart, X, LocateFixed, Calendar, MessageCircle, Sparkles, Check, Bell, Percent, CreditCard } from "lucide-react";
 import { C, fDisplay, fBody, T } from "../../theme/theme";
 
 import { COACHES, SPORTS, ALL_SUBURBS, SUBURB_COORDS } from "../../data/mockData";
 import { Card, Chip, Badge, SegTabs, SectionLabel, Avatar, Btn, TopBar, BottomSheet, EmptyState, Spinner, ScrollFadeRow } from "../../components/ui/Primitives";
 
 
-import { useLiveNotifications, NotificationBellButton, StatusBanner } from "../../systems/StateSystem";
+import { useLiveNotifications, NotificationBellButton, StatusBanner, useUserLocation } from "../../systems/StateSystem";
 import { CoachMapView } from "../../components/map/CoachMapView";
 import { haversineKm, FALLBACK_USER_LOCATION, injectMapStyles, CUSTOM_RADIUS_MIN_KM, CUSTOM_RADIUS_MAX_KM } from "../../lib/mapUtils";
 
@@ -19,6 +19,11 @@ const LIVE_AVAILABILITY_COACH_ID = "c2";
 // control (with presets + custom slider, same as the map) lives in Filters.
 const DEFAULT_FILTERS = { sports: [], areas: [], maxPrice: 150, minRating: 0, radiusKm: 5 };
 const NEARBY_RADIUS_PRESETS = [5, 10, 15, 25];
+
+// Same mapping ScreenNotifications uses — duplicated here since this sheet
+// renders its own condensed notification list rather than importing the
+// full screen.
+const NOTIF_ICON = { booking: Calendar, message: MessageCircle, review: Star, availability: Sparkles, promo: Percent, payment: CreditCard };
 
 const oneLine = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
 
@@ -324,9 +329,10 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
   const [searchText, setSearchText] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [prefsModalOpen, setPrefsModalOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   // Defaults to the tightest "Nearby" (0–5 km) band; the control for changing
   // it lives in Filters, same as sport/area/price/rating.
-  const { userLocation, locating, requestLocation } = useUserLocation();
+  const { userLocation, locating, manualLabel, requestLocation } = useUserLocation();
 
   // The pulse CSS the location pill reuses is normally injected by the map
   // view — bring it in here too so it still looks right if you land on
@@ -416,6 +422,20 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
   const hasActiveFilters = activeFilterChips.length > 0;
 
   const selectSuggestion = s => { setSearchText(s); setShowSuggestions(false); };
+
+  // Same behaviour as ScreenNotifications — mark-all and per-item open/read
+  // + route to the relevant screen depending on notification type.
+  const markAllRead = () => setNotifications?.(arr => arr.map(n => ({ ...n, unread: false })));
+
+  const openNotification = (n) => {
+    setNotifications?.(arr => arr.map(x => (x.id === n.id ? { ...x, unread: false } : x)));
+    setNotifOpen(false);
+    if (n.type === "message") nav("chat-thread", { name: n.coachName });
+    else if (n.type === "availability" && n.coachId) nav("coach-profile", { id: n.coachId });
+    else if (["booking", "review", "payment"].includes(n.type)) {
+      nav(n.bookingId ? "client-booking-detail" : "client-dashboard", n.bookingId ? { id: n.bookingId } : {});
+    }
+  };
 
   const notifSheet = (
     <BottomSheet open={notifOpen} onClose={() => setNotifOpen(false)} title="Notifications" heightPct={72}>
