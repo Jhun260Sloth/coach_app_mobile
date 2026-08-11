@@ -9,6 +9,9 @@ import {
   ShieldAlert,
   Check,
   Percent,
+  CornerUpLeft,
+  Flag,
+  Clock,
 } from "lucide-react";
 import { C, fDisplay, fBody, T } from "../../theme/theme";
 import { REVIEWS, CONFIG, COACH_NOTIFICATIONS } from "../../data/mockData";
@@ -20,8 +23,10 @@ import {
   StatusPill,
   StarRow,
   BottomSheet,
+  Badge,
 } from "../../components/ui/Primitives";
 import { useLiveNotifications } from "../../systems/StateSystem";
+import { useReviewActions, DISPUTE_REASONS } from "../../systems/ReviewsSystem";
 
 const NOTIF_ICON = {
   message: MessageCircle,
@@ -70,6 +75,30 @@ export function ScreenCoachDashboard({
 }) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [respondingId, setRespondingId] = useState(null);
+  const { getReply, getDispute, submitReply, submitDispute } = useReviewActions();
+  const [replyTarget, setReplyTarget] = useState(null); // review being replied to
+  const [replyText, setReplyText] = useState("");
+  const [disputeTarget, setDisputeTarget] = useState(null); // review being disputed
+  const [disputeReason, setDisputeReason] = useState(null);
+  const [disputeDetail, setDisputeDetail] = useState("");
+
+  const openReply = (r) => { setReplyText(getReply(r.id)?.text || ""); setReplyTarget(r); };
+  const closeReply = () => { setReplyTarget(null); setReplyText(""); };
+  const submitReplyAction = () => {
+    if (!replyText.trim()) return;
+    submitReply(replyTarget.id, replyText);
+    toast?.("Reply posted");
+    closeReply();
+  };
+
+  const openDispute = (r) => { setDisputeReason(null); setDisputeDetail(""); setDisputeTarget(r); };
+  const closeDispute = () => { setDisputeTarget(null); setDisputeReason(null); setDisputeDetail(""); };
+  const submitDisputeAction = () => {
+    if (!disputeReason) return;
+    submitDispute(disputeTarget.id, disputeReason, disputeDetail);
+    toast?.("Dispute submitted to CoachLink Support");
+    closeDispute();
+  };
   // Merges real, in-app-generated notifications (bookings actioned, etc) on
   // top of the seed list — which already includes the verification-expiry
   // notice — so expiry warnings surface here instead of as a dashboard banner.
@@ -599,47 +628,162 @@ export function ScreenCoachDashboard({
           <SectionLabel>Recent reviews</SectionLabel>
         </div>
 
-        {REVIEWS.slice(0, 2).map((r) => (
-          <Card
-            key={r.id}
-            style={{
-              marginBottom: 10,
-            }}
-          >
-            <div
+        {REVIEWS.slice(0, 2).map((r) => {
+          const reply = getReply(r.id);
+          const dispute = getDispute(r.id);
+          return (
+            <Card
+              key={r.id}
               style={{
-                display: "flex",
-                justifyContent: "space-between",
+                marginBottom: 10,
               }}
             >
               <div
                 style={{
-                  fontSize: T.body,
-                  fontWeight: 600,
-                  color: C.jet,
+                  display: "flex",
+                  justifyContent: "space-between",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: T.body,
+                    fontWeight: 600,
+                    color: C.jet,
+                    ...fBody,
+                  }}
+                >
+                  {r.name}
+                </div>
+
+                <StarRow value={r.rating} size={11} />
+              </div>
+
+              <p
+                style={{
+                  fontSize: T.labelLg,
+                  color: C.slate,
+                  marginTop: 4,
+                  lineHeight: 1.5,
                   ...fBody,
                 }}
               >
-                {r.name}
+                {r.text}
+              </p>
+
+              {dispute && (
+                <div style={{ marginTop: 8 }}>
+                  <Badge tone="orange" icon={Clock}>Dispute pending review</Badge>
+                </div>
+              )}
+
+              {reply && (
+                <div style={{ marginTop: 10, background: C.fog, borderRadius: 10, padding: "10px 12px" }}>
+                  <div style={{ fontSize: T.caption, fontWeight: 700, color: C.orange, ...fBody }}>Your reply</div>
+                  <p style={{ fontSize: T.labelLg, color: C.jet, marginTop: 3, lineHeight: 1.5, ...fBody }}>{reply.text}</p>
+                </div>
+              )}
+
+              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                <Btn size="sm" variant="secondary" icon={CornerUpLeft} onClick={() => openReply(r)}>
+                  {reply ? "Edit reply" : "Reply to review"}
+                </Btn>
+                {!dispute && (
+                  <Btn size="sm" variant="outline" icon={Flag} onClick={() => openDispute(r)}>
+                    Report
+                  </Btn>
+                )}
               </div>
-
-              <StarRow value={r.rating} size={11} />
-            </div>
-
-            <p
-              style={{
-                fontSize: T.labelLg,
-                color: C.slate,
-                marginTop: 4,
-                lineHeight: 1.5,
-                ...fBody,
-              }}
-            >
-              {r.text}
-            </p>
-          </Card>
-        ))}
+            </Card>
+          );
+        })}
       </div>
+
+      {/* Reply to Review Sheet */}
+      <BottomSheet open={!!replyTarget} onClose={closeReply} title="Reply to review" heightPct={52}>
+        {replyTarget && (
+          <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ background: C.fog, borderRadius: 12, padding: "10px 12px", marginBottom: 14 }}>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, ...fBody }}>{replyTarget.name}</span>
+                  <StarRow value={replyTarget.rating} size={11} />
+                </div>
+                <p style={{ fontSize: T.labelLg, color: C.slate, marginTop: 4, lineHeight: 1.5, ...fBody }}>{replyTarget.text}</p>
+              </div>
+              <div style={{ fontSize: T.label, color: C.slate, marginBottom: 8, ...fBody }}>
+                Your reply is public and will appear underneath this review on your profile.
+              </div>
+              <textarea
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                placeholder="Write a public reply..."
+                rows={4}
+                autoFocus
+                style={{
+                  width: "100%", boxSizing: "border-box", background: C.white,
+                  border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "12px 14px",
+                  fontSize: T.body, color: C.jet, outline: "none", resize: "none", ...fBody,
+                }}
+              />
+            </div>
+            <div style={{ padding: "14px 0 4px" }}>
+              <Btn full onClick={submitReplyAction} style={!replyText.trim() ? { opacity: 0.5, pointerEvents: "none" } : undefined}>
+                Post reply
+              </Btn>
+            </div>
+          </div>
+        )}
+      </BottomSheet>
+
+      {/* Report / Dispute Review Sheet */}
+      <BottomSheet open={!!disputeTarget} onClose={closeDispute} title="Report this review"
+        heightPct={disputeReason === "Something else" ? 76 : 64}>
+        {disputeTarget && (
+          <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+            <div style={{ flex: 1, overflowY: "auto" }}>
+              <div style={{ fontSize: T.body, color: C.slate, marginBottom: 14, ...fBody }}>
+                Tell us why this review seems unfair or made in bad faith. CoachLink Support will review it.
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {DISPUTE_REASONS.map((reason) => (
+                  <button
+                    key={reason}
+                    onClick={() => setDisputeReason(reason)}
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      padding: "12px 14px", borderRadius: 12, cursor: "pointer", textAlign: "left",
+                      border: `1.5px solid ${disputeReason === reason ? C.orange : C.border}`,
+                      background: disputeReason === reason ? C.orangeTint : C.white,
+                    }}
+                  >
+                    <span style={{ fontSize: T.body, color: C.jet, ...fBody }}>{reason}</span>
+                    {disputeReason === reason && <Check size={16} color={C.orange} />}
+                  </button>
+                ))}
+              </div>
+              {disputeReason === "Something else" && (
+                <textarea
+                  value={disputeDetail}
+                  onChange={(e) => setDisputeDetail(e.target.value)}
+                  placeholder="Tell us what's going on..."
+                  rows={4}
+                  autoFocus
+                  style={{
+                    width: "100%", boxSizing: "border-box", background: C.fog, marginTop: 14,
+                    border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "12px 14px",
+                    fontSize: T.body, color: C.jet, outline: "none", resize: "none", ...fBody,
+                  }}
+                />
+              )}
+            </div>
+            <div style={{ padding: "14px 0 4px" }}>
+              <Btn full onClick={submitDisputeAction} style={!disputeReason ? { opacity: 0.5, pointerEvents: "none" } : undefined}>
+                Submit dispute
+              </Btn>
+            </div>
+          </div>
+        )}
+      </BottomSheet>
 
       {/* Notifications Bottom Sheet */}
       <BottomSheet

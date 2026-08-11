@@ -7,6 +7,7 @@ import { C, fDisplay, fBody, T } from "../../theme/theme";
 import { COACHES, REVIEWS, SPORT_ICON } from "../../data/mockData";
 import { Avatar, Badge, SegTabs, SectionLabel, Card, Btn, StarRow } from "../../components/ui/Primitives";
 import { StatusBanner } from "../../systems/StateSystem";
+import { useReviewActions } from "../../systems/ReviewsSystem";
 
 const LIVE_AVAILABILITY_COACH_ID = "c2";
 
@@ -27,6 +28,7 @@ export function CoverBanner({ sport, height = 150 }) {
 
 export function ScreenCoachProfile({ nav, params, favorites, toggleFav, coachAvailableNow }) {
   const coach = COACHES.find((c) => c.id === params.id) || COACHES[0];
+  const { getReply } = useReviewActions();
   const [tab, setTab] = useState("about");
   const [selectedPkgId, setSelectedPkgId] = useState(null);
   const selectedPkg = coach.packages.find((p) => p.id === selectedPkgId) || null;
@@ -217,22 +219,31 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav, coachAva
 
         {tab === "reviews" && (
           <div style={{ marginTop: 16 }}>
-            {REVIEWS.map((r) => (
-              <Card key={r.id} style={{ marginBottom: 10 }}>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <Avatar name={r.name} size={30} />
-                    <div>
-                      <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{r.name}</div>
-                      <div style={{ fontSize: T.caption, color: C.slateLight, ...fBody }}>{r.date}</div>
+            {REVIEWS.map((r) => {
+              const reply = getReply(r.id);
+              return (
+                <Card key={r.id} style={{ marginBottom: 10 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <Avatar name={r.name} size={30} />
+                      <div>
+                        <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{r.name}</div>
+                        <div style={{ fontSize: T.caption, color: C.slateLight, ...fBody }}>{r.date}</div>
+                      </div>
                     </div>
+                    <StarRow value={r.rating} />
                   </div>
-                  <StarRow value={r.rating} />
-                </div>
-                <p style={{ fontSize: T.body, color: C.slate, marginTop: 8, lineHeight: 1.55, ...fBody }}>{r.text}</p>
-                {r.verified && <Badge tone="neutral" icon={CheckCircle2}>Verified booking</Badge>}
-              </Card>
-            ))}
+                  <p style={{ fontSize: T.body, color: C.slate, marginTop: 8, lineHeight: 1.55, ...fBody }}>{r.text}</p>
+                  {r.verified && <Badge tone="neutral" icon={CheckCircle2}>Verified booking</Badge>}
+                  {reply && (
+                    <div style={{ marginTop: 10, background: C.fog, borderRadius: 10, padding: "10px 12px" }}>
+                      <div style={{ fontSize: T.caption, fontWeight: 700, color: C.orange, ...fBody }}>Reply from {coach.name}</div>
+                      <p style={{ fontSize: T.labelLg, color: C.jet, marginTop: 3, lineHeight: 1.5, ...fBody }}>{reply.text}</p>
+                    </div>
+                  )}
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>
