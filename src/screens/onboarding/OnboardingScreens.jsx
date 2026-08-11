@@ -189,6 +189,7 @@ export function ScreenAuth({ nav, params, role, toast, biometric }) {
       </div>
 
        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {mode === "signup" && (
           <div style={{ display: "flex", gap: 10 }}>
             <div style={{ flex: 1 }}>
               <div style={labelStyle}>First name</div>
@@ -199,8 +200,8 @@ export function ScreenAuth({ nav, params, role, toast, biometric }) {
               <input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Whitfield" style={inputStyle} />
             </div>
           </div>
+        )}
 
-  
         <Field label="Email address" placeholder="you@email.com" icon={Mail} value={email} onChange={(e) => setEmail(e.target.value)} />
         <Field label="Password" placeholder="••••••••" type={showPw ? "text" : "password"} rightIcon={showPw ? EyeOff : Eye} onRight={() => setShowPw((s) => !s)} value={password} onChange={(e) => setPassword(e.target.value)} />
         {mode === "signup" && (
