@@ -445,14 +445,22 @@ export function TopBar({ title, onBack, right }) {
   );
 }
 
-export function EmptyState({ icon: Icon, title, body }) {
+export function EmptyState({ icon: Icon, title, body, ctaLabel, onCta, large }) {
   return (
-    <div style={{ textAlign: "center", padding: "40px 20px", color: C.slate }}>
-      <div style={{ width: 52, height: 52, borderRadius: 16, background: C.fog, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
-        <Icon size={22} color={C.slateLight} />
+    <div style={{ textAlign: "center", padding: large ? "20px 20px" : "40px 20px", color: C.slate }}>
+      <div style={{
+        width: large ? 72 : 52, height: large ? 72 : 52, borderRadius: large ? 22 : 16, background: large ? C.orangeTint : C.fog,
+        display: "flex", alignItems: "center", justifyContent: "center", margin: large ? "0 auto 18px" : "0 auto 14px",
+      }}>
+        <Icon size={large ? 30 : 22} color={large ? C.orange : C.slateLight} />
       </div>
-      <div style={{ fontWeight: 600, color: C.jet, marginBottom: 4, ...fDisplay }}>{title}</div>
-      <div style={{ fontSize: T.body, lineHeight: 1.5 }}>{body}</div>
+      <div style={{ fontSize: large ? T.display : undefined, fontWeight: 600, color: C.jet, marginBottom: large ? 10 : 4, ...fDisplay }}>{title}</div>
+      <div style={{ fontSize: large ? T.bodyLg : T.body, lineHeight: large ? 1.6 : 1.5, maxWidth: large ? 300 : undefined, marginLeft: "auto", marginRight: "auto" }}>{body}</div>
+      {ctaLabel && onCta && (
+        <div style={{ marginTop: large ? 24 : 18, ...(large ? {} : { display: "inline-block" }) }}>
+          <Btn full={large} onClick={onCta}>{ctaLabel}</Btn>
+        </div>
+      )}
     </div>
   );
 }
