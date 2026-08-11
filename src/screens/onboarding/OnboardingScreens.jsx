@@ -110,8 +110,8 @@ export function ScreenGetStarted({ nav }) {
         <Btn full variant="primary" onClick={() => nav("role-select")}>Get Started</Btn>
       </div>
       <div style={{ marginTop: 16 }}>
-        <button onClick={() => nav("role-select")} style={{ background: "none", border: "none", color: C.slate, fontSize: T.bodyLg, cursor: "pointer", ...fBody }}>
-          Already have an account? <span style={{ color: C.orange, fontWeight: 600 }}>Sign In</span>
+        <button onClick={() => nav("auth", { mode: "login" })} style={{ background: "none", border: "none", color: C.slate, fontSize: T.bodyLg, cursor: "pointer", ...fBody }}>
+          Have an existing account? <span style={{ color: C.orange, fontWeight: 600 }}>Sign In</span>
         </button>
       </div>
     </div>
@@ -119,10 +119,10 @@ export function ScreenGetStarted({ nav }) {
 }
 
 export function ScreenRoleSelect({ nav, setRole }) {
-  // Whichever role is picked here, the login screen comes next (see ScreenAuth) —
-  // new accounts are created from the "Create an account" link on that screen.
+  // Picking a path here kicks off account creation directly — existing users
+  // use the "Sign In" link below instead of going through role selection.
   const Option = ({ role, title, body, icon: Icon }) => (
-    <button onClick={() => { setRole(role); nav("auth", { mode: "login" }); }}
+    <button onClick={() => { setRole(role); nav("auth", { mode: "signup" }); }}
       style={{ width: "100%", textAlign: "left", background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 18, padding: 16, display: "flex", gap: 14, alignItems: "flex-start", cursor: "pointer", marginBottom: 12 }}>
       <div style={{ width: 44, height: 44, borderRadius: 13, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
         <Icon size={20} color={C.orange} />
@@ -140,6 +140,11 @@ export function ScreenRoleSelect({ nav, setRole }) {
       <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 6, marginBottom: 22, ...fBody }}>You can add a coaching profile later from the same account.</div>
       <Option role="client" icon={Search} title="Find a coach" body="Search, book and pay for sessions with verified coaches near you." />
       <Option role="coach" icon={Users} title="Coach others" body="List your services, manage bookings and get paid automatically." />
+      <div style={{ marginTop: "auto", textAlign: "center", paddingTop: 16 }}>
+        <button onClick={() => nav("auth", { mode: "login" })} style={{ background: "none", border: "none", color: C.slate, fontSize: T.bodyLg, cursor: "pointer", ...fBody }}>
+          Have an existing account? <span style={{ color: C.orange, fontWeight: 600 }}>Sign In</span>
+        </button>
+      </div>
     </div>
   );
 }
@@ -548,7 +553,11 @@ export function ScreenEnableBiometric({ nav, params, toast, biometric, setBiomet
   const enable = () => {
     setBiometric(true);
     toast("Face ID enabled");
-    nav(next);
+    // Client UI: enabling Face ID skips the rest of onboarding (profile details
+    // etc.) and goes straight to the setup success screen. Coaches still need
+    // their onboarding details, so they continue to the normal next step.
+    if (role === "coach") nav(next);
+    else nav("client-setup-complete");
   };
   const skip = () => nav(next);
 

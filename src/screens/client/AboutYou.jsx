@@ -7,7 +7,7 @@ import { C, fDisplay, fBody, T } from "../../theme/theme";
 import { AU_SUBURBS, GENDER_OPTIONS } from "../../data/mockData";
 import { Chip, SectionLabel, Btn, TopBar, Field, Card, Avatar, Badge } from "../../components/ui/Primitives";
 
-const TOTAL_STEPS = 3;
+const TOTAL_STEPS = 1;
 function StepDots({ step }) {
   return (
     <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
@@ -62,7 +62,9 @@ export function ScreenAboutYouProfile({ nav }) {
   // Continue stays disabled — and the user can't advance — until the date of
   // birth entered confirms they're 18 or older.
   const canContinue = mobile.trim().length > 0 && postalCode.trim().length > 0 && ageVerified;
-  const goNext = () => { if (canContinue) nav("account-type", { mobile, postalCode, dob, age, hasPhoto }); };
+  // The "who are you booking for?" step has been removed from the flow —
+  // finishing this step takes the client straight to the setup success screen.
+  const goNext = () => { if (canContinue) nav("client-setup-complete", { mobile, postalCode, dob, age, hasPhoto }); };
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>

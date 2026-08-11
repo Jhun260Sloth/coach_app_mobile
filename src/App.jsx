@@ -2,7 +2,7 @@ import React, { useState } from "react";
 
 
 import {
-  ScreenAboutYouProfile, ScreenAccountType, ScreenAboutYouParticipants, ScreenAboutYouSelf,
+  ScreenAboutYouProfile,
 } from "./screens/client/AboutYou";
 
 
@@ -317,9 +317,8 @@ export default function App() {
       case "coach-info": return <ScreenCoachInfo {...screenProps} />;
       case "coach-expertise": return <ScreenCoachExpertise {...screenProps} />;
       case "about-you-profile": return <ScreenAboutYouProfile {...screenProps} />;
-      case "account-type": return <ScreenAccountType {...screenProps} />;
-      case "about-you-participants": return <ScreenAboutYouParticipants {...screenProps} />;
-      case "about-you-self": return <ScreenAboutYouSelf {...screenProps} />
+      // "account-type" / "about-you-participants" / "about-you-self" removed from the
+      // flow — "Let's learn about you" now goes straight to client-setup-complete.
       case "client-setup-complete": return <ScreenClientSetupComplete {...screenProps} />;
       case "verification": return <ScreenVerification {...screenProps} />;
       case "verification-pending": return <ScreenVerificationPending {...screenProps} />;
