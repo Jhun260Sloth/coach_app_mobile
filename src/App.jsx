@@ -17,6 +17,7 @@ import {
   COACHES, INITIAL_AVAILABILITY_BLOCKS, CLIENT_NOTIFICATIONS, COACH_NOTIFICATIONS,
 } from "./data/mockData";
 import { LogoMark, Toast, BottomTabs, StatusBar } from "./components/ui/Primitives";
+import { useUserLocation } from "./systems/StateSystem";
 
 // Onboarding / auth
 import {
@@ -28,6 +29,7 @@ import {
 
 // Client
 import { ScreenClientHome, ScreenSearchFilters } from "./screens/client/Discovery";
+import { ScreenNotifications } from "./screens/client/Notifications";
 import { ScreenCoachProfile } from "./screens/client/CoachProfile";
 import { ScreenPackageDetail } from "./screens/client/PackageDetail";
 import {
@@ -118,6 +120,11 @@ export default function App() {
   const [verificationQueue, setVerificationQueue] = useState(ADMIN_VERIFICATION_QUEUE);
   const [disputes, setDisputes] = useState(ADMIN_DISPUTES);
   const [clientPrefs, setClientPrefs] = useState(null);
+  const [clientFilters, setClientFilters] = useState(null);
+  // Shared across every client screen so a GPS fix (or a manually entered
+  // location) made in one place — Dashboard, Filters, the map — is what
+  // every other place sees too, instead of each re-requesting its own.
+  const userLocationState = useUserLocation();
   const [children, setChildren] = useState([]);
   const [coachOnboarding, setCoachOnboarding] = useState({});
   const updateCoachOnboarding = (patch) => setCoachOnboarding((c) => ({ ...c, ...patch }));
@@ -141,6 +148,17 @@ export default function App() {
   };
   const clientNotifications = notifications.filter((n) => n.audience === "client");
   const coachNotifications = notifications.filter((n) => n.audience === "coach");
+  // Scoped updater for the client notification list — updates only
+  // client-audience items in the shared `notifications` array, leaving
+  // coach-audience ones untouched.
+  const setClientNotifications = (updater) => {
+    setNotifications((all) => {
+      const clientItems = all.filter((n) => n.audience === "client");
+      const nextClientItems = typeof updater === "function" ? updater(clientItems) : updater;
+      const nextById = new Map(nextClientItems.map((n) => [n.id, n]));
+      return all.map((n) => (n.audience === "client" ? nextById.get(n.id) || n : n));
+    });
+  };
 
   const toast = (msg) => { setToastMsg(msg); setTimeout(() => setToastMsg(null), 2200); };
   const nav = (s, p = {}) => { setHistory((h) => [...h, screen]); setScreen(s); setParams(p); };
@@ -300,7 +318,7 @@ export default function App() {
   const activeTabScreen = TAB_ALIASES[screen] || screen;
   const showTabs = tabsForRole.some((t) => t.value === activeTabScreen);
 
-  const screenProps = { nav, params, toast, role, favorites, toggleFav, biometric, setBiometric, verified, verificationStatus, reachedDashboardAfterVerification, setReachedDashboardAfterVerification, offline, draft, setDraft, addBooking, cancelBooking, rescheduleBooking, respondBooking, markBookingPaid, bookings, setBookings, coachBookings, setCoachBookings, setRole, addCoachRole: () => setHasCoachRole(true), submitVerification, verificationQueue, decideVerification, disputes, resolveDispute, clientPrefs, onComplete: handleClientPrefs, children, addChild, updateChild, removeChild, coachOnboarding, updateCoachOnboarding, coachPackages, savePackage, removePackage, availabilityBlocks, setAvailabilityBlocks, coachMedia, addMedia, removeMedia, coachAvailableNow, setCoachAvailableNow, pushNotification, clientNotifications, coachNotifications };
+  const screenProps = { nav, params, toast, role, favorites, toggleFav, biometric, setBiometric, verified, verificationStatus, reachedDashboardAfterVerification, setReachedDashboardAfterVerification, offline, draft, setDraft, addBooking, cancelBooking, rescheduleBooking, respondBooking, markBookingPaid, bookings, setBookings, coachBookings, setCoachBookings, setRole, addCoachRole: () => setHasCoachRole(true), submitVerification, verificationQueue, decideVerification, disputes, resolveDispute, clientPrefs, onComplete: handleClientPrefs, children, addChild, updateChild, removeChild, coachOnboarding, updateCoachOnboarding, coachPackages, savePackage, removePackage, availabilityBlocks, setAvailabilityBlocks, coachMedia, addMedia, removeMedia, coachAvailableNow, setCoachAvailableNow, pushNotification, clientNotifications, coachNotifications, setClientNotifications, filters: clientFilters, onFiltersChange: setClientFilters, ...userLocationState };
 
 
   function renderScreen() {
@@ -326,6 +344,7 @@ export default function App() {
       case "admin-login": return <ScreenAdminLogin {...screenProps} />;
 
       case "client-home": return <ScreenClientHome {...screenProps} />;
+      case "notifications": return <ScreenNotifications {...screenProps} />;
       case "search-filters": return <ScreenSearchFilters {...screenProps} />;
       case "coach-profile": return <ScreenCoachProfile {...screenProps} />;
       case "package-detail": return <ScreenPackageDetail {...screenProps} />;

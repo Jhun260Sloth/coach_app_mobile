@@ -406,11 +406,23 @@ function SuccessPanel({ title, body, onDone }) {
 
 /* ── Chat Thread Screen ────────────────────────────────────────────────── */
 
-export function ScreenChatThread({ nav, params, role, toast, offline }) {
+export function ScreenChatThread({ nav, params, role, toast, offline, bookings, coachBookings }) {
   const { isBlocked, block, unblock } = useBlockedThreads();
   const threadId = params?.threadId || params?.bookingId || params?.name;
   const blocked = isBlocked(threadId);
   const coach = role !== "coach" ? COACHES.find((c) => c.name === params.name) : null;
+
+  // Live location is only safe to expose once money/a booking is actually
+  // locked in — never in a pre-payment enquiry chat with an unverified or
+  // unpaid other party. Prefer the real booking record (status can change
+  // after this thread was opened); fall back to the thread's own context
+  // label ("Booking · ..." vs "Enquiry") when there's no bookingId to look up.
+  const relatedBooking = params?.bookingId
+    ? (role === "coach" ? coachBookings : bookings)?.find((b) => b.id === params.bookingId)
+    : null;
+  const locationUnlocked = relatedBooking
+    ? (relatedBooking.status === "confirmed" || relatedBooking.status === "completed")
+    : !!params?.context?.startsWith("Booking");
 
   const [messages, setMessages] = useState(
     (params?.bookingId && BOOKING_ENQUIRY_MESSAGES[params.bookingId]) || CHAT_MESSAGES
@@ -455,13 +467,28 @@ export function ScreenChatThread({ nav, params, role, toast, offline }) {
   const handleAttachmentPick = (e) => {
     const file = e.target.files?.[0];
     if (file) {
-      setMessages(m => [...m, { id: m.length + 1, from: "me", type: "attachment", fileName: file.name, fileSize: file.size, time: "now" }]);
-      toast?.(`${file.name} sent`);
+      // Belt-and-braces on top of the input's `accept` filter (which is only
+      // a picker hint and can be bypassed) — reject anything that isn't an
+      // image, PDF, or video, and anything oversized, before it ever lands
+      // in the thread. Executables/scripts and other unsafe file types are
+      // never accepted here.
+      const isAllowedType = /^image\/|^video\/|^application\/pdf$/.test(file.type)
+        || /\.(pdf)$/i.test(file.name);
+      const maxBytes = (file.type.startsWith("video/") ? 100 : 25) * 1024 * 1024; // 100MB video, 25MB image/PDF
+      if (!isAllowedType) {
+        toast?.("Only images, PDFs, and videos can be shared here");
+      } else if (file.size > maxBytes) {
+        toast?.(`${file.name} is too large to send (max ${maxBytes / (1024 * 1024)}MB)`);
+      } else {
+        setMessages(m => [...m, { id: m.length + 1, from: "me", type: "attachment", fileName: file.name, fileSize: file.size, time: "now" }]);
+        toast?.(`${file.name} sent`);
+      }
     }
     e.target.value = "";
   };
 
   const shareLocation = () => {
+    if (!locationUnlocked) return;
     setMessages(m => [...m, { id: m.length + 1, from: "me", type: "location", time: "now" }]);
     setLocationSheet(false);
     toast?.("Location shared");
@@ -588,9 +615,15 @@ export function ScreenChatThread({ nav, params, role, toast, offline }) {
         </div>
       ) : (
         <div style={{ padding: "10px 16px 20px", display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${C.border}` }}>
-          <input ref={fileInputRef} type="file" onChange={handleAttachmentPick} style={{ display: "none" }} />
+          <input ref={fileInputRef} type="file" accept="image/*,application/pdf,video/*" onChange={handleAttachmentPick} style={{ display: "none" }} />
           <button onClick={() => fileInputRef.current?.click()} style={{ background: "none", border: "none", cursor: "pointer" }}><Paperclip size={19} color={C.slate} /></button>
-          <button onClick={() => setLocationSheet(true)} style={{ background: "none", border: "none", cursor: "pointer" }}><MapPin size={19} color={C.slate} /></button>
+          <button
+            onClick={() => setLocationSheet(true)}
+            title={locationUnlocked ? "Share your location" : "Available once the booking is confirmed"}
+            style={{ background: "none", border: "none", cursor: "pointer", opacity: locationUnlocked ? 1 : 0.4 }}
+          >
+            <MapPin size={19} color={C.slate} />
+          </button>
           <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && send()}
             placeholder="Message..." style={{ flex: 1, border: `1.5px solid ${C.border}`, borderRadius: 20, padding: "9px 14px", fontSize: T.bodyLg, outline: "none", ...fBody }} />
           <button onClick={send} style={{ width: 36, height: 36, borderRadius: 99, background: C.orange, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
@@ -600,13 +633,27 @@ export function ScreenChatThread({ nav, params, role, toast, offline }) {
       )}
 
       <BottomSheet open={locationSheet} onClose={() => setLocationSheet(false)} title="Share your location" heightPct={34}>
-        <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.55, marginBottom: 18, ...fBody }}>
-          {params.name} will be able to see your live location for this session. You can stop sharing at any time.
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <Btn full icon={Navigation} onClick={shareLocation}>Share current location</Btn>
-          <Btn full variant="secondary" onClick={() => setLocationSheet(false)}>Cancel</Btn>
-        </div>
+        {locationUnlocked ? (
+          <>
+            <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.55, marginBottom: 18, ...fBody }}>
+              {params.name} will be able to see your live location for this session. You can stop sharing at any time.
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <Btn full icon={Navigation} onClick={shareLocation}>Share current location</Btn>
+              <Btn full variant="secondary" onClick={() => setLocationSheet(false)}>Cancel</Btn>
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 10, background: C.fog, borderRadius: 12, padding: "12px 14px", marginBottom: 18 }}>
+              <AlertCircle size={16} color={C.slate} style={{ flexShrink: 0, marginTop: 1 }} />
+              <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.55, ...fBody }}>
+                Your live location can only be shared once your booking with {params.name} is confirmed. This protects you from sharing it with unpaid or unverified contacts.
+              </div>
+            </div>
+            <Btn full variant="secondary" onClick={() => setLocationSheet(false)}>Got it</Btn>
+          </>
+        )}
       </BottomSheet>
 
       <ConversationOptionsFlow

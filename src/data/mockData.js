@@ -222,6 +222,13 @@ export const CERTIFICATION_TYPE_OPTIONS = [
 
 export const SPORTS = ["Netball", "CrossFit", "Surfing", "Boxing", "Golf", "Cycling", "Football", "Athletics"];
 export const ALL_SUBURBS = [...new Set(COACHES.map((c) => c.suburb))].sort();
+// Suburb -> coordinates, derived from the coach directory itself (first coach
+// listed in each suburb). Lets "enter your location manually" resolve a typed
+// suburb to a real point for distance sorting/filtering, without a geocoding API.
+export const SUBURB_COORDS = COACHES.reduce((acc, c) => {
+  if (!acc[c.suburb]) acc[c.suburb] = { lat: c.lat, lng: c.lng };
+  return acc;
+}, {});
 
 
 export const THREADS = [
