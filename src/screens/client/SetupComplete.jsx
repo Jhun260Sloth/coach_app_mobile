@@ -9,8 +9,21 @@ import { Btn } from "../../components/ui/Primitives";
  * side. Gives a clear "you're done" moment before dropping the client into
  * the Discover tab.
  */
-export function ScreenClientSetupComplete({ nav, params }) {
+export function ScreenClientSetupComplete({ nav, params, setIsFirstTimeClient, setDiscoveryPrefs, setBookings, setShowPostSignupGuide }) {
   const name = params?.name ? params.name.split(" ")[0] : "";
+
+  const startExploring = () => {
+    // A client who's just finished signing up genuinely has no bookings,
+    // chats or coach preferences yet — enter first-time-client mode and
+    // clear out the demo/mock bookings so Discover, Bookings and Messages
+    // all show their real empty states instead of the seeded sample data.
+    setIsFirstTimeClient?.(true);
+    setDiscoveryPrefs?.(null);
+    setBookings?.([]);
+    // Land on Discover with the 5-step post-sign-up guide queued up.
+    setShowPostSignupGuide?.(true);
+    nav("client-home");
+  };
 
   return (
     <div style={{ padding: "28px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
@@ -28,7 +41,7 @@ export function ScreenClientSetupComplete({ nav, params }) {
       </div>
 
       <div style={{ marginTop: "auto", padding: "14px 0" }}>
-        <Btn full onClick={() => nav("client-home")}>Start exploring</Btn>
+        <Btn full onClick={startExploring}>Start exploring</Btn>
       </div>
     </div>
   );

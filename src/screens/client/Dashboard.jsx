@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import {
   WifiOff, Calendar, ClipboardList, Heart, Download, Clock, MessageCircle, Star, CheckCircle2,
   AlertTriangle, CreditCard, ShieldCheck, LifeBuoy, Hourglass, RefreshCcw, ChevronLeft, ChevronRight, CalendarX2,
+  List as ListIcon,
 } from "lucide-react";
 import { C, fDisplay, fBody, T } from "../../theme/theme";
 import { COACHES } from "../../data/mockData";
@@ -79,9 +80,12 @@ function getCancellationOutcome(booking, coach) {
   return { refundPct, ruleLabel, hoursUntil, tier };
 }
 
-export function ScreenClientDashboard({ nav, bookings, offline, toast, cancelBooking, rescheduleBooking, payBooking }) {
+export function ScreenClientDashboard({ nav, bookings, offline, toast, cancelBooking, rescheduleBooking, payBooking, isFirstTimeClient }) {
   const [tab, setTab] = useState("pending");
   const [view, setView] = useState("list");
+  // First-time clients haven't booked anything yet — show a single, unified
+  // empty state pointing them at Discover, instead of the tabbed/calendar UI.
+  const showEmptyDashboard = isFirstTimeClient && bookings.length === 0;
   const [calMode, setCalMode] = useState("month");
   const [rescheduleTarget, setRescheduleTarget] = useState(null);
   const [cancelTarget, setCancelTarget] = useState(null);
@@ -131,23 +135,56 @@ export function ScreenClientDashboard({ nav, bookings, offline, toast, cancelBoo
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
       <div style={{ padding: "18px 20px 0" }}>
-        <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, ...fDisplay }}>My sessions</div>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+          <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, ...fDisplay }}>My sessions</div>
+          {/* Compact icon toggle for List/Calendar — deliberately small, icon-only and
+              pinned to the header row so it reads as a display-mode switch, not another
+              status tab. The Pending/Upcoming/Completed tabs below stay a full-width,
+              labelled segmented control since those are the primary navigation. */}
+          {!showEmptyDashboard && (
+            <div role="tablist" aria-label="View mode" style={{ display: "flex", alignItems: "center", gap: 2, background: C.fog, borderRadius: 11, padding: 3, flexShrink: 0, marginTop: 2 }}>
+              <button
+                role="tab" aria-selected={view === "list"} title="List view"
+                onClick={() => setView("list")}
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  width: 32, height: 28, borderRadius: 8, border: "none", cursor: "pointer",
+                  background: view === "list" ? C.jet : "transparent",
+                  boxShadow: "none", transition: "background .15s ease",
+                }}
+              >
+                <ListIcon size={14} color={view === "list" ? C.white : C.slateLight} />
+              </button>
+              <button
+                role="tab" aria-selected={view === "calendar"} title="Calendar view"
+                onClick={() => setView("calendar")}
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  width: 32, height: 28, borderRadius: 8, border: "none", cursor: "pointer",
+                  background: view === "calendar" ? C.jet : "transparent",
+                  boxShadow: "none", transition: "background .15s ease",
+                }}
+              >
+                <Calendar size={14} color={view === "calendar" ? C.white : C.slateLight} />
+              </button>
+            </div>
+          )}
+        </div>
         {offline && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.jet, color: C.white, padding: "9px 12px", borderRadius: 12, marginTop: 12, fontSize: T.label, ...fBody }}>
             <WifiOff size={14} color={C.orange} /> You're offline — showing your last saved sessions.
           </div>
         )}
-        <div style={{ marginTop: 14, marginBottom: 10 }}>
-          <SegTabs value={view} onChange={setView} items={[{ value: "list", label: "List" }, { value: "calendar", label: "Calendar" }]} />
-        </div>
-        {view === "list" && (
-          <SegTabs value={tab} onChange={setTab} items={[
-            { value: "pending", label: "Pending" }, { value: "upcoming", label: "Upcoming" }, { value: "past", label: "Completed" },
-          ]} />
+        {!showEmptyDashboard && view === "list" && (
+          <div style={{ marginTop: 16 }}>
+            <SegTabs strong value={tab} onChange={setTab} items={[
+              { value: "pending", label: "Pending" }, { value: "upcoming", label: "Upcoming" }, { value: "past", label: "Completed" },
+            ]} />
+          </div>
         )}
-        {view === "calendar" && (
+        {!showEmptyDashboard && view === "calendar" && (
           <>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16, marginBottom: 10 }}>
               <button onClick={goPrev} style={{ width: 30, height: 30, borderRadius: 10, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                 <ChevronLeft size={16} color={C.jet} />
               </button>
@@ -162,7 +199,20 @@ export function ScreenClientDashboard({ nav, bookings, offline, toast, cancelBoo
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: view === "calendar" ? "14px 20px 100px" : "16px 20px 100px" }}>
-        {view === "list" && (
+        {showEmptyDashboard && (
+          <div style={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+            <EmptyState
+              large
+              icon={Calendar}
+              title="Your Bookings Will Appear Here"
+              body="You haven't booked a coaching session yet. Find a coach that matches your sport, goals, and location to get started."
+              ctaLabel="Find My Coaches"
+              onCta={() => nav("client-home")}
+            />
+          </div>
+        )}
+
+        {!showEmptyDashboard && view === "list" && (
           <>
             {tab === "pending" && (pending.length ? pending.map(renderCard) : <EmptyState icon={Hourglass} title="No pending requests" body="Requests waiting on a coach's response will show up here." />)}
             {tab === "upcoming" && (upcoming.length ? upcoming.map(renderCard) : <EmptyState icon={Calendar} title="No upcoming sessions" body="Search for a coach to book your next session." />)}
@@ -170,7 +220,7 @@ export function ScreenClientDashboard({ nav, bookings, offline, toast, cancelBoo
           </>
         )}
 
-        {view === "calendar" && (
+        {!showEmptyDashboard && view === "calendar" && (
           <>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 6 }}>
               {WEEKDAY_HEADERS.map((d) => (

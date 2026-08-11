@@ -1,8 +1,11 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Search, Filter, Navigation, Star, MapPin, Heart, X, LocateFixed } from "lucide-react";
 import { C, fDisplay, fBody, T } from "../../theme/theme";
+
 import { COACHES, SPORTS, ALL_SUBURBS, SUBURB_COORDS } from "../../data/mockData";
-import { Card, Chip, Badge, SegTabs, SectionLabel, Avatar, Btn, TopBar, EmptyState, Spinner } from "../../components/ui/Primitives";
+import { Card, Chip, Badge, SegTabs, SectionLabel, Avatar, Btn, TopBar, BottomSheet, EmptyState, Spinner, ScrollFadeRow } from "../../components/ui/Primitives";
+
+
 import { useLiveNotifications, NotificationBellButton, StatusBanner } from "../../systems/StateSystem";
 import { CoachMapView } from "../../components/map/CoachMapView";
 import { haversineKm, FALLBACK_USER_LOCATION, injectMapStyles, CUSTOM_RADIUS_MIN_KM, CUSTOM_RADIUS_MAX_KM } from "../../lib/mapUtils";
@@ -15,7 +18,7 @@ const LIVE_AVAILABILITY_COACH_ID = "c2";
 // Dashboard silently defaults to the "Nearby" 0–5 km band; the actual radius
 // control (with presets + custom slider, same as the map) lives in Filters.
 const DEFAULT_FILTERS = { sports: [], areas: [], maxPrice: 150, minRating: 0, radiusKm: 5 };
-const NEARBY_RADIUS_PRESETS = [5, 10, 25];
+const NEARBY_RADIUS_PRESETS = [5, 10, 15, 25];
 
 const oneLine = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
 
@@ -79,12 +82,251 @@ export function CoachListCard({ coach, onOpen, unavailable }) {
   );
 }
 
-export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFiltersChange, clientNotifications: notifications, coachAvailableNow, userLocation, locating, manualLabel }) {
+/* -------------------------------------------------------------------------
+   Post-sign-up guided tour — a 5-step centered modal shown the moment a
+   client lands on Discover right after finishing onboarding. Steps 1–4 are
+   pure orientation (Continue advances); step 5 hands off straight into the
+   Personalised Coach Recommendation modal via its own "Find My Coaches" CTA,
+   with "Skip for Now" as the escape hatch at every step.
+   ------------------------------------------------------------------------- */
+const GUIDE_STEPS = [
+  {
+    icon: Search,
+    header: "Find Coaches That Match You",
+    description: "Search for coaches based on your sport, location, price range, availability, and ratings to find options that fit your needs.",
+    cta: "Continue",
+  },
+  {
+    icon: Star,
+    header: "Find the Right Fit",
+    description: "Explore coach profiles, watch their reels, view their rates, and read reviews to help you choose a coach with confidence.",
+    cta: "Continue",
+  },
+  {
+    icon: Calendar,
+    header: "Book When You're Ready",
+    description: "Choose a session that works for you and book with confidence. Depending on the coach, you can either book instantly or send a booking request for approval.",
+    cta: "Continue",
+  },
+  {
+    icon: MessageCircle,
+    header: "Chat With Your Coach",
+    description: "Have a question before or after your session? Message your coach directly through CoachLink to discuss your booking and coaching needs.",
+    cta: "Continue",
+  },
+  {
+    icon: Sparkles,
+    header: "Let's Find Your Perfect Coach",
+    description: "Answer a few quick questions about what you're looking for, and we'll curate coach recommendations based on your interests, goals, and location.",
+    cta: "Find My Coaches",
+    secondaryCta: "Skip for Now",
+  },
+];
+
+export function PostSignupGuideModal({ open, onClose, onFindCoaches }) {
+  const [step, setStep] = useState(0);
+
+  // Always start from step 1 whenever the guide (re)opens.
+  useEffect(() => { if (open) setStep(0); }, [open]);
+
+  if (!open) return null;
+
+  const total = GUIDE_STEPS.length;
+  const isLast = step === total - 1;
+  const current = GUIDE_STEPS[step];
+  const Icon = current.icon;
+
+  const handlePrimary = () => {
+    if (isLast) onFindCoaches();
+    else setStep(s => s + 1);
+  };
+
+  return (
+    <div style={{ position: "absolute", inset: 0, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(22,24,29,.55)", animation: "clBackdropIn .18s ease" }} />
+      <div
+        role="dialog"
+        style={{
+          position: "relative", width: 340, height: 600, maxWidth: "100%", maxHeight: "100%", background: C.white, borderRadius: 30,
+          padding: "34px 28px 28px", boxSizing: "border-box", display: "flex", flexDirection: "column",
+          boxShadow: "0 20px 50px rgba(0,0,0,.28)", animation: "clPopIn .22s cubic-bezier(.32,.72,0,1)",
+        }}
+      >
+        <button onClick={onClose} aria-label="Skip for now" style={{
+          position: "absolute", top: 16, right: 16, width: 30, height: 30, borderRadius: 99,
+          background: C.fog, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <X size={14} color={C.slate} />
+        </button>
+
+        {/* Progress indicator — one dot per step, filled = current, plus "x of n" */}
+        <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 10, flexShrink: 0 }}>
+          {Array.from({ length: total }, (_, i) => (
+            <span key={i} style={{
+              width: 8, height: 8, borderRadius: 99, flexShrink: 0,
+              background: i === step ? C.orange : C.border, transition: "background .15s ease",
+            }} />
+          ))}
+        </div>
+        <div style={{ textAlign: "center", fontSize: T.body, fontWeight: 600, color: C.slateLight, marginBottom: 26, flexShrink: 0, ...fBody }}>
+          {step + 1} of {total}
+        </div>
+
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", minHeight: 0 }}>
+          <div style={{ width: 84, height: 84, borderRadius: 26, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px", flexShrink: 0 }}>
+            <Icon size={36} color={C.orange} />
+          </div>
+
+          <div style={{ textAlign: "center", fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>{current.header}</div>
+          <div style={{ textAlign: "center", fontSize: T.subtitleLg, color: C.slate, marginTop: 14, lineHeight: 1.65, ...fBody }}>{current.description}</div>
+        </div>
+
+        <div style={{ marginTop: 32, display: "flex", flexDirection: "column", gap: 12, flexShrink: 0 }}>
+          <Btn full onClick={handlePrimary}>{current.cta}</Btn>
+          {current.secondaryCta && (
+            <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px 0", fontSize: T.bodyLg, fontWeight: 600, color: C.slate, ...fBody }}>
+              {current.secondaryCta}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------
+   Personalised Coach Recommendation modal — shown when a first-time client
+   taps "Find My Coaches" on the empty Discover screen. Collects location,
+   search radius, sport interests and (optional) goals, then hands the
+   preferences back so the caller can populate the Coach Listings section.
+   ------------------------------------------------------------------------- */
+export function PersonalisedRecommendationModal({ open, onClose, onSubmit, userLocation, locating, requestLocation }) {
+  const [useCurrentLocation, setUseCurrentLocation] = useState(true);
+  const [locationText, setLocationText] = useState("");
+  const [radiusKm, setRadiusKm] = useState(10);
+  const isPresetRadius = NEARBY_RADIUS_PRESETS.includes(radiusKm);
+  const [showCustomRadius, setShowCustomRadius] = useState(false);
+  const [customRadius, setCustomRadius] = useState("");
+  const [sports, setSports] = useState([]);
+  const [goals, setGoals] = useState("");
+  // Brief "processing" delay after submit so the platform visibly appears to
+  // crunch the client's preferences before handing back curated matches,
+  // rather than snapping straight to results.
+  const [submitting, setSubmitting] = useState(false);
+
+  // Reset the form every time the sheet is (re)opened so a previous session's
+  // input doesn't linger if the client closes it and comes back later.
+  useEffect(() => {
+    if (open) {
+      setUseCurrentLocation(true);
+      setLocationText("");
+      setRadiusKm(10);
+      setShowCustomRadius(false);
+      setCustomRadius("");
+      setSports([]);
+      setGoals("");
+      setSubmitting(false);
+    }
+  }, [open]);
+
+  const toggleSport = (s) => setSports((arr) => (arr.includes(s) ? arr.filter((x) => x !== s) : [...arr, s]));
+
+  const handleUseLocation = () => { setUseCurrentLocation(true); setLocationText(""); requestLocation?.(); };
+
+  const applyCustomRadius = () => {
+    const val = Number(customRadius);
+    if (val >= CUSTOM_RADIUS_MIN_KM && val <= CUSTOM_RADIUS_MAX_KM) { setRadiusKm(val); setShowCustomRadius(false); }
+  };
+
+  const canSubmit = useCurrentLocation || locationText.trim().length > 0;
+
+  const handleSubmit = () => {
+    setSubmitting(true);
+    // Simulated processing delay — gives the "generating recommendations"
+    // state a moment to register before the sheet closes into results.
+    setTimeout(() => {
+      onSubmit({
+        useCurrentLocation,
+        locationText: useCurrentLocation ? "" : locationText.trim(),
+        radiusKm,
+        sports,
+        goals: goals.trim(),
+      });
+    }, 1400);
+  };
+
+  return (
+    <BottomSheet open={open} onClose={submitting ? () => {} : onClose} title="Personalise Your Recommendations" heightPct={92}>
+      <SectionLabel>Current Location</SectionLabel>
+      <button onClick={handleUseLocation} style={{
+        display: "flex", width: "100%", boxSizing: "border-box", alignItems: "center", gap: 8,
+        padding: "11px 14px", borderRadius: 12, border: `1px solid ${useCurrentLocation ? C.orange : C.border}`,
+        background: useCurrentLocation ? C.orangeTint : C.white, color: useCurrentLocation ? C.orange : C.jet,
+        fontWeight: 600, fontSize: T.bodyLg, cursor: "pointer", marginBottom: 10, ...fBody,
+      }}>
+        {locating && useCurrentLocation ? <Spinner size={13} color={C.orange} /> : <LocateFixed size={14} />}
+        {useCurrentLocation ? (locating ? "Locating you…" : "Using your current location") : "Use my current location"}
+      </button>
+      <div style={{ textAlign: "center", fontSize: T.captionLg, color: C.slateLight, margin: "4px 0 10px", ...fBody }}>or enter it manually</div>
+      <input
+        value={locationText}
+        onChange={(e) => { setLocationText(e.target.value); setUseCurrentLocation(false); }}
+        placeholder="Suburb, city or postcode"
+        style={{ width: "100%", boxSizing: "border-box", background: C.fog, border: "none", borderRadius: 12, padding: "11px 14px", fontSize: T.bodyLg, color: C.jet, outline: "none", marginBottom: 22, ...fBody }}
+      />
+
+      <SectionLabel>Search Radius</SectionLabel>
+      <div style={{ marginBottom: 22 }}>
+        {showCustomRadius ? (
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input
+              type="number" min={CUSTOM_RADIUS_MIN_KM} max={CUSTOM_RADIUS_MAX_KM} value={customRadius}
+              onChange={(e) => setCustomRadius(e.target.value)}
+              placeholder={`${CUSTOM_RADIUS_MIN_KM}–${CUSTOM_RADIUS_MAX_KM}`}
+              style={{ flex: 1, boxSizing: "border-box", background: C.fog, border: "none", borderRadius: 12, padding: "11px 14px", fontSize: T.bodyLg, color: C.jet, outline: "none", ...fBody }}
+            />
+            <span style={{ fontSize: T.bodyLg, color: C.slate, ...fBody }}>km</span>
+            <button onClick={applyCustomRadius} style={{ padding: "11px 16px", borderRadius: 12, border: "none", background: C.orange, color: C.white, fontSize: T.labelLg, fontWeight: 700, cursor: "pointer", ...fBody }}>Set</button>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {NEARBY_RADIUS_PRESETS.map((km) => (
+              <Chip key={km} active={radiusKm === km} onClick={() => setRadiusKm(km)}>{km} km</Chip>
+            ))}
+            <Chip active={!isPresetRadius} onClick={() => { setCustomRadius(String(radiusKm)); setShowCustomRadius(true); }}>
+              {!isPresetRadius ? `Custom · ${radiusKm} km` : "Custom"}
+            </Chip>
+          </div>
+        )}
+      </div>
+
+      <SectionLabel>Sports Interests</SectionLabel>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 22 }}>
+        {SPORTS.map((s) => <Chip key={s} active={sports.includes(s)} onClick={() => toggleSport(s)}>{s}</Chip>)}
+      </div>
+
+      <SectionLabel>Coaching Goals <span style={{ fontWeight: 400, color: C.slateLight }}>(optional)</span></SectionLabel>
+      <textarea
+        value={goals}
+        onChange={(e) => setGoals(e.target.value)}
+        placeholder="e.g. Improve my technique, train for a competition, build confidence…"
+        rows={3}
+        style={{ width: "100%", boxSizing: "border-box", background: C.fog, border: "none", borderRadius: 12, padding: "11px 14px", fontSize: T.bodyLg, color: C.jet, outline: "none", resize: "none", marginBottom: 24, ...fBody }}
+      />
+
+      <Btn full disabled={!canSubmit} loading={submitting} loadingText="Finding your matches…" onClick={handleSubmit}>Find My Coaches</Btn>
+    </BottomSheet>
+  );
+}
+
+export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFiltersChange, clientNotifications: notifications, setClientNotifications: setNotifications, coachAvailableNow, isFirstTimeClient, discoveryPrefs, setDiscoveryPrefs, showPostSignupGuide, setShowPostSignupGuide }) {
   const [view, setView] = useState("list");
   const [searchText, setSearchText] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [prefsModalOpen, setPrefsModalOpen] = useState(false);
   // Defaults to the tightest "Nearby" (0–5 km) band; the control for changing
   // it lives in Filters, same as sport/area/price/rating.
+  const { userLocation, locating, requestLocation } = useUserLocation();
 
   // The pulse CSS the location pill reuses is normally injected by the map
   // view — bring it in here too so it still looks right if you land on
@@ -95,6 +337,22 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
   const setAppliedFilters = onFiltersChange || (() => {});
   const radiusKm = appliedFilters.radiusKm ?? 5;
   const unreadCount = notifications.filter(n => n.unread).length;
+
+  // First-time clients haven't told us what they're looking for yet, so the
+  // Coach Listings section stays empty and prompts for preferences instead
+  // of showing every coach in the directory.
+  const showRecommendationPrompt = !discoveryPrefs;
+
+  const handlePrefsSubmit = (prefs) => {
+    setDiscoveryPrefs?.(prefs);
+    setAppliedFilters({
+      ...appliedFilters,
+      sports: prefs.sports,
+      radiusKm: prefs.radiusKm,
+      areas: prefs.locationText ? [prefs.locationText] : appliedFilters.areas,
+    });
+    setPrefsModalOpen(false);
+  };
 
   const suggestions = searchText.trim().length > 0
     ? [...new Set([...ALL_SUBURBS, ...COACHES.map(c => c.name)])].filter(s => s.toLowerCase().includes(searchText.trim().toLowerCase())).slice(0, 5)
@@ -159,6 +417,79 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
 
   const selectSuggestion = s => { setSearchText(s); setShowSuggestions(false); };
 
+  const notifSheet = (
+    <BottomSheet open={notifOpen} onClose={() => setNotifOpen(false)} title="Notifications" heightPct={72}>
+      {unreadCount > 0 && (
+        <button onClick={markAllRead} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", color: C.orange, fontSize: T.labelLg, fontWeight: 600, cursor: "pointer", marginBottom: 10, padding: "2px 0", ...fBody }}>
+          <Check size={13} /> Mark all as read
+        </button>
+      )}
+      {notifications.map(n => {
+        const Icon = NOTIF_ICON[n.type] || Bell;
+        return (
+          <button key={n.id} onClick={() => openNotification(n)} style={{ width: "100%", display: "flex", gap: 12, alignItems: "flex-start", padding: "12px 4px", background: "none", border: "none", borderBottom: `1px solid ${C.border}`, cursor: "pointer", textAlign: "left" }}>
+            <div style={{ width: 36, height: 36, borderRadius: 11, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon size={16} color={C.orange} /></div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                <span style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{n.title}</span>
+                <span style={{ fontSize: T.tiny, color: C.slateLight, flexShrink: 0, ...fBody }}>{n.time}</span>
+              </div>
+              <div style={{ fontSize: T.labelLg, color: C.slate, marginTop: 3, lineHeight: 1.45, ...fBody }}>{n.body}</div>
+            </div>
+            {n.unread && <span style={{ width: 8, height: 8, borderRadius: 99, background: C.orange, flexShrink: 0, marginTop: 5 }} />}
+          </button>
+        );
+      })}
+    </BottomSheet>
+  );
+
+  const prefsModal = (
+    <PersonalisedRecommendationModal
+      open={prefsModalOpen}
+      onClose={() => setPrefsModalOpen(false)}
+      onSubmit={handlePrefsSubmit}
+      userLocation={userLocation}
+      locating={locating}
+      requestLocation={requestLocation}
+    />
+  );
+
+  const guideModal = (
+    <PostSignupGuideModal
+      open={!!showPostSignupGuide}
+      onClose={() => setShowPostSignupGuide?.(false)}
+      onFindCoaches={() => { setShowPostSignupGuide?.(false); setPrefsModalOpen(true); }}
+    />
+  );
+
+  // First-time client, no preferences submitted yet — the Coach Listings
+  // section stays empty and prompts for preferences instead of showing
+  // every coach in the directory.
+  if (showRecommendationPrompt) {
+    return (
+      <div style={{ height: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
+        <div style={{ padding: "18px 20px 0", display: "flex", justifyContent: "flex-end" }}>
+          <NotificationBellButton count={unreadCount} onClick={() => setNotifOpen(true)} />
+        </div>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "0 28px 40px" }}>
+          <div style={{ width: 72, height: 72, borderRadius: 22, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
+            <Sparkles size={30} color={C.orange} />
+          </div>
+          <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, ...fDisplay }}>Let's Find Your Perfect Coach</div>
+          <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 10, lineHeight: 1.6, maxWidth: 300, ...fBody }}>
+            Answer a few quick questions about what you're looking for, and we'll curate coach recommendations based on your interests, goals, and location.
+          </div>
+          <div style={{ marginTop: 26, width: "100%" }}>
+            <Btn full onClick={() => setPrefsModalOpen(true)}>Find My Coaches</Btn>
+          </div>
+        </div>
+        {notifSheet}
+        {prefsModal}
+        {guideModal}
+      </div>
+    );
+  }
+
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
       <div style={{ padding: "18px 20px 0" }}>
@@ -212,6 +543,24 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
           )}
         </div>
 
+        {/* Sport category filter bar — horizontally scrollable/swipable (native touch
+            drag + momentum via cl-swipe-row) so users can browse every sport without
+            it wrapping or crowding the screen. Selecting a sport re-filters `filtered`
+            below, which drives the Coach Listings list, so listings update immediately. */}
+        <ScrollFadeRow className="cl-swipe-row" style={{ display: "flex", gap: 8, overflowX: "auto", marginTop: 14, paddingBottom: 2 }}>
+          <Chip active={!appliedFilters.sports?.length} onClick={() => setAppliedFilters({ ...appliedFilters, sports: [] })}>All sports</Chip>
+          {SPORTS.map(s => (
+            <Chip
+              key={s}
+              active={!!appliedFilters.sports?.includes(s)}
+              onClick={() => {
+                const has = appliedFilters.sports?.includes(s);
+                setAppliedFilters({ ...appliedFilters, sports: has ? appliedFilters.sports.filter(x => x !== s) : [...(appliedFilters.sports || []), s] });
+              }}
+            >{s}</Chip>
+          ))}
+        </ScrollFadeRow>
+
         {hasActiveFilters && (
           <div className="cl-hide-scrollbar" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "nowrap", overflowX: "auto", marginTop: 12, paddingBottom: 2 }}>
             {activeFilterChips.map(chip => (
@@ -254,6 +603,8 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
           : filtered.map(c => <CoachListCard key={c.id} coach={c} unavailable={c.id === LIVE_AVAILABILITY_COACH_ID && !coachAvailableNow} onOpen={() => nav("coach-profile", { id: c.id })} />)
         }
       </div>
+
+      {notifSheet}
 
       {view === "map" && <CoachMapView coaches={searchAndAreaFiltered} onOpen={id => nav("coach-profile", { id })} onClose={() => setView("list")} />}
     </div>
@@ -317,7 +668,8 @@ export function ScreenSearchFilters({ nav, params, userLocation, locating, permi
           {SPORTS.map(s => <Chip key={s} active={sports.includes(s)} onClick={() => setSports(arr => arr.includes(s) ? arr.filter(x => x !== s) : [...arr, s])}>{s}</Chip>)}
         </div>
 
-        <SectionLabel>Location</SectionLabel>
+
+<SectionLabel>Location</SectionLabel>
         <div style={{ marginBottom: 20 }}>
           {/* Explicit control for the GPS read the Distance filter already runs on,
               instead of that behaviour being implicit/hidden. */}
@@ -383,8 +735,9 @@ export function ScreenSearchFilters({ nav, params, userLocation, locating, permi
             </div>
           ) : (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              <Chip active={radiusKm === 5} onClick={() => setRadiusKm(5)}>Nearby (0–5 km)</Chip>
+              <Chip active={radiusKm === 5} onClick={() => setRadiusKm(5)}>5 km</Chip>
               <Chip active={radiusKm === 10} onClick={() => setRadiusKm(10)}>10 km</Chip>
+              <Chip active={radiusKm === 15} onClick={() => setRadiusKm(15)}>15 km</Chip>
               <Chip active={radiusKm === 25} onClick={() => setRadiusKm(25)}>25 km</Chip>
               <Chip active={radiusKm != null && !isPresetRadius} onClick={() => setShowCustomRadius(true)}>
                 {radiusKm != null && !isPresetRadius ? `Custom · ${radiusKm} km` : "Custom"}

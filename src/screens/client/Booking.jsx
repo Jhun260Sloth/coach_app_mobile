@@ -3,7 +3,7 @@ import { COACHES, CONFIG } from "../../data/mockData";
 
 import {
   Info, Fingerprint, CreditCard, CheckCircle2, Plus, Lock, Calendar, Navigation, MessageCircle,
-  Users, User, ShieldCheck, Phone, Stethoscope, AlertTriangle, UserPlus, MapPin, Send, ClipboardCheck,
+  Users, User, ShieldCheck, Phone, Stethoscope, AlertTriangle, UserPlus, MapPin, Send, Home,
   ChevronLeft, ChevronRight, Sunrise, Sun, Moon, Repeat as RepeatIcon,
 } from "lucide-react";
 import { C, fDisplay, fBody, T } from "../../theme/theme";
@@ -311,8 +311,7 @@ export function ScreenBookingDateTime({ nav, params, setDraft, bookings = [] }) 
                 let background = C.white;
                 let border = C.border;
                 let color = C.jet;
-                if (state === "available" && inRange) { border = C.orange; }
-                if (state === "limited" && inRange) { border = C.strong; }
+                if ((state === "available" || state === "limited") && inRange) { border = C.orange; }
                 if (disabled) { color = C.slateLight; }
                 if (isSelected) { background = C.orange; border = C.orange; color = C.white; }
 
@@ -333,9 +332,6 @@ export function ScreenBookingDateTime({ nav, params, setDraft, bookings = [] }) 
                     }}
                   >
                     <span style={{ fontSize: T.label, fontWeight: isSelected || isToday ? 700 : 500, color, ...fBody }}>{d.getDate()}</span>
-                    {inRange && state === "limited" && !isSelected && (
-                      <span style={{ width: 4, height: 4, borderRadius: 99, background: C.strong }} />
-                    )}
                   </button>
                 );
               })}
@@ -345,9 +341,6 @@ export function ScreenBookingDateTime({ nav, params, setDraft, bookings = [] }) 
           <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap", justifyContent: "center" }}>
             <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: T.tiny, color: C.slate, ...fBody }}>
               <span style={{ width: 9, height: 9, borderRadius: 3, border: `1.5px solid ${C.orange}` }} /> Available
-            </span>
-            <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: T.tiny, color: C.slate, ...fBody }}>
-              <span style={{ width: 9, height: 9, borderRadius: 3, border: `1.5px solid ${C.strong}` }} /> Limited
             </span>
             <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: T.tiny, color: C.slate, ...fBody }}>
               <span style={{ width: 9, height: 9, borderRadius: 3, background: C.fog, border: `1.5px solid ${C.border}` }} /> Unavailable
@@ -902,7 +895,7 @@ export function ScreenBookingRequestSent({ nav, params }) {
       </div>
 
       <div style={{ marginTop: "auto", padding: "14px 0", display: "flex", flexDirection: "column", gap: 10 }}>
-        <Btn full icon={ClipboardCheck} onClick={() => nav("client-booking-detail", { id: params.id })}>View Booking</Btn>
+        <Btn full icon={Home} onClick={() => nav("client-home")}>Return to home</Btn>
         <Btn full variant="secondary" icon={MessageCircle} onClick={() => nav("chat-thread", { name: params.coachName })}>Message Coach</Btn>
       </div>
     </div>

@@ -1,8 +1,8 @@
 import React, { useState, useRef } from "react";
-import { HelpCircle, ChevronLeft, Paperclip, MapPin, Send, MoreVertical, Flag, Ban, Check, CheckCircle2, Calendar, FileText, Navigation, AlertCircle, RotateCcw, Pin, PinOff, Trash2 } from "lucide-react";
+import { HelpCircle, ChevronLeft, Paperclip, MapPin, Send, MoreVertical, Flag, Ban, Check, CheckCircle2, Calendar, FileText, Navigation, AlertCircle, RotateCcw, Pin, PinOff, Trash2, MessageCircle } from "lucide-react";
 import { C, fDisplay, fBody, T } from "../../theme/theme";
 import { THREADS, COACH_THREADS, CHAT_MESSAGES, BOOKING_ENQUIRY_MESSAGES, COACHES } from "../../data/mockData";
-import { Avatar, BottomSheet, Btn } from "../../components/ui/Primitives";
+import { Avatar, BottomSheet, Btn, EmptyState } from "../../components/ui/Primitives";
 import { StatusBanner } from "../../systems/StateSystem";
 
 /* ── Blocked Threads Store ─────────────────────────────────────────────── */
@@ -77,7 +77,7 @@ const cancelBtn = {
 
 /* ── Messages Screen ───────────────────────────────────────────────────── */
 
-export function ScreenMessages({ nav, role }) {
+export function ScreenMessages({ nav, role, isFirstTimeClient }) {
   const { isBlocked, unblock } = useBlockedThreads();
   const { isPinned, pin, unpin } = usePinnedThreads();
   const { isDeleted, remove } = useDeletedThreads();
@@ -89,6 +89,11 @@ export function ScreenMessages({ nav, role }) {
   const [blockedThread, setBlockedThread] = useState(null);
   const [optionsThread, setOptionsThread] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+
+  // First-time clients haven't sent a booking request yet, so there's nothing
+  // to chat about — show a single unified empty state instead of the (mock)
+  // thread list, pointing them back at Discover.
+  const showEmptyChat = role !== "coach" && isFirstTimeClient;
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
@@ -102,6 +107,19 @@ export function ScreenMessages({ nav, role }) {
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "14px 20px 100px" }}>
+        {showEmptyChat ? (
+          <div style={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+            <EmptyState
+              large
+              icon={MessageCircle}
+              title="No Conversations Yet"
+              body="Your conversations with coaches will appear here. Once you send a booking request, you can chat with the coach to discuss your session and ask any questions before your booking is confirmed."
+              ctaLabel="Find My Coaches"
+              onCta={() => nav("client-home")}
+            />
+          </div>
+        ) : (
+        <>
         {threads.length === 0 && (
           <div style={{ textAlign: "center", padding: "60px 20px", color: C.slate, fontSize: T.body, ...fBody }}>No conversations here.</div>
         )}
@@ -187,6 +205,8 @@ export function ScreenMessages({ nav, role }) {
             </div>
           );
         })}
+        </>
+        )}
       </div>
 
       <BottomSheet open={!!blockedThread} onClose={() => setBlockedThread(null)}

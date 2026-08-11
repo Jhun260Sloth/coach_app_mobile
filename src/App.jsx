@@ -8,7 +8,7 @@ import {
 
 import {
   Home, Calendar, MessageCircle, User, ClipboardList, ShieldCheck, AlertCircle, Flag, Settings,
-  WifiOff, RefreshCcw,
+  WifiOff, RefreshCcw, Sparkles,
 } from "lucide-react";
 
 import { C, fBody, fDisplay, useFonts, KEYFRAMES, T } from "./theme/theme";
@@ -128,6 +128,21 @@ export default function App() {
   const [children, setChildren] = useState([]);
   const [coachOnboarding, setCoachOnboarding] = useState({});
   const updateCoachOnboarding = (patch) => setCoachOnboarding((c) => ({ ...c, ...patch }));
+
+  // Drives the client-side "first time user" empty states (Discover / Bookings
+  // / Messages). Defaults to false so the prototype opens into its normal,
+  // populated demo state; flipping it on (via the "New client" toggle, or
+  // automatically when someone finishes the sign-up flow) simulates a client
+  // who's just created an account and hasn't booked or messaged anyone yet.
+  const [isFirstTimeClient, setIsFirstTimeClient] = useState(false);
+  // Coach Listings on Discover stay empty until the client submits the
+  // Personalised Coach Recommendation modal — null means "not submitted yet".
+  // Pre-seeded (non-null) here so the default demo state shows the full list.
+  const [discoveryPrefs, setDiscoveryPrefs] = useState({ seeded: true });
+  // Whether the 5-step post-sign-up guide still needs to be shown on Discover.
+  // Set true the moment a client finishes onboarding so it appears exactly
+  // once on their first visit, then flips false once they finish or skip it.
+  const [showPostSignupGuide, setShowPostSignupGuide] = useState(false);
 
   // Whether the current coach (Josh Whitfield) is open to new bookings right now.
   // Drives the "Coach available / unavailable" state on his profile, Discover
@@ -318,8 +333,19 @@ export default function App() {
   const activeTabScreen = TAB_ALIASES[screen] || screen;
   const showTabs = tabsForRole.some((t) => t.value === activeTabScreen);
 
-  const screenProps = { nav, params, toast, role, favorites, toggleFav, biometric, setBiometric, verified, verificationStatus, reachedDashboardAfterVerification, setReachedDashboardAfterVerification, offline, draft, setDraft, addBooking, cancelBooking, rescheduleBooking, respondBooking, markBookingPaid, bookings, setBookings, coachBookings, setCoachBookings, setRole, addCoachRole: () => setHasCoachRole(true), submitVerification, verificationQueue, decideVerification, disputes, resolveDispute, clientPrefs, onComplete: handleClientPrefs, children, addChild, updateChild, removeChild, coachOnboarding, updateCoachOnboarding, coachPackages, savePackage, removePackage, availabilityBlocks, setAvailabilityBlocks, coachMedia, addMedia, removeMedia, coachAvailableNow, setCoachAvailableNow, pushNotification, clientNotifications, coachNotifications, setClientNotifications, filters: clientFilters, onFiltersChange: setClientFilters, ...userLocationState };
-
+const screenProps = {
+  nav, params, toast, role, favorites, toggleFav, biometric, setBiometric, verified, verificationStatus,
+  reachedDashboardAfterVerification, setReachedDashboardAfterVerification, offline, draft, setDraft,
+  addBooking, cancelBooking, rescheduleBooking, respondBooking, markBookingPaid, bookings, setBookings,
+  coachBookings, setCoachBookings, setRole, addCoachRole: () => setHasCoachRole(true), submitVerification,
+  verificationQueue, decideVerification, disputes, resolveDispute, clientPrefs, onComplete: handleClientPrefs,
+  children, addChild, updateChild, removeChild, coachOnboarding, updateCoachOnboarding, coachPackages,
+  savePackage, removePackage, availabilityBlocks, setAvailabilityBlocks, coachMedia, addMedia, removeMedia,
+  coachAvailableNow, setCoachAvailableNow, pushNotification, clientNotifications, setClientNotifications,
+  coachNotifications, isFirstTimeClient, setIsFirstTimeClient, discoveryPrefs, setDiscoveryPrefs,
+  showPostSignupGuide, setShowPostSignupGuide, filters: clientFilters, onFiltersChange: setClientFilters,
+  ...userLocationState,
+};
 
   function renderScreen() {
     switch (screen) {
@@ -419,11 +445,17 @@ export default function App() {
           </button>
         ))}
         <div style={{ flex: 1 }} />
+        {role === "client" && (
+          <button onClick={() => { setIsFirstTimeClient((v) => !v); if (!isFirstTimeClient) { setDiscoveryPrefs(null); setBookings([]); setShowPostSignupGuide(true); } else { setDiscoveryPrefs({ seeded: true }); setBookings(INITIAL_BOOKINGS); setShowPostSignupGuide(false); } }} title="Simulate a first-time client with no bookings, chats or coach picks yet"
+            style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 999, border: `1px solid ${isFirstTimeClient ? C.orange : C.border}`, background: isFirstTimeClient ? C.orangeTint : C.white, color: isFirstTimeClient ? C.orange : C.slate, fontSize: T.captionLg, fontWeight: 600, cursor: "pointer", ...fBody }}>
+            <Sparkles size={12} /> New client
+          </button>
+        )}
         <button onClick={() => setOffline((v) => !v)} title="Simulate offline"
           style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 999, border: `1px solid ${offline ? C.orange : C.border}`, background: offline ? C.orangeTint : C.white, color: offline ? C.orange : C.slate, fontSize: T.captionLg, fontWeight: 600, cursor: "pointer", ...fBody }}>
           <WifiOff size={12} /> Offline
         </button>
-        <button onClick={() => { setScreen(role === "admin" ? "admin-login" : "splash"); setHistory([]); setBookings(INITIAL_BOOKINGS); setCoachBookings(COACH_BOOKINGS); setNotifications([]); setVerified(false); setVerificationStatus("none"); setReachedDashboardAfterVerification(false); setVerificationQueue(ADMIN_VERIFICATION_QUEUE); setDisputes(ADMIN_DISPUTES); setClientPrefs(null); setChildren([]); setCoachOnboarding({}); setBiometric(false); setCoachPackages(COACHES[1].packages); setAvailabilityBlocks(INITIAL_AVAILABILITY_BLOCKS); setCoachMedia(Array.from({ length: COACHES[1].reelsCount }, (_, i) => ({ id: `m${i + 1}`, type: i % 4 === 3 ? "photo" : "reel", caption: i % 4 === 3 ? "Training photo" : "Session highlight", sport: COACHES[1].sport, url: null }))); }}
+        <button onClick={() => { setScreen(role === "admin" ? "admin-login" : "splash"); setHistory([]); setBookings(INITIAL_BOOKINGS); setCoachBookings(COACH_BOOKINGS); setNotifications([]); setVerified(false); setVerificationStatus("none"); setReachedDashboardAfterVerification(false); setVerificationQueue(ADMIN_VERIFICATION_QUEUE); setDisputes(ADMIN_DISPUTES); setClientPrefs(null); setChildren([]); setCoachOnboarding({}); setBiometric(false); setCoachPackages(COACHES[1].packages); setAvailabilityBlocks(INITIAL_AVAILABILITY_BLOCKS); setCoachMedia(Array.from({ length: COACHES[1].reelsCount }, (_, i) => ({ id: `m${i + 1}`, type: i % 4 === 3 ? "photo" : "reel", caption: i % 4 === 3 ? "Training photo" : "Session highlight", sport: COACHES[1].sport, url: null }))); setIsFirstTimeClient(false); setDiscoveryPrefs({ seeded: true }); }}
 
           style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 999, border: `1px solid ${C.border}`, background: C.white, color: C.slate, fontSize: T.captionLg, fontWeight: 600, cursor: "pointer", ...fBody }}>
           <RefreshCcw size={12} /> Reset

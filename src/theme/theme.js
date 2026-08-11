@@ -79,4 +79,6 @@ export const KEYFRAMES = `
 @keyframes clPopIn { from{opacity:0; transform:scale(.85)} to{opacity:1; transform:scale(1)} }
 .cl-hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 .cl-hide-scrollbar::-webkit-scrollbar { display: none; width: 0; height: 0; }
+.cl-swipe-row { -webkit-overflow-scrolling: touch; touch-action: pan-x; scroll-snap-type: x proximity; overscroll-behavior-x: contain; }
+.cl-swipe-row > * { scroll-snap-align: start; }
 `;
