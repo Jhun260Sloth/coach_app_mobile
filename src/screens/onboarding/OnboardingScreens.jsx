@@ -104,7 +104,7 @@ export function ScreenGetStarted({ nav }) {
         Welcome to CoachLink
       </div>
       <div style={{ color: C.slate, fontSize: T.subtitle, marginTop: 10, lineHeight: 1.55, maxWidth: 280, ...fBody }}>
-        Find a coach you trust, or build your coaching business — all in one place.
+        Find a coach you trust, or build your coaching business.
       </div>
       <div style={{ marginTop: 36, width: "100%" }}>
         <Btn full variant="primary" onClick={() => nav("role-select")}>Get Started</Btn>
