@@ -1,16 +1,18 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { COACHES, CONFIG } from "../../data/mockData";
 
 import {
-  Info, Fingerprint, CreditCard, CheckCircle2, Plus, Lock, Calendar, Navigation, MessageCircle,
+  Fingerprint, CreditCard, CheckCircle2, Plus, Lock, Calendar, Navigation, MessageCircle,
   Users, User, ShieldCheck, Phone, Stethoscope, AlertTriangle, UserPlus, MapPin, Send, Home,
-  ChevronLeft, ChevronRight, Sunrise, Sun, Moon, Repeat as RepeatIcon,
+  Repeat as RepeatIcon, UserCheck, Camera,
 } from "lucide-react";
 import { C, fDisplay, fBody, T } from "../../theme/theme";
 import {
-  Avatar, Card, Chip, SectionLabel, Btn, TopBar, Toggle, Field, Row, RadioRow, Spinner,
+  Avatar, Card, Chip, SectionLabel, Btn, TopBar, Toggle, Field, Row, RadioRow, BottomSheet,
 } from "../../components/ui/Primitives";
 import { StatusBanner, ResultOverlay } from "../../systems/StateSystem";
+import { SPORTS } from "../../data/mockData";
+import { SKILL_LEVELS } from "./AboutYou";
 
 const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 function parseShortDate(str, year = 2026) {
@@ -23,10 +25,11 @@ function parseShortDate(str, year = 2026) {
 function sameCalendarDay(a, b) { return a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
 function normTime(t) { return (t || "").replace(/\s+/g, "").toLowerCase(); }
 
-/* ---- calendar helpers for the "Select Date & Time" screen ---- */
-function addDays(d, n) { const r = new Date(d); r.setDate(d.getDate() + n); return r; }
-function startOfWeek(d) { const dow = (d.getDay() + 6) % 7; return addDays(d, -dow); } // Monday-start
-function buildMonthGrid(cursor) {
+/* ---- calendar helpers for the "Select Date & Time" screen — also reused
+   by the Packages tab's inline availability calendar on the coach profile ---- */
+export function addDays(d, n) { const r = new Date(d); r.setDate(d.getDate() + n); return r; }
+export function startOfWeek(d) { const dow = (d.getDay() + 6) % 7; return addDays(d, -dow); } // Monday-start
+export function buildMonthGrid(cursor) {
   const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
   const gridStart = startOfWeek(first);
   const weeks = [];
@@ -38,29 +41,28 @@ function buildMonthGrid(cursor) {
   }
   return weeks;
 }
-function sameDay(a, b) { return a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
-function isPastDay(d) { const t = new Date(); t.setHours(0, 0, 0, 0); const x = new Date(d); x.setHours(0, 0, 0, 0); return x < t; }
-const DOW_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const WEEKDAY_HEADERS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+export function sameDay(a, b) { return a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
+export function isPastDay(d) { const t = new Date(); t.setHours(0, 0, 0, 0); const x = new Date(d); x.setHours(0, 0, 0, 0); return x < t; }
+export const DOW_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 // Availability state for a calendar cell, based on how many slots the coach
 // has open that day: none -> unavailable, 1-2 -> limited, 3+ -> available.
-function dayAvailability(date, coach) {
+export function dayAvailability(date, coach, availability) {
   if (isPastDay(date)) return "unavailable";
   const abbrev = DOW_ABBR[date.getDay()];
-  const slots = coach.availability[abbrev];
+  const slots = (availability || coach.availability)[abbrev];
   if (!slots || slots.length === 0) return "unavailable";
   if (slots.length <= 2) return "limited";
   return "available";
 }
 
-function slotsForDate(date, coach) {
+export function slotsForDate(date, coach, availability) {
   const abbrev = DOW_ABBR[date.getDay()];
-  return coach.availability[abbrev] || [];
+  return (availability || coach.availability)[abbrev] || [];
 }
 
 // Buckets a coach's raw "HH:MM" slots into Morning / Afternoon / Evening.
-function groupSlotsByPeriod(slots) {
+export function groupSlotsByPeriod(slots) {
   const groups = { Morning: [], Afternoon: [], Evening: [] };
   slots.forEach((t) => {
     const h = parseInt(t.split(":")[0], 10);
@@ -71,12 +73,11 @@ function groupSlotsByPeriod(slots) {
   return groups;
 }
 
-function formatFullDateFromDate(d) {
+export function formatFullDateFromDate(d) {
   return d.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" });
 }
 
-const REPEAT_OPTIONS = [
-  { value: "once", label: "One-time Session (Default)" },
+const REPEAT_FREQ_OPTIONS = [
   { value: "weekly", label: "Weekly" },
   { value: "fortnightly", label: "Fortnightly" },
   { value: "monthly", label: "Monthly" },
@@ -92,9 +93,28 @@ function repeatSummaryText(repeat) {
   const freqLabel = repeat.freq === "weekly"
     ? `Every ${repeat.every || 1} week${(repeat.every || 1) > 1 ? "s" : ""}`
     : repeat.freq === "fortnightly" ? "Every 2 weeks" : "Every month";
-  if (repeat.freq !== "weekly") return freqLabel;
   if (repeat.endType === "date") return `${freqLabel}, until ${repeat.endDate || "a selected date"}`;
   return `${freqLabel}, ends after ${repeat.endType} sessions`;
+}
+
+// How many sessions a repeat selection works out to — used to keep the
+// session count and total price in the summary in sync with whatever the
+// user has picked (or just 1, for a one-time session).
+function computeSessionCount(repeat, anchorDate) {
+  if (!repeat || repeat.freq === "once") return 1;
+  if (repeat.endType === "4") return 4;
+  if (repeat.endType === "8") return 8;
+  if (repeat.endType === "date") {
+    if (!anchorDate || !repeat.endDate) return null; // not enough info yet
+    const start = new Date(anchorDate);
+    const end = new Date(repeat.endDate);
+    if (Number.isNaN(end.getTime()) || end <= start) return null;
+    const diffDays = Math.floor((end - start) / 86400000);
+    const intervalDays = repeat.freq === "weekly" ? 7 * (repeat.every || 1)
+      : repeat.freq === "fortnightly" ? 14 : 30;
+    return Math.max(1, Math.floor(diffDays / intervalDays) + 1);
+  }
+  return 1;
 }
 
 // A coach's package tells us whether more than one person can join the same
@@ -120,7 +140,7 @@ function venueLabel(pkg, coach) {
   return pkg.venue || (coach && coach.venue) || "Venue to be confirmed by coach";
 }
 
-function formatTime12(t) {
+export function formatTime12(t) {
   const [hStr, mStr] = t.split(":");
   let h = parseInt(hStr, 10);
   const period = h >= 12 ? "pm" : "am";
@@ -129,12 +149,40 @@ function formatTime12(t) {
   return `${h}:${mStr} ${period}`;
 }
 
+// Adds a number of minutes to an "HH:MM" slot start time, wrapping past
+// midnight if needed, and returns the result in the same "HH:MM" shape.
+export function addMinutesToTime(t, minutesToAdd) {
+  const [hStr, mStr] = t.split(":");
+  const total = (parseInt(hStr, 10) * 60 + parseInt(mStr, 10) + (minutesToAdd || 0) + 1440) % 1440;
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+// Renders a slot as a clear start-to-end range, e.g. "9:00 AM – 10:00 AM",
+// given the slot's "HH:MM" start time and the session duration in minutes.
+export function formatTimeRange12(t, durationMinutes) {
+  const start = formatTime12(t);
+  if (!durationMinutes) return start;
+  const end = formatTime12(addMinutesToTime(t, durationMinutes));
+  return `${start} – ${end}`;
+}
+
+// Blank participant profile draft for the inline "Add Child Profile" modal —
+// same shape as the one on the Account screen, so a child created mid-booking
+// looks and behaves exactly like one added from the Account tab.
+const emptyChildDraft = {
+  name: "", age: "", sport: [], skillLevel: "", goals: "", postalCode: "", preferences: "", hasPhoto: false,
+  medicalConditions: "", allergies: "",
+  guardianName: "", guardianRelationship: "", guardianMobile: "",
+};
+
 /**
  * First step of the booking flow: "Who's attending?" — asked before date and
  * time are chosen, so the coach's availability check and the review page
  * both already know who the session is for.
  */
-export function ScreenBookingParticipants({ nav, params, children = [] }) {
+export function ScreenBookingParticipants({ nav, params, children = [], addChild, toast }) {
   const coach = COACHES.find((c) => c.id === params.coachId);
   const pkg = coach.packages.find((p) => p.id === params.packageId);
   const allowsMultiple = packageAllowsMultipleParticipants(pkg);
@@ -149,13 +197,38 @@ export function ScreenBookingParticipants({ nav, params, children = [] }) {
     if (p.length >= maxParticipants) return p; // package is at capacity — ignore further taps
     return [...p, key];
   });
+  // Selects a participant outright (rather than toggling), used once a child
+  // profile is created so it lands pre-selected without a second tap.
+  const selectParticipant = (key) => setParticipants((p) => {
+    if (!allowsMultiple) return [key];
+    if (p.includes(key)) return p;
+    if (p.length >= maxParticipants) return p;
+    return [...p, key];
+  });
 
   const atCapacity = allowsMultiple && participants.length >= maxParticipants;
   const canContinue = participants.length > 0;
+  const selfSelected = participants.includes("self");
+
+  // Inline "Add Child Profile" — a slide-in modal on top of this screen
+  // rather than a redirect out to the Account tab, so a parent can create
+  // the participant without losing their place in the booking flow.
+  const [childModalOpen, setChildModalOpen] = useState(false);
+  const [childDraft, setChildDraft] = useState(emptyChildDraft);
+  const openAddChild = () => { setChildDraft(emptyChildDraft); setChildModalOpen(true); };
+  const toggleDraftSport = (s) => setChildDraft((d) => ({ ...d, sport: d.sport.includes(s) ? d.sport.filter((x) => x !== s) : [...d.sport, s] }));
+  const saveChildAndSelect = () => {
+    if (!childDraft.name.trim()) { toast && toast("Give this profile a name first"); return; }
+    const newId = Date.now();
+    addChild({ ...childDraft, id: newId });
+    selectParticipant(newId);
+    toast && toast(`${childDraft.name}'s profile added`);
+    setChildModalOpen(false);
+  };
 
   return (
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title="Who's attending?" onBack={() => nav("package-detail", { coachId: coach.id, packageId: pkg.id })} />
+      <TopBar title="Who's attending?" onBack={() => nav("package-detail", { coachId: coach.id, packageId: pkg.id, presetDate: params.presetDate, presetTime: params.presetTime })} />
 
       <Card style={{ marginBottom: 22, display: "flex", gap: 12, alignItems: "center", border: `1px solid ${C.border}`, boxShadow: "0 1px 2px rgba(22,24,29,.04)" }}>
         <Avatar name={coach.name} size={44} />
@@ -175,78 +248,160 @@ export function ScreenBookingParticipants({ nav, params, children = [] }) {
             {participants.length}/{maxParticipants} max
           </span>
         </div>
-        <div style={{ fontSize: T.labelLg, color: C.slate, marginBottom: 14, lineHeight: 1.5, ...fBody }}>
+        <div style={{ fontSize: T.labelLg, color: C.slate, marginBottom: 16, lineHeight: 1.5, ...fBody }}>
           {allowsMultiple
             ? `This is a group session — up to ${maxParticipants} participant${maxParticipants > 1 ? "s" : ""} can join. Select yourself, one child, or several. Each participant keeps their own booking history.`
             : "This is a 1:1 session, so pick a single participant — yourself or one child profile."}
         </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          <div style={{ opacity: atCapacity && !participants.includes("self") ? 0.45 : 1 }}>
-            <Chip active={participants.includes("self")} icon={User} onClick={(atCapacity && !participants.includes("self")) ? undefined : () => toggleParticipant("self")}>Myself</Chip>
+
+        {/* Primary path: booking for yourself. Secondary path: add (and book
+            for) a child — both are front and centre instead of being buried
+            in a same-weight chip row. */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 18 }}>
+          <div style={{ opacity: atCapacity && !selfSelected ? 0.45 : 1 }}>
+            <Btn
+              full
+              variant={selfSelected ? "primary" : "outline"}
+              icon={selfSelected ? CheckCircle2 : User}
+              disabled={atCapacity && !selfSelected}
+              onClick={() => toggleParticipant("self")}
+            >
+              {selfSelected ? "Myself — selected" : "Myself"}
+            </Btn>
           </div>
-          {children.map((c) => {
-            const disabled = atCapacity && !participants.includes(c.id);
-            return (
-              <div key={c.id} style={{ opacity: disabled ? 0.45 : 1 }}>
-                <Chip active={participants.includes(c.id)} icon={Users} onClick={disabled ? undefined : () => toggleParticipant(c.id)}>{c.name || "Unnamed profile"}</Chip>
-              </div>
-            );
-          })}
+          <Btn full variant="secondary" icon={UserPlus} disabled={atCapacity} onClick={openAddChild}>
+            Add Child Profile
+          </Btn>
         </div>
-        {children.length === 0 && (
-          <button onClick={() => nav("client-profile")} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", marginTop: 14, padding: 0 }}>
-            <UserPlus size={13} color={C.orange} />
-            <span style={{ fontSize: T.label, color: C.orange, fontWeight: 600, ...fBody }}>Add a child profile from Account to book for them</span>
-          </button>
+
+        {children.length > 0 && (
+          <>
+            <SectionLabel>Existing profiles</SectionLabel>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {children.map((c) => {
+                const disabled = atCapacity && !participants.includes(c.id);
+                return (
+                  <div key={c.id} style={{ opacity: disabled ? 0.45 : 1 }}>
+                    <Chip active={participants.includes(c.id)} icon={Users} onClick={disabled ? undefined : () => toggleParticipant(c.id)}>{c.name || "Unnamed profile"}</Chip>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
 
       <div style={{ marginTop: "auto", padding: "14px 0" }}>
-        <Btn full disabled={!canContinue} onClick={() => nav("booking-datetime", { coachId: coach.id, packageId: pkg.id, participants })}>Continue</Btn>
+        <Btn full disabled={!canContinue} onClick={() => nav("booking-datetime", { coachId: coach.id, packageId: pkg.id, participants, presetDate: params.presetDate, presetTime: params.presetTime })}>Continue</Btn>
       </div>
+
+      {/* Slide-in "Add Child Profile" modal — creates the participant right
+          here in the booking flow, then returns to this screen with them
+          selected, instead of redirecting out to the Account tab. */}
+      <BottomSheet open={childModalOpen} onClose={() => setChildModalOpen(false)} title="Add child profile" heightPct={88}>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 18 }}>
+          <button
+            onClick={() => setChildDraft((d) => ({ ...d, hasPhoto: !d.hasPhoto }))}
+            style={{ position: "relative", background: "none", border: "none", cursor: "pointer" }}
+          >
+            {childDraft.hasPhoto ? <Avatar name={childDraft.name || "Child"} size={72} /> : (
+              <div style={{ width: 72, height: 72, borderRadius: 72, background: C.fog, border: `1.5px dashed ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Camera size={20} color={C.slateLight} />
+              </div>
+            )}
+            <div style={{ position: "absolute", bottom: -2, right: -2, width: 24, height: 24, borderRadius: 24, background: C.orange, border: `2px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Camera size={11} color={C.white} />
+            </div>
+          </button>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <Field label="Child's name" placeholder="e.g. Ava" icon={User} value={childDraft.name} onChange={(e) => setChildDraft((d) => ({ ...d, name: e.target.value }))} />
+          <Field label="Age" placeholder="e.g. 9" value={childDraft.age} onChange={(e) => setChildDraft((d) => ({ ...d, age: e.target.value }))} />
+          <Field label="Location / postcode" placeholder="e.g. 2026" icon={MapPin} value={childDraft.postalCode} onChange={(e) => setChildDraft((d) => ({ ...d, postalCode: e.target.value }))} />
+        </div>
+
+        <div style={{ marginTop: 4 }}>
+          <SectionLabel>Guardian information</SectionLabel>
+          <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: -6, marginBottom: 12, lineHeight: 1.5, ...fBody }}>
+            The parent or legal guardian responsible for this participant.
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <Field label="Guardian name" placeholder="e.g. Jamie Chen" icon={UserCheck} value={childDraft.guardianName} onChange={(e) => setChildDraft((d) => ({ ...d, guardianName: e.target.value }))} />
+            <Field label="Relationship to participant" placeholder="e.g. Parent" value={childDraft.guardianRelationship} onChange={(e) => setChildDraft((d) => ({ ...d, guardianRelationship: e.target.value }))} />
+            <Field label="Mobile number" placeholder="04XX XXX XXX" icon={Phone} type="tel" value={childDraft.guardianMobile} onChange={(e) => setChildDraft((d) => ({ ...d, guardianMobile: e.target.value.replace(/[^0-9+\s]/g, "") }))} />
+          </div>
+        </div>
+
+        <div style={{ marginTop: 18 }}>
+          <SectionLabel>Sport / interests</SectionLabel>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+            {SPORTS.map((s) => (
+              <Chip key={s} active={childDraft.sport.includes(s)} onClick={() => toggleDraftSport(s)}>{s}</Chip>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginTop: 18 }}>
+          <SectionLabel>Skill level</SectionLabel>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+            {SKILL_LEVELS.map((lvl) => (
+              <Chip key={lvl} active={childDraft.skillLevel === lvl} onClick={() => setChildDraft((d) => ({ ...d, skillLevel: lvl }))}>{lvl}</Chip>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginTop: 18 }}>
+          <SectionLabel>Medical information (optional)</SectionLabel>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <Field label="Medical conditions" placeholder="e.g. asthma" icon={Stethoscope} value={childDraft.medicalConditions} onChange={(e) => setChildDraft((d) => ({ ...d, medicalConditions: e.target.value }))} />
+            <Field label="Allergies" placeholder="e.g. bee stings, peanuts" icon={AlertTriangle} value={childDraft.allergies} onChange={(e) => setChildDraft((d) => ({ ...d, allergies: e.target.value }))} />
+          </div>
+        </div>
+
+        <div style={{ marginTop: 22 }}>
+          <Btn full onClick={saveChildAndSelect}>Add profile & select</Btn>
+        </div>
+      </BottomSheet>
     </div>
   );
 }
 
-export function ScreenBookingDateTime({ nav, params, setDraft, bookings = [] }) {
+export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings = [] }) {
   const coach = COACHES.find((c) => c.id === params.coachId);
   const pkg = coach.packages.find((p) => p.id === params.packageId);
 
-  const [cursor, setCursor] = useState(() => { const d = new Date(); d.setDate(1); return d; });
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [time, setTime] = useState(null);
-  const [checking, setChecking] = useState(false);
+  // Date & time are chosen earlier in the flow (the coach's Packages tab, or
+  // the package details screen) and simply arrive here as params — this
+  // screen no longer re-picks them, it just confirms them alongside repeat
+  // options and the running total.
+  const selectedDate = params.presetDate ? new Date(params.presetDate) : null;
+  const time = params.presetTime || null;
+  const hasDateTime = !!selectedDate && !!time;
 
-  // Repeat booking (optional)
-  const [repeatFreq, setRepeatFreq] = useState("once");
-  const [repeatEvery, setRepeatEvery] = useState(1);
-  const [endAfterType, setEndAfterType] = useState("4");
-  const [endDate, setEndDate] = useState("");
+  // If the client already stepped through this screen for this exact
+  // coach/package (e.g. they continued to Review Booking and then hit back),
+  // restore whatever repeat settings they'd chosen instead of resetting to
+  // the defaults below.
+  const savedRepeat = draft && draft.coach?.id === coach.id && draft.pkg?.id === pkg.id
+    ? draft.repeat
+    : null;
 
-  const weeks = useMemo(() => buildMonthGrid(cursor), [cursor]);
-  const monthLabel = cursor.toLocaleDateString(undefined, { month: "long", year: "numeric" });
-  const today = new Date();
-  const isCurrentMonth = cursor.getFullYear() === today.getFullYear() && cursor.getMonth() === today.getMonth();
-  const goPrevMonth = () => { if (!isCurrentMonth) setCursor((c) => new Date(c.getFullYear(), c.getMonth() - 1, 1)); };
-  const goNextMonth = () => setCursor((c) => new Date(c.getFullYear(), c.getMonth() + 1, 1));
+  // Repeat booking — optional. Off by default, so a one-time session needs
+  // no extra input at all.
+  const [repeatEnabled, setRepeatEnabled] = useState(!!savedRepeat && savedRepeat.freq !== "once");
+  const [repeatFreq, setRepeatFreq] = useState(savedRepeat && savedRepeat.freq !== "once" ? savedRepeat.freq : "weekly");
+  const [repeatEvery, setRepeatEvery] = useState(savedRepeat?.every || 1);
+  const [endAfterType, setEndAfterType] = useState(savedRepeat?.endType || "4");
+  const [endDate, setEndDate] = useState(savedRepeat?.endDate || "");
 
-  const pickDate = (d, state) => {
-    if (state === "unavailable") return;
-    setSelectedDate(d);
-    setTime(null);
-  };
-
-  // Simulate a short "checking availability" pause whenever a new time is picked.
-  useEffect(() => {
-    if (!time) { setChecking(false); return; }
-    setChecking(true);
-    const t = setTimeout(() => setChecking(false), 600);
-    return () => clearTimeout(t);
-  }, [time, selectedDate]);
+  const repeat = repeatEnabled
+    ? { freq: repeatFreq, every: repeatEvery, endType: endAfterType, endDate }
+    : { freq: "once" };
 
   // Schedule conflict — does the client already have a pending/confirmed session
   // at this exact day & time (with any coach)?
-  const conflictBooking = time && !checking
+  const conflictBooking = hasDateTime
     ? bookings.find((b) => {
         if (!["pending", "confirmed"].includes(b.status)) return false;
         const bd = parseShortDate(b.date);
@@ -254,228 +409,131 @@ export function ScreenBookingDateTime({ nav, params, setDraft, bookings = [] }) 
       })
     : null;
 
-  const daySlots = selectedDate ? slotsForDate(selectedDate, coach) : [];
-  const grouped = groupSlotsByPeriod(daySlots);
-  const periodIcons = { Morning: Sunrise, Afternoon: Sun, Evening: Moon };
+  const sessionCount = hasDateTime ? computeSessionCount(repeat, params.presetDate) : null;
+  const needsEndDate = repeatEnabled && endAfterType === "date" && !endDate;
+  const totalPrice = sessionCount ? pkg.price * sessionCount : null;
 
-  const repeat = { freq: repeatFreq, every: repeatEvery, endType: endAfterType, endDate };
-
-  const canContinue = !!selectedDate && !!time;
+  const canContinue = hasDateTime && !conflictBooking && !needsEndDate;
 
   return (
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title="Select Date & Time" onBack={() => nav("booking-participants", { coachId: coach.id, packageId: pkg.id, participants: params.participants })} />
+      <TopBar title="Confirm Session" onBack={() => nav("booking-participants", { coachId: coach.id, packageId: pkg.id, participants: params.participants })} />
 
       <div style={{ flex: 1, overflowY: "auto", paddingBottom: 8 }}>
         <div style={{ fontSize: T.labelLg, color: C.slate, lineHeight: 1.5, marginBottom: 18, ...fBody }}>
-          Choose your preferred session date and time. Only available dates and time slots are shown.
+          Review your session below, and set it up to repeat if you'd like.
         </div>
 
-        <Card style={{ marginBottom: 20, display: "flex", gap: 12, alignItems: "center", border: `1px solid ${C.border}` }}>
-          <Avatar name={coach.name} size={40} />
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: T.subtitle, fontWeight: 700, color: C.jet, ...fDisplay }}>{pkg.name}</div>
-            <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>with {coach.name} · {pkg.duration} min</div>
-          </div>
-          <div style={{ marginLeft: "auto", fontSize: T.subtitleLg, fontWeight: 800, color: C.jet, whiteSpace: "nowrap", ...fDisplay }}>${pkg.price}</div>
-        </Card>
-
-        {/* 1. Choose the day */}
-        <SectionLabel>1. Choose the day</SectionLabel>
-        <Card style={{ marginBottom: 18 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-            <button onClick={goPrevMonth} disabled={isCurrentMonth} style={{ width: 30, height: 30, borderRadius: 10, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: isCurrentMonth ? "default" : "pointer", opacity: isCurrentMonth ? 0.4 : 1 }}>
-              <ChevronLeft size={16} color={C.jet} />
-            </button>
-            <span style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...fDisplay }}>{monthLabel}</span>
-            <button onClick={goNextMonth} style={{ width: 30, height: 30, borderRadius: 10, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-              <ChevronRight size={16} color={C.jet} />
-            </button>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 6 }}>
-            {WEEKDAY_HEADERS.map((d) => (
-              <div key={d} style={{ textAlign: "center", fontSize: T.micro, fontWeight: 700, color: C.slateLight, ...fBody }}>{d}</div>
-            ))}
-          </div>
-
-          {weeks.map((row, ri) => (
-            <div key={ri} style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 4 }}>
-              {row.map((d, di) => {
-                const inRange = d.getMonth() === cursor.getMonth();
-                const state = dayAvailability(d, coach);
-                const isSelected = sameDay(d, selectedDate);
-                const isToday = sameDay(d, today);
-                const disabled = !inRange || state === "unavailable";
-
-                let background = C.white;
-                let border = C.border;
-                let color = C.jet;
-                if ((state === "available" || state === "limited") && inRange) { border = C.orange; }
-                if (disabled) { color = C.slateLight; }
-                if (isSelected) { background = C.orange; border = C.orange; color = C.white; }
-
-                return (
-                  <button
-                    key={di}
-                    onClick={() => pickDate(d, state)}
-                    disabled={disabled}
-                    style={{
-                      aspectRatio: "1", borderRadius: 10, position: "relative",
-                      border: `1.5px solid ${border}`, background,
-                      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2,
-                      opacity: inRange ? 1 : 0.3,
-                      cursor: disabled ? "not-allowed" : "pointer",
-                      outline: isToday && !isSelected ? `1.5px solid ${C.slate}` : "none",
-                      outlineOffset: isToday && !isSelected ? -1.5 : 0,
-                      boxSizing: "border-box",
-                    }}
-                  >
-                    <span style={{ fontSize: T.label, fontWeight: isSelected || isToday ? 700 : 500, color, ...fBody }}>{d.getDate()}</span>
-                  </button>
-                );
-              })}
+        <Card style={{ marginBottom: 18, border: `1px solid ${C.border}` }}>
+          <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: hasDateTime ? 12 : 0 }}>
+            <Avatar name={coach.name} size={40} />
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: T.subtitle, fontWeight: 700, color: C.jet, ...fDisplay }}>{pkg.name}</div>
+              <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>with {coach.name} · {pkg.duration} min</div>
             </div>
-          ))}
-
-          <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap", justifyContent: "center" }}>
-            <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: T.tiny, color: C.slate, ...fBody }}>
-              <span style={{ width: 9, height: 9, borderRadius: 3, border: `1.5px solid ${C.orange}` }} /> Available
-            </span>
-            <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: T.tiny, color: C.slate, ...fBody }}>
-              <span style={{ width: 9, height: 9, borderRadius: 3, background: C.fog, border: `1.5px solid ${C.border}` }} /> Unavailable
-            </span>
-            <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: T.tiny, color: C.slate, ...fBody }}>
-              <span style={{ width: 9, height: 9, borderRadius: 3, background: C.orange }} /> Selected
-            </span>
+            <div style={{ marginLeft: "auto", fontSize: T.subtitleLg, fontWeight: 800, color: C.jet, whiteSpace: "nowrap", ...fDisplay }}>${pkg.price}</div>
           </div>
+          {hasDateTime && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
+              <Calendar size={15} color={C.orange} />
+              <span style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>
+                {formatFullDateFromDate(selectedDate)} · {formatTimeRange12(time, pkg.duration)}
+              </span>
+            </div>
+          )}
         </Card>
 
-        {time && conflictBooking && (
-          <div style={{ marginBottom: 18 }}>
-            <StatusBanner
-              state="scheduleConflict"
-              message={`You already have ${conflictBooking.service} with ${conflictBooking.coachName} at this time.`}
-              onPrimary={() => { setTime(null); }}
-              onSecondary={() => nav("client-booking-detail", { id: conflictBooking.id })}
-            />
-          </div>
-        )}
-        {time && !conflictBooking && (
-          <Card style={{ marginBottom: 18, background: checking ? C.fog : C.orangeTint, border: "none" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              {checking ? <Spinner size={16} color={C.slate} /> : <Calendar size={16} color={C.orange} />}
-              <span style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>
-                {checking
-                  ? `Checking availability for ${formatFullDateFromDate(selectedDate)} at ${formatTime12(time)}…`
-                  : `${formatFullDateFromDate(selectedDate)} at ${formatTime12(time)} — confirmed available`}
-              </span>
+        {!hasDateTime && (
+          <Card style={{ marginBottom: 18, textAlign: "center" }}>
+            <span style={{ fontSize: T.labelLg, color: C.slate, ...fBody }}>No date or time was selected for this package yet.</span>
+            <div style={{ marginTop: 12 }}>
+              <Btn size="sm" onClick={() => nav("coach-profile", { id: coach.id })}>Choose a time</Btn>
             </div>
           </Card>
         )}
 
-        {/* 2. Available Time Slots */}
-        {selectedDate && (
-          <>
-            <SectionLabel>2. Available Time Slots</SectionLabel>
-            <div style={{ fontSize: T.label, color: C.slate, marginBottom: 12, ...fBody }}>{formatFullDateFromDate(selectedDate)}</div>
-            {daySlots.length === 0 ? (
-              <Card style={{ marginBottom: 18, textAlign: "center" }}>
-                <span style={{ fontSize: T.labelLg, color: C.slate, ...fBody }}>No time slots available on this day.</span>
-              </Card>
-            ) : (
-              <div style={{ marginBottom: 18 }}>
-                {["Morning", "Afternoon", "Evening"].filter((p) => grouped[p].length > 0).map((period) => {
-                  const PeriodIcon = periodIcons[period];
-                  return (
-                    <div key={period} style={{ marginBottom: 14 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                        <PeriodIcon size={13} color={C.slateLight} />
-                        <span style={{ fontSize: T.captionLg, fontWeight: 700, color: C.slate, ...fBody }}>{period}</span>
-                      </div>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                        {grouped[period].map((t) => {
-                          const active = time === t;
-                          return (
-                            <button
-                              key={t}
-                              onClick={() => setTime(t)}
-                              style={{
-                                display: "inline-flex", alignItems: "center", gap: 5,
-                                padding: "10px 16px", borderRadius: 999, border: `1.5px solid ${active ? C.jet : C.border}`,
-                                background: active ? C.jet : C.white, color: active ? C.white : C.jet,
-                                fontWeight: active ? 700 : 600, fontSize: T.body, cursor: "pointer",
-                                transition: "background .15s ease", ...fBody,
-                              }}
-                            >
-                              {active && <CheckCircle2 size={12} color={C.white} />}
-                              {formatTime12(t)}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </>
+        {hasDateTime && conflictBooking && (
+          <div style={{ marginBottom: 18 }}>
+            <StatusBanner
+              state="scheduleConflict"
+              message={`You already have ${conflictBooking.service} with ${conflictBooking.coachName} at this time.`}
+              onPrimary={() => nav("coach-profile", { id: coach.id })}
+              primaryLabel="Pick a different time"
+              onSecondary={() => nav("client-booking-detail", { id: conflictBooking.id })}
+            />
+          </div>
         )}
 
-        {/* Repeat Booking (Optional) */}
-        {selectedDate && time && (
+        {hasDateTime && !conflictBooking && (
           <>
-            <SectionLabel>Repeat Booking (Optional)</SectionLabel>
+            {/* Repeat Booking (Optional) */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <SectionLabel>Repeat Booking (Optional)</SectionLabel>
+            </div>
             <Card style={{ marginBottom: 18 }}>
-              <div style={{ fontSize: T.label, color: C.slate, marginBottom: 10, ...fBody }}>How often would you like to repeat this session?</div>
-              {REPEAT_OPTIONS.map((o) => (
-                <RadioRow key={o.value} label={o.label} selected={repeatFreq === o.value} onClick={() => setRepeatFreq(o.value)} />
-              ))}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <RepeatIcon size={15} color={C.jet} />
+                  <span style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>Repeat this session</span>
+                </div>
+                <Toggle on={repeatEnabled} onClick={() => setRepeatEnabled((v) => !v)} />
+              </div>
 
-              {repeatFreq === "weekly" && (
-                <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
-                  <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Repeat every</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "9px 13px", marginBottom: 14 }}>
-                    <RepeatIcon size={14} color={C.slateLight} />
-                    <input
-                      type="number" min={1} value={repeatEvery}
-                      onChange={(e) => setRepeatEvery(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                      style={{ border: "none", outline: "none", width: 40, fontSize: T.body, ...fBody }}
-                    />
-                    <span style={{ fontSize: T.labelLg, color: C.slate, ...fBody }}>week{repeatEvery > 1 ? "s" : ""}</span>
-                  </div>
-
-                  <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>End after</div>
-                  {END_AFTER_OPTIONS.map((o) => (
-                    <RadioRow key={o.value} label={o.label} selected={endAfterType === o.value} onClick={() => setEndAfterType(o.value)} />
+              {repeatEnabled && (
+                <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.border}` }}>
+                  <div style={{ fontSize: T.label, color: C.slate, marginBottom: 10, ...fBody }}>How often would you like to repeat this session?</div>
+                  {REPEAT_FREQ_OPTIONS.map((o) => (
+                    <RadioRow key={o.value} label={o.label} selected={repeatFreq === o.value} onClick={() => setRepeatFreq(o.value)} />
                   ))}
-                  {endAfterType === "date" && (
-                    <input
-                      type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
-                      style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "10px 13px", fontSize: T.body, outline: "none", boxSizing: "border-box", marginTop: 6, ...fBody }}
-                    />
+
+                  {repeatFreq === "weekly" && (
+                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
+                      <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Repeat every</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "9px 13px" }}>
+                        <RepeatIcon size={14} color={C.slateLight} />
+                        <input
+                          type="number" min={1} value={repeatEvery}
+                          onChange={(e) => setRepeatEvery(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                          style={{ border: "none", outline: "none", width: 40, fontSize: T.body, ...fBody }}
+                        />
+                        <span style={{ fontSize: T.labelLg, color: C.slate, ...fBody }}>week{repeatEvery > 1 ? "s" : ""}</span>
+                      </div>
+                    </div>
                   )}
+
+                  <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
+                    <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>End after</div>
+                    {END_AFTER_OPTIONS.map((o) => (
+                      <RadioRow key={o.value} label={o.label} selected={endAfterType === o.value} onClick={() => setEndAfterType(o.value)} />
+                    ))}
+                    {endAfterType === "date" && (
+                      <input
+                        type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
+                        style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "10px 13px", fontSize: T.body, outline: "none", boxSizing: "border-box", marginTop: 6, ...fBody }}
+                      />
+                    )}
+                    {needsEndDate && (
+                      <div style={{ fontSize: T.caption, color: C.slateLight, marginTop: 6, ...fBody }}>Pick an end date to see how many sessions that covers.</div>
+                    )}
+                  </div>
                 </div>
               )}
             </Card>
 
-            {/* 3. Session Summary */}
-            <SectionLabel>3. Session Summary</SectionLabel>
+            {/* Session Summary */}
+            <SectionLabel>Session Summary</SectionLabel>
             <Card style={{ marginBottom: 18, background: C.orangeTint, border: "none" }}>
               <Row label="Package" value={pkg.name} />
               <Row label="Coach" value={coach.name} />
               <Row label="Date" value={formatFullDateFromDate(selectedDate)} />
-              <Row label="Time" value={formatTime12(time)} />
+              <Row label="Time" value={formatTimeRange12(time, pkg.duration)} />
               <Row label="Repeats" value={repeatSummaryText(repeat)} />
-              <Row label="Price" value={`$${pkg.price} / session`} bold last />
+              <Row label="Sessions" value={sessionCount ? `${sessionCount} session${sessionCount > 1 ? "s" : ""}` : "Pick an end date above"} />
+              <Row label="Price per session" value={`$${pkg.price}`} />
+              <Row label="Total" value={totalPrice != null ? `$${totalPrice.toFixed(2)}` : "—"} bold last />
             </Card>
           </>
         )}
-
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 8, background: C.fog, borderRadius: 12, padding: 12, marginBottom: 16 }}>
-          <Info size={14} color={C.slate} style={{ marginTop: 2, flexShrink: 0 }} />
-          <span style={{ fontSize: T.label, color: C.slate, lineHeight: 1.5, ...fBody }}>Only real-time open slots are shown — {coach.name.split(" ")[0]}'s calendar updates automatically once you book.</span>
-        </div>
       </div>
 
       <div style={{ padding: "14px 0" }}>
@@ -486,10 +544,12 @@ export function ScreenBookingDateTime({ nav, params, setDraft, bookings = [] }) 
             setDraft({
               coach, pkg,
               day: formatFullDateFromDate(selectedDate),
-              time: formatTime12(time),
+              time: formatTimeRange12(time, pkg.duration),
               mode: pkg.mode,
               participants: params.participants || ["self"],
               repeat,
+              sessionCount,
+              total: totalPrice,
             });
             nav("booking-review");
           }}
@@ -544,8 +604,10 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast, children = []
       ...selectedChildren.map((c) => c.name || "Unnamed profile"),
     ].join(", ");
 
-  const fee = Math.round(draft.pkg.price * CONFIG.serviceFeeRate * 100) / 100;
-  const total = draft.pkg.price + fee;
+  const sessionCount = draft.sessionCount || 1;
+  const subtotal = draft.pkg.price * sessionCount;
+  const fee = Math.round(subtotal * CONFIG.serviceFeeRate * 100) / 100;
+  const total = subtotal + fee;
   const guardianDetailsComplete = guardianName.trim() && guardianRelationship.trim()
     && (childrenMissingSafetyInfo.length === 0 || (emergencyName.trim() && emergencyPhone.trim()));
   const canContinue = participants.length > 0 && (!includesMinor || (consent && guardianDetailsComplete));
@@ -554,7 +616,7 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast, children = []
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="Review booking" onBack={() => nav("booking-datetime", { coachId: draft.coach.id, packageId: draft.pkg.id, participants })} />
       <div style={{ flex: 1, overflowY: "auto" }}>
-        <Card style={{ marginBottom: 14 }}>
+        <Card style={{ marginBottom: 14}}>
           <Row label="Coach" value={draft.coach.name} />
           <Row label="Service" value={draft.pkg.name} />
           <Row label="When" value={`${draft.day} at ${draft.time}`} />
@@ -666,7 +728,7 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast, children = []
         )}
 
         <Card>
-          <Row label="Session" value={`$${draft.pkg.price.toFixed(2)}`} />
+          <Row label={sessionCount > 1 ? `Session (×${sessionCount})` : "Session"} value={`$${draft.pkg.price.toFixed(2)}${sessionCount > 1 ? ` × ${sessionCount} = $${subtotal.toFixed(2)}` : ""}`} />
           <Row label="Service fee" value={`$${fee.toFixed(2)}`} />
           <Row label="Total" value={`$${total.toFixed(2)}`} bold last />
         </Card>

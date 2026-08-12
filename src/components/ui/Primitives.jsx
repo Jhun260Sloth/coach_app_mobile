@@ -534,9 +534,9 @@ export function SectionLabel({ children }) {
 
 export function Row({ label, value, bold, last }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderBottom: last ? "none" : `1px solid ${C.border}` }}>
+    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "9px 0", borderBottom: last ? "none" : `1px solid ${C.border}` }}>
       <span style={{ fontSize: T.body, color: C.slate, ...fBody }}>{label}</span>
-      <span style={{ fontSize: T.body, color: C.jet, fontWeight: bold ? 700 : 500, ...fBody }}>{value}</span>
+      <span style={{ fontSize: T.body, color: C.jet, fontWeight: bold ? 700 : 500, textAlign: "right", ...fBody }}>{value}</span>
     </div>
   );
 }

@@ -17,26 +17,40 @@ function RadiusFilterBase({ radiusKm, onChange, resultCount }) {
   const isPreset = radiusKm != null && RADIUS_PRESETS_KM.includes(radiusKm);
   const isCustom = radiusKm != null && !isPreset;
   const [showCustom, setShowCustom] = useState(false);
-  const [customVal, setCustomVal] = useState(radiusKm && !isPreset ? radiusKm : 20);
+  const [customVal, setCustomVal] = useState(String(radiusKm && !isPreset ? radiusKm : 20));
+
+  const clamp = n => Math.min(CUSTOM_RADIUS_MAX_KM, Math.max(CUSTOM_RADIUS_MIN_KM, n));
+  const apply = () => {
+    const n = Number(customVal);
+    if (!Number.isFinite(n)) return;
+    const clamped = clamp(Math.round(n));
+    setCustomVal(String(clamped));
+    onChange(clamped);
+    setShowCustom(false);
+  };
 
   return (
     <div style={{ position: "absolute", top: 78, right: 16, left: showCustom ? 16 : "auto", zIndex: 401 }}>
       {showCustom ? (
         <div style={{ background: C.white, borderRadius: 14, padding: "12px 14px", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
             <span style={{ fontSize: T.label, fontWeight: 700, color: C.jet, ...fBody }}>Custom radius</span>
-            <span style={{ fontSize: T.label, fontWeight: 700, color: C.orange, ...fBody }}>{customVal} km</span>
+            <span style={{ fontSize: T.caption, color: C.slate, ...fBody }}>{CUSTOM_RADIUS_MIN_KM}–{CUSTOM_RADIUS_MAX_KM} km</span>
           </div>
-          <input
-            type="range" min={CUSTOM_RADIUS_MIN_KM} max={CUSTOM_RADIUS_MAX_KM} value={customVal}
-            onChange={e => setCustomVal(Number(e.target.value))}
-            onMouseUp={() => onChange(customVal)}
-            onTouchEnd={() => onChange(customVal)}
-            style={{ width: "100%", accentColor: C.orange }}
-          />
+          <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1px solid ${C.border}`, borderRadius: 10, padding: "4px 4px 4px 12px" }}>
+            <input
+              type="number" inputMode="numeric" min={CUSTOM_RADIUS_MIN_KM} max={CUSTOM_RADIUS_MAX_KM} step={1}
+              value={customVal}
+              onChange={e => setCustomVal(e.target.value)}
+              onBlur={() => setCustomVal(v => (v === "" ? v : String(clamp(Math.round(Number(v)) || CUSTOM_RADIUS_MIN_KM))))}
+              onKeyDown={e => { if (e.key === "Enter") apply(); }}
+              style={{ flex: 1, minWidth: 0, border: "none", outline: "none", fontSize: T.headingLg, fontWeight: 700, color: C.jet, background: "transparent", ...fBody }}
+            />
+            <span style={{ fontSize: T.labelLg, fontWeight: 600, color: C.slate, flexShrink: 0, ...fBody }}>km</span>
+          </div>
           <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
             <button onClick={() => setShowCustom(false)} style={{ flex: 1, padding: "8px 0", borderRadius: 10, border: `1px solid ${C.border}`, background: C.white, color: C.jet, fontSize: T.labelLg, fontWeight: 600, cursor: "pointer", ...fBody }}>Close</button>
-            <button onClick={() => { onChange(customVal); setShowCustom(false); }} style={{ flex: 1, padding: "8px 0", borderRadius: 10, border: "none", background: C.orange, color: C.white, fontSize: T.labelLg, fontWeight: 700, cursor: "pointer", ...fBody }}>Apply</button>
+            <button onClick={apply} style={{ flex: 1, padding: "8px 0", borderRadius: 10, border: "none", background: C.orange, color: C.white, fontSize: T.labelLg, fontWeight: 700, cursor: "pointer", ...fBody }}>Apply</button>
           </div>
         </div>
       ) : (

@@ -1,13 +1,36 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
-  ChevronLeft, Heart, Share2, Star, ShieldCheck, BadgeCheck, Play, MessageCircle, CheckCircle2, Trophy,
-  Clock, TrendingUp, Repeat, MapPin, Navigation, Award, Users, XCircle,
+  ChevronLeft, ChevronRight, Heart, Share2, Star, ShieldCheck, BadgeCheck, Play, MessageCircle, CheckCircle2, Trophy,
+  Clock, TrendingUp, Repeat, MapPin, Navigation, Award, Users, XCircle, Sunrise, Sun, Moon,
 } from "lucide-react";
 import { C, fDisplay, fBody, T } from "../../theme/theme";
 import { COACHES, REVIEWS, SPORT_ICON } from "../../data/mockData";
 import { Avatar, Badge, SegTabs, SectionLabel, Card, Btn, StarRow } from "../../components/ui/Primitives";
 import { StatusBanner } from "../../systems/StateSystem";
 import { useReviewActions } from "../../systems/ReviewsSystem";
+import {
+  buildMonthGrid, sameDay, dayAvailability, slotsForDate, groupSlotsByPeriod, formatTimeRange12, formatFullDateFromDate,
+} from "./Booking";
+
+const WEEKDAY_HEADERS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const PERIOD_ICONS = { Morning: Sunrise, Afternoon: Sun, Evening: Moon };
+
+// Packages don't carry their own schedule in the mock data model — only the
+// coach does. To let the calendar genuinely narrow when a package is picked,
+// derive a deterministic (stable, package-specific) subset of the coach's
+// weekly availability from the package id, instead of just reusing the same
+// coach-wide schedule for every package.
+function derivePackageAvailability(coach, pkg) {
+  const base = coach.availability || {};
+  if (!pkg) return base;
+  const seed = pkg.id.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+  const out = {};
+  Object.entries(base).forEach(([day, slots], di) => {
+    const kept = slots.filter((_, i) => (seed + di * 3 + i) % 2 === 0);
+    if (kept.length) out[day] = kept;
+  });
+  return out;
+}
 
 const LIVE_AVAILABILITY_COACH_ID = "c2";
 
@@ -31,32 +54,96 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav, coachAva
   const { getReply } = useReviewActions();
   const [tab, setTab] = useState("about");
   const [selectedPkgId, setSelectedPkgId] = useState(null);
+  const [pkgCursor, setPkgCursor] = useState(() => { const d = new Date(); d.setDate(1); return d; });
+  const [pkgSelectedDate, setPkgSelectedDate] = useState(null);
+  const [pkgSelectedTime, setPkgSelectedTime] = useState(null);
+  const [reviewPage, setReviewPage] = useState(1);
+  const REVIEWS_PER_PAGE = 5;
+  const reviewPageCount = Math.max(1, Math.ceil(REVIEWS.length / REVIEWS_PER_PAGE));
+  const pagedReviews = REVIEWS.slice((reviewPage - 1) * REVIEWS_PER_PAGE, reviewPage * REVIEWS_PER_PAGE);
+  useEffect(() => { setReviewPage(1); }, [tab, coach.id]);
   const selectedPkg = coach.packages.find((p) => p.id === selectedPkgId) || null;
   const fav = favorites.includes(coach.id);
   const unavailable = coach.id === LIVE_AVAILABILITY_COACH_ID && coachAvailableNow === false;
+
+  // Calendar + slots reflect the selected package's derived availability, or
+  // the coach's overall (all-packages) availability when none is picked yet
+  // — package-led (pick a package, see when it's on) and date-led (pick a
+  // date, then see which packages are running) both work off this same state.
+  const pkgAvailability = useMemo(() => derivePackageAvailability(coach, selectedPkg), [coach, selectedPkg]);
+  const pkgWeeks = useMemo(() => buildMonthGrid(pkgCursor), [pkgCursor]);
+  const pkgMonthLabel = pkgCursor.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  const pkgToday = new Date();
+  const pkgIsCurrentMonth = pkgCursor.getFullYear() === pkgToday.getFullYear() && pkgCursor.getMonth() === pkgToday.getMonth();
+  const pkgGoPrevMonth = () => { if (!pkgIsCurrentMonth) setPkgCursor((c) => new Date(c.getFullYear(), c.getMonth() - 1, 1)); };
+  const pkgGoNextMonth = () => setPkgCursor((c) => new Date(c.getFullYear(), c.getMonth() + 1, 1));
+  const pkgPickDate = (d, state) => { if (state === "unavailable") return; setPkgSelectedDate(d); setPkgSelectedTime(null); };
+  const pkgDaySlots = pkgSelectedDate ? slotsForDate(pkgSelectedDate, coach, pkgAvailability) : [];
+  const pkgGrouped = groupSlotsByPeriod(pkgDaySlots);
+  // Duration used to render each slot as a start–end range. A specific
+  // package's duration once one's picked; otherwise fall back to the first
+  // package on offer so the range still reflects a real session length.
+  const pkgSlotDuration = (selectedPkg && selectedPkg.duration) || (coach.packages[0] && coach.packages[0].duration);
+
+  // Once a specific available time is picked, narrow the package list below
+  // to just the package(s) that actually run at that date + time, instead of
+  // still showing every package the coach offers.
+  const packagesToShow = useMemo(() => {
+    if (!pkgSelectedDate || !pkgSelectedTime) return coach.packages;
+    return coach.packages.filter((p) => (
+      p.active !== false && slotsForDate(pkgSelectedDate, coach, derivePackageAvailability(coach, p)).includes(pkgSelectedTime)
+    ));
+  }, [coach, pkgSelectedDate, pkgSelectedTime]);
+
+  // If a time slot narrows things down to exactly one package, select it
+  // automatically so the date-led flow lands on a bookable package without
+  // an extra tap.
+  useEffect(() => {
+    if (pkgSelectedDate && pkgSelectedTime && packagesToShow.length === 1 && selectedPkgId !== packagesToShow[0].id) {
+      setSelectedPkgId(packagesToShow[0].id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [packagesToShow]);
+
+  // If picking a package makes the currently-selected date/time invalid for
+  // it, clear them rather than silently showing a stale selection.
+  useEffect(() => {
+    if (!pkgSelectedDate) return;
+    if (dayAvailability(pkgSelectedDate, coach, pkgAvailability) === "unavailable") {
+      setPkgSelectedDate(null); setPkgSelectedTime(null);
+    } else if (pkgSelectedTime && !pkgDaySlots.includes(pkgSelectedTime)) {
+      setPkgSelectedTime(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPkgId]);
+
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <CoverBanner sport={coach.sport} height={150} />
-      <div style={{ height: 150, position: "relative", flexShrink: 0, marginTop: -150, pointerEvents: "none" }}>
-        <div style={{ position: "absolute", top: 16, left: 16, pointerEvents: "auto" }}>
-          <button onClick={() => nav("client-home")} style={{ width: 34, height: 34, borderRadius: 11, background: "rgba(255,255,255,.18)", backdropFilter: "blur(4px)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-            <ChevronLeft size={18} color={C.white} />
-          </button>
+      {/* Banner + avatar now scroll away with the rest of the profile instead
+          of staying pinned at the top — they live inside the same scroll
+          container as everything below them. */}
+      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 100 }}>
+        <CoverBanner sport={coach.sport} height={150} />
+        <div style={{ height: 150, position: "relative", marginTop: -150, pointerEvents: "none" }}>
+          <div style={{ position: "absolute", top: 16, left: 16, pointerEvents: "auto" }}>
+            <button onClick={() => nav("client-home")} style={{ width: 34, height: 34, borderRadius: 11, background: "rgba(255,255,255,.18)", backdropFilter: "blur(4px)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+              <ChevronLeft size={18} color={C.white} />
+            </button>
+          </div>
+          <div style={{ position: "absolute", top: 16, right: 16, display: "flex", gap: 8, pointerEvents: "auto" }}>
+            <button onClick={() => toggleFav(coach.id)} style={{ width: 34, height: 34, borderRadius: 11, background: "rgba(255,255,255,.18)", backdropFilter: "blur(4px)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+              <Heart size={16} color={C.white} fill={fav ? C.orange : "none"} />
+            </button>
+            <button style={{ width: 34, height: 34, borderRadius: 11, background: "rgba(255,255,255,.18)", backdropFilter: "blur(4px)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+              <Share2 size={15} color={C.white} />
+            </button>
+          </div>
+          <div style={{ position: "absolute", bottom: -34, left: 20, zIndex: 5, pointerEvents: "auto" }}>
+            <Avatar name={coach.name} size={68} ring />
+          </div>
         </div>
-        <div style={{ position: "absolute", top: 16, right: 16, display: "flex", gap: 8, pointerEvents: "auto" }}>
-          <button onClick={() => toggleFav(coach.id)} style={{ width: 34, height: 34, borderRadius: 11, background: "rgba(255,255,255,.18)", backdropFilter: "blur(4px)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-            <Heart size={16} color={C.white} fill={fav ? C.orange : "none"} />
-          </button>
-          <button style={{ width: 34, height: 34, borderRadius: 11, background: "rgba(255,255,255,.18)", backdropFilter: "blur(4px)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-            <Share2 size={15} color={C.white} />
-          </button>
-        </div>
-        <div style={{ position: "absolute", bottom: -34, left: 20, zIndex: 5, pointerEvents: "auto" }}>
-          <Avatar name={coach.name} size={68} ring />
-        </div>
-      </div>
 
-      <div style={{ padding: "0 20px", flex: 1, overflowY: "auto", paddingBottom: 100 }}>
+        <div style={{ padding: "0 20px" }}>
         <div style={{ height: 40 }} />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginTop: 10 }}>
           <div>
@@ -89,16 +176,21 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav, coachAva
           </div>
         )}
 
-        <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+        {/* Compact stats strip — label sits below the value in each tile (not
+            beside it) so nothing truncates, while three equal-width tiles
+            keep the whole strip short and secondary to the tabs below. */}
+        <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
           {[
-            { icon: Clock, label: "Response time", value: coach.responseTime.replace("Usually replies within ", "") },
-            { icon: TrendingUp, label: "Acceptance rate", value: `${coach.acceptanceRate}%` },
+            { icon: Clock, label: "Response", value: coach.responseTime.replace("Usually replies within ", "") },
+            { icon: TrendingUp, label: "Acceptance", value: `${coach.acceptanceRate}%` },
             { icon: Repeat, label: "Repeat clients", value: `${coach.repeatClientRate}%` },
           ].map((s, i) => (
-            <div key={i} style={{ flex: 1, background: C.fog, borderRadius: 14, padding: "10px 10px" }}>
-              <s.icon size={14} color={C.orange} />
-              <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, marginTop: 6, ...fDisplay }}>{s.value}</div>
-              <div style={{ fontSize: T.tiny, color: C.slate, marginTop: 1, lineHeight: 1.3, ...fBody }}>{s.label}</div>
+            <div key={i} style={{ flex: 1, minWidth: 0, background: C.fog, borderRadius: 10, padding: "8px 4px", textAlign: "center" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                <s.icon size={11} color={C.orange} style={{ flexShrink: 0 }} />
+                <span style={{ fontSize: T.caption, fontWeight: 700, color: C.jet, ...fBody }}>{s.value}</span>
+              </div>
+              <div style={{ fontSize: T.tiny, color: C.slate, marginTop: 3, lineHeight: 1.25, ...fBody }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -168,19 +260,151 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav, coachAva
 
         {tab === "packages" && (
           <div style={{ marginTop: 16 }}>
-            {coach.packages.map((p) => {
+            <div style={{ fontSize: T.labelLg, color: C.slate, lineHeight: 1.5, marginBottom: 14, ...fBody }}>
+              {selectedPkg
+                ? `Showing availability for ${selectedPkg.name}. Clear it below to see everything this coach offers.`
+                : "Browse the calendar to see this coach's overall availability, or pick a package below to narrow it down."}
+            </div>
+
+            {/* Calendar — overall availability by default, narrows to the
+                selected package's availability once one is chosen. */}
+            <Card style={{ marginBottom: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <button onClick={pkgGoPrevMonth} disabled={pkgIsCurrentMonth} style={{ width: 28, height: 28, borderRadius: 9, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: pkgIsCurrentMonth ? "default" : "pointer", opacity: pkgIsCurrentMonth ? 0.4 : 1 }}>
+                  <ChevronLeft size={15} color={C.jet} />
+                </button>
+                <span style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...fDisplay }}>{pkgMonthLabel}</span>
+                <button onClick={pkgGoNextMonth} style={{ width: 28, height: 28, borderRadius: 9, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                  <ChevronRight size={15} color={C.jet} />
+                </button>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 6 }}>
+                {WEEKDAY_HEADERS.map((d) => (
+                  <div key={d} style={{ textAlign: "center", fontSize: T.micro, fontWeight: 700, color: C.slateLight, ...fBody }}>{d}</div>
+                ))}
+              </div>
+
+              {pkgWeeks.map((row, ri) => (
+                <div key={ri} style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 4 }}>
+                  {row.map((d, di) => {
+                    const inRange = d.getMonth() === pkgCursor.getMonth();
+                    const state = dayAvailability(d, coach, pkgAvailability);
+                    const isSelected = sameDay(d, pkgSelectedDate);
+                    const isToday = sameDay(d, pkgToday);
+                    const disabled = !inRange || state === "unavailable";
+
+                    let background = C.white;
+                    let border = C.border;
+                    let color = C.jet;
+                    if ((state === "available" || state === "limited") && inRange) { border = C.orange; }
+                    if (disabled) { color = C.slateLight; }
+                    // Today gets its own green border so it stands out from the
+                    // regular available/unavailable states on the calendar.
+                    if (isToday && inRange && !isSelected) { border = C.success; }
+                    if (isSelected) { background = C.orange; border = C.orange; color = C.white; }
+
+                    return (
+                      <button
+                        key={di}
+                        onClick={() => pkgPickDate(d, state)}
+                        disabled={disabled}
+                        style={{
+                          aspectRatio: "1", borderRadius: 10, position: "relative",
+                          border: `1.5px solid ${border}`, background,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          opacity: inRange ? 1 : 0.3,
+                          cursor: disabled ? "not-allowed" : "pointer",
+                          boxSizing: "border-box",
+                        }}
+                      >
+                        <span style={{ fontSize: T.label, fontWeight: isSelected || isToday ? 700 : 500, color, ...fBody }}>{d.getDate()}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+
+              <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap", justifyContent: "center" }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: T.tiny, color: C.slate, ...fBody }}>
+                  <span style={{ width: 9, height: 9, borderRadius: 3, border: `1.5px solid ${C.orange}` }} /> Available
+                </span>
+                <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: T.tiny, color: C.slate, ...fBody }}>
+                  <span style={{ width: 9, height: 9, borderRadius: 3, background: C.fog, border: `1.5px solid ${C.border}` }} /> Unavailable
+                </span>
+                <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: T.tiny, color: C.slate, ...fBody }}>
+                  <span style={{ width: 9, height: 9, borderRadius: 3, background: C.orange }} /> Selected
+                </span>
+              </div>
+            </Card>
+
+            {pkgSelectedDate && (
+              <div style={{ marginBottom: 16 }}>
+                <SectionLabel>Available times</SectionLabel>
+                <div style={{ fontSize: T.label, color: C.slate, marginBottom: 12, ...fBody }}>
+                  {formatFullDateFromDate(pkgSelectedDate)} · {selectedPkg ? selectedPkg.name : "All packages"}
+                </div>
+                {pkgDaySlots.length === 0 ? (
+                  <Card style={{ textAlign: "center" }}>
+                    <span style={{ fontSize: T.labelLg, color: C.slate, ...fBody }}>No time slots available on this day.</span>
+                  </Card>
+                ) : (
+                  ["Morning", "Afternoon", "Evening"].filter((p) => pkgGrouped[p].length > 0).map((period) => {
+                    const PeriodIcon = PERIOD_ICONS[period];
+                    return (
+                      <div key={period} style={{ marginBottom: 14 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                          <PeriodIcon size={13} color={C.slateLight} />
+                          <span style={{ fontSize: T.captionLg, fontWeight: 700, color: C.slate, ...fBody }}>{period}</span>
+                        </div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                          {pkgGrouped[period].map((t) => {
+                            const active = pkgSelectedTime === t;
+                            return (
+                              <button
+                                key={t}
+                                onClick={() => setPkgSelectedTime(t)}
+                                style={{
+                                  padding: "9px 14px", borderRadius: 999, border: `1.5px solid ${active ? C.jet : C.border}`,
+                                  background: active ? C.jet : C.white, color: active ? C.white : C.jet,
+                                  fontSize: T.labelLg, fontWeight: 600, cursor: "pointer", ...fBody,
+                                }}
+                              >
+                                {formatTimeRange12(t, pkgSlotDuration)}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
+
+            <SectionLabel>
+              {pkgSelectedDate && pkgSelectedTime
+                ? `Packages available at ${formatTimeRange12(pkgSelectedTime, pkgSlotDuration)}`
+                : "Packages"}
+            </SectionLabel>
+            {packagesToShow.length === 0 && pkgSelectedDate && pkgSelectedTime && (
+              <Card style={{ marginBottom: 10, textAlign: "center" }}>
+                <span style={{ fontSize: T.labelLg, color: C.slate, ...fBody }}>No package runs at this exact time — try another slot.</span>
+              </Card>
+            )}
+            {packagesToShow.map((p) => {
               const selected = selectedPkgId === p.id;
-              const unavailable = p.active === false;
+              const pkgUnavailable = p.active === false;
               return (
                 <Card
                   key={p.id}
-                  onClick={unavailable ? undefined : () => setSelectedPkgId(p.id)}
+                  onClick={pkgUnavailable ? undefined : () => setSelectedPkgId((id) => (id === p.id ? null : p.id))}
                   style={{
                     marginBottom: 10,
                     border: `1.5px solid ${selected ? C.orange : C.border}`,
-                    background: selected ? C.orangeTint : unavailable ? C.fog : C.white,
-                    opacity: unavailable ? 0.6 : 1,
-                    cursor: unavailable ? "default" : "pointer",
+                    background: selected ? C.orangeTint : pkgUnavailable ? C.fog : C.white,
+                    opacity: pkgUnavailable ? 0.6 : 1,
+                    cursor: pkgUnavailable ? "default" : "pointer",
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -197,7 +421,7 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav, coachAva
                     <div style={{ fontSize: T.title, fontWeight: 700, color: C.jet, ...fDisplay }}>${p.price}</div>
                   </div>
                   <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8 }}>
-                    {unavailable ? (
+                    {pkgUnavailable ? (
                       <>
                         <XCircle size={14} color={C.slateLight} />
                         <span style={{ fontSize: T.labelLg, fontWeight: 600, color: C.slateLight, ...fBody }}>Currently unavailable</span>
@@ -207,7 +431,7 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav, coachAva
                         <div style={{ width: 18, height: 18, borderRadius: 18, border: `1.5px solid ${selected ? C.orange : C.border}`, background: selected ? C.orange : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                           {selected && <CheckCircle2 size={11} color={C.white} />}
                         </div>
-                        <span style={{ fontSize: T.labelLg, fontWeight: 600, color: selected ? C.orange : C.slate, ...fBody }}>{selected ? "Selected" : "Select this service"}</span>
+                        <span style={{ fontSize: T.labelLg, fontWeight: 600, color: selected ? C.orange : C.slate, ...fBody }}>{selected ? "Selected — tap to clear" : "Select this package"}</span>
                       </>
                     )}
                   </div>
@@ -219,7 +443,7 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav, coachAva
 
         {tab === "reviews" && (
           <div style={{ marginTop: 16 }}>
-            {REVIEWS.map((r) => {
+            {pagedReviews.map((r) => {
               const reply = getReply(r.id);
               return (
                 <Card key={r.id} style={{ marginBottom: 10 }}>
@@ -244,8 +468,31 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav, coachAva
                 </Card>
               );
             })}
+
+            {reviewPageCount > 1 && (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, marginTop: 8 }}>
+                <button
+                  onClick={() => setReviewPage((p) => Math.max(1, p - 1))}
+                  disabled={reviewPage === 1}
+                  style={{ width: 32, height: 32, borderRadius: 10, border: `1px solid ${C.border}`, background: C.white, display: "flex", alignItems: "center", justifyContent: "center", cursor: reviewPage === 1 ? "default" : "pointer", opacity: reviewPage === 1 ? 0.4 : 1 }}
+                >
+                  <ChevronLeft size={15} color={C.jet} />
+                </button>
+                <span style={{ fontSize: T.labelLg, fontWeight: 600, color: C.slate, ...fBody }}>
+                  Page {reviewPage} of {reviewPageCount}
+                </span>
+                <button
+                  onClick={() => setReviewPage((p) => Math.min(reviewPageCount, p + 1))}
+                  disabled={reviewPage === reviewPageCount}
+                  style={{ width: 32, height: 32, borderRadius: 10, border: `1px solid ${C.border}`, background: C.white, display: "flex", alignItems: "center", justifyContent: "center", cursor: reviewPage === reviewPageCount ? "default" : "pointer", opacity: reviewPage === reviewPageCount ? 0.4 : 1 }}
+                >
+                  <ChevronRight size={15} color={C.jet} />
+                </button>
+              </div>
+            )}
           </div>
         )}
+        </div>
       </div>
 
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: C.white, borderTop: `1px solid ${C.border}`, padding: "12px 20px 20px", display: "flex", alignItems: "center", gap: 12 }}>
@@ -257,11 +504,23 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav, coachAva
           <>
             <div>
               <div style={{ fontSize: T.titleLg, fontWeight: 700, color: C.jet, ...fDisplay }}>${selectedPkg.price}</div>
-              <div style={{ fontSize: T.caption, color: C.slate, maxWidth: 120, ...fBody }}>{selectedPkg.name}</div>
+              <div style={{ fontSize: T.caption, color: C.slate, maxWidth: 120, ...fBody }}>
+                {pkgSelectedDate && pkgSelectedTime
+                  ? `${selectedPkg.name} · ${formatTimeRange12(pkgSelectedTime, selectedPkg.duration)}`
+                  : selectedPkg.name}
+              </div>
             </div>
             <div style={{ flex: 1 }}>
-              <Btn full onClick={() => nav("package-detail", { coachId: coach.id, packageId: selectedPkg.id })}>
-                View package
+              <Btn
+                full
+                onClick={() => nav("package-detail", {
+                  coachId: coach.id,
+                  packageId: selectedPkg.id,
+                  presetDate: pkgSelectedDate && pkgSelectedTime ? pkgSelectedDate.toISOString() : undefined,
+                  presetTime: pkgSelectedDate && pkgSelectedTime ? pkgSelectedTime : undefined,
+                })}
+              >
+                {pkgSelectedDate && pkgSelectedTime ? "Continue" : "View package"}
               </Btn>
             </div>
           </>

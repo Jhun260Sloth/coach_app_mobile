@@ -164,19 +164,6 @@ export function PostSignupGuideModal({ open, onClose, onFindCoaches }) {
           <X size={14} color={C.slate} />
         </button>
 
-        {/* Progress indicator — one dot per step, filled = current, plus "x of n" */}
-        <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 10, flexShrink: 0 }}>
-          {Array.from({ length: total }, (_, i) => (
-            <span key={i} style={{
-              width: 8, height: 8, borderRadius: 99, flexShrink: 0,
-              background: i === step ? C.orange : C.border, transition: "background .15s ease",
-            }} />
-          ))}
-        </div>
-        <div style={{ textAlign: "center", fontSize: T.body, fontWeight: 600, color: C.slateLight, marginBottom: 26, flexShrink: 0, ...fBody }}>
-          {step + 1} of {total}
-        </div>
-
         <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", minHeight: 0 }}>
           <div style={{ width: 84, height: 84, borderRadius: 26, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px", flexShrink: 0 }}>
             <Icon size={36} color={C.orange} />
@@ -193,6 +180,19 @@ export function PostSignupGuideModal({ open, onClose, onFindCoaches }) {
               {current.secondaryCta}
             </button>
           )}
+        </div>
+
+        {/* Progress indicator — one dot per step, filled = current, plus "x of n" */}
+        <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 18, flexShrink: 0 }}>
+          {Array.from({ length: total }, (_, i) => (
+            <span key={i} style={{
+              width: 8, height: 8, borderRadius: 99, flexShrink: 0,
+              background: i === step ? C.orange : C.border, transition: "background .15s ease",
+            }} />
+          ))}
+        </div>
+        <div style={{ textAlign: "center", fontSize: T.body, fontWeight: 600, color: C.slateLight, marginTop: 8, flexShrink: 0, ...fBody }}>
+          {step + 1} of {total}
         </div>
       </div>
     </div>

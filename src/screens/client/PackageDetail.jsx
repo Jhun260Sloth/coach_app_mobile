@@ -6,6 +6,7 @@ import { C, fDisplay, fBody, T } from "../../theme/theme";
 import { COACHES } from "../../data/mockData";
 import { Avatar, Card, SectionLabel, Btn, TopBar } from "../../components/ui/Primitives";
 import { packageLocationLabel } from "../../components/ui/ServicePackageForm";
+import { formatTimeRange12, formatFullDateFromDate } from "./Booking";
 
 /**
  * Full package detail page — mirrors the fields a coach fills in on the
@@ -25,9 +26,18 @@ export function ScreenPackageDetail({ nav, params }) {
     ? packageLocationLabel({ deliveryMode: pkg.locationType, venue: pkg.location, travelArea: pkg.location })
     : (pkg.venue || coach.venue || pkg.mode || "Venue to be confirmed");
 
+  // If a date/time was picked before landing here (Packages tab, or the
+  // date-led calendar flow), show the exact session time as a start–end
+  // range rather than just the duration in the abstract.
+  const presetDateObj = params.presetDate ? new Date(params.presetDate) : null;
+  const timeLabel = params.presetTime
+    ? `${formatTimeRange12(params.presetTime, pkg.duration)}${presetDateObj ? ` · ${formatFullDateFromDate(presetDateObj)}` : ""}`
+    : null;
+
   const rows = [
     { icon: Tag, label: "Package type", value: typeLabel },
     { icon: Clock, label: "Duration", value: durationLabel },
+    ...(timeLabel ? [{ icon: Clock, label: "Time", value: timeLabel }] : []),
     { icon: DollarSign, label: "Price", value: `$${pkg.price} per session` },
     { icon: Users, label: "Max participants", value: pkg.maxParticipants ? `Up to ${pkg.maxParticipants}` : "1" },
     { icon: MapPin, label: "Mode & location", value: `${pkg.mode || pkg.locationType || "In-person"} · ${locationLabel}` },
@@ -91,7 +101,7 @@ export function ScreenPackageDetail({ nav, params }) {
         <Btn
           full
           disabled={unavailable}
-          onClick={() => nav("booking-participants", { coachId: coach.id, packageId: pkg.id })}
+          onClick={() => nav("booking-participants", { coachId: coach.id, packageId: pkg.id, presetDate: params.presetDate, presetTime: params.presetTime })}
         >
           Continue
         </Btn>
