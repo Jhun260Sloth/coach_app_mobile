@@ -52,7 +52,7 @@ export function ScreenNotifications({ nav, clientNotifications: notifications = 
                 style={{ width: "100%", display: "flex", gap: 12, alignItems: "flex-start", padding: "14px 4px", background: "none", border: "none", borderBottom: `1px solid ${C.border}`, cursor: "pointer", textAlign: "left" }}
               >
                 <div style={{ width: 40, height: 40, borderRadius: 12, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <Icon size={18} color={C.brand} />
+                  <Icon size={18} color={C.brandIcon || C.brandColor} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>

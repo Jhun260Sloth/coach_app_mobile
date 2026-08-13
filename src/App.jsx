@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Home, Calendar, MessageCircle, User, ClipboardList, ShieldCheck, AlertCircle, Flag, Settings,
   WifiOff, RefreshCcw, Sparkles, ChevronRight, ChevronDown, ChevronUp, Layers, ArrowLeft, Search, Compass, ExternalLink, Activity,
@@ -109,6 +109,32 @@ function AppShell() {
   const activeTabScreen = screen;
   const showTabs = tabsForRole.some((t) => t.value === activeTabScreen);
 
+  // Native (non-passive) wheel listener on the phone screen area: translates
+  // vertical mouse-wheel deltas into horizontal scrolling for the swipeable
+  // chip/filter rows, so mouse users can scroll them just like vertical lists.
+  const screenWrapRef = useRef(null);
+  useEffect(() => {
+    const el = screenWrapRef.current;
+    if (!el) return;
+    const onWheel = (e) => {
+      if (!e.deltaY) return;
+      let node = e.target;
+      while (node && node !== el) {
+        const style = window.getComputedStyle(node);
+        const scrollsX = style.overflowX === "auto" || style.overflowX === "scroll";
+        if (scrollsX && node.scrollWidth > node.clientWidth + 1) {
+          const before = node.scrollLeft;
+          node.scrollLeft += e.deltaY;
+          if (node.scrollLeft !== before) e.preventDefault();
+          return;
+        }
+        node = node.parentElement;
+      }
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, []);
+
   // Resolve current screen component
   const ScreenComponent = ROUTES[screen] || ROUTES["splash"];
   const currentMeta = ROUTE_METADATA[screen] || { title: screen, category: "App Screen", role };
@@ -157,6 +183,17 @@ function AppShell() {
     bgActive: studioTheme === "dark" ? "#161B22" : "#F9FAFB",
   };
 
+  // Auto-scroll active screen item in directory into view
+  const activeItemRef = useRef(null);
+  useEffect(() => {
+    if (activeItemRef.current) {
+      activeItemRef.current.scrollIntoView({
+        block: "nearest",
+        behavior: "smooth",
+      });
+    }
+  }, [screen, dirFilter, searchQuery]);
+
   return (
     <div style={{ width: "100vw", height: "100vh", overflow: "hidden", display: "flex", background: studioBg, fontFamily: vSystem.fontFamily }}>
       <style>{KEYFRAMES}</style>
@@ -172,25 +209,25 @@ function AppShell() {
         {/* Header */}
         <div style={{ padding: "16px 18px 14px", borderBottom: `1px solid ${vSystem.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <LogoMark size={22} />
+            <LogoMark size={22} system />
             <div>
               <div style={{ fontSize: 14, fontWeight: 700, color: vSystem.textPrimary, letterSpacing: "-0.3px", fontFamily: vSystem.fontFamily }}>
                 CoachLink Studio
               </div>
               <div style={{ fontSize: 11, color: vSystem.textSecondary, fontWeight: 500, marginTop: -1 }}>
-                EITB App Prototype
+                App Navigation
               </div>
             </div>
           </div>
         </div>
 
         {/* Scrollable Control Body */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "14px 18px" }} className="cl-hide-scrollbar">
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "14px 18px", overflow: "hidden", minHeight: 0 }} className="cl-hide-scrollbar">
           
           {/* SECTION 1: ROLE SWITCHER (Vercel Segmented Control) */}
-          <div style={{ marginBottom: 18 }}>
+          <div style={{ marginBottom: 14, flexShrink: 0 }}>
             <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.06em", color: vSystem.textMuted, fontWeight: 700, marginBottom: 7 }}>
-              Role Persona
+              Roles
             </div>
             <div style={{ display: "flex", background: vSystem.bgHover, borderRadius: 8, padding: 2, border: `1px solid ${vSystem.border}` }}>
               {["client", "coach"].map((r) => {
@@ -266,7 +303,7 @@ function AppShell() {
           </div>
 
           {/* SECTION 2: ACTIVE FLOW & INSPECTOR */}
-          <div style={{ background: vSystem.bgActive, borderRadius: 10, padding: 12, marginBottom: 18, border: `1px solid ${vSystem.border}` }}>
+          <div style={{ background: vSystem.bgActive, borderRadius: 10, padding: 12, marginBottom: 14, border: `1px solid ${vSystem.border}`, flexShrink: 0 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, fontWeight: 700, color: vSystem.textSecondary, textTransform: "uppercase", letterSpacing: "0.05em" }}>
                 <Activity size={11} color={vSystem.textPrimary} /> Active Screen Flow
@@ -317,9 +354,9 @@ function AppShell() {
             )}
           </div>
 
-          {/* SECTION 3: SCREEN DIRECTORY */}
-          <div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+          {/* SECTION 3: SCREEN DIRECTORY (Full Height Flex Container) */}
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, flexShrink: 0 }}>
               <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.06em", color: vSystem.textMuted, fontWeight: 700 }}>
                 Screen Directory ({filteredRoutes.length})
               </div>
@@ -327,7 +364,7 @@ function AppShell() {
             </div>
 
             {/* Search Input */}
-            <div style={{ display: "flex", alignItems: "center", gap: 6, background: vSystem.bgActive, border: `1px solid ${vSystem.border}`, borderRadius: 8, padding: "5px 9px", marginBottom: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, background: vSystem.bgActive, border: `1px solid ${vSystem.border}`, borderRadius: 8, padding: "5px 9px", marginBottom: 8, flexShrink: 0 }}>
               <Search size={13} color={vSystem.textMuted} />
               <input
                 value={searchQuery}
@@ -338,7 +375,7 @@ function AppShell() {
             </div>
 
             {/* Category Chips */}
-            <div style={{ display: "flex", gap: 4, overflowX: "auto", paddingBottom: 6, marginBottom: 8 }} className="cl-hide-scrollbar">
+            <div style={{ display: "flex", gap: 4, overflowX: "auto", paddingBottom: 6, marginBottom: 8, flexShrink: 0 }} className="cl-hide-scrollbar">
               {["all", "Client", "Coach", "Onboarding", "Shared"].map((cat) => {
                 const active = dirFilter === cat;
                 return (
@@ -357,14 +394,15 @@ function AppShell() {
               })}
             </div>
 
-            {/* Screen List */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 2, maxHeight: 250, overflowY: "auto" }} className="cl-hide-scrollbar">
+            {/* Screen List (Full height with smooth auto-scroll to highlighted screen) */}
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2, overflowY: "auto", minHeight: 0 }} className="cl-hide-scrollbar">
               {filteredRoutes.map((key) => {
                 const meta = ROUTE_METADATA[key] || { title: key, category: "App" };
                 const isSelected = screen === key;
                 return (
                   <button
                     key={key}
+                    ref={isSelected ? activeItemRef : null}
                     onClick={() => {
                       setScreen(key);
                       if (meta.role && meta.role !== role) setRole(meta.role);
@@ -373,7 +411,7 @@ function AppShell() {
                       display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%",
                       padding: "6px 8px", borderRadius: 6, border: `1px solid ${isSelected ? vSystem.textPrimary : "transparent"}`,
                       background: isSelected ? vSystem.bgHover : "transparent", textAlign: "left", cursor: "pointer",
-                      transition: "all 0.1s ease",
+                      transition: "all 0.1s ease", flexShrink: 0,
                     }}
                   >
                     <div style={{ minWidth: 0, flex: 1 }}>
@@ -391,11 +429,6 @@ function AppShell() {
             </div>
           </div>
 
-        </div>
-
-        {/* Footer */}
-        <div style={{ padding: "10px 18px", borderTop: `1px solid ${vSystem.border}`, fontSize: 11, color: vSystem.textMuted, textAlign: "center" }}>
-          EITB App Prototype
         </div>
       </aside>
 
@@ -664,7 +697,7 @@ function AppShell() {
               )}
               
               {/* Inner Screen Display */}
-              <div style={{
+              <div className="cl-phone-screen" style={{
                 width: "100%", height: "100%", background: C.white,
                 borderRadius: showFrame ? activePreset.innerRadius : 14,
                 overflow: "hidden", position: "relative",
@@ -688,10 +721,10 @@ function AppShell() {
                   </>
                 )}
                 
-                <StatusBar dark={screen === "splash"} />
+                <StatusBar dark={screen === "splash" || screen === "get-started"} overlay={screen === "splash" || screen === "get-started"} />
 
                 {/* Active Screen Component */}
-                <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+                <div ref={screenWrapRef} style={{ flex: 1, position: "relative", overflow: "hidden" }}>
                   <ScreenErrorBoundary screen={screen} onReset={() => { setRole("client"); setScreen("client-home"); }}>
                     <ScreenComponent {...screenProps} />
                   </ScreenErrorBoundary>

@@ -758,9 +758,12 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
   );
 }
 
-export function ScreenLeaveReview({ nav, params, toast }) {
+export function ScreenLeaveReview({ nav, params, toast, bookings = [] }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
+  const name = params?.name
+    || (params?.bookingId ? bookings.find((b) => b.id === params.bookingId)?.coachName : null)
+    || COACHES[0].name;
   const [rating, setRating] = useState(5);
   const [tags, setTags] = useState([]);
   const options = ["Great communicator", "Punctual", "Well prepared", "Motivating", "Flexible"];
@@ -769,8 +772,8 @@ export function ScreenLeaveReview({ nav, params, toast }) {
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="Leave a review" onBack={() => nav("client-dashboard")} />
       <div style={{ textAlign: "center", marginTop: 6, marginBottom: 20 }}>
-        <Avatar name={params.name} size={54} />
-        <div style={{ fontSize: T.subtitleLg, fontWeight: 600, color: C.jet, marginTop: 10, ...fDisplay }}>{params.name}</div>
+        <Avatar name={name} size={54} />
+        <div style={{ fontSize: T.subtitleLg, fontWeight: 600, color: C.jet, marginTop: 10, ...fDisplay }}>{name}</div>
         <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 12 }}>
           {[1, 2, 3, 4, 5].map((i) => (
             <button key={i} onClick={() => setRating(i)} style={{ background: "none", border: "none", cursor: "pointer" }}>

@@ -138,3 +138,20 @@ body {
 button, input, textarea {
   font-family: inherit;
 }
+
+/* =========================================================================
+   MOBILE-LIKE SCROLLING INSIDE THE PHONE PROTOTYPE
+   -------------------------------------------------------------------------
+   Real mobile apps have no visible scrollbars — scrolling happens via touch
+   (or mouse wheel on desktop). Hide every scrollbar inside the phone screen
+   while keeping all containers scrollable (overflow stays auto/scroll).
+   ========================================================================= */
+.cl-phone-screen, .cl-phone-screen * {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.cl-phone-screen *::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none;
+}

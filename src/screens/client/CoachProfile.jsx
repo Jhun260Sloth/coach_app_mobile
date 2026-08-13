@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
-  ChevronLeft, ChevronRight, Heart, Share2, Star, ShieldCheck, BadgeCheck, Play, MessageCircle, CheckCircle2, Trophy,
+  ChevronLeft, ChevronRight, Heart, Share2, Star, ShieldCheck, BadgeCheck, Play, MessageCircle, CheckCircle2, Check, Trophy,
   Clock, TrendingUp, Repeat, MapPin, Navigation, Award, Users, XCircle, Sunrise, Sun, Moon,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
@@ -83,33 +83,31 @@ export function ScreenCoachProfile({ nav, params = {}, favorites = [], toggleFav
   const pkgIsCurrentMonth = pkgCursor.getFullYear() === pkgToday.getFullYear() && pkgCursor.getMonth() === pkgToday.getMonth();
   const pkgGoPrevMonth = () => { if (!pkgIsCurrentMonth) setPkgCursor((c) => new Date(c.getFullYear(), c.getMonth() - 1, 1)); };
   const pkgGoNextMonth = () => setPkgCursor((c) => new Date(c.getFullYear(), c.getMonth() + 1, 1));
-  const pkgPickDate = (d, state) => { if (state === "unavailable") return; setPkgSelectedDate(d); setPkgSelectedTime(null); };
+  const pkgPickDate = (d, state) => {
+    if (state === "unavailable") return;
+    setPkgSelectedDate((prev) => (prev && sameDay(prev, d) ? null : d));
+    setPkgSelectedTime(null);
+  };
   const pkgDaySlots = pkgSelectedDate ? slotsForDate(pkgSelectedDate, coach, pkgAvailability) : [];
   const pkgGrouped = groupSlotsByPeriod(pkgDaySlots);
-  // Duration used to render each slot as a start–end range. A specific
-  // package's duration once one's picked; otherwise fall back to the first
-  // package on offer so the range still reflects a real session length.
   const pkgSlotDuration = (selectedPkg && selectedPkg.duration) || (coach.packages[0] && coach.packages[0].duration);
 
-  // Once a specific available time is picked, narrow the package list below
-  // to just the package(s) that actually run at that date + time, instead of
-  // still showing every package the coach offers.
-  const packagesToShow = useMemo(() => {
-    if (!pkgSelectedDate || !pkgSelectedTime) return coach.packages;
-    return coach.packages.filter((p) => (
-      p.active !== false && slotsForDate(pkgSelectedDate, coach, derivePackageAvailability(coach, p)).includes(pkgSelectedTime)
-    ));
-  }, [coach, pkgSelectedDate, pkgSelectedTime]);
+  // Keep all packages visible so user can see all options; incompatible packages are shown in disabled state
+  const packagesToShow = coach.packages;
 
-  // If a time slot narrows things down to exactly one package, select it
-  // automatically so the date-led flow lands on a bookable package without
-  // an extra tap.
+  // Auto-select compatible package if date + time selection leaves exactly 1 compatible option
   useEffect(() => {
-    if (pkgSelectedDate && pkgSelectedTime && packagesToShow.length === 1 && selectedPkgId !== packagesToShow[0].id) {
-      setSelectedPkgId(packagesToShow[0].id);
+    if (pkgSelectedDate && pkgSelectedTime) {
+      const compatible = coach.packages.filter((p) => (
+        p.active !== false && slotsForDate(pkgSelectedDate, coach, derivePackageAvailability(coach, p)).includes(pkgSelectedTime)
+      ));
+      if (compatible.length === 1 && selectedPkgId !== compatible[0].id) {
+        setSelectedPkgId(compatible[0].id);
+      } else if (selectedPkgId && !compatible.some((p) => p.id === selectedPkgId)) {
+        setSelectedPkgId(null);
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [packagesToShow]);
+  }, [pkgSelectedDate, pkgSelectedTime, coach]);
 
   // If picking a package makes the currently-selected date/time invalid for
   // it, clear them rather than silently showing a stale selection.
@@ -369,11 +367,13 @@ export function ScreenCoachProfile({ nav, params = {}, favorites = [], toggleFav
                             return (
                               <button
                                 key={t}
-                                onClick={() => setPkgSelectedTime(t)}
+                                onClick={() => setPkgSelectedTime((prev) => (prev === t ? null : t))}
                                 style={{
-                                  padding: "9px 14px", borderRadius: 999, border: `1.5px solid ${active ? C.jet : C.border}`,
-                                  background: active ? C.jet : C.white, color: active ? C.white : C.jet,
+                                  padding: "9px 14px", borderRadius: 999, border: `1.5px solid ${active ? (C.brandIcon || C.brandColor || C.brand) : C.border}`,
+                                  background: active ? (C.brandIcon || C.brandColor || C.brand) : C.white, color: active ? C.white : C.jet,
                                   fontSize: T.labelLg, fontWeight: 600, cursor: "pointer", ...fBody,
+                                  boxShadow: active ? "0 2px 8px rgba(27, 94, 32, 0.2)" : "none",
+                                  transition: "all 0.15s ease",
                                 }}
                               >
                                 {formatTimeRange12(t, pkgSlotDuration)}
@@ -388,35 +388,47 @@ export function ScreenCoachProfile({ nav, params = {}, favorites = [], toggleFav
               </div>
             )}
 
-            <SectionLabel>
-              {pkgSelectedDate && pkgSelectedTime
-                ? `Packages available at ${formatTimeRange12(pkgSelectedTime, pkgSlotDuration)}`
-                : "Packages"}
-            </SectionLabel>
-            {packagesToShow.length === 0 && pkgSelectedDate && pkgSelectedTime && (
-              <Card style={{ marginBottom: 10, textAlign: "center" }}>
-                <span style={{ fontSize: T.labelLg, color: C.slate, ...fBody }}>No package runs at this exact time — try another slot.</span>
-              </Card>
-            )}
-            {packagesToShow.map((p) => {
+            <SectionLabel>Packages</SectionLabel>
+
+            {coach.packages.map((p) => {
               const selected = selectedPkgId === p.id;
-              const pkgUnavailable = p.active === false;
+              const isInactive = p.active === false;
+              const isTimeIncompatible = Boolean(
+                pkgSelectedDate && pkgSelectedTime &&
+                !slotsForDate(pkgSelectedDate, coach, derivePackageAvailability(coach, p)).includes(pkgSelectedTime)
+              );
+              const pkgDisabled = isInactive || isTimeIncompatible;
+
               return (
                 <Card
                   key={p.id}
-                  onClick={pkgUnavailable ? undefined : () => setSelectedPkgId((id) => (id === p.id ? null : p.id))}
+                  onClick={pkgDisabled ? undefined : () => setSelectedPkgId((id) => (id === p.id ? null : p.id))}
                   style={{
-                    marginBottom: 10,
-                    border: `1.5px solid ${selected ? C.brand : C.border}`,
-                    background: selected ? C.brandTint : pkgUnavailable ? C.fog : C.white,
-                    opacity: pkgUnavailable ? 0.6 : 1,
-                    cursor: pkgUnavailable ? "default" : "pointer",
+                    marginBottom: 12,
+                    border: selected
+                      ? `2px solid ${C.brandIcon || C.brandColor || C.brand}`
+                      : `1.5px solid ${C.border}`,
+                    background: selected
+                      ? C.brandTint
+                      : pkgDisabled
+                      ? C.fog
+                      : C.white,
+                    opacity: pkgDisabled ? 0.55 : 1,
+                    cursor: pkgDisabled ? "not-allowed" : "pointer",
+                    boxShadow: selected ? "0 4px 14px rgba(27, 94, 32, 0.12)" : "none",
+                    position: "relative",
+                    transition: "all 0.2s ease",
+                    padding: 16,
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: T.subtitle, color: C.jet, ...fDisplay }}>{p.name}</div>
-                      <div style={{ fontSize: T.label, color: C.slate, marginTop: 3, ...fBody }}>{p.type} · {p.duration} min · {p.mode}</div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: T.subtitle, color: selected ? (C.brandIcon || C.brandColor || C.brand) : C.jet, ...fDisplay }}>
+                        {p.name}
+                      </div>
+                      <div style={{ fontSize: T.label, color: C.slate, marginTop: 3, ...fBody }}>
+                        {p.type} · {p.duration} min · {p.mode}
+                      </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 5 }}>
                         <Users size={11.5} color={C.slateLight} />
                         <span style={{ fontSize: T.captionLg, color: C.slate, ...fBody }}>
@@ -424,23 +436,37 @@ export function ScreenCoachProfile({ nav, params = {}, favorites = [], toggleFav
                         </span>
                       </div>
                     </div>
-                    <div style={{ fontSize: T.title, fontWeight: 700, color: C.jet, ...fDisplay }}>${p.price}</div>
-                  </div>
-                  <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8 }}>
-                    {pkgUnavailable ? (
-                      <>
-                        <XCircle size={14} color={C.slateLight} />
-                        <span style={{ fontSize: T.labelLg, fontWeight: 600, color: C.slateLight, ...fBody }}>Currently unavailable</span>
-                      </>
-                    ) : (
-                      <>
-                        <div style={{ width: 18, height: 18, borderRadius: 18, border: `1.5px solid ${selected ? C.brand : C.border}`, background: selected ? C.brand : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                          {selected && <CheckCircle2 size={11} color={C.white} />}
+                    <div style={{ textAlign: "right", flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+                      <div style={{ fontSize: T.title, fontWeight: 700, color: selected ? (C.brandIcon || C.brandColor || C.brand) : C.jet, ...fDisplay }}>
+                        ${p.price}
+                      </div>
+                      {selected && (
+                        <div
+                          style={{
+                            marginTop: 6,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: 22,
+                            height: 22,
+                            borderRadius: 99,
+                            background: C.brandIcon || C.brandColor || C.brand,
+                          }}
+                        >
+                          <Check size={13} color={C.white} strokeWidth={3} />
                         </div>
-                        <span style={{ fontSize: T.labelLg, fontWeight: 600, color: selected ? C.brand : C.slate, ...fBody }}>{selected ? "Selected — tap to clear" : "Select this package"}</span>
-                      </>
-                    )}
+                      )}
+                    </div>
                   </div>
+
+                  {pkgDisabled && (
+                    <div style={{ marginTop: 10, paddingTop: 8, borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 6 }}>
+                      <XCircle size={13} color={C.slateLight} />
+                      <span style={{ fontSize: T.label, fontWeight: 600, color: C.slateLight, ...fBody }}>
+                        {isInactive ? "Currently unavailable" : "Not available at selected time"}
+                      </span>
+                    </div>
+                  )}
                 </Card>
               );
             })}

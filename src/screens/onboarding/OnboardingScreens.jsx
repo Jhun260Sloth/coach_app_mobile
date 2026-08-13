@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   Search, Users, Mail, Eye, EyeOff, Fingerprint, Check,
   Upload, CheckCircle2, ClipboardList, Clock, Lock, Camera, MapPin, LocateFixed,
-  Plus, Trash2, CreditCard, ScanFace, FileCheck2, Smartphone,
+  Plus, Trash2, CreditCard, ScanFace, FileCheck2, Smartphone, XCircle,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, LOGO_WHITE_SRC, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
@@ -87,9 +87,6 @@ export function ScreenSplash({ nav }) {
       <div style={{ animation: "clFadeUp .5s ease" }}>
         <img src={LOGO_WHITE_SRC} alt="CoachLink" style={{ width: 120, height: "auto" }} />
       </div>
-      {/* <div style={{ color: C.onDarkMuted, fontSize: T.subtitle, marginTop: 22, lineHeight: 1.5, ...fBody }}>
-        Find a coach you trust, or build your coaching business — all in one place.
-      </div> */}
       <div style={{ marginTop: 34 }}>
         <Spinner size={22} color="#C7CAD3" />
       </div>
@@ -101,23 +98,144 @@ export function ScreenGetStarted({ nav }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   return (
-    <div style={{ height: "100%", background: C.white, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 28, textAlign: "center" }}>
-      <div style={{ animation: "clFadeUp .5s ease" }}>
-        <img src={LOGO_WHITE_SRC} alt="CoachLink" style={{ width: 96, height: "auto" }} />
+    <div
+      style={{
+        height: "100%",
+        position: "relative",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "flex-end",
+        overflow: "hidden",
+        background: C.white,
+      }}
+    >
+      {/* Background Image */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundImage: 'url("/image-1.webp")',
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          zIndex: 1,
+        }}
+      />
+
+      {/* Gradient Overlay for Text Contrast */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background:
+            "linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(12,16,22,0.4) 40%, rgba(12,16,22,0.85) 70%, rgba(12,16,22,0.98) 100%)",
+          zIndex: 2,
+        }}
+      />
+
+      {/* Top Logo / Brand Accent */}
+      <div
+        style={{
+          position: "absolute",
+          top: 48,
+          left: 20,
+          zIndex: 3,
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+        }}
+      >
+        <img
+          src={LOGO_WHITE_SRC}
+          alt="CoachLink"
+          style={{ height: 32, width: "auto" }}
+        />
       </div>
-      <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, marginTop: 24, ...fDisplay }}>
-        Welcome to CoachLink
-      </div>
-      <div style={{ color: C.slate, fontSize: T.subtitle, marginTop: 10, lineHeight: 1.55, maxWidth: 280, ...fBody }}>
-        Find a coach you trust, or build your coaching business — all in one place.
-      </div>
-      <div style={{ marginTop: 36, width: "100%" }}>
-        <Btn full variant="primary" onClick={() => nav("role-select")}>Get Started</Btn>
-      </div>
-      <div style={{ marginTop: 16 }}>
-        <button onClick={() => nav("auth", { mode: "login" })} style={{ background: "none", border: "none", color: C.slate, fontSize: T.bodyLg, cursor: "pointer", ...fBody }}>
-          Have an existing account? <span style={{ color: C.brand, fontWeight: 600 }}>Sign In</span>
-        </button>
+
+      {/* Content Container at Bottom */}
+      <div
+        style={{
+          position: "relative",
+          zIndex: 3,
+          padding: "36px 24px 32px",
+          textAlign: "left",
+          animation: "clFadeUp .5s ease",
+        }}
+      >
+        {/* Welcome Header */}
+        <div
+          style={{
+            fontSize: T.hero,
+            fontWeight: 700,
+            color: "#FFFFFF",
+            lineHeight: 1.2,
+            ...fDisplay,
+          }}
+        >
+          Welcome to
+        </div>
+
+        {/* Main Title */}
+        <div
+          style={{
+            fontSize: T.heroLg + 6,
+            fontWeight: 800,
+            lineHeight: 1.1,
+            letterSpacing: "-0.02em",
+            marginTop: 4,
+            marginBottom: 12,
+            color: C.brand,
+            ...fDisplay,
+          }}
+        >
+          CoachLink
+        </div>
+
+        {/* Subtitle / Description */}
+        <div
+          style={{
+            color: "#D1D5DB",
+            fontSize: T.subtitleLg,
+            lineHeight: 1.5,
+            marginBottom: 28,
+            maxWidth: 310,
+            ...fBody,
+          }}
+        >
+          The best sports coaching app to elevate your performance and reach your goals!
+        </div>
+
+        {/* Action Buttons */}
+        <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 12 }}>
+          <Btn full variant="primary" onClick={() => nav("role-select")}>
+            Get Started
+          </Btn>
+          <button
+            onClick={() => nav("auth", { mode: "login", backTo: "get-started" })}
+            style={{
+              width: "100%",
+              padding: "14px 0",
+              borderRadius: 16,
+              background: "#FFFFFF",
+              border: "none",
+              color: "#111827",
+              fontSize: T.subtitle,
+              fontWeight: 600,
+              cursor: "pointer",
+              textAlign: "center",
+              boxShadow: "0 2px 10px rgba(0, 0, 0, 0.15)",
+              transition: "transform 0.1s ease, opacity 0.1s ease",
+              ...fBody,
+            }}
+          >
+            Sign In
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -126,13 +244,11 @@ export function ScreenGetStarted({ nav }) {
 export function ScreenRoleSelect({ nav, setRole }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
-  // Picking a path here kicks off account creation directly — existing users
-  // use the "Sign In" link below instead of going through role selection.
   const Option = ({ role, title, body, icon: Icon }) => (
     <button onClick={() => { setRole(role); nav("auth", { mode: "signup" }); }}
       style={{ width: "100%", textAlign: "left", background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 18, padding: 16, display: "flex", gap: 14, alignItems: "flex-start", cursor: "pointer", marginBottom: 12 }}>
       <div style={{ width: 44, height: 44, borderRadius: 13, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-        <Icon size={20} color={C.brand} />
+        <Icon size={20} color={C.brandIcon || C.brandColor} />
       </div>
       <div>
         <div style={{ fontWeight: 600, color: C.jet, fontSize: T.subtitleLg, marginBottom: 3, ...fDisplay }}>{title}</div>
@@ -156,18 +272,15 @@ export function ScreenRoleSelect({ nav, setRole }) {
   );
 }
 
-export function ScreenAuth({ nav, params, role, toast, biometric }) {
+export function ScreenAuth({ nav, params, role, toast, biometric, updateCoachOnboarding }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const inputStyle = { width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", ...fBody };
   const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
-  // Login is the default landing point after role selection — "Create an account"
-  // is what reveals the registration flow (a dedicated screen for coaches, since
-  // that signup needs extra fields; an inline form for clients).
   const [mode, setMode] = useState(params?.mode || "login");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(params?.email || "");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
@@ -183,19 +296,25 @@ export function ScreenAuth({ nav, params, role, toast, biometric }) {
 
   const proceedAfterAuth = () => {
     if (mode === "login") { nav(homeScreen); return; }
-    nav("enable-biometric", { next: role === "coach" ? "coach-info" : "about-you-profile" });
+    if (role === "coach") {
+      updateCoachOnboarding?.({
+        firstName: firstName.trim(), lastName: lastName.trim(), email: email.trim(),
+        displayName: `${firstName} ${lastName}`.trim(),
+      });
+    }
+    nav("verify-email", {
+      email: email.trim(),
+      next: "enable-biometric",
+      nextParams: { next: role === "coach" ? "coach-info" : "about-you-profile" },
+    });
   };
 
-  const goCreateAccount = () => {
-    // Coaches have a dedicated multi-field registration screen; clients can
-    // register inline on this same screen.
-    if (role === "coach") { nav("coach-register"); return; }
-    setMode("signup");
-  };
+  const goCreateAccount = () => setMode("signup");
 
   return (
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title="" onBack={() => nav("role-select")} />
+      <TopBar title="" onBack={() => nav(params?.backTo || "role-select")} />
+      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 12 }}>
       <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>{mode === "signup" ? "Create your account" : "Welcome back"}</div>
       <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 6, marginBottom: 20, ...fBody }}>
         {mode === "signup"
@@ -273,6 +392,7 @@ export function ScreenAuth({ nav, params, role, toast, biometric }) {
       <div style={{ marginTop: 10 }}>
         <Btn full variant="outline"  onClick={() => { toast(mode === "signup" ? "Signed up with Google" : "Signed in with Google"); proceedAfterAuth(); }}>Continue with Google</Btn>
       </div>
+      </div>
 
       <div style={{ marginTop: "auto", textAlign: "center", paddingBottom: 22 }}>
         <button onClick={mode === "signup" ? () => setMode("login") : goCreateAccount} style={{ background: "none", border: "none", color: C.slate, fontSize: T.body, cursor: "pointer", ...fBody }}>
@@ -312,6 +432,7 @@ export function ScreenForgotPassword({ nav, params, role, toast }) {
   return (
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="" onBack={() => nav("auth", { mode: "login" })} />
+      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 12 }}>
       <div style={{ width: 52, height: 52, borderRadius: 16, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
         <Lock size={22} color={C.brand} />
       </div>
@@ -322,6 +443,7 @@ export function ScreenForgotPassword({ nav, params, role, toast }) {
       <Field label="Email address" placeholder="you@email.com" icon={Mail} value={email} onChange={(e) => setEmail(e.target.value)} />
       <div style={{ marginTop: 22 }}>
         <Btn full disabled={!canSubmit} loading={sending} loadingText="Sending…" onClick={submit}>Send reset code</Btn>
+      </div>
       </div>
       <div style={{ marginTop: "auto", textAlign: "center", paddingBottom: 22 }}>
         <button onClick={() => nav("auth", { mode: "login" })} style={{ background: "none", border: "none", color: C.slate, fontSize: T.body, cursor: "pointer", ...fBody }}>
@@ -354,6 +476,7 @@ export function ScreenResetCode({ nav, params, toast }) {
   return (
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="" onBack={() => nav("forgot-password", { role })} />
+      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 12 }}>
       <div style={{ width: 52, height: 52, borderRadius: 16, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
         <Smartphone size={22} color={C.brand} />
       </div>
@@ -387,6 +510,7 @@ export function ScreenResetCode({ nav, params, toast }) {
           Didn't get it? <span style={{ color: C.brand, fontWeight: 600 }}>Resend code</span>
         </button>
       </div>
+      </div>
     </div>
   );
 }
@@ -411,6 +535,7 @@ export function ScreenResetPassword({ nav, params, toast }) {
   return (
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="" onBack={() => nav("reset-code", { role })} />
+      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 12 }}>
       <div style={{ width: 52, height: 52, borderRadius: 16, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
         <Check size={22} color={C.brand} />
       </div>
@@ -433,136 +558,163 @@ export function ScreenResetPassword({ nav, params, toast }) {
       <div style={{ marginTop: 22 }}>
         <Btn full disabled={!canSubmit} onClick={submit}>Reset password</Btn>
       </div>
+      </div>
     </div>
   );
 }
 
-export function ScreenCoachRegister({ nav, toast, updateCoachOnboarding }) {
+/* =========================================================================
+   EMAIL VERIFICATION — new-account email check, separate from the forgot-
+   password reset-code flow. Client and coach signups land here before Face
+   ID setup. Any 6-digit code verifies; 000000 simulates an invalid/expired
+   code so that state is demoable. Resend runs on a 30s cooldown and shows a
+   confirmation banner + toast, with an inline countdown.
+   ========================================================================= */
+export function ScreenVerifyEmail({ nav, params, toast, role }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
-  const inputStyle = { width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", ...fBody };
-  const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [mobile, setMobile] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPw, setShowPw] = useState(false);
-  const [showConfirmPw, setShowConfirmPw] = useState(false);
-  const [agreeTerms, setAgreeTerms] = useState(false);
-  const [showTerms, setShowTerms] = useState(false);
+  const email = params?.email || "your email";
+  const next = params?.next || (role === "coach" ? "coach-info" : "about-you-profile");
+  const nextParams = params?.nextParams || {};
 
-  const passwordsMatch = password.length > 0 && password === confirmPassword;
-  const canContinue = firstName.trim() && lastName.trim() && email.trim() && mobile.trim()
-    && password.length >= 6 && passwordsMatch && agreeTerms;
+  const [phase, setPhase] = useState("code"); // "code" | "error" | "success"
+  const [digits, setDigits] = useState(["", "", "", "", "", ""]);
+  const inputsRef = React.useRef([]);
+  const code = digits.join("");
+  const canVerify = code.length === 6;
+  const [secondsLeft, setSecondsLeft] = useState(30);
+  const [resent, setResent] = useState(false);
 
-  const proceed = () => {
-    updateCoachOnboarding({ firstName, lastName, email, mobile, displayName: `${firstName} ${lastName}`.trim() });
-    nav("enable-biometric", { next: "coach-info" });
+  useEffect(() => {
+    if (secondsLeft <= 0) return;
+    const t = setTimeout(() => setSecondsLeft((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [secondsLeft]);
+
+  const setDigit = (i, raw) => {
+    const v = raw.replace(/[^0-9]/g, "").slice(-1);
+    setDigits((d) => { const n = [...d]; n[i] = v; return n; });
+    if (v && i < 5) inputsRef.current[i + 1]?.focus();
   };
+  const onKeyDown = (i, e) => {
+    if (e.key === "Backspace" && !digits[i] && i > 0) inputsRef.current[i - 1]?.focus();
+  };
+
+  const resendCode = () => {
+    setResent(true);
+    setDigits(["", "", "", "", "", ""]);
+    setPhase("code");
+    setSecondsLeft(30);
+    toast("A new code has been sent");
+  };
+
+  const verify = () => {
+    if (!canVerify) return;
+    if (code === "000000") { setPhase("error"); return; }
+    setPhase("success");
+  };
+
+  const changeEmail = () => nav("auth", { mode: "signup", email });
+
+  const continueAfterVerify = () => nav(next, nextParams);
+
+  const mmss = `${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, "0")}`;
 
   return (
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title="" onBack={() => nav("role-select")} />
-      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 24 }}>
-
-        <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Create your coach account</div>
-        <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 8, marginBottom: 20, lineHeight: 1.55, ...fBody }}>
-          Join thousands of coaches growing their business through secure bookings, payments and client management.
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{ display: "flex", gap: 10 }}>
-            <div style={{ flex: 1 }}>
-              <div style={labelStyle}>First name</div>
-              <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Josh" style={inputStyle} />
+      <TopBar title="" onBack={changeEmail} />
+      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 12 }}>
+        {phase === "success" ? (
+          <>
+            <div style={{ textAlign: "center", marginTop: 44 }}>
+              <div style={{ width: 84, height: 84, borderRadius: 26, background: C.successTint, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+                <CheckCircle2 size={40} color={C.success} />
+              </div>
+              <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Your email is verified</div>
+              <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 8, lineHeight: 1.6, ...fBody }}>
+                Thanks for confirming — let's continue setting up your account.
+              </div>
             </div>
-            <div style={{ flex: 1 }}>
-              <div style={labelStyle}>Last name</div>
-              <input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Whitfield" style={inputStyle} />
+            <div style={{ marginTop: 28 }}>
+              <Btn full onClick={continueAfterVerify}>Continue</Btn>
             </div>
-          </div>
+          </>
+        ) : (
+          <>
+            <div style={{ width: 52, height: 52, borderRadius: 16, background: phase === "error" ? C.dangerTint : C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
+              {phase === "error" ? <XCircle size={22} color={C.danger} /> : <Mail size={22} color={C.brand} />}
+            </div>
+            <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Verify your email</div>
+            <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 6, marginBottom: 24, lineHeight: 1.55, ...fBody }}>
+              We've sent a verification code to <span style={{ color: C.jet, fontWeight: 600 }}>{email}</span>. Enter it below to activate your account.
+            </div>
 
-          <div>
-            <div style={labelStyle}>Email address</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
-              <Mail size={15} color={C.slateLight} />
-              <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="you@email.com" style={{ border: "none", outline: "none", flex: 1, fontSize: T.bodyLg, minWidth: 0, ...fBody }} />
-            </div>
-          </div>
-
-          <div>
-            <div style={labelStyle}>Mobile number</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
-              <Smartphone size={15} color={C.slateLight} />
-              <input value={mobile} onChange={(e) => setMobile(e.target.value.replace(/[^0-9+\s]/g, ""))} placeholder="04XX XXX XXX" inputMode="tel" style={{ border: "none", outline: "none", flex: 1, fontSize: T.bodyLg, minWidth: 0, ...fBody }} />
-            </div>
-          </div>
-
-          <div>
-            <div style={labelStyle}>Password</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
-              <input value={password} onChange={(e) => setPassword(e.target.value)} type={showPw ? "text" : "password"} placeholder="At least 6 characters" style={{ border: "none", outline: "none", flex: 1, fontSize: T.bodyLg, minWidth: 0, ...fBody }} />
-              <button onClick={() => setShowPw((s) => !s)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}>
-                {showPw ? <EyeOff size={15} color={C.slateLight} /> : <Eye size={15} color={C.slateLight} />}
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <div style={labelStyle}>Confirm password</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${confirmPassword && !passwordsMatch ? C.dangerBorderSoft : C.border}`, borderRadius: 13, padding: "11px 13px" }}>
-              <input value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} type={showConfirmPw ? "text" : "password"} placeholder="Re-enter your password" style={{ border: "none", outline: "none", flex: 1, fontSize: T.bodyLg, minWidth: 0, ...fBody }} />
-              <button onClick={() => setShowConfirmPw((s) => !s)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}>
-                {showConfirmPw ? <EyeOff size={15} color={C.slateLight} /> : <Eye size={15} color={C.slateLight} />}
-              </button>
-            </div>
-            {confirmPassword && !passwordsMatch && (
-              <div style={{ fontSize: T.caption, color: C.danger, marginTop: 5, ...fBody }}>Passwords don't match.</div>
+            {resent && phase === "code" && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.successTint, borderRadius: 12, padding: "10px 12px", marginBottom: 14 }}>
+                <CheckCircle2 size={14} color={C.success} style={{ flexShrink: 0 }} />
+                <span style={{ fontSize: T.labelLg, color: C.success, fontWeight: 600, ...fBody }}>A new code has been sent</span>
+              </div>
             )}
-          </div>
-        </div>
 
-        <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 4 }}>
-          <button onClick={() => setAgreeTerms((v) => !v)} style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: "6px 0" }}>
-            <div style={{ width: 19, height: 19, borderRadius: 6, border: `1.5px solid ${agreeTerms ? C.brand : C.border}`, background: agreeTerms ? C.brand : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
-              {agreeTerms && <Check size={12} color={C.white} />}
+            {phase === "error" && (
+              <div style={{ background: C.dangerTint, border: `1px solid ${C.dangerBorder}`, borderRadius: 12, padding: "12px 14px", marginBottom: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <XCircle size={15} color={C.danger} style={{ flexShrink: 0 }} />
+                  <span style={{ fontSize: T.body, fontWeight: 700, color: C.danger, ...fBody }}>Invalid or expired code</span>
+                </div>
+                <div style={{ fontSize: T.labelLg, color: C.slate, marginTop: 4, lineHeight: 1.5, ...fBody }}>
+                  That code doesn't match or has expired. Check the email we sent, or request a new code.
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: 8, justifyContent: "space-between" }}>
+              {digits.map((d, i) => (
+                <input
+                  key={i}
+                  ref={(el) => (inputsRef.current[i] = el)}
+                  value={d}
+                  onChange={(e) => setDigit(i, e.target.value)}
+                  onKeyDown={(e) => onKeyDown(i, e)}
+                  inputMode="numeric"
+                  maxLength={1}
+                  style={{
+                    width: 44, height: 54, textAlign: "center", fontSize: T.headingLg, fontWeight: 700,
+                    border: `1.5px solid ${phase === "error" ? C.dangerBorderSoft : d ? C.brand : C.border}`,
+                    borderRadius: 13, outline: "none", color: C.jet, boxSizing: "border-box", ...fDisplay,
+                  }}
+                />
+              ))}
             </div>
-            <span style={{ fontSize: T.labelLg, color: C.jet, ...fBody }}>
-              I agree to the{" "}
-              <span onClick={(e) => { e.stopPropagation(); setShowTerms(true); }} style={{ color: C.brand, fontWeight: 600, textDecoration: "underline" }}>Terms & Conditions</span>
-            </span>
-          </button>
-        </div>
 
-        <div style={{ marginTop: 20 }}>
-          <Btn full disabled={!canContinue} onClick={proceed}>Continue</Btn>
-        </div>
+            <div style={{ marginTop: 24 }}>
+              <Btn full disabled={!canVerify} onClick={verify}>Verify email</Btn>
+            </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "16px 0" }}>
-          <div style={{ flex: 1, height: 1, background: C.border }} />
-          <span style={{ fontSize: T.label, color: C.slateLight, ...fBody }}>or</span>
-          <div style={{ flex: 1, height: 1, background: C.border }} />
-        </div>
+            <div style={{ marginTop: 16, display: "flex", justifyContent: "center", alignItems: "center", gap: 6, fontSize: T.body, ...fBody }}>
+              {phase === "error" && (
+                <button onClick={() => { setPhase("code"); setDigits(["", "", "", "", "", ""]); }} style={{ background: "none", border: "none", color: C.brand, fontWeight: 600, cursor: "pointer", fontSize: T.body, ...fBody }}>
+                  Try again
+                </button>
+              )}
+              {phase === "error" && <span style={{ color: C.slateLight }}>·</span>}
+              {secondsLeft > 0 ? (
+                <span style={{ color: C.slateLight }}>Resend code in {mmss}</span>
+              ) : (
+                <button onClick={resendCode} style={{ background: "none", border: "none", color: C.brand, fontWeight: 600, cursor: "pointer", fontSize: T.body, ...fBody }}>
+                  {phase === "error" ? "Resend new code" : "Resend code"}
+                </button>
+              )}
+            </div>
 
-        <Btn full variant="dark" icon={AppleIcon} onClick={() => { toast("Signed up with Apple"); updateCoachOnboarding({ displayName: "New Coach" }); nav("enable-biometric", { next: "coach-info" }); }}>
-          Continue with Apple
-        </Btn>
-        <div style={{ marginTop: 10 }}>
-          <Btn full variant="outline" onClick={() => { toast("Signed up with Google"); updateCoachOnboarding({ displayName: "New Coach" }); nav("enable-biometric", { next: "coach-info" }); }}>
-            Continue with Google
-          </Btn>
-        </div>
-
-        <div style={{ textAlign: "center", marginTop: 20, paddingBottom: 8 }}>
-          <button onClick={() => nav("auth", { mode: "login" })} style={{ background: "none", border: "none", color: C.slate, fontSize: T.body, cursor: "pointer", ...fBody }}>
-            Already have an account? <span style={{ color: C.brand, fontWeight: 600 }}>Login</span>
-          </button>
-        </div>
+            <div style={{ marginTop: 18, textAlign: "center" }}>
+              <button onClick={changeEmail} style={{ background: "none", border: "none", color: C.slate, fontSize: T.body, cursor: "pointer", ...fBody }}>
+                Wrong email? <span style={{ color: C.brand, fontWeight: 600 }}>Change email</span>
+              </button>
+            </div>
+          </>
+        )}
       </div>
-
-      <LegalSheet open={showTerms} onClose={() => setShowTerms(false)} />
     </div>
   );
 }
@@ -648,7 +800,7 @@ export function ScreenCoachInfo({ nav, toast, coachOnboarding, updateCoachOnboar
 
   return (
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title="" onBack={() => nav("coach-register")} />
+      <TopBar title="" onBack={() => nav("auth", { mode: "signup" })} />
       <div style={{ flex: 1, overflowY: "auto", paddingBottom: 24 }}>
 
         <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Coach information</div>
@@ -1059,7 +1211,7 @@ export function ScreenVerificationPending({ nav, verificationStatus, setReachedD
             This unlocks once an admin approves your application.
           </div>
         )}
-        <Btn full variant="ghost" onClick={() => nav("support")}>Contact support</Btn>
+        <Btn full variant="ghost" onClick={() => nav("support", { faqTopic: "verification", backTo: "verification-pending" })}>Contact support</Btn>
       </div>
     </div>
   );

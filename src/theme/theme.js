@@ -20,7 +20,7 @@ import { useEffect } from "react";
 export const CL = {
   // ── brand palette ───────────────────────────────────────────────
   brandColor: "#1B5E20",
-  secondary: "#66BB6A",
+  secondary: "#2E7D32",
   accent: "#A5D6A7",
   surface: "#E8F5E9",
 
@@ -34,8 +34,9 @@ export const CL = {
   black: "#000000",
 
   // ── brand semantic tokens (green) ───────────────────────────────
-  brand: "#66BB6A",
-  brandTint: "#A5D6A7",
+  brand: "#2E7D32",
+  brandTint: "#E8F5E9",
+  brandIcon: "#1B5E20",
   fog: "#F4F5F7",
 
   // ── functional tokens ───────────────────────────────────────────
@@ -63,7 +64,7 @@ export const CL = {
 
 export const CD = {
   // ── brand palette ───────────────────────────────────────────────
-  brandColor: "#1B5E20",
+  brandColor: "#81C784",
   secondary: "#81C784",
   accent: "#1B5E20",
   surface: "#0D1F0D",
@@ -79,7 +80,8 @@ export const CD = {
 
   // ── brand semantic tokens (green, adjusted for dark bg) ────────
   brand: "#81C784",
-  brandTint: "#1B5E20",
+  brandTint: "#143315",
+  brandIcon: "#81C784",
   fog: "#1A1A1A",
 
   // ── functional tokens ───────────────────────────────────────────

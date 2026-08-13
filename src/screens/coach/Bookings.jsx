@@ -244,7 +244,7 @@ export function ScreenCoachBookingDetail({ nav, params, coachBookings, respondBo
         <SectionLabel>Questions before you decide?</SectionLabel>
         <Card style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 12 }}>
           <div style={{ width: 38, height: 38, borderRadius: 12, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <MessagesSquare size={17} color={C.brand} />
+            <MessagesSquare size={17} color={C.brandIcon || C.brandColor} />
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>Message {booking.clientName.split(" ")[0]}</div>

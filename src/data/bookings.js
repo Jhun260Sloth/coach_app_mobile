@@ -112,6 +112,12 @@ export const FAQS = {
     { q: "Can I set my own cancellation policy?", a: "Yes — choose Flexible, Moderate or Strict from your Services tab. This is shown to clients before they book." },
     { q: "How does Instant Book differ from Request to Book?", a: "Instant Book confirms matching client requests automatically. Request to Book lets you review and accept each one." },
   ],
+  verification: [
+    { q: "How long does verification take?", a: "Most reviews complete within 2 business days. We'll notify you the moment a decision is made — you'll also see it reflected on the verification screen." },
+    { q: "What documents do I need?", a: "A government-issued photo ID plus a selfie to match it. If you coach athletes under 18, you'll also need a Working with Children Check, and a qualification upload is required." },
+    { q: "Why was my verification rejected?", a: "Usually a photo was unclear, expired, or didn't match your ID. You'll be told exactly which document failed — resubmit it from the verification screen and the review restarts." },
+    { q: "Can I accept bookings while verification is pending?", a: "Not yet — your profile stays hidden until you're approved. You can keep setting up your services, availability and payouts in the meantime." },
+  ],
 };
 
 export const CLIENT_NOTIFICATIONS = [

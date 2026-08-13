@@ -121,7 +121,7 @@ export function Chip({ children, active, onClick, icon: Icon }) {
       style={{
         display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 13px", borderRadius: 999,
         fontSize: T.body, fontWeight: 500, whiteSpace: "nowrap", border: `1px solid ${active ? C.brand : C.border}`,
-        background: active ? C.brandTint : C.white, color: active ? C.brand : C.jet, ...fBody,
+        background: active ? C.brandTint : C.white, color: active ? (C.brandIcon || C.brandColor) : C.jet, ...fBody,
       }}
     >
       {Icon && <Icon size={13} />}
@@ -134,7 +134,7 @@ export function Badge({ tone = "neutral", children, icon: Icon, style }) {
   const C = useColors();
   const tones = {
     neutral: { bg: C.fog, fg: C.slate },
-    orange: { bg: C.brandTint, fg: C.brand },
+    orange: { bg: C.brandTint, fg: C.brandIcon || C.brandColor },
     success: { bg: C.successTint, fg: C.success },
     dark: { bg: C.jet, fg: C.white },
   };
@@ -249,10 +249,10 @@ export function SearchMultiSelect({ options, value, onChange, placeholder = "Sea
           {value.map((v) => (
             <span key={v} style={{
               display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 999,
-              fontSize: T.labelLg, fontWeight: 500, border: `1px solid ${C.brand}`, background: C.brandTint, color: C.brand, ...fBody,
+              fontSize: T.labelLg, fontWeight: 500, border: `1px solid ${C.brand}`, background: C.brandTint, color: C.brandIcon || C.brandColor, ...fBody,
             }}>
               {v}
-              <button onClick={() => remove(v)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 0, color: C.brand }}>
+              <button onClick={() => remove(v)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 0, color: C.brandIcon || C.brandColor }}>
                 <svg width={11} height={11} viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" /></svg>
               </button>
             </span>
@@ -387,15 +387,27 @@ export function StatusPill({ status }) {
   );
 }
 
-export function Avatar({ name, size = 42, ring }) {
+export function Avatar({ name, size = 42, ring, src }) {
   const C = useColors();
+  const label = String(name || "User");
+  // DiceBear initials avatar is used whenever no real photo is supplied; the
+  // local initials circle sits behind it as an offline/error fallback so the
+  // avatar never renders as a broken image.
+  const dicebearSrc = `https://api.dicebear.com/10.x/initials/svg?initialsVariant=default:1&lettersProbability=100&lettersVariant=single:1&seed=${encodeURIComponent(label)}`;
   return (
     <div style={{
-      width: size, height: size, borderRadius: size, background: hashColor(name), color: C.white,
+      position: "relative", width: size, height: size, borderRadius: size, overflow: "hidden",
+      background: hashColor(name), color: C.white,
       display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: size * 0.36,
       flexShrink: 0, boxShadow: ring ? `0 0 0 2px ${C.white}, 0 0 0 3.5px ${C.brand}` : "none", ...fDisplay,
     }}>
-      {initials(name)}
+      <span>{initials(name)}</span>
+      <img
+        src={src || dicebearSrc}
+        alt={`${label} avatar`}
+        onError={(e) => { e.currentTarget.style.display = "none"; }}
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+      />
     </div>
   );
 }
@@ -497,10 +509,10 @@ export function Toast({ toast }) {
   );
 }
 
-export function LogoMark({ size = 30 }) {
+export function LogoMark({ size = 30, system = false }) {
   const C = useColors();
   const h = size * (207 / 179);
-  const src = C === CD ? "logo icon-white.png" : "logo icon-green.png";
+  const src = system || C !== CD ? "logo icon-green.png" : "logo icon-white.png";
   return (
     <img src={src} alt="CoachLink" width={size} height={h} style={{ display: "block", objectFit: "contain" }} />
   );
@@ -525,22 +537,99 @@ export function Wordmark({ size = 20, dark }) {
 
 export function BottomTabs({ items, value, onChange }) {
   const C = useColors();
+  const { darkMode } = useApp();
+
+  // Modern iOS floating island tab tokens
+  const activeColor = darkMode ? "#81C784" : "#1B5E20";
+  const inactiveColor = darkMode ? "#9CA3AF" : "#6B7280";
+  const activePillBg = darkMode ? "rgba(129, 199, 132, 0.15)" : "rgba(27, 94, 32, 0.08)";
+
   return (
-    <div style={{
-      position: "absolute", bottom: 0, left: 0, right: 0, background: C.white,
-      borderTop: `1px solid ${C.border}`, display: "flex", padding: "8px 4px 22px", zIndex: 40,
-    }}>
+    <div
+      style={{
+        position: "absolute",
+        bottom: 12,
+        left: 12,
+        right: 12,
+        background: darkMode ? "rgba(13, 17, 23, 0.92)" : "rgba(255, 255, 255, 0.92)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        border: `1px solid ${darkMode ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.08)"}`,
+        boxShadow: "0 10px 30px -5px rgba(0, 0, 0, 0.12)",
+        borderRadius: 22,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "6px 6px",
+        zIndex: 40,
+        boxSizing: "border-box",
+        transition: "all 0.25s ease",
+      }}
+    >
       {items.map((it) => {
         const active = value === it.value;
         const Icon = it.icon;
+
         return (
-          <button key={it.value} onClick={() => onChange(it.value)}
-            style={{ flex: 1, background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, padding: "4px 0", position: "relative" }}>
+          <button
+            key={it.value}
+            onClick={() => onChange(it.value)}
+            style={{
+              flex: 1,
+              minWidth: 0,
+              background: active ? activePillBg : "transparent",
+              border: "none",
+              cursor: "pointer",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 3,
+              padding: "6px 2px",
+              borderRadius: 16,
+              outline: "none",
+              position: "relative",
+              transition: "all 0.22s cubic-bezier(0.16, 1, 0.3, 1)",
+            }}
+          >
             {it.badge ? (
-              <span style={{ position: "absolute", top: -1, right: "28%", width: 7, height: 7, borderRadius: 99, background: C.brand }} />
+              <span
+                style={{
+                  position: "absolute",
+                  top: 4,
+                  right: "26%",
+                  width: 6,
+                  height: 6,
+                  borderRadius: 99,
+                  background: darkMode ? "#81C784" : C.brand,
+                }}
+              />
             ) : null}
-            <Icon size={20} strokeWidth={active ? 2.4 : 1.9} color={active ? C.brand : C.slateLight} />
-            <span style={{ fontSize: T.tiny, fontWeight: active ? 700 : 500, color: active ? C.jet : C.slateLight, ...fBody }}>{it.label}</span>
+
+            <Icon
+              size={19}
+              strokeWidth={active ? 2.3 : 1.8}
+              color={active ? activeColor : inactiveColor}
+              style={{ flexShrink: 0, transition: "color 0.2s ease, transform 0.2s ease", transform: active ? "scale(1.05)" : "scale(1)" }}
+            />
+
+            <span
+              style={{
+                fontSize: 10.5,
+                fontWeight: active ? 700 : 500,
+                color: active ? activeColor : inactiveColor,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                width: "100%",
+                textAlign: "center",
+                lineHeight: 1.1,
+                letterSpacing: "-0.1px",
+                ...fBody,
+              }}
+            >
+              {it.label}
+            </span>
           </button>
         );
       })}
@@ -633,7 +722,7 @@ export function BatteryIcon({ color = "currentColor", level = 82 }) {
   );
 }
 
-export function StatusBar({ dark }) {
+export function StatusBar({ dark, overlay }) {
   const C = useColors();
   const { darkMode } = useApp();
   const color = dark ? (darkMode ? C.black : C.white) : C.jet;
@@ -644,6 +733,7 @@ export function StatusBar({ dark }) {
       height: 48, padding: "0 22px",
       fontSize: T.body, fontWeight: 600, color, ...fBody,
       boxSizing: "border-box", pointerEvents: "none", zIndex: 90,
+      ...(overlay ? { position: "absolute", top: 0, left: 0, right: 0, width: "100%" } : {}),
     }}>
       <span style={{
         fontWeight: "700", fontSize: 13.5, letterSpacing: "-0.2px", lineHeight: "1",

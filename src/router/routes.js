@@ -7,10 +7,10 @@
 
 // Onboarding / auth
 import {
-  ScreenSplash, ScreenGetStarted, ScreenRoleSelect, ScreenAuth, ScreenCoachRegister, ScreenCoachInfo,
+  ScreenSplash, ScreenGetStarted, ScreenRoleSelect, ScreenAuth, ScreenCoachInfo,
   ScreenCoachExpertise, ScreenEnableBiometric, ScreenVerification,
   ScreenVerificationPending,
-  ScreenForgotPassword, ScreenResetCode, ScreenResetPassword,
+  ScreenForgotPassword, ScreenResetCode, ScreenResetPassword, ScreenVerifyEmail,
 } from "../screens/onboarding/OnboardingScreens";
 
 import { ScreenAboutYouProfile } from "../screens/client/AboutYou";
@@ -59,8 +59,8 @@ export const ROUTES = {
   "forgot-password": ScreenForgotPassword,
   "reset-code": ScreenResetCode,
   "reset-password": ScreenResetPassword,
+  "verify-email": ScreenVerifyEmail,
   "enable-biometric": ScreenEnableBiometric,
-  "coach-register": ScreenCoachRegister,
   "coach-info": ScreenCoachInfo,
   "coach-expertise": ScreenCoachExpertise,
   "about-you-profile": ScreenAboutYouProfile,
@@ -119,8 +119,8 @@ export const ROUTE_METADATA = {
   "forgot-password": { title: "Forgot Password", category: "Onboarding", role: "client" },
   "reset-code": { title: "Reset Code Verification", category: "Onboarding", role: "client" },
   "reset-password": { title: "Reset Password", category: "Onboarding", role: "client" },
+  "verify-email": { title: "Verify Your Email", category: "Onboarding", role: "client" },
   "enable-biometric": { title: "Enable Biometrics", category: "Onboarding", role: "client" },
-  "coach-register": { title: "Coach Register Step 1", category: "Onboarding", role: "coach" },
   "coach-info": { title: "Coach Info Step 2", category: "Onboarding", role: "coach" },
   "coach-expertise": { title: "Coach Expertise Step 3", category: "Onboarding", role: "coach" },
   "about-you-profile": { title: "Client Setup: Profile", category: "Onboarding", role: "client" },

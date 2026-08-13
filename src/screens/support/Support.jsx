@@ -3,7 +3,7 @@ import { Search, ChevronDown, Send } from "lucide-react";
 import { CL, CD, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { FAQS } from "../../data/mockData";
-import { TopBar, SegTabs, Badge, Card } from "../../components/ui/Primitives";
+import { TopBar, SegTabs, Card } from "../../components/ui/Primitives";
 
 export function ScreenSupport({ nav, params = {}, role }) {
   const { darkMode } = useApp();
@@ -12,7 +12,10 @@ export function ScreenSupport({ nav, params = {}, role }) {
   const [openIdx, setOpenIdx] = useState(null);
   const [chatStarted, setChatStarted] = useState(!!params.bookingContext);
   const [query, setQuery] = useState("");
-  const faqs = FAQS[role === "coach" ? "coach" : "client"].filter((f) => f.q.toLowerCase().includes(query.toLowerCase()));
+  // A topic (e.g. "verification") overrides the role-based FAQ set so a screen
+  // can deep-link straight to the help articles most relevant to it.
+  const faqTopic = params.faqTopic || (role === "coach" ? "coach" : "client");
+  const faqs = (FAQS[faqTopic] || FAQS[role === "coach" ? "coach" : "client"]).filter((f) => f.q.toLowerCase().includes(query.toLowerCase()));
   const backTarget = params.backTo || (role === "coach" ? "coach-dashboard" : "client-home");
 
   return (
@@ -29,7 +32,6 @@ export function ScreenSupport({ nav, params = {}, role }) {
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search help articles"
               style={{ border: "none", outline: "none", background: "none", flex: 1, fontSize: T.body, ...fBody }} />
           </div>
-          <Badge tone="neutral">{role === "coach" ? "Coach help" : "Client help"}</Badge>
           <div style={{ marginTop: 12 }}>
             {faqs.map((f, i) => (
               <Card key={i} style={{ marginBottom: 10 }} onClick={() => setOpenIdx(openIdx === i ? null : i)}>
@@ -51,16 +53,10 @@ export function ScreenSupport({ nav, params = {}, role }) {
         </div>
       ) : (
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-          <div style={{ padding: "0 20px" }}>
-            <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
-              <Badge tone="neutral">{role === "coach" ? "Coach account" : "Client account"}</Badge>
-              <Badge tone="neutral">{params.bookingContext ? `Booking: ${params.bookingContext}` : "Recent booking: Tue, 22 Jul"}</Badge>
-            </div>
-          </div>
           <div style={{ flex: 1, overflowY: "auto", padding: "6px 20px" }}>
             <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: 10 }}>
               <div style={{ maxWidth: "80%", background: C.fog, borderRadius: 16, borderBottomLeftRadius: 4, padding: "10px 13px", fontSize: T.body, color: C.jet, lineHeight: 1.5, ...fBody }}>
-                Hi Sarah 👋 I'm the CoachLink support assistant. I can see your account details{params.bookingContext ? " and this booking" : " and recent booking"} already — what can I help with?
+                Hi Sarah 👋 I'm the CoachLink support assistant. I can see your account details{params.bookingContext ? " and this booking" : params.faqTopic === "verification" ? " and your verification application" : " and recent booking"} already — what can I help with?
               </div>
             </div>
             {chatStarted && (

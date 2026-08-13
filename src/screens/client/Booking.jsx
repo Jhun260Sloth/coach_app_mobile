@@ -169,6 +169,32 @@ export function formatTimeRange12(t, durationMinutes) {
   return `${start} – ${end}`;
 }
 
+// Booking steps are normally reached with coachId/packageId (or a draft)
+// carried over from the previous step, but they can also be opened directly
+// (screen directory, stale history, reset state). Rather than crashing on
+// missing params, fall back to the first coach in the directory and their
+// first package so the flow always has something coherent to render.
+export function resolveBookingCoachPkg(params, draft) {
+  const coach = COACHES.find((c) => c.id === (params?.coachId ?? draft?.coach?.id)) || COACHES[0];
+  const pkg = (coach?.packages || []).find((p) => p.id === (params?.packageId ?? draft?.pkg?.id)) || coach?.packages?.[0];
+  return { coach, pkg };
+}
+
+export function buildFallbackDraft(params, draft) {
+  if (draft && draft.coach && draft.pkg) return draft;
+  const { coach, pkg } = resolveBookingCoachPkg(params, draft);
+  return {
+    coach, pkg,
+    day: params?.presetDate ? formatFullDateFromDate(new Date(params.presetDate)) : "",
+    time: params?.presetTime ? formatTimeRange12(params.presetTime, pkg.duration) : "",
+    mode: pkg.mode,
+    participants: params?.participants || ["self"],
+    repeat: { freq: "once" },
+    sessionCount: 1,
+    total: pkg.price,
+  };
+}
+
 // Blank participant profile draft for the inline "Add Child Profile" modal —
 // same shape as the one on the Account screen, so a child created mid-booking
 // looks and behaves exactly like one added from the Account tab.
@@ -186,8 +212,7 @@ const emptyChildDraft = {
 export function ScreenBookingParticipants({ nav, params, children = [], addChild, toast }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
-  const coach = COACHES.find((c) => c.id === params.coachId);
-  const pkg = coach.packages.find((p) => p.id === params.packageId);
+  const { coach, pkg } = resolveBookingCoachPkg(params, null);
   const allowsMultiple = packageAllowsMultipleParticipants(pkg);
   // The package's "Maximum participants" (set by the coach) caps how many
   // people the client can add to a single booking of this package.
@@ -373,8 +398,7 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
 export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings = [] }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
-  const coach = COACHES.find((c) => c.id === params.coachId);
-  const pkg = coach.packages.find((p) => p.id === params.packageId);
+  const { coach, pkg } = resolveBookingCoachPkg(params, draft);
 
   // Date & time are chosen earlier in the flow (the coach's Packages tab, or
   // the package details screen) and simply arrive here as params — this
@@ -566,11 +590,12 @@ export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings =
   );
 }
 
-export function ScreenBookingReview({ nav, draft, setDraft, toast, children = [], bookings = [], addBooking }) {
+export function ScreenBookingReview({ nav, params, draft, setDraft, toast, children = [], bookings = [], addBooking }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
+  const d = buildFallbackDraft(params, draft);
   // Who's attending was already chosen on the previous step (ScreenBookingParticipants).
-  const participants = draft.participants || ["self"];
+  const participants = d.participants || ["self"];
   const [guardianName, setGuardianName] = useState("");
   const [guardianRelationship, setGuardianRelationship] = useState("");
   const [emergencyName, setEmergencyName] = useState("");
@@ -611,8 +636,8 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast, children = []
       ...selectedChildren.map((c) => c.name || "Unnamed profile"),
     ].join(", ");
 
-  const sessionCount = draft.sessionCount || 1;
-  const subtotal = draft.pkg.price * sessionCount;
+  const sessionCount = d.sessionCount || 1;
+  const subtotal = d.pkg.price * sessionCount;
   const fee = Math.round(subtotal * CONFIG.serviceFeeRate * 100) / 100;
   const total = subtotal + fee;
   const guardianDetailsComplete = guardianName.trim() && guardianRelationship.trim()
@@ -621,23 +646,23 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast, children = []
 
   return (
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title="Review booking" onBack={() => nav("booking-datetime", { coachId: draft.coach.id, packageId: draft.pkg.id, participants })} />
+      <TopBar title="Review booking" onBack={() => nav("booking-datetime", { coachId: d.coach.id, packageId: d.pkg.id, participants })} />
       <div style={{ flex: 1, overflowY: "auto" }}>
         <Card style={{ marginBottom: 14}}>
-          <Row label="Coach" value={draft.coach.name} />
-          <Row label="Service" value={draft.pkg.name} />
-          <Row label="When" value={`${draft.day} at ${draft.time}`} />
-          <Row label="Venue" value={venueLabel(draft.pkg, draft.coach)} />
-          <Row label="Mode of Delivery" value={deliveryModeLabel(draft.pkg)} />
-          <Row label="For" value={participantLabel} last={!draft.repeat || draft.repeat.freq === "once"} />
-          {draft.repeat && draft.repeat.freq !== "once" && (
-            <Row label="Repeats" value={repeatSummaryText(draft.repeat)} last />
+          <Row label="Coach" value={d.coach.name} />
+          <Row label="Service" value={d.pkg.name} />
+          <Row label="When" value={`${d.day} at ${d.time}`} />
+          <Row label="Venue" value={venueLabel(d.pkg, d.coach)} />
+          <Row label="Mode of Delivery" value={deliveryModeLabel(d.pkg)} />
+          <Row label="For" value={participantLabel} last={!d.repeat || d.repeat.freq === "once"} />
+          {d.repeat && d.repeat.freq !== "once" && (
+            <Row label="Repeats" value={repeatSummaryText(d.repeat)} last />
           )}
         </Card>
 
         <Card style={{ marginBottom: 14 }}>
           <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, marginBottom: 6, ...fDisplay }}>Cancellation policy</div>
-          <div style={{ fontSize: T.labelLg, color: C.slate, lineHeight: 1.55, ...fBody }}>{draft.coach.cancellationPolicy}</div>
+          <div style={{ fontSize: T.labelLg, color: C.slate, lineHeight: 1.55, ...fBody }}>{d.coach.cancellationPolicy}</div>
         </Card>
 
         {includesMinor && (
@@ -647,7 +672,7 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast, children = []
               <div>
                 <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Child safety details</div>
                 <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, lineHeight: 1.55, ...fBody }}>
-                  This booking includes a participant under 18, so we share a few extra details with your coach to keep sessions safe. {draft.coach.name.split(" ")[0]} holds the required Working with Children Check, and this information is shared with them only as needed for the session.
+                  This booking includes a participant under 18, so we share a few extra details with your coach to keep sessions safe. {d.coach.name.split(" ")[0]} holds the required Working with Children Check, and this information is shared with them only as needed for the session.
                 </div>
               </div>
             </div>
@@ -735,7 +760,7 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast, children = []
         )}
 
         <Card>
-          <Row label={sessionCount > 1 ? `Session (×${sessionCount})` : "Session"} value={`$${draft.pkg.price.toFixed(2)}${sessionCount > 1 ? ` × ${sessionCount} = $${subtotal.toFixed(2)}` : ""}`} />
+          <Row label={sessionCount > 1 ? `Session (×${sessionCount})` : "Session"} value={`$${d.pkg.price.toFixed(2)}${sessionCount > 1 ? ` × ${sessionCount} = $${subtotal.toFixed(2)}` : ""}`} />
           <Row label="Service fee" value={`$${fee.toFixed(2)}`} />
           <Row label="Total" value={`$${total.toFixed(2)}`} bold last />
         </Card>
@@ -758,11 +783,11 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast, children = []
             }).join("\n");
           const combinedConditions = [conditions.trim(), profileSafetyNotes].filter(Boolean).join("\n");
           const newId = "b" + (bookings.length + 1);
-          const finalDraft = { ...draft, id: newId, total, participants: participantLabel, includesMinor, guardianName, guardianRelationship, emergencyName, emergencyPhone, conditions: combinedConditions };
+          const finalDraft = { ...d, id: newId, total, participants: participantLabel, includesMinor, guardianName, guardianRelationship, emergencyName, emergencyPhone, conditions: combinedConditions };
           setDraft(finalDraft);
           addBooking(finalDraft);
           toast("Booking request sent");
-          nav("booking-request-sent", { id: newId, coachName: draft.coach.name });
+          nav("booking-request-sent", { id: newId, coachName: d.coach.name });
         }}>Submit request</Btn>
       </div>
     </div>
@@ -772,6 +797,7 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast, children = []
 export function ScreenPayment({ nav, params, draft, toast, addBooking, markBookingPaid, pushNotification, biometric, offline }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
+  const d = buildFallbackDraft(params, draft);
   const [confirming, setConfirming] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [result, setResult] = useState(null); // null | "success" | "failed" | "cancelled"
@@ -797,8 +823,8 @@ export function ScreenPayment({ nav, params, draft, toast, addBooking, markBooki
       if (params?.bookingId) {
         markBookingPaid?.(params.bookingId);
       } else {
-        addBooking(draft);
-        pushNotification?.({ audience: "coach", type: "booking", title: "Payment received", body: `Payment of $${draft.total.toFixed(2)} received for ${draft.pkg.name}.` });
+        addBooking(d);
+        pushNotification?.({ audience: "coach", type: "booking", title: "Payment received", body: `Payment of $${d.total.toFixed(2)} received for ${d.pkg.name}.` });
       }
       toast("Payment confirmed");
       setResult("success");
@@ -836,7 +862,7 @@ export function ScreenPayment({ nav, params, draft, toast, addBooking, markBooki
             <StatusBanner state="paymentCancelled" onPrimary={() => setResult(null)} primaryLabel="Resume payment" />
           </div>
         )}
-        <Btn full variant="dark" disabled={busy || offline} onClick={() => pay(false)}>Pay ${draft.total.toFixed(2)} with  Pay</Btn>
+        <Btn full variant="dark" disabled={busy || offline} onClick={() => pay(false)}>Pay ${d.total.toFixed(2)} with  Pay</Btn>
         <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "16px 0" }}>
           <div style={{ flex: 1, height: 1, background: C.border }} /><span style={{ fontSize: T.captionLg, color: C.slateLight, ...fBody }}>or pay by card</span><div style={{ flex: 1, height: 1, background: C.border }} />
         </div>
@@ -855,11 +881,11 @@ export function ScreenPayment({ nav, params, draft, toast, addBooking, markBooki
         </div>
 
         <Card style={{ marginTop: 20 }}>
-          <Row label="Total due today" value={`$${draft.total.toFixed(2)}`} bold last />
+          <Row label="Total due today" value={`$${d.total.toFixed(2)}`} bold last />
         </Card>
         <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginTop: 14 }}>
           <Lock size={13} color={C.slateLight} style={{ marginTop: 2, flexShrink: 0 }} />
-          <span style={{ fontSize: T.captionLg, color: C.slateLight, lineHeight: 1.5, ...fBody }}>Funds are held securely and only released to {draft.coach.name.split(" ")[0]} once you confirm the session is complete.</span>
+          <span style={{ fontSize: T.captionLg, color: C.slateLight, lineHeight: 1.5, ...fBody }}>Funds are held securely and only released to {d.coach.name.split(" ")[0]} once you confirm the session is complete.</span>
         </div>
 
         <button
@@ -895,9 +921,10 @@ export function ScreenPayment({ nav, params, draft, toast, addBooking, markBooki
   );
 }
 
-export function ScreenBookingConfirmation({ nav, draft, toast }) {
+export function ScreenBookingConfirmation({ nav, params, draft, toast }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
+  const d = buildFallbackDraft(params, draft);
   const [synced, setSynced] = useState(false);
   const [locShare, setLocShare] = useState(false);
   return (
@@ -907,18 +934,18 @@ export function ScreenBookingConfirmation({ nav, draft, toast }) {
           <CheckCircle2 size={28} color={C.success} />
         </div>
         <div style={{ fontSize: T.headingLg, fontWeight: 600, color: C.jet, ...fDisplay }}>
-          {draft.coach.instantBook ? "Booking confirmed" : "Request sent"}
+          {d.coach.instantBook ? "Booking confirmed" : "Request sent"}
         </div>
         <div style={{ fontSize: T.body, color: C.slate, marginTop: 4, ...fBody }}>
-          {draft.coach.instantBook ? `You're all set with ${draft.coach.name}.` : `${draft.coach.name} will respond within 24 hours.`}
+          {d.coach.instantBook ? `You're all set with ${d.coach.name}.` : `${d.coach.name} will respond within 24 hours.`}
         </div>
       </div>
 
       <Card style={{ marginBottom: 14 }}>
-        <Row label="Service" value={draft.pkg.name} />
-        <Row label="When" value={`${draft.day} at ${draft.time}`} />
-        <Row label="Location" value={draft.mode} />
-        {draft.participants && <Row label="For" value={draft.participants} last />}
+        <Row label="Service" value={d.pkg.name} />
+        <Row label="When" value={`${d.day} at ${d.time}`} />
+        <Row label="Location" value={d.mode} />
+        {d.participants && <Row label="For" value={d.participants} last />}
       </Card>
 
       <Card style={{ marginBottom: 10 }}>
@@ -941,7 +968,7 @@ export function ScreenBookingConfirmation({ nav, draft, toast }) {
       </Card>
 
       <div style={{ marginTop: "auto", padding: "14px 0", display: "flex", flexDirection: "column", gap: 10 }}>
-        <Btn full variant="secondary" icon={MessageCircle} onClick={() => nav("chat-thread", { name: draft.coach.name })}>Message {draft.coach.name.split(" ")[0]}</Btn>
+        <Btn full variant="secondary" icon={MessageCircle} onClick={() => nav("chat-thread", { name: d.coach.name })}>Message {d.coach.name.split(" ")[0]}</Btn>
         <Btn full onClick={() => nav("client-dashboard")}>Go to dashboard</Btn>
       </div>
     </div>
@@ -957,6 +984,7 @@ export function ScreenBookingConfirmation({ nav, draft, toast }) {
 export function ScreenBookingRequestSent({ nav, params }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
+  const coachName = params?.coachName || COACHES[0].name;
   return (
     <div style={{ padding: "28px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ textAlign: "center", marginBottom: 24 }}>
@@ -971,7 +999,7 @@ export function ScreenBookingRequestSent({ nav, params }) {
 
       <div style={{ marginTop: "auto", padding: "14px 0", display: "flex", flexDirection: "column", gap: 10 }}>
         <Btn full icon={Home} onClick={() => nav("client-home")}>Return to home</Btn>
-        <Btn full variant="secondary" icon={MessageCircle} onClick={() => nav("chat-thread", { name: params.coachName })}>Message Coach</Btn>
+        <Btn full variant="secondary" icon={MessageCircle} onClick={() => nav("chat-thread", { name: coachName })}>Message Coach</Btn>
       </div>
     </div>
   );

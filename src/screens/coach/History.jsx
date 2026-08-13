@@ -110,7 +110,7 @@ export function ScreenCoachHistory({ nav, coachBookings = [], coachNotifications
               return (
                 <Card key={n.id} style={{ marginBottom: 10, display: "flex", gap: 12, alignItems: "flex-start" }}>
                   <div style={{ width: 36, height: 36, borderRadius: 11, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <Icon size={16} color={C.brand} />
+                    <Icon size={16} color={C.brandIcon || C.brandColor} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
