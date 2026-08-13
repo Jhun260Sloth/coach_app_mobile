@@ -1,10 +1,13 @@
 import React from "react";
 import { Flag } from "lucide-react";
-import { C, fBody, T } from "../../theme/theme";
+import { CL, CD, fBody, T } from "../../theme/theme";
+import { useApp } from "../../context/AppContext";
 import { ADMIN_FLAGGED } from "../../data/mockData";
 import { Card, Badge, Btn } from "../../components/ui/Primitives";
 
 export function ScreenAdminMod() {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "18px 20px 0" }}>

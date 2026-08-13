@@ -1,14 +1,11 @@
 import React, { useState, useMemo } from "react";
 import { Calendar as CalendarIcon, Trash2, Plus, Clock, ChevronLeft, ChevronRight, Ban } from "lucide-react";
-import { C, fDisplay, fBody, T } from "../../theme/theme";
+import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { Card, SectionLabel, Btn, Toggle, Chip, EmptyState, SegTabs } from "../../components/ui/Primitives";
+import { useApp } from "../../context/AppContext";
 
 const DAY_OPTIONS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const WEEKDAY_HEADERS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const timeInputStyle = {
-  width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "10px 12px",
-  fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", ...fBody,
-};
 
 // "14:30" -> "2:30 PM"
 function to12h(t) {
@@ -43,6 +40,12 @@ function formatDateShort(d) {
 const DOW_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlocks, setAvailabilityBlocks }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
+  const timeInputStyle = {
+    width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "10px 12px",
+    fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", ...fBody,
+  };
   const [synced, setSynced] = useState(true);
   const [view, setView] = useState("list");
 
@@ -144,8 +147,8 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
                     return (
                       <button key={di} onClick={() => setSelectedDate(d)} style={{
                         aspectRatio: "1", borderRadius: 10, cursor: "pointer",
-                        border: `1px solid ${isSelected ? C.orange : C.border}`,
-                        background: isSelected ? C.orangeTint : C.white,
+                        border: `1px solid ${isSelected ? C.brand : C.border}`,
+                        background: isSelected ? C.brandTint : C.white,
                         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3,
                         opacity: inRange ? 1 : 0.35,
                       }}>
@@ -191,7 +194,7 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
                   {packageMissing(b) ? (
-                    <span style={{ fontSize: T.captionLg, color: C.orange, fontWeight: 600, ...fBody }}>No packages selected</span>
+                    <span style={{ fontSize: T.captionLg, color: C.brand, fontWeight: 600, ...fBody }}>No packages selected</span>
                   ) : (
                     b.packageIds.map((id) => <Chip key={id} active>{packageName(id)}</Chip>)
                   )}
@@ -237,7 +240,7 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
               {packageMissing(b) ? (
-                <span style={{ fontSize: T.captionLg, color: C.orange, fontWeight: 600, ...fBody }}>No packages selected</span>
+                <span style={{ fontSize: T.captionLg, color: C.brand, fontWeight: 600, ...fBody }}>No packages selected</span>
               ) : (
                 b.packageIds.map((id) => <Chip key={id} active>{packageName(id)}</Chip>)
               )}

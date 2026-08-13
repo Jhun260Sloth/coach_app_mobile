@@ -1,16 +1,18 @@
 import React, { useState } from "react";
 import { User, Landmark, Hash, FileText } from "lucide-react";
-import { C, fDisplay, fBody, T } from "../../theme/theme";
-import { TopBar, StepProgress, Btn } from "../../components/ui/Primitives";
-
-const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
-const fieldWrapStyle = {
-  display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`,
-  borderRadius: 13, padding: "11px 13px", marginBottom: 16, boxSizing: "border-box",
-};
-const fieldInputStyle = { border: "none", outline: "none", flex: 1, fontSize: T.subtitle, minWidth: 0, ...fBody };
+import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
+import { TopBar, Btn } from "../../components/ui/Primitives";
+import { useApp } from "../../context/AppContext";
 
 export function ScreenCoachPayoutSetup({ nav, toast }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
+  const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
+  const fieldWrapStyle = {
+    display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`,
+    borderRadius: 13, padding: "11px 13px", marginBottom: 16, boxSizing: "border-box",
+  };
+  const fieldInputStyle = { border: "none", outline: "none", flex: 1, fontSize: T.subtitle, minWidth: 0, ...fBody };
   const [accountHolder, setAccountHolder] = useState("");
   const [bankName, setBankName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
@@ -24,7 +26,6 @@ export function ScreenCoachPayoutSetup({ nav, toast }) {
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "18px 20px 0", flex: 1, overflowY: "auto", paddingBottom: 100 }}>
         <TopBar title="Payout setup" onBack={() => nav("coach-availability-setup")} />
-        <StepProgress step={3} total={3} label="Payout" />
 
         <div style={{ fontSize: T.subtitleLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fDisplay }}>
           Payout Setup

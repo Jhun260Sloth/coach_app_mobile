@@ -4,9 +4,10 @@ import {
   Upload, CheckCircle2, ClipboardList, Clock, Lock, Camera, MapPin, LocateFixed,
   Plus, Trash2, CreditCard, ScanFace, FileCheck2, Smartphone,
 } from "lucide-react";
-import { C, fDisplay, fBody, LOGO_WHITE_SRC, T } from "../../theme/theme";
+import { CL, CD, fDisplay, fBody, LOGO_WHITE_SRC, T } from "../../theme/theme";
+import { useApp } from "../../context/AppContext";
 import {
-  Btn, Card, Badge, Toggle, TopBar, Field, StepProgress, CheckboxRow, RadioRow,
+  Btn, Card, Badge, Toggle, TopBar, Field, CheckboxRow, RadioRow,
   SearchMultiSelect, Avatar, Chip, BottomSheet, Spinner,
 } from "../../components/ui/Primitives";
 import { LogoMark } from "../../components/ui/Primitives";
@@ -17,12 +18,6 @@ import {
   CERTIFICATION_TYPE_OPTIONS,
 } from "../../data/mockData";
 
-const inputStyle = {
-  width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px",
-  fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", ...fBody,
-};
-const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
-
 function AppleIcon({ size = 16, color = "currentColor" }) {
   return (
     <svg width={size} height={size} viewBox="0 0 384 512" fill={color} style={{ flexShrink: 0 }}>
@@ -32,6 +27,10 @@ function AppleIcon({ size = 16, color = "currentColor" }) {
 }
 
 function SelectField({ label, value, onChange, options, placeholder = "Select…" }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
+  const inputStyle = { width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", ...fBody };
+  const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
   return (
     <div>
       <div style={labelStyle}>{label}</div>
@@ -56,13 +55,15 @@ const TERMS_POINTS = [
 ];
 
 function LegalSheet({ open, onClose }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   return (
     <BottomSheet open={open} onClose={onClose} title="Terms & Conditions" heightPct={60}>
       <Badge tone="neutral">Version 2.1 · Updated Jun 2026</Badge>
       <div style={{ marginTop: 14, fontSize: T.body, color: C.slate, lineHeight: 1.7, ...fBody }}>
         {TERMS_POINTS.map((t, i) => (
           <div key={i} style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-            <Check size={14} color={C.orange} style={{ flexShrink: 0, marginTop: 2 }} />
+            <Check size={14} color={C.brand} style={{ flexShrink: 0, marginTop: 2 }} />
             <span>{t}</span>
           </div>
         ))}
@@ -72,6 +73,8 @@ function LegalSheet({ open, onClose }) {
 }
 
 export function ScreenSplash({ nav }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   // Splash is purely branding + loading — it establishes the brand while the
   // app "warms up", then hands off automatically. No auth actions live here.
   useEffect(() => {
@@ -95,6 +98,8 @@ export function ScreenSplash({ nav }) {
 }
 
 export function ScreenGetStarted({ nav }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   return (
     <div style={{ height: "100%", background: C.white, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 28, textAlign: "center" }}>
       <div style={{ animation: "clFadeUp .5s ease" }}>
@@ -111,7 +116,7 @@ export function ScreenGetStarted({ nav }) {
       </div>
       <div style={{ marginTop: 16 }}>
         <button onClick={() => nav("auth", { mode: "login" })} style={{ background: "none", border: "none", color: C.slate, fontSize: T.bodyLg, cursor: "pointer", ...fBody }}>
-          Have an existing account? <span style={{ color: C.orange, fontWeight: 600 }}>Sign In</span>
+          Have an existing account? <span style={{ color: C.brand, fontWeight: 600 }}>Sign In</span>
         </button>
       </div>
     </div>
@@ -119,13 +124,15 @@ export function ScreenGetStarted({ nav }) {
 }
 
 export function ScreenRoleSelect({ nav, setRole }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   // Picking a path here kicks off account creation directly — existing users
   // use the "Sign In" link below instead of going through role selection.
   const Option = ({ role, title, body, icon: Icon }) => (
     <button onClick={() => { setRole(role); nav("auth", { mode: "signup" }); }}
       style={{ width: "100%", textAlign: "left", background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 18, padding: 16, display: "flex", gap: 14, alignItems: "flex-start", cursor: "pointer", marginBottom: 12 }}>
-      <div style={{ width: 44, height: 44, borderRadius: 13, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-        <Icon size={20} color={C.orange} />
+      <div style={{ width: 44, height: 44, borderRadius: 13, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <Icon size={20} color={C.brand} />
       </div>
       <div>
         <div style={{ fontWeight: 600, color: C.jet, fontSize: T.subtitleLg, marginBottom: 3, ...fDisplay }}>{title}</div>
@@ -142,7 +149,7 @@ export function ScreenRoleSelect({ nav, setRole }) {
       <Option role="coach" icon={Users} title="Coach others" body="List your services, manage bookings and get paid automatically." />
       <div style={{ marginTop: "auto", textAlign: "center", paddingTop: 16 }}>
         <button onClick={() => nav("auth", { mode: "login" })} style={{ background: "none", border: "none", color: C.slate, fontSize: T.bodyLg, cursor: "pointer", ...fBody }}>
-          Have an existing account? <span style={{ color: C.orange, fontWeight: 600 }}>Sign In</span>
+          Have an existing account? <span style={{ color: C.brand, fontWeight: 600 }}>Sign In</span>
         </button>
       </div>
     </div>
@@ -150,6 +157,10 @@ export function ScreenRoleSelect({ nav, setRole }) {
 }
 
 export function ScreenAuth({ nav, params, role, toast, biometric }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
+  const inputStyle = { width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", ...fBody };
+  const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
   // Login is the default landing point after role selection — "Create an account"
   // is what reveals the registration flow (a dedicated screen for coaches, since
   // that signup needs extra fields; an inline form for clients).
@@ -190,7 +201,7 @@ export function ScreenAuth({ nav, params, role, toast, biometric }) {
         {mode === "signup"
           ? (role === "coach" ? "Signing up as a Coach." : "Signing up as a Client.")
           : (role === "coach" ? "Signing in as a Coach." : "Signing in as a Client.")}{" "}
-        <button onClick={() => nav("role-select")} style={{ background: "none", border: "none", color: C.orange, fontWeight: 600, cursor: "pointer", fontSize: T.bodyLg}}>Change</button>
+        <button onClick={() => nav("role-select")} style={{ background: "none", border: "none", color: C.brand, fontWeight: 600, cursor: "pointer", fontSize: T.bodyLg}}>Change</button>
       </div>
 
        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -221,7 +232,7 @@ export function ScreenAuth({ nav, params, role, toast, biometric }) {
 
       {mode === "login" && (
         <div style={{ textAlign: "right", marginTop: 10 }}>
-          <button onClick={() => nav("forgot-password", { role })} style={{ background: "none", border: "none", color: C.orange, fontWeight: 600, fontSize: T.labelLg, cursor: "pointer", ...fBody }}>
+          <button onClick={() => nav("forgot-password", { role })} style={{ background: "none", border: "none", color: C.brand, fontWeight: 600, fontSize: T.labelLg, cursor: "pointer", ...fBody }}>
             Forgot password?
           </button>
         </div>
@@ -229,12 +240,12 @@ export function ScreenAuth({ nav, params, role, toast, biometric }) {
 
       {mode === "signup" && (
         <button onClick={() => setAgree((v) => !v)} style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "none", border: "none", cursor: "pointer", textAlign: "left", marginTop: 14, padding: "6px 0" }}>
-          <div style={{ width: 19, height: 19, borderRadius: 6, border: `1.5px solid ${agree ? C.orange : C.border}`, background: agree ? C.orange : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+          <div style={{ width: 19, height: 19, borderRadius: 6, border: `1.5px solid ${agree ? C.brand : C.border}`, background: agree ? C.brand : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
             {agree && <Check size={12} color={C.white} />}
           </div>
           <span style={{ fontSize: T.labelLg, color: C.jet, lineHeight: 1.5, ...fBody }}>
             I agree to the{" "}
-            <span onClick={(e) => { e.stopPropagation(); setShowTerms(true); }} style={{ color: C.orange, fontWeight: 600, textDecoration: "underline" }}>Terms & Conditions</span>
+            <span onClick={(e) => { e.stopPropagation(); setShowTerms(true); }} style={{ color: C.brand, fontWeight: 600, textDecoration: "underline" }}>Terms & Conditions</span>
           </span>
         </button>
       )}
@@ -266,7 +277,7 @@ export function ScreenAuth({ nav, params, role, toast, biometric }) {
       <div style={{ marginTop: "auto", textAlign: "center", paddingBottom: 22 }}>
         <button onClick={mode === "signup" ? () => setMode("login") : goCreateAccount} style={{ background: "none", border: "none", color: C.slate, fontSize: T.body, cursor: "pointer", ...fBody }}>
           {mode === "signup" ? "Already have an account? " : "New to CoachLink? "}
-          <span style={{ color: C.orange, fontWeight: 600 }}>{mode === "signup" ? "Sign in" : "Create an account"}</span>
+          <span style={{ color: C.brand, fontWeight: 600 }}>{mode === "signup" ? "Sign in" : "Create an account"}</span>
         </button>
       </div>
 
@@ -281,6 +292,8 @@ export function ScreenAuth({ nav, params, role, toast, biometric }) {
    is accepted and simply advances the flow (mirrors login/signup here).
    ========================================================================= */
 export function ScreenForgotPassword({ nav, params, role, toast }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const effectiveRole = params?.role || role;
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
@@ -299,8 +312,8 @@ export function ScreenForgotPassword({ nav, params, role, toast }) {
   return (
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="" onBack={() => nav("auth", { mode: "login" })} />
-      <div style={{ width: 52, height: 52, borderRadius: 16, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
-        <Lock size={22} color={C.orange} />
+      <div style={{ width: 52, height: 52, borderRadius: 16, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
+        <Lock size={22} color={C.brand} />
       </div>
       <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Forgot your password?</div>
       <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 6, marginBottom: 24, lineHeight: 1.55, ...fBody }}>
@@ -312,7 +325,7 @@ export function ScreenForgotPassword({ nav, params, role, toast }) {
       </div>
       <div style={{ marginTop: "auto", textAlign: "center", paddingBottom: 22 }}>
         <button onClick={() => nav("auth", { mode: "login" })} style={{ background: "none", border: "none", color: C.slate, fontSize: T.body, cursor: "pointer", ...fBody }}>
-          Remembered it? <span style={{ color: C.orange, fontWeight: 600 }}>Back to sign in</span>
+          Remembered it? <span style={{ color: C.brand, fontWeight: 600 }}>Back to sign in</span>
         </button>
       </div>
     </div>
@@ -320,6 +333,8 @@ export function ScreenForgotPassword({ nav, params, role, toast }) {
 }
 
 export function ScreenResetCode({ nav, params, toast }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const email = params?.email || "";
   const role = params?.role;
   const [digits, setDigits] = useState(["", "", "", "", "", ""]);
@@ -339,8 +354,8 @@ export function ScreenResetCode({ nav, params, toast }) {
   return (
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="" onBack={() => nav("forgot-password", { role })} />
-      <div style={{ width: 52, height: 52, borderRadius: 16, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
-        <Smartphone size={22} color={C.orange} />
+      <div style={{ width: 52, height: 52, borderRadius: 16, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
+        <Smartphone size={22} color={C.brand} />
       </div>
       <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Enter the code</div>
       <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 6, marginBottom: 26, lineHeight: 1.55, ...fBody }}>
@@ -358,7 +373,7 @@ export function ScreenResetCode({ nav, params, toast }) {
             maxLength={1}
             style={{
               width: 44, height: 54, textAlign: "center", fontSize: T.headingLg, fontWeight: 700,
-              border: `1.5px solid ${d ? C.orange : C.border}`, borderRadius: 13, outline: "none",
+              border: `1.5px solid ${d ? C.brand : C.border}`, borderRadius: 13, outline: "none",
               color: C.jet, boxSizing: "border-box", ...fDisplay,
             }}
           />
@@ -369,7 +384,7 @@ export function ScreenResetCode({ nav, params, toast }) {
       </div>
       <div style={{ marginTop: 16, textAlign: "center" }}>
         <button onClick={() => toast(`Code resent to ${email || "your email"}`)} style={{ background: "none", border: "none", color: C.slate, fontSize: T.body, cursor: "pointer", ...fBody }}>
-          Didn't get it? <span style={{ color: C.orange, fontWeight: 600 }}>Resend code</span>
+          Didn't get it? <span style={{ color: C.brand, fontWeight: 600 }}>Resend code</span>
         </button>
       </div>
     </div>
@@ -377,6 +392,8 @@ export function ScreenResetCode({ nav, params, toast }) {
 }
 
 export function ScreenResetPassword({ nav, params, toast }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const role = params?.role;
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -394,8 +411,8 @@ export function ScreenResetPassword({ nav, params, toast }) {
   return (
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="" onBack={() => nav("reset-code", { role })} />
-      <div style={{ width: 52, height: 52, borderRadius: 16, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
-        <Check size={22} color={C.orange} />
+      <div style={{ width: 52, height: 52, borderRadius: 16, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
+        <Check size={22} color={C.brand} />
       </div>
       <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Set a new password</div>
       <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 6, marginBottom: 22, lineHeight: 1.55, ...fBody }}>
@@ -421,6 +438,10 @@ export function ScreenResetPassword({ nav, params, toast }) {
 }
 
 export function ScreenCoachRegister({ nav, toast, updateCoachOnboarding }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
+  const inputStyle = { width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", ...fBody };
+  const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -445,7 +466,6 @@ export function ScreenCoachRegister({ nav, toast, updateCoachOnboarding }) {
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="" onBack={() => nav("role-select")} />
       <div style={{ flex: 1, overflowY: "auto", paddingBottom: 24 }}>
-        <StepProgress step={1} total={4} label="Account" />
 
         <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Create your coach account</div>
         <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 8, marginBottom: 20, lineHeight: 1.55, ...fBody }}>
@@ -506,12 +526,12 @@ export function ScreenCoachRegister({ nav, toast, updateCoachOnboarding }) {
 
         <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 4 }}>
           <button onClick={() => setAgreeTerms((v) => !v)} style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: "6px 0" }}>
-            <div style={{ width: 19, height: 19, borderRadius: 6, border: `1.5px solid ${agreeTerms ? C.orange : C.border}`, background: agreeTerms ? C.orange : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+            <div style={{ width: 19, height: 19, borderRadius: 6, border: `1.5px solid ${agreeTerms ? C.brand : C.border}`, background: agreeTerms ? C.brand : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
               {agreeTerms && <Check size={12} color={C.white} />}
             </div>
             <span style={{ fontSize: T.labelLg, color: C.jet, ...fBody }}>
               I agree to the{" "}
-              <span onClick={(e) => { e.stopPropagation(); setShowTerms(true); }} style={{ color: C.orange, fontWeight: 600, textDecoration: "underline" }}>Terms & Conditions</span>
+              <span onClick={(e) => { e.stopPropagation(); setShowTerms(true); }} style={{ color: C.brand, fontWeight: 600, textDecoration: "underline" }}>Terms & Conditions</span>
             </span>
           </button>
         </div>
@@ -537,7 +557,7 @@ export function ScreenCoachRegister({ nav, toast, updateCoachOnboarding }) {
 
         <div style={{ textAlign: "center", marginTop: 20, paddingBottom: 8 }}>
           <button onClick={() => nav("auth", { mode: "login" })} style={{ background: "none", border: "none", color: C.slate, fontSize: T.body, cursor: "pointer", ...fBody }}>
-            Already have an account? <span style={{ color: C.orange, fontWeight: 600 }}>Login</span>
+            Already have an account? <span style={{ color: C.brand, fontWeight: 600 }}>Login</span>
           </button>
         </div>
       </div>
@@ -548,6 +568,8 @@ export function ScreenCoachRegister({ nav, toast, updateCoachOnboarding }) {
 }
 
 export function ScreenEnableBiometric({ nav, params, toast, biometric, setBiometric, role }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const next = params?.next || (role === "coach" ? "coach-info" : "about-you-profile");
 
   const enable = () => {
@@ -564,8 +586,8 @@ export function ScreenEnableBiometric({ nav, params, toast, biometric, setBiomet
   return (
     <div style={{ padding: "24px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
-        <div style={{ width: 84, height: 84, borderRadius: 24, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 22 }}>
-          <ScanFace size={38} color={C.orange} />
+        <div style={{ width: 84, height: 84, borderRadius: 24, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 22 }}>
+          <ScanFace size={38} color={C.brand} />
         </div>
         <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, ...fDisplay }}>Set up Face ID</div>
         <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 10, lineHeight: 1.6, maxWidth: 280, ...fBody }}>
@@ -581,6 +603,10 @@ export function ScreenEnableBiometric({ nav, params, toast, biometric, setBiomet
 }
 
 export function ScreenCoachInfo({ nav, toast, coachOnboarding, updateCoachOnboarding }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
+  const inputStyle = { width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", ...fBody };
+  const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
   const [photo, setPhoto] = useState(coachOnboarding.photo || null);
   const [displayName, setDisplayName] = useState(coachOnboarding.displayName || "");
   const [bio, setBio] = useState(coachOnboarding.bio || "");
@@ -624,7 +650,6 @@ export function ScreenCoachInfo({ nav, toast, coachOnboarding, updateCoachOnboar
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="" onBack={() => nav("coach-register")} />
       <div style={{ flex: 1, overflowY: "auto", paddingBottom: 24 }}>
-        <StepProgress step={2} total={4} label="Coach info" />
 
         <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Coach information</div>
         <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 8, marginBottom: 20, lineHeight: 1.55, ...fBody }}>
@@ -638,7 +663,7 @@ export function ScreenCoachInfo({ nav, toast, coachOnboarding, updateCoachOnboar
             ) : (
               <Avatar name={displayName || "New Coach"} size={84} />
             )}
-            <button onClick={() => photoInputRef.current?.click()} style={{ position: "absolute", bottom: -2, right: -2, width: 28, height: 28, borderRadius: 99, background: C.orange, border: `2px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+            <button onClick={() => photoInputRef.current?.click()} style={{ position: "absolute", bottom: -2, right: -2, width: 28, height: 28, borderRadius: 99, background: C.brand, border: `2px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
               <Camera size={13} color={C.white} />
             </button>
           </div>
@@ -676,12 +701,12 @@ export function ScreenCoachInfo({ nav, toast, coachOnboarding, updateCoachOnboar
             <div style={labelStyle}>Location</div>
             {location ? (
               <div style={{ border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", display: "flex", alignItems: "center", gap: 10 }}>
-                <MapPin size={16} color={C.orange} style={{ flexShrink: 0 }} />
+                <MapPin size={16} color={C.brand} style={{ flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{location.suburb}, {location.state}</div>
                   <div style={{ fontSize: T.captionLg, color: C.slate, ...fBody }}>Postcode {location.postcode}</div>
                 </div>
-                <button onClick={() => setLocation(null)} style={{ background: "none", border: "none", color: C.orange, fontSize: T.label, fontWeight: 600, cursor: "pointer", ...fBody }}>Change</button>
+                <button onClick={() => setLocation(null)} style={{ background: "none", border: "none", color: C.brand, fontSize: T.label, fontWeight: 600, cursor: "pointer", ...fBody }}>Change</button>
               </div>
             ) : (
               <>
@@ -713,7 +738,7 @@ export function ScreenCoachInfo({ nav, toast, coachOnboarding, updateCoachOnboar
                     </div>
                   )}
                 </div>
-                <button onClick={useCurrentLocation} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: C.orange, fontSize: T.labelLg, fontWeight: 600, marginTop: 8, padding: 0, ...fBody }}>
+                <button onClick={useCurrentLocation} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: C.brand, fontSize: T.labelLg, fontWeight: 600, marginTop: 8, padding: 0, ...fBody }}>
                   <LocateFixed size={14} /> Use current location
                 </button>
               </>
@@ -730,6 +755,8 @@ export function ScreenCoachInfo({ nav, toast, coachOnboarding, updateCoachOnboar
 }
 
 export function ScreenCoachExpertise({ nav, coachOnboarding, updateCoachOnboarding }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const [primarySports, setPrimarySports] = useState(coachOnboarding.primarySports || []);
   const [secondarySports, setSecondarySports] = useState(coachOnboarding.secondarySports || []);
   const [categories, setCategories] = useState(coachOnboarding.coachingCategories || []);
@@ -755,7 +782,6 @@ export function ScreenCoachExpertise({ nav, coachOnboarding, updateCoachOnboardi
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="" onBack={() => nav("coach-info")} />
       <div style={{ flex: 1, overflowY: "auto", paddingBottom: 24 }}>
-        <StepProgress step={3} total={4} label="Expertise" />
 
         <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Coaching expertise</div>
         <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 8, marginBottom: 20, lineHeight: 1.55, ...fBody }}>
@@ -824,6 +850,10 @@ function emptyQualification() {
 }
 
 export function ScreenVerification({ nav, toast, submitVerification, coachOnboarding }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
+  const inputStyle = { width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", ...fBody };
+  const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
   const [idType, setIdType] = useState("");
   const [idUploaded, setIdUploaded] = useState(false);
   const [selfieUploaded, setSelfieUploaded] = useState(false);
@@ -845,7 +875,6 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
     <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="" onBack={() => nav("coach-expertise")} />
       <div style={{ flex: 1, overflowY: "auto", paddingBottom: 24 }}>
-        <StepProgress step={4} total={4} label="Verification" />
 
         <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Get verified</div>
         <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 8, marginBottom: 18, lineHeight: 1.55, ...fBody }}>
@@ -861,8 +890,8 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
         <Card style={{ marginBottom: 18 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div style={{ display: "flex", gap: 10, alignItems: "center", minWidth: 0 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 11, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <CreditCard size={16} color={C.orange} />
+              <div style={{ width: 36, height: 36, borderRadius: 11, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <CreditCard size={16} color={C.brand} />
               </div>
               <div>
                 <div style={{ fontWeight: 600, fontSize: T.bodyLg, color: C.jet, ...fBody }}>{idType || "Select an ID type above"}</div>
@@ -878,8 +907,8 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
         <Card style={{ marginBottom: 18 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div style={{ display: "flex", gap: 10, alignItems: "center", minWidth: 0 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 11, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <ScanFace size={16} color={C.orange} />
+              <div style={{ width: 36, height: 36, borderRadius: 11, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <ScanFace size={16} color={C.brand} />
               </div>
               <div>
                 <div style={{ fontWeight: 600, fontSize: T.bodyLg, color: C.jet, ...fBody }}>Take or upload a selfie</div>
@@ -986,6 +1015,8 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
 }
 
 export function ScreenVerificationPending({ nav, verificationStatus, setReachedDashboardAfterVerification }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const approved = verificationStatus === "approved";
   const goToSetup = () => {
     if (approved && setReachedDashboardAfterVerification) setReachedDashboardAfterVerification(true);
@@ -996,10 +1027,10 @@ export function ScreenVerificationPending({ nav, verificationStatus, setReachedD
       <div style={{ textAlign: "center", marginTop: 20 }}>
         <div style={{
           width: 64, height: 64, borderRadius: 20,
-          background: approved ? C.successTint : C.orangeTint,
+          background: approved ? C.successTint : C.brandTint,
           display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px",
         }}>
-          {approved ? <CheckCircle2 size={28} color={C.success} /> : <ClipboardList size={28} color={C.orange} />}
+          {approved ? <CheckCircle2 size={28} color={C.success} /> : <ClipboardList size={28} color={C.brand} />}
         </div>
         <div style={{ fontSize: T.headingLg, fontWeight: 600, color: C.jet, ...fDisplay }}>
           {approved ? "Your application has been successfully verified" : "Verification submitted"}
@@ -1035,6 +1066,8 @@ export function ScreenVerificationPending({ nav, verificationStatus, setReachedD
 }
 
 export function ScreenAdminLogin({ nav, toast }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const [showPw, setShowPw] = useState(false);
   return (
     <div style={{ height: "100%", background: C.white, display: "flex", flexDirection: "column", padding: "40px 24px 28px" }}>
@@ -1151,7 +1184,7 @@ export function ScreenAdminLogin({ nav, toast }) {
       style={{
         background: "none",
         border: "none",
-        color: C.orange,
+        color: C.brand,
         fontSize: T.labelLg,
         fontWeight: 600,
         cursor: "pointer",

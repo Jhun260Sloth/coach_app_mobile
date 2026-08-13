@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import { HelpCircle, ChevronLeft, Paperclip, MapPin, Send, MoreVertical, Flag, Ban, Check, CheckCircle2, Calendar, FileText, Navigation, AlertCircle, RotateCcw, Pin, PinOff, Trash2, MessageCircle } from "lucide-react";
-import { C, fDisplay, fBody, T } from "../../theme/theme";
+import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
+import { useApp } from "../../context/AppContext";
 import { THREADS, COACH_THREADS, CHAT_MESSAGES, BOOKING_ENQUIRY_MESSAGES, COACHES } from "../../data/mockData";
 import { Avatar, BottomSheet, Btn, EmptyState } from "../../components/ui/Primitives";
 import { StatusBanner } from "../../systems/StateSystem";
@@ -64,20 +65,22 @@ const iconBox = (bg) => ({
   display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
 });
 
-const sheetBtn = (extra = {}) => ({
+const sheetBtn = (C) => (extra = {}) => ({
   display: "flex", alignItems: "center", gap: 12, padding: "14px 4px",
   background: "none", border: "none", borderBottom: `1px solid ${C.border}`,
   cursor: "pointer", textAlign: "left", ...extra,
 });
 
-const cancelBtn = {
+const cancelBtn = (C) => ({
   padding: "14px 4px", background: "none", border: "none", cursor: "pointer",
   textAlign: "left", fontSize: T.bodyLg, fontWeight: 600, color: C.slate, ...fBody,
-};
+});
 
 /* ── Messages Screen ───────────────────────────────────────────────────── */
 
 export function ScreenMessages({ nav, role, isFirstTimeClient }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const { isBlocked, unblock } = useBlockedThreads();
   const { isPinned, pin, unpin } = usePinnedThreads();
   const { isDeleted, remove } = useDeletedThreads();
@@ -160,7 +163,7 @@ export function ScreenMessages({ nav, role, isFirstTimeClient }) {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                   <span style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
-                    {pinned && <Pin size={11} color={C.orange} style={{ flexShrink: 0 }} fill={C.orange} />}
+                    {pinned && <Pin size={11} color={C.brand} style={{ flexShrink: 0 }} fill={C.brand} />}
                     <span style={{ fontSize: T.subtitle, fontWeight: 600, color: blocked ? C.slate : C.jet, ...fDisplay, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {t.withName}
                     </span>
@@ -179,7 +182,7 @@ export function ScreenMessages({ nav, role, isFirstTimeClient }) {
                     fontSize: T.labelLg, marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                     color: t.unread > 0 ? C.jet : C.slate, fontWeight: t.unread > 0 ? 600 : 400, ...fBody,
                   }}>
-                    <span style={{ color: C.orange, fontWeight: 600 }}>{t.context}</span>
+                    <span style={{ color: C.brand, fontWeight: 600 }}>{t.context}</span>
                     <span style={{ color: C.slateLight, fontWeight: 400 }}> · </span>
                     {t.lastMsg}
                   </div>
@@ -188,7 +191,7 @@ export function ScreenMessages({ nav, role, isFirstTimeClient }) {
 
               {!blocked && t.unread > 0 && (
                 <span style={{
-                  width: 18, height: 18, borderRadius: 99, background: C.orange,
+                  width: 18, height: 18, borderRadius: 99, background: C.brand,
                   color: C.white, fontSize: T.micro, fontWeight: 700,
                   display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
                 }}>
@@ -212,14 +215,14 @@ export function ScreenMessages({ nav, role, isFirstTimeClient }) {
       <BottomSheet open={!!blockedThread} onClose={() => setBlockedThread(null)}
         title={blockedThread?.withName || "Conversation blocked"} heightPct={30}>
         <div style={{ display: "flex", flexDirection: "column" }}>
-          <button onClick={() => { unblock(blockedThread.id); setBlockedThread(null); }} style={sheetBtn()}>
+          <button onClick={() => { unblock(blockedThread.id); setBlockedThread(null); }} style={sheetBtn(C)()}>
             <div style={iconBox(C.successTint)}><CheckCircle2 size={16} color={C.success} /></div>
             <div>
               <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.success, ...fBody }}>Unblock {blockedThread?.withName}</div>
               <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>They can message and book you again</div>
             </div>
           </button>
-          <button onClick={() => setBlockedThread(null)} style={cancelBtn}>Cancel</button>
+          <button onClick={() => setBlockedThread(null)} style={cancelBtn(C)}>Cancel</button>
         </div>
       </BottomSheet>
 
@@ -232,10 +235,10 @@ export function ScreenMessages({ nav, role, isFirstTimeClient }) {
               isPinned(optionsThread.id) ? unpin(optionsThread.id) : pin(optionsThread.id);
               setOptionsThread(null);
             }}
-            style={sheetBtn()}
+            style={sheetBtn(C)()}
           >
-            <div style={iconBox(C.orangeTint)}>
-              {isPinned(optionsThread?.id) ? <PinOff size={16} color={C.orange} /> : <Pin size={16} color={C.orange} />}
+            <div style={iconBox(C.brandTint)}>
+              {isPinned(optionsThread?.id) ? <PinOff size={16} color={C.brand} /> : <Pin size={16} color={C.brand} />}
             </div>
             <div>
               <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>
@@ -248,7 +251,7 @@ export function ScreenMessages({ nav, role, isFirstTimeClient }) {
           </button>
           <button
             onClick={() => { setDeleteTarget(optionsThread); setOptionsThread(null); }}
-            style={sheetBtn()}
+            style={sheetBtn(C)()}
           >
             <div style={iconBox(C.dangerTint)}><Trash2 size={16} color={C.danger} /></div>
             <div>
@@ -256,7 +259,7 @@ export function ScreenMessages({ nav, role, isFirstTimeClient }) {
               <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>Removes it from your messages</div>
             </div>
           </button>
-          <button onClick={() => setOptionsThread(null)} style={cancelBtn}>Cancel</button>
+          <button onClick={() => setOptionsThread(null)} style={cancelBtn(C)}>Cancel</button>
         </div>
       </BottomSheet>
 
@@ -281,6 +284,8 @@ export function ScreenMessages({ nav, role, isFirstTimeClient }) {
 /* ── Confirm Dialog ────────────────────────────────────────────────────── */
 
 function ConfirmDialog({ open, onClose, children }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   if (!open) return null;
   return (
     <div onClick={onClose} style={{
@@ -303,6 +308,8 @@ function ConfirmDialog({ open, onClose, children }) {
 const REPORT_REASONS = ["Harassment or bullying", "Inappropriate messages", "Spam or scam", "Unsafe behaviour", "Something else"];
 
 function ConversationOptionsFlow({ otherName, onReportSubmit, onBlockConfirm, isBlocked, onUnblock, step, setStep, blockStep, setBlockStep, selectedReason, setSelectedReason, customReason, setCustomReason }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const closeAll = () => { setStep(null); setBlockStep(null); setSelectedReason(null); setCustomReason(""); };
   const canSubmit = selectedReason && (selectedReason !== "Something else" || customReason.trim().length > 0);
 
@@ -311,8 +318,8 @@ function ConversationOptionsFlow({ otherName, onReportSubmit, onBlockConfirm, is
       {/* Options Sheet */}
       <BottomSheet open={step === "options"} onClose={closeAll} title="Conversation options" heightPct={isBlocked ? 30 : 34}>
         <div style={{ display: "flex", flexDirection: "column" }}>
-          <button onClick={() => setStep("report-reason")} style={sheetBtn()}>
-            <div style={iconBox(C.orangeTint)}><Flag size={16} color={C.orange} /></div>
+          <button onClick={() => setStep("report-reason")} style={sheetBtn(C)()}>
+            <div style={iconBox(C.brandTint)}><Flag size={16} color={C.brand} /></div>
             <div>
               <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>Report conversation</div>
               <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>Flag this conversation for review by CoachLink Support</div>
@@ -320,7 +327,7 @@ function ConversationOptionsFlow({ otherName, onReportSubmit, onBlockConfirm, is
           </button>
 
           {isBlocked ? (
-            <button onClick={() => { onUnblock(); closeAll(); }} style={sheetBtn()}>
+            <button onClick={() => { onUnblock(); closeAll(); }} style={sheetBtn(C)()}>
               <div style={iconBox(C.successTint)}><CheckCircle2 size={16} color={C.success} /></div>
               <div>
                 <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.success, ...fBody }}>Unblock {otherName}</div>
@@ -328,7 +335,7 @@ function ConversationOptionsFlow({ otherName, onReportSubmit, onBlockConfirm, is
               </div>
             </button>
           ) : (
-            <button onClick={() => { setStep(null); setBlockStep("confirm"); }} style={sheetBtn()}>
+            <button onClick={() => { setStep(null); setBlockStep("confirm"); }} style={sheetBtn(C)()}>
               <div style={iconBox(C.dangerTint)}><Ban size={16} color={C.danger} /></div>
               <div>
                 <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.danger, ...fBody }}>Block {otherName}</div>
@@ -337,7 +344,7 @@ function ConversationOptionsFlow({ otherName, onReportSubmit, onBlockConfirm, is
             </button>
           )}
 
-          <button onClick={closeAll} style={cancelBtn}>Cancel</button>
+          <button onClick={closeAll} style={cancelBtn(C)}>Cancel</button>
         </div>
       </BottomSheet>
 
@@ -352,11 +359,11 @@ function ConversationOptionsFlow({ otherName, onReportSubmit, onBlockConfirm, is
                 <button key={r} onClick={() => setSelectedReason(r)} style={{
                   display: "flex", alignItems: "center", justifyContent: "space-between",
                   padding: "12px 14px", borderRadius: 12, cursor: "pointer", textAlign: "left",
-                  border: `1.5px solid ${selectedReason === r ? C.orange : C.border}`,
-                  background: selectedReason === r ? C.orangeTint : C.white,
+                  border: `1.5px solid ${selectedReason === r ? C.brand : C.border}`,
+                  background: selectedReason === r ? C.brandTint : C.white,
                 }}>
                   <span style={{ fontSize: T.body, color: C.jet, ...fBody }}>{r}</span>
-                  {selectedReason === r && <Check size={16} color={C.orange} />}
+                  {selectedReason === r && <Check size={16} color={C.brand} />}
                 </button>
               ))}
             </div>
@@ -412,6 +419,8 @@ function ConversationOptionsFlow({ otherName, onReportSubmit, onBlockConfirm, is
 /* ── Success Panel (shared) ────────────────────────────────────────────── */
 
 function SuccessPanel({ title, body, onDone }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   return (
     <div style={{ textAlign: "center", padding: "10px 8px" }}>
       <div style={{ ...iconBox(C.successTint), width: 56, height: 56, borderRadius: 18, margin: "0 auto 14px" }}>
@@ -427,6 +436,8 @@ function SuccessPanel({ title, body, onDone }) {
 /* ── Chat Thread Screen ────────────────────────────────────────────────── */
 
 export function ScreenChatThread({ nav, params, role, toast, offline, bookings, coachBookings }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const { isBlocked, block, unblock } = useBlockedThreads();
   const threadId = params?.threadId || params?.bookingId || params?.name;
   const blocked = isBlocked(threadId);
@@ -530,7 +541,7 @@ export function ScreenChatThread({ nav, params, role, toast, offline, bookings, 
           <Avatar name={params.name} size={38} />
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: T.subtitle, fontWeight: 600, color: C.jet, ...fDisplay }}>{params.name}</div>
-            {params.context && <div style={{ fontSize: T.caption, color: C.orange, fontWeight: 600, ...fBody }}>{params.context}</div>}
+            {params.context && <div style={{ fontSize: T.caption, color: C.brand, fontWeight: 600, ...fBody }}>{params.context}</div>}
           </div>
           <button onClick={() => setStep("options")} style={{
             width: 34, height: 34, borderRadius: 11, background: "none", border: "none",
@@ -557,10 +568,10 @@ export function ScreenChatThread({ nav, params, role, toast, offline, bookings, 
               <div style={{
                 maxWidth: "75%", display: "flex", alignItems: "center", gap: 10, padding: "10px 13px", borderRadius: 16,
                 borderBottomRightRadius: m.from === "me" ? 4 : 16, borderBottomLeftRadius: m.from === "me" ? 16 : 4,
-                background: m.from === "me" ? C.orangeTint : C.fog, ...fBody,
+                background: m.from === "me" ? C.brandTint : C.fog, ...fBody,
               }}>
                 <div style={{ width: 32, height: 32, borderRadius: 9, background: C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <FileText size={15} color={C.orange} />
+                  <FileText size={15} color={C.brand} />
                 </div>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.fileName}</div>
@@ -571,18 +582,18 @@ export function ScreenChatThread({ nav, params, role, toast, offline, bookings, 
               <div style={{
                 maxWidth: "75%", borderRadius: 16, overflow: "hidden",
                 borderBottomRightRadius: m.from === "me" ? 4 : 16, borderBottomLeftRadius: m.from === "me" ? 16 : 4,
-                background: m.from === "me" ? C.orangeTint : C.fog,
+                background: m.from === "me" ? C.brandTint : C.fog,
               }}>
                 <div style={{
                   height: 74, background: `repeating-linear-gradient(45deg, ${C.border} 0 6px, ${C.fog} 6px 12px)`,
                   display: "flex", alignItems: "center", justifyContent: "center",
                 }}>
-                  <div style={{ width: 30, height: 30, borderRadius: 99, background: C.orange, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,.25)" }}>
+                  <div style={{ width: 30, height: 30, borderRadius: 99, background: C.brand, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,.25)" }}>
                     <MapPin size={16} color={C.white} />
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 12px", fontSize: T.labelLg, fontWeight: 600, color: C.jet, ...fBody }}>
-                  <Navigation size={12} color={C.orange} /> Live location shared
+                  <Navigation size={12} color={C.brand} /> Live location shared
                 </div>
               </div>
             ) : (
@@ -591,7 +602,7 @@ export function ScreenChatThread({ nav, params, role, toast, offline, bookings, 
                   padding: "10px 13px", borderRadius: 16,
                   borderBottomRightRadius: m.from === "me" ? 4 : 16,
                   borderBottomLeftRadius: m.from === "me" ? 16 : 4,
-                  background: m.status === "failed" ? C.dangerTint : m.from === "me" ? C.orange : C.fog,
+                  background: m.status === "failed" ? C.dangerTint : m.from === "me" ? C.brand : C.fog,
                   color: m.status === "failed" ? C.danger : m.from === "me" ? C.white : C.jet,
                   fontSize: T.bodyLg, lineHeight: 1.45, ...fBody,
                 }}>
@@ -628,7 +639,7 @@ export function ScreenChatThread({ nav, params, role, toast, offline, bookings, 
           <div style={{ display: "flex", alignItems: "center", gap: 10, background: C.fog, borderRadius: 12, padding: "12px 14px", fontSize: T.labelLg, color: C.slate, lineHeight: 1.5, ...fBody }}>
             <Ban size={15} color={C.danger} style={{ flexShrink: 0 }} />
             <span style={{ flex: 1 }}>You blocked {params.name}.</span>
-            <button onClick={() => unblock(threadId)} style={{ fontSize: T.labelLg, fontWeight: 600, color: C.white, background: C.orange, border: "none", borderRadius: 8, padding: "6px 12px", cursor: "pointer", whiteSpace: "nowrap", ...fBody }}>
+            <button onClick={() => unblock(threadId)} style={{ fontSize: T.labelLg, fontWeight: 600, color: C.white, background: C.brand, border: "none", borderRadius: 8, padding: "6px 12px", cursor: "pointer", whiteSpace: "nowrap", ...fBody }}>
               Unblock
             </button>
           </div>
@@ -646,7 +657,7 @@ export function ScreenChatThread({ nav, params, role, toast, offline, bookings, 
           </button>
           <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && send()}
             placeholder="Message..." style={{ flex: 1, border: `1.5px solid ${C.border}`, borderRadius: 20, padding: "9px 14px", fontSize: T.bodyLg, outline: "none", ...fBody }} />
-          <button onClick={send} style={{ width: 36, height: 36, borderRadius: 99, background: C.orange, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+          <button onClick={send} style={{ width: 36, height: 36, borderRadius: 99, background: C.brand, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
             <Send size={15} color={C.white} />
           </button>
         </div>

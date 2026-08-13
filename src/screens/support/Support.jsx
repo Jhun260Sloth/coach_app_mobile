@@ -1,10 +1,13 @@
 import React, { useState } from "react";
 import { Search, ChevronDown, Send } from "lucide-react";
-import { C, fBody, T } from "../../theme/theme";
+import { CL, CD, fBody, T } from "../../theme/theme";
+import { useApp } from "../../context/AppContext";
 import { FAQS } from "../../data/mockData";
 import { TopBar, SegTabs, Badge, Card } from "../../components/ui/Primitives";
 
 export function ScreenSupport({ nav, params = {}, role }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const [tab, setTab] = useState(params.presetTab || "faq");
   const [openIdx, setOpenIdx] = useState(null);
   const [chatStarted, setChatStarted] = useState(!!params.bookingContext);
@@ -37,7 +40,7 @@ export function ScreenSupport({ nav, params = {}, role }) {
                 {openIdx === i && (
                   <div style={{ marginTop: 10 }}>
                     <p style={{ fontSize: T.labelLg, color: C.slate, lineHeight: 1.6, ...fBody }}>{f.a}</p>
-                    <button onClick={(e) => { e.stopPropagation(); setTab("chat"); setChatStarted(true); }} style={{ background: "none", border: "none", color: C.orange, fontWeight: 600, fontSize: T.label, marginTop: 8, cursor: "pointer", ...fBody }}>
+                    <button onClick={(e) => { e.stopPropagation(); setTab("chat"); setChatStarted(true); }} style={{ background: "none", border: "none", color: C.brand, fontWeight: 600, fontSize: T.label, marginTop: 8, cursor: "pointer", ...fBody }}>
                       Didn't solve it? Contact support →
                     </button>
                   </div>
@@ -62,7 +65,7 @@ export function ScreenSupport({ nav, params = {}, role }) {
             </div>
             {chatStarted && (
               <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
-                <div style={{ maxWidth: "80%", background: C.orange, color: C.white, borderRadius: 16, borderBottomRightRadius: 4, padding: "10px 13px", fontSize: T.body, lineHeight: 1.5, ...fBody }}>
+                <div style={{ maxWidth: "80%", background: C.brand, color: C.white, borderRadius: 16, borderBottomRightRadius: 4, padding: "10px 13px", fontSize: T.body, lineHeight: 1.5, ...fBody }}>
                   {params.bookingContext ? `I have a question about my ${params.bookingContext} booking.` : "The FAQ didn't quite answer my question."}
                 </div>
               </div>
@@ -75,7 +78,7 @@ export function ScreenSupport({ nav, params = {}, role }) {
           </div>
           <div style={{ padding: "10px 20px 20px", display: "flex", gap: 8, borderTop: `1px solid ${C.border}` }}>
             <input placeholder="Describe your issue..." style={{ flex: 1, border: `1.5px solid ${C.border}`, borderRadius: 20, padding: "9px 14px", fontSize: T.bodyLg, outline: "none", ...fBody }} />
-            <button style={{ width: 36, height: 36, borderRadius: 99, background: C.orange, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+            <button style={{ width: 36, height: 36, borderRadius: 99, background: C.brand, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
               <Send size={15} color={C.white} />
             </button>
           </div>

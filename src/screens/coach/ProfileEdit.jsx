@@ -5,27 +5,32 @@ import {
   Wallet, Banknote, CalendarClock, Zap, Hand, Bell, MapPin, Film, Play, Image as ImageIcon, Trophy,
   History as HistoryIcon,
 } from "lucide-react";
-import { C, fDisplay, fBody, T } from "../../theme/theme";
+import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { COACHES, LANGUAGE_OPTIONS, GENDER_OPTIONS, AU_SUBURBS, SPORTS, SPORT_ICON } from "../../data/mockData";
 import {
   Avatar, SectionLabel, Chip, Card, Toggle, Btn, Badge, BottomSheet, Field,
   SearchMultiSelect, SearchSelect, ScrollFadeRow, SegTabs,
 } from "../../components/ui/Primitives";
+import { useApp } from "../../context/AppContext";
 import { CoverBanner } from "../client/CoachProfile";
 
 const LOCATION_OPTIONS = AU_SUBURBS.map((s) => `${s.suburb}, ${s.state}`);
 
 function SportTag({ sport }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const Icon = SPORT_ICON[sport] || Trophy;
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 999, background: C.fog, fontSize: T.captionLg, fontWeight: 600, color: C.jet, ...fBody }}>
-      <Icon size={12} color={C.orange} />
+      <Icon size={12} color={C.brand} />
       {sport}
     </span>
   );
 }
 
 function Row2({ icon: Icon, label, sub, onClick, right, danger }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   return (
     <button
       onClick={onClick}
@@ -46,20 +51,22 @@ function Row2({ icon: Icon, label, sub, onClick, right, danger }) {
 }
 
 function OptionCard({ icon: Icon, dotColor, title, desc, selected, onClick }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   return (
     <button
       onClick={onClick}
       style={{
         display: "flex", alignItems: "flex-start", gap: 12, width: "100%", textAlign: "left",
         padding: 14, borderRadius: 16, marginBottom: 10, cursor: "pointer",
-        border: `1.5px solid ${selected ? C.orange : C.border}`,
-        background: selected ? C.orangeTint : C.white,
+        border: `1.5px solid ${selected ? C.brand : C.border}`,
+        background: selected ? C.brandTint : C.white,
         transition: "border-color .15s ease, background .15s ease",
       }}
     >
       {Icon && (
         <div style={{ width: 36, height: 36, borderRadius: 12, background: selected ? C.white : C.fog, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <Icon size={16} color={selected ? C.orange : C.slate} />
+          <Icon size={16} color={selected ? C.brand : C.slate} />
         </div>
       )}
       {!Icon && dotColor && (
@@ -71,93 +78,95 @@ function OptionCard({ icon: Icon, dotColor, title, desc, selected, onClick }) {
       </div>
       <div style={{
         width: 19, height: 19, borderRadius: 99, flexShrink: 0, marginTop: 1,
-        border: `1.5px solid ${selected ? C.orange : C.border}`, background: C.white,
+        border: `1.5px solid ${selected ? C.brand : C.border}`, background: C.white,
         display: "flex", alignItems: "center", justifyContent: "center",
       }}>
-        {selected && <div style={{ width: 10, height: 10, borderRadius: 99, background: C.orange }} />}
+        {selected && <div style={{ width: 10, height: 10, borderRadius: 99, background: C.brand }} />}
       </div>
     </button>
   );
 }
 
-const CANCELLATION_POLICIES = [
-  { key: "Flexible", dotColor: C.success, desc: "Full refund up to 24 hours before the session." },
-  { key: "Moderate", dotColor: C.orange, desc: "Full refund up to 48 hours before; 50% refund after." },
-  { key: "Strict", dotColor: C.danger, desc: "Full refund up to 7 days before; no refund after that." },
-];
+export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage, removePackage, biometric, setBiometric, coachMedia = [], coachAvailableNow, setCoachAvailableNow }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
+  const coach = COACHES[1];
 
-function StatBox({ label, value }) {
-  return (
-    <div style={{ flex: 1, background: C.fog, borderRadius: 14, padding: "10px 12px" }}>
-      <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fDisplay }}>{value || "—"}</div>
-      <div style={{ fontSize: T.tiny, color: C.slate, marginTop: 2, ...fBody }}>{label}</div>
-    </div>
-  );
-}
+  const CANCELLATION_POLICIES = [
+    { key: "Flexible", dotColor: C.success, desc: "Full refund up to 24 hours before the session." },
+    { key: "Moderate", dotColor: C.brand, desc: "Full refund up to 48 hours before; 50% refund after." },
+    { key: "Strict", dotColor: C.danger, desc: "Full refund up to 7 days before; no refund after that." },
+  ];
 
-function ProfilePreview({ coach, data, packages, bookingType }) {
-  const activePackages = packages.filter((p) => p.active !== false);
-  return (
-    <div>
-      <div style={{ margin: "-4px -20px 0", position: "relative" }}>
-        <CoverBanner sport={coach.sport} height={100} />
-        <div style={{ position: "absolute", bottom: -30, left: 20 }}>
-          {data.photo ? (
-            <img src={data.photo} alt="Profile" style={{ width: 64, height: 64, borderRadius: 64, objectFit: "cover", border: `3px solid ${C.white}`, display: "block" }} />
-          ) : (
-            <Avatar name={data.displayName || coach.name} size={64} ring />
+  function StatBox({ label, value }) {
+    return (
+      <div style={{ flex: 1, background: C.fog, borderRadius: 14, padding: "10px 12px" }}>
+        <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fDisplay }}>{value || "—"}</div>
+        <div style={{ fontSize: T.tiny, color: C.slate, marginTop: 2, ...fBody }}>{label}</div>
+      </div>
+    );
+  }
+
+  function ProfilePreview({ coach, data, packages, bookingType }) {
+    const activePackages = packages.filter((p) => p.active !== false);
+    return (
+      <div>
+        <div style={{ margin: "-4px -20px 0", position: "relative" }}>
+          <CoverBanner sport={coach.sport} height={100} />
+          <div style={{ position: "absolute", bottom: -30, left: 20 }}>
+            {data.photo ? (
+              <img src={data.photo} alt="Profile" style={{ width: 64, height: 64, borderRadius: 64, objectFit: "cover", border: `3px solid ${C.white}`, display: "block" }} />
+            ) : (
+              <Avatar name={data.displayName || coach.name} size={64} ring />
+            )}
+          </div>
+        </div>
+        <div style={{ height: 38 }} />
+
+        <div style={{ fontSize: T.heading, fontWeight: 600, color: C.jet, ...fDisplay }}>{data.displayName || coach.name}</div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+          {(data.sports?.length ? data.sports : [coach.sport]).map((s) => <SportTag key={s} sport={s} />)}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 8 }}>
+          <MapPin size={12.5} color={C.slateLight} />
+          <span style={{ fontSize: T.label, color: C.slate, ...fBody }}>{data.location || coach.suburb}</span>
+        </div>
+
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
+          {coach.verified.identity && <Badge tone="success" icon={ShieldCheck}>ID verified</Badge>}
+          {coach.verified.wwcc && <Badge tone="success" icon={ShieldCheck}>WWCC verified</Badge>}
+          {coach.verified.quals && <Badge tone="success" icon={BadgeCheck}>Quals checked</Badge>}
+          <Badge tone="orange">{bookingType === "instant" ? "Instant book" : "Request to book"}</Badge>
+        </div>
+
+        <div style={{ marginTop: 18 }}>
+          <SectionLabel>Bio</SectionLabel>
+          <p style={{ fontSize: T.body, color: C.slate, lineHeight: 1.6, ...fBody }}>{data.bio || "No bio added yet."}</p>
+        </div>
+
+        <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+          <StatBox label="Experience" value={data.yearsExperience ? `${data.yearsExperience} yrs` : coach.experience} />
+          <StatBox label="Languages" value={(data.languages && data.languages.length) ? data.languages.join(", ") : "English"} />
+        </div>
+
+        <div style={{ marginTop: 18 }}>
+          <SectionLabel>Services</SectionLabel>
+          {activePackages.length === 0 && (
+            <div style={{ fontSize: T.labelLg, color: C.slateLight, ...fBody }}>No active packages published yet.</div>
           )}
+          {activePackages.map((p) => (
+            <Card key={p.id} style={{ marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{p.name}</div>
+                <div style={{ fontSize: T.caption, color: C.slate, marginTop: 1, ...fBody }}>{p.packageType || p.type} · {p.duration || p.durationMinutes} min</div>
+              </div>
+              <div style={{ fontSize: T.subtitle, fontWeight: 700, color: C.jet, ...fDisplay }}>${p.price}</div>
+            </Card>
+          ))}
         </div>
       </div>
-      <div style={{ height: 38 }} />
-
-      <div style={{ fontSize: T.heading, fontWeight: 600, color: C.jet, ...fDisplay }}>{data.displayName || coach.name}</div>
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
-        {(data.sports?.length ? data.sports : [coach.sport]).map((s) => <SportTag key={s} sport={s} />)}
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 8 }}>
-        <MapPin size={12.5} color={C.slateLight} />
-        <span style={{ fontSize: T.label, color: C.slate, ...fBody }}>{data.location || coach.suburb}</span>
-      </div>
-
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
-        {coach.verified.identity && <Badge tone="success" icon={ShieldCheck}>ID verified</Badge>}
-        {coach.verified.wwcc && <Badge tone="success" icon={ShieldCheck}>WWCC verified</Badge>}
-        {coach.verified.quals && <Badge tone="success" icon={BadgeCheck}>Quals checked</Badge>}
-        <Badge tone="orange">{bookingType === "instant" ? "Instant book" : "Request to book"}</Badge>
-      </div>
-
-      <div style={{ marginTop: 18 }}>
-        <SectionLabel>Bio</SectionLabel>
-        <p style={{ fontSize: T.body, color: C.slate, lineHeight: 1.6, ...fBody }}>{data.bio || "No bio added yet."}</p>
-      </div>
-
-      <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-        <StatBox label="Experience" value={data.yearsExperience ? `${data.yearsExperience} yrs` : coach.experience} />
-        <StatBox label="Languages" value={(data.languages && data.languages.length) ? data.languages.join(", ") : "English"} />
-      </div>
-
-      <div style={{ marginTop: 18 }}>
-        <SectionLabel>Services</SectionLabel>
-        {activePackages.length === 0 && (
-          <div style={{ fontSize: T.labelLg, color: C.slateLight, ...fBody }}>No active packages published yet.</div>
-        )}
-        {activePackages.map((p) => (
-          <Card key={p.id} style={{ marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{p.name}</div>
-              <div style={{ fontSize: T.caption, color: C.slate, marginTop: 1, ...fBody }}>{p.packageType || p.type} · {p.duration || p.durationMinutes} min</div>
-            </div>
-            <div style={{ fontSize: T.subtitle, fontWeight: 700, color: C.jet, ...fDisplay }}>${p.price}</div>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage, removePackage, biometric, setBiometric, coachMedia = [], coachAvailableNow, setCoachAvailableNow }) {
-  const coach = COACHES[1];
+    );
+  }
 
   const [profile, setProfile] = useState({
     photo: null,
@@ -491,7 +500,7 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
                 ) : (
                   <Avatar name={draft.displayName || "You"} size={76} />
                 )}
-                <button onClick={() => photoInputRef.current?.click()} style={{ position: "absolute", bottom: -2, right: -2, width: 26, height: 26, borderRadius: 99, background: C.orange, border: `2px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                <button onClick={() => photoInputRef.current?.click()} style={{ position: "absolute", bottom: -2, right: -2, width: 26, height: 26, borderRadius: 99, background: C.brand, border: `2px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                   <Camera size={12} color={C.white} />
                 </button>
               </div>

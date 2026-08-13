@@ -2,7 +2,8 @@ import React from "react";
 import {
   Clock, DollarSign, Users, MapPin, Wrench, Tag, Info, XCircle,
 } from "lucide-react";
-import { C, fDisplay, fBody, T } from "../../theme/theme";
+import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
+import { useApp } from "../../context/AppContext";
 import { COACHES } from "../../data/mockData";
 import { Avatar, Card, SectionLabel, Btn, TopBar } from "../../components/ui/Primitives";
 import { packageLocationLabel } from "../../components/ui/ServicePackageForm";
@@ -16,6 +17,8 @@ import { formatTimeRange12, formatFullDateFromDate } from "./Booking";
  * the client into the booking flow (Who's attending → date & time…).
  */
 export function ScreenPackageDetail({ nav, params }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const coach = COACHES.find((c) => c.id === params.coachId) || COACHES[0];
   const pkg = coach.packages.find((p) => p.id === params.packageId) || coach.packages[0];
   const unavailable = pkg.active === false;
@@ -81,7 +84,7 @@ export function ScreenPackageDetail({ nav, params }) {
           <Card>
             {rows.map((r, i) => (
               <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "9px 0", borderBottom: i === rows.length - 1 ? "none" : `1px solid ${C.border}` }}>
-                <r.icon size={15} color={C.orange} style={{ marginTop: 1, flexShrink: 0 }} />
+                <r.icon size={15} color={C.brand} style={{ marginTop: 1, flexShrink: 0 }} />
                 <div>
                   <div style={{ fontSize: T.caption, color: C.slateLight, ...fBody }}>{r.label}</div>
                   <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, marginTop: 1, ...fBody }}>{r.value}</div>

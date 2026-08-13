@@ -1,19 +1,23 @@
 import React, { useState } from "react";
 import { SlidersHorizontal } from "lucide-react";
-import { C, fBody, T } from "../../theme/theme";
+import { CL, CD, fBody, T } from "../../theme/theme";
+import { useApp } from "../../context/AppContext";
 import { RADIUS_PRESETS_KM, CUSTOM_RADIUS_MIN_KM, CUSTOM_RADIUS_MAX_KM } from "../../lib/mapUtils";
-
-const pill = active => ({
-  display: "inline-flex", alignItems: "center", gap: 5, flexShrink: 0,
-  padding: "7px 12px", borderRadius: 999, fontSize: T.labelLg, fontWeight: 600,
-  border: `1px solid ${active ? C.orange : C.border}`,
-  background: active ? C.orangeTint : C.white, color: active ? C.orange : C.jet,
-  cursor: "pointer", whiteSpace: "nowrap", ...fBody,
-});
 
 // Isolated so dragging the custom-radius slider (which changes on every pixel)
 // only re-renders this small control, not the whole map + coach pin tree.
 function RadiusFilterBase({ radiusKm, onChange, resultCount }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
+
+  const pill = active => ({
+    display: "inline-flex", alignItems: "center", gap: 5, flexShrink: 0,
+    padding: "7px 12px", borderRadius: 999, fontSize: T.labelLg, fontWeight: 600,
+    border: `1px solid ${active ? C.brand : C.border}`,
+    background: active ? C.brandTint : C.white, color: active ? C.brand : C.jet,
+    cursor: "pointer", whiteSpace: "nowrap", ...fBody,
+  });
+
   const isPreset = radiusKm != null && RADIUS_PRESETS_KM.includes(radiusKm);
   const isCustom = radiusKm != null && !isPreset;
   const [showCustom, setShowCustom] = useState(false);
@@ -50,7 +54,7 @@ function RadiusFilterBase({ radiusKm, onChange, resultCount }) {
           </div>
           <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
             <button onClick={() => setShowCustom(false)} style={{ flex: 1, padding: "8px 0", borderRadius: 10, border: `1px solid ${C.border}`, background: C.white, color: C.jet, fontSize: T.labelLg, fontWeight: 600, cursor: "pointer", ...fBody }}>Close</button>
-            <button onClick={apply} style={{ flex: 1, padding: "8px 0", borderRadius: 10, border: "none", background: C.orange, color: C.white, fontSize: T.labelLg, fontWeight: 700, cursor: "pointer", ...fBody }}>Apply</button>
+            <button onClick={apply} style={{ flex: 1, padding: "8px 0", borderRadius: 10, border: "none", background: C.brand, color: C.white, fontSize: T.labelLg, fontWeight: 700, cursor: "pointer", ...fBody }}>Apply</button>
           </div>
         </div>
       ) : (

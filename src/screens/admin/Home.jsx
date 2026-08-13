@@ -1,25 +1,30 @@
 import React from "react";
 import { TrendingUp, Percent, ClipboardList, Users, ChevronRight } from "lucide-react";
-import { C, fDisplay, fBody, T } from "../../theme/theme";
+import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
+import { useApp } from "../../context/AppContext";
 import { CONFIG, ADMIN_RECENT_BOOKINGS } from "../../data/mockData";
 import { Card, Badge, SectionLabel, Avatar, StatusPill } from "../../components/ui/Primitives";
 
 export function AdminSectionHeader({ title, count, onSeeAll }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 22, marginBottom: 10 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <SectionLabel>{title}</SectionLabel>
         {count != null && <Badge tone={count > 0 ? "orange" : "neutral"}>{count}</Badge>}
       </div>
-      {onSeeAll && <button onClick={onSeeAll} style={{ background: "none", border: "none", color: C.orange, fontSize: T.label, fontWeight: 600, cursor: "pointer", ...fBody }}>See all</button>}
+      {onSeeAll && <button onClick={onSeeAll} style={{ background: "none", border: "none", color: C.brand, fontSize: T.label, fontWeight: 600, cursor: "pointer", ...fBody }}>See all</button>}
     </div>
   );
 }
 
 export function StatBig({ label, value, icon: Icon }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   return (
     <Card>
-      <Icon size={15} color={C.orange} />
+      <Icon size={15} color={C.brand} />
       <div style={{ fontSize: T.headingLg, fontWeight: 700, color: C.jet, marginTop: 8, ...fDisplay }}>{value}</div>
       <div style={{ fontSize: T.caption, color: C.slate, ...fBody }}>{label}</div>
     </Card>
@@ -27,6 +32,8 @@ export function StatBig({ label, value, icon: Icon }) {
 }
 
 export function ScreenAdminHome({ nav, verificationQueue, disputes }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const pendingCount = verificationQueue.length;
   const disputeCount = disputes.length;
   return (

@@ -1,9 +1,12 @@
 import React, { useState } from "react";
 import { ShieldCheck, ChevronRight, FileImage, CheckCircle2, Info, X } from "lucide-react";
-import { C, fDisplay, fBody, T } from "../../theme/theme";
+import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
+import { useApp } from "../../context/AppContext";
 import { Avatar, Card, Badge, EmptyState, TopBar, SectionLabel, Btn } from "../../components/ui/Primitives";
 
 export function ScreenAdminVerify({ nav, verificationQueue }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "18px 20px 0" }}>
@@ -31,6 +34,8 @@ export function ScreenAdminVerify({ nav, verificationQueue }) {
 }
 
 export function ScreenAdminVerifyDetail({ nav, params, verificationQueue, decideVerification }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const applicant = verificationQueue.find((v) => v.id === params.id);
   const [viewingDoc, setViewingDoc] = useState(null);
   if (!applicant) return <EmptyState icon={ShieldCheck} title="Request not found" body="This request may have already been reviewed." />;
@@ -50,8 +55,8 @@ export function ScreenAdminVerifyDetail({ nav, params, verificationQueue, decide
         <SectionLabel>Uploaded documents</SectionLabel>
         {applicant.documents.map((doc) => (
           <Card key={doc.key} onClick={() => setViewingDoc(doc)} style={{ marginBottom: 10, display: "flex", gap: 12, alignItems: "center" }}>
-            <div style={{ width: 40, height: 40, borderRadius: 11, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <FileImage size={18} color={C.orange} />
+            <div style={{ width: 40, height: 40, borderRadius: 11, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <FileImage size={18} color={C.brand} />
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{doc.label}</div>

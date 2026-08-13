@@ -1,6 +1,7 @@
 import React from "react";
 import { Trash2 } from "lucide-react";
-import { C, fBody, T } from "../../theme/theme";
+import { CL, CD, fBody, T } from "../../theme/theme";
+import { useApp } from "../../context/AppContext";
 import { TopBar } from "../../components/ui/Primitives";
 import { ServicePackageForm, recordToPackageForm, packageFormToRecord } from "../../components/ui/ServicePackageForm";
 
@@ -10,6 +11,8 @@ import { ServicePackageForm, recordToPackageForm, packageFormToRecord } from "..
  * record and saves overwrite it in place.
  */
 export function ScreenCoachPackageForm({ nav, params, toast, coachPackages, savePackage, removePackage }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const editing = params?.id ? coachPackages.find((p) => p.id === params.id) : null;
   const initial = editing ? recordToPackageForm(editing) : undefined;
 

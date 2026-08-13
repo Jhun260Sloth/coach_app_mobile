@@ -3,7 +3,8 @@ import {
   ChevronLeft, ChevronRight, Heart, Share2, Star, ShieldCheck, BadgeCheck, Play, MessageCircle, CheckCircle2, Trophy,
   Clock, TrendingUp, Repeat, MapPin, Navigation, Award, Users, XCircle, Sunrise, Sun, Moon,
 } from "lucide-react";
-import { C, fDisplay, fBody, T } from "../../theme/theme";
+import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
+import { useApp } from "../../context/AppContext";
 import { COACHES, REVIEWS, SPORT_ICON } from "../../data/mockData";
 import { Avatar, Badge, SegTabs, SectionLabel, Card, Btn, StarRow } from "../../components/ui/Primitives";
 import { StatusBanner } from "../../systems/StateSystem";
@@ -35,13 +36,15 @@ function derivePackageAvailability(coach, pkg) {
 const LIVE_AVAILABILITY_COACH_ID = "c2";
 
 export function CoverBanner({ sport, height = 150 }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const Icon = SPORT_ICON[sport] || Trophy;
   return (
     <div style={{ height, position: "relative", flexShrink: 0, overflow: "hidden", background: `linear-gradient(145deg, ${C.jet} 0%, ${C.jetSoft} 55%, #3A3F4C 100%)` }}>
       {/* soft light wash for photographic depth */}
       <div style={{ position: "absolute", inset: 0, background: "radial-gradient(120% 90% at 15% 0%, rgba(255,255,255,.10), transparent 55%)" }} />
       {/* signature angled accent, echoing the logo flag */}
-      <div style={{ position: "absolute", top: -30, right: -20, width: 160, height: 100, background: C.orange, opacity: 0.9, transform: "rotate(-18deg)", clipPath: "polygon(20% 0%, 100% 0%, 80% 100%, 0% 100%)" }} />
+      <div style={{ position: "absolute", top: -30, right: -20, width: 160, height: 100, background: C.brand, opacity: 0.9, transform: "rotate(-18deg)", clipPath: "polygon(20% 0%, 100% 0%, 80% 100%, 0% 100%)" }} />
       <div style={{ position: "absolute", top: -30, right: 40, width: 90, height: 100, background: C.jet, opacity: 0.55, transform: "rotate(-18deg)", clipPath: "polygon(20% 0%, 100% 0%, 80% 100%, 0% 100%)" }} />
       {/* oversized watermark icon for a sport-specific "stock photo" feel */}
       <Icon size={140} color="#FFFFFF" strokeWidth={1.1} style={{ position: "absolute", bottom: -30, left: -20, opacity: 0.14, transform: "rotate(-8deg)" }} />
@@ -50,6 +53,8 @@ export function CoverBanner({ sport, height = 150 }) {
 }
 
 export function ScreenCoachProfile({ nav, params, favorites, toggleFav, coachAvailableNow }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const coach = COACHES.find((c) => c.id === params.id) || COACHES[0];
   const { getReply } = useReviewActions();
   const [tab, setTab] = useState("about");
@@ -132,7 +137,7 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav, coachAva
           </div>
           <div style={{ position: "absolute", top: 16, right: 16, display: "flex", gap: 8, pointerEvents: "auto" }}>
             <button onClick={() => toggleFav(coach.id)} style={{ width: 34, height: 34, borderRadius: 11, background: "rgba(255,255,255,.18)", backdropFilter: "blur(4px)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-              <Heart size={16} color={C.white} fill={fav ? C.orange : "none"} />
+              <Heart size={16} color={C.white} fill={fav ? C.brand : "none"} />
             </button>
             <button style={{ width: 34, height: 34, borderRadius: 11, background: "rgba(255,255,255,.18)", backdropFilter: "blur(4px)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
               <Share2 size={15} color={C.white} />
@@ -152,7 +157,7 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav, coachAva
           </div>
           <div style={{ textAlign: "right" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 4, fontWeight: 700, color: C.jet, ...fBody }}>
-              <Star size={14} fill={C.orange} color={C.orange} /> {coach.rating}
+              <Star size={14} fill={C.brand} color={C.brand} /> {coach.rating}
             </div>
             <div style={{ fontSize: T.captionLg, color: C.slate, ...fBody }}>{coach.reviews} reviews</div>
           </div>
@@ -187,7 +192,7 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav, coachAva
           ].map((s, i) => (
             <div key={i} style={{ flex: 1, minWidth: 0, background: C.fog, borderRadius: 10, padding: "8px 4px", textAlign: "center" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
-                <s.icon size={11} color={C.orange} style={{ flexShrink: 0 }} />
+                <s.icon size={11} color={C.brand} style={{ flexShrink: 0 }} />
                 <span style={{ fontSize: T.caption, fontWeight: 700, color: C.jet, ...fBody }}>{s.value}</span>
               </div>
               <div style={{ fontSize: T.tiny, color: C.slate, marginTop: 3, lineHeight: 1.25, ...fBody }}>{s.label}</div>
@@ -214,14 +219,14 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav, coachAva
             <SectionLabel>Location & travel</SectionLabel>
             <Card style={{ marginBottom: 16 }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
-                <MapPin size={15} color={C.orange} style={{ marginTop: 1, flexShrink: 0 }} />
+                <MapPin size={15} color={C.brand} style={{ marginTop: 1, flexShrink: 0 }} />
                 <div>
                   <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{coach.venue}</div>
                   <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 1, ...fBody }}>{coach.suburb}</div>
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                <Navigation size={15} color={C.orange} style={{ marginTop: 1, flexShrink: 0 }} />
+                <Navigation size={15} color={C.brand} style={{ marginTop: 1, flexShrink: 0 }} />
                 <div>
                   <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>Travels up to {coach.travelRadiusKm}km</div>
                   <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 1, ...fBody }}>
@@ -297,12 +302,12 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav, coachAva
                     let background = C.white;
                     let border = C.border;
                     let color = C.jet;
-                    if ((state === "available" || state === "limited") && inRange) { border = C.orange; }
+                    if ((state === "available" || state === "limited") && inRange) { border = C.brand; }
                     if (disabled) { color = C.slateLight; }
                     // Today gets its own green border so it stands out from the
                     // regular available/unavailable states on the calendar.
                     if (isToday && inRange && !isSelected) { border = C.success; }
-                    if (isSelected) { background = C.orange; border = C.orange; color = C.white; }
+                    if (isSelected) { background = C.brand; border = C.brand; color = C.white; }
 
                     return (
                       <button
@@ -327,13 +332,13 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav, coachAva
 
               <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap", justifyContent: "center" }}>
                 <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: T.tiny, color: C.slate, ...fBody }}>
-                  <span style={{ width: 9, height: 9, borderRadius: 3, border: `1.5px solid ${C.orange}` }} /> Available
+                  <span style={{ width: 9, height: 9, borderRadius: 3, border: `1.5px solid ${C.brand}` }} /> Available
                 </span>
                 <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: T.tiny, color: C.slate, ...fBody }}>
                   <span style={{ width: 9, height: 9, borderRadius: 3, background: C.fog, border: `1.5px solid ${C.border}` }} /> Unavailable
                 </span>
                 <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: T.tiny, color: C.slate, ...fBody }}>
-                  <span style={{ width: 9, height: 9, borderRadius: 3, background: C.orange }} /> Selected
+                  <span style={{ width: 9, height: 9, borderRadius: 3, background: C.brand }} /> Selected
                 </span>
               </div>
             </Card>
@@ -401,8 +406,8 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav, coachAva
                   onClick={pkgUnavailable ? undefined : () => setSelectedPkgId((id) => (id === p.id ? null : p.id))}
                   style={{
                     marginBottom: 10,
-                    border: `1.5px solid ${selected ? C.orange : C.border}`,
-                    background: selected ? C.orangeTint : pkgUnavailable ? C.fog : C.white,
+                    border: `1.5px solid ${selected ? C.brand : C.border}`,
+                    background: selected ? C.brandTint : pkgUnavailable ? C.fog : C.white,
                     opacity: pkgUnavailable ? 0.6 : 1,
                     cursor: pkgUnavailable ? "default" : "pointer",
                   }}
@@ -428,10 +433,10 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav, coachAva
                       </>
                     ) : (
                       <>
-                        <div style={{ width: 18, height: 18, borderRadius: 18, border: `1.5px solid ${selected ? C.orange : C.border}`, background: selected ? C.orange : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <div style={{ width: 18, height: 18, borderRadius: 18, border: `1.5px solid ${selected ? C.brand : C.border}`, background: selected ? C.brand : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                           {selected && <CheckCircle2 size={11} color={C.white} />}
                         </div>
-                        <span style={{ fontSize: T.labelLg, fontWeight: 600, color: selected ? C.orange : C.slate, ...fBody }}>{selected ? "Selected — tap to clear" : "Select this package"}</span>
+                        <span style={{ fontSize: T.labelLg, fontWeight: 600, color: selected ? C.brand : C.slate, ...fBody }}>{selected ? "Selected — tap to clear" : "Select this package"}</span>
                       </>
                     )}
                   </div>
@@ -461,7 +466,7 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav, coachAva
                   {r.verified && <Badge tone="neutral" icon={CheckCircle2}>Verified booking</Badge>}
                   {reply && (
                     <div style={{ marginTop: 10, background: C.fog, borderRadius: 10, padding: "10px 12px" }}>
-                      <div style={{ fontSize: T.caption, fontWeight: 700, color: C.orange, ...fBody }}>Reply from {coach.name}</div>
+                      <div style={{ fontSize: T.caption, fontWeight: 700, color: C.brand, ...fBody }}>Reply from {coach.name}</div>
                       <p style={{ fontSize: T.labelLg, color: C.jet, marginTop: 3, lineHeight: 1.5, ...fBody }}>{reply.text}</p>
                     </div>
                   )}

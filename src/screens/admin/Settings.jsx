@@ -1,10 +1,13 @@
 import React from "react";
 import { LogOut } from "lucide-react";
-import { C, fDisplay, fBody, T } from "../../theme/theme";
+import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
+import { useApp } from "../../context/AppContext";
 import { CONFIG } from "../../data/mockData";
 import { Card, SectionLabel, Toggle, Badge } from "../../components/ui/Primitives";
 
 export function ScreenAdminSettings({ nav }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "18px 20px 0" }}>

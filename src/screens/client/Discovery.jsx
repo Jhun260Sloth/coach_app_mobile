@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Search, Filter, Navigation, Star, MapPin, Heart, X, LocateFixed, Calendar, MessageCircle, Sparkles, Check, Bell, Percent, CreditCard } from "lucide-react";
-import { C, fDisplay, fBody, T } from "../../theme/theme";
+import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
+import { useApp } from "../../context/AppContext";
 
 import { COACHES, SPORTS, ALL_SUBURBS, SUBURB_COORDS } from "../../data/mockData";
 import { Card, Chip, Badge, SegTabs, SectionLabel, Avatar, Btn, TopBar, BottomSheet, EmptyState, Spinner, ScrollFadeRow } from "../../components/ui/Primitives";
@@ -28,6 +29,8 @@ const NOTIF_ICON = { booking: Calendar, message: MessageCircle, review: Star, av
 const oneLine = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
 
 export function CoachListCard({ coach, onOpen, unavailable }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   return (
     <Card
       onClick={onOpen}
@@ -48,7 +51,7 @@ export function CoachListCard({ coach, onOpen, unavailable }) {
               <div style={{ fontWeight: 700, fontSize: T.title, color: C.jet, letterSpacing: "-0.1px", ...oneLine, ...fDisplay }}>{coach.name}</div>
               {/* Sport category — bumped up in size/weight and given the brand colour so a
                   client's eye lands on "what this coach does" as fast as on their name. */}
-              <div style={{ fontSize: T.subtitle, fontWeight: 700, color: C.orange, marginTop: 2, ...oneLine, ...fDisplay }}>{coach.sport}</div>
+              <div style={{ fontSize: T.subtitle, fontWeight: 700, color: C.brand, marginTop: 2, ...oneLine, ...fDisplay }}>{coach.sport}</div>
             </div>
             <div style={{ fontSize: T.titleLg, fontWeight: 800, color: C.jet, whiteSpace: "nowrap", flexShrink: 0, ...fDisplay }}>
               ${coach.packages[0].price}<span style={{ fontSize: T.caption, fontWeight: 500, color: C.slateLight }}>/session</span>
@@ -57,7 +60,7 @@ export function CoachListCard({ coach, onOpen, unavailable }) {
 
           <div style={{ marginTop: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: T.labelLg, color: C.jet, fontWeight: 600, ...fBody }}>
-              <Star size={12} fill={C.orange} color={C.orange} /> {coach.rating}
+              <Star size={12} fill={C.brand} color={C.brand} /> {coach.rating}
               <span style={{ color: C.slateLight, fontWeight: 400 }}>({coach.reviews})</span>
             </div>
             <div style={{ display: "flex", alignItems: "flex-start", gap: 4, fontSize: T.labelLg, color: C.slate, marginTop: 4, ...fBody }}>
@@ -75,7 +78,7 @@ export function CoachListCard({ coach, onOpen, unavailable }) {
                     <span style={{ fontSize: T.caption, fontWeight: 700, padding: "4px 9px", borderRadius: 8, background: C.successTint, color: C.success, ...fBody }}>Verified</span>
                   )}
                   {coach.instantBook && (
-                    <span style={{ fontSize: T.caption, fontWeight: 700, padding: "4px 9px", borderRadius: 8, background: C.orangeTint, color: C.orange, ...fBody }}>Instant book</span>
+                    <span style={{ fontSize: T.caption, fontWeight: 700, padding: "4px 9px", borderRadius: 8, background: C.brandTint, color: C.brand, ...fBody }}>Instant book</span>
                   )}
                 </>
               )}
@@ -129,6 +132,8 @@ const GUIDE_STEPS = [
 ];
 
 export function PostSignupGuideModal({ open, onClose, onFindCoaches }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const [step, setStep] = useState(0);
 
   // Always start from step 1 whenever the guide (re)opens.
@@ -165,8 +170,8 @@ export function PostSignupGuideModal({ open, onClose, onFindCoaches }) {
         </button>
 
         <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", minHeight: 0 }}>
-          <div style={{ width: 84, height: 84, borderRadius: 26, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px", flexShrink: 0 }}>
-            <Icon size={36} color={C.orange} />
+          <div style={{ width: 84, height: 84, borderRadius: 26, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px", flexShrink: 0 }}>
+            <Icon size={36} color={C.brand} />
           </div>
 
           <div style={{ textAlign: "center", fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>{current.header}</div>
@@ -187,7 +192,7 @@ export function PostSignupGuideModal({ open, onClose, onFindCoaches }) {
           {Array.from({ length: total }, (_, i) => (
             <span key={i} style={{
               width: 8, height: 8, borderRadius: 99, flexShrink: 0,
-              background: i === step ? C.orange : C.border, transition: "background .15s ease",
+              background: i === step ? C.brand : C.border, transition: "background .15s ease",
             }} />
           ))}
         </div>
@@ -206,6 +211,8 @@ export function PostSignupGuideModal({ open, onClose, onFindCoaches }) {
    preferences back so the caller can populate the Coach Listings section.
    ------------------------------------------------------------------------- */
 export function PersonalisedRecommendationModal({ open, onClose, onSubmit, userLocation, locating, requestLocation }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const [useCurrentLocation, setUseCurrentLocation] = useState(true);
   const [locationText, setLocationText] = useState("");
   const [radiusKm, setRadiusKm] = useState(10);
@@ -265,11 +272,11 @@ export function PersonalisedRecommendationModal({ open, onClose, onSubmit, userL
       <SectionLabel>Current Location</SectionLabel>
       <button onClick={handleUseLocation} style={{
         display: "flex", width: "100%", boxSizing: "border-box", alignItems: "center", gap: 8,
-        padding: "11px 14px", borderRadius: 12, border: `1px solid ${useCurrentLocation ? C.orange : C.border}`,
-        background: useCurrentLocation ? C.orangeTint : C.white, color: useCurrentLocation ? C.orange : C.jet,
+        padding: "11px 14px", borderRadius: 12, border: `1px solid ${useCurrentLocation ? C.brand : C.border}`,
+        background: useCurrentLocation ? C.brandTint : C.white, color: useCurrentLocation ? C.brand : C.jet,
         fontWeight: 600, fontSize: T.bodyLg, cursor: "pointer", marginBottom: 10, ...fBody,
       }}>
-        {locating && useCurrentLocation ? <Spinner size={13} color={C.orange} /> : <LocateFixed size={14} />}
+        {locating && useCurrentLocation ? <Spinner size={13} color={C.brand} /> : <LocateFixed size={14} />}
         {useCurrentLocation ? (locating ? "Locating you…" : "Using your current location") : "Use my current location"}
       </button>
       <div style={{ textAlign: "center", fontSize: T.captionLg, color: C.slateLight, margin: "4px 0 10px", ...fBody }}>or enter it manually</div>
@@ -291,7 +298,7 @@ export function PersonalisedRecommendationModal({ open, onClose, onSubmit, userL
               style={{ flex: 1, boxSizing: "border-box", background: C.fog, border: "none", borderRadius: 12, padding: "11px 14px", fontSize: T.bodyLg, color: C.jet, outline: "none", ...fBody }}
             />
             <span style={{ fontSize: T.bodyLg, color: C.slate, ...fBody }}>km</span>
-            <button onClick={applyCustomRadius} style={{ padding: "11px 16px", borderRadius: 12, border: "none", background: C.orange, color: C.white, fontSize: T.labelLg, fontWeight: 700, cursor: "pointer", ...fBody }}>Set</button>
+            <button onClick={applyCustomRadius} style={{ padding: "11px 16px", borderRadius: 12, border: "none", background: C.brand, color: C.white, fontSize: T.labelLg, fontWeight: 700, cursor: "pointer", ...fBody }}>Set</button>
           </div>
         ) : (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -325,6 +332,8 @@ export function PersonalisedRecommendationModal({ open, onClose, onSubmit, userL
 }
 
 export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFiltersChange, clientNotifications: notifications, setClientNotifications: setNotifications, coachAvailableNow, isFirstTimeClient, discoveryPrefs, setDiscoveryPrefs, showPostSignupGuide, setShowPostSignupGuide }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const [view, setView] = useState("list");
   const [searchText, setSearchText] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -440,7 +449,7 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
   const notifSheet = (
     <BottomSheet open={notifOpen} onClose={() => setNotifOpen(false)} title="Notifications" heightPct={72}>
       {unreadCount > 0 && (
-        <button onClick={markAllRead} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", color: C.orange, fontSize: T.labelLg, fontWeight: 600, cursor: "pointer", marginBottom: 10, padding: "2px 0", ...fBody }}>
+        <button onClick={markAllRead} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", color: C.brand, fontSize: T.labelLg, fontWeight: 600, cursor: "pointer", marginBottom: 10, padding: "2px 0", ...fBody }}>
           <Check size={13} /> Mark all as read
         </button>
       )}
@@ -448,7 +457,7 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
         const Icon = NOTIF_ICON[n.type] || Bell;
         return (
           <button key={n.id} onClick={() => openNotification(n)} style={{ width: "100%", display: "flex", gap: 12, alignItems: "flex-start", padding: "12px 4px", background: "none", border: "none", borderBottom: `1px solid ${C.border}`, cursor: "pointer", textAlign: "left" }}>
-            <div style={{ width: 36, height: 36, borderRadius: 11, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon size={16} color={C.orange} /></div>
+            <div style={{ width: 36, height: 36, borderRadius: 11, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon size={16} color={C.brand} /></div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
                 <span style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{n.title}</span>
@@ -456,7 +465,7 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
               </div>
               <div style={{ fontSize: T.labelLg, color: C.slate, marginTop: 3, lineHeight: 1.45, ...fBody }}>{n.body}</div>
             </div>
-            {n.unread && <span style={{ width: 8, height: 8, borderRadius: 99, background: C.orange, flexShrink: 0, marginTop: 5 }} />}
+            {n.unread && <span style={{ width: 8, height: 8, borderRadius: 99, background: C.brand, flexShrink: 0, marginTop: 5 }} />}
           </button>
         );
       })}
@@ -492,8 +501,8 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
           <NotificationBellButton count={unreadCount} onClick={() => setNotifOpen(true)} />
         </div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "0 28px 40px" }}>
-          <div style={{ width: 72, height: 72, borderRadius: 22, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
-            <Sparkles size={30} color={C.orange} />
+          <div style={{ width: 72, height: 72, borderRadius: 22, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
+            <Sparkles size={30} color={C.brand} />
           </div>
           <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, ...fDisplay }}>Let's Find Your Perfect Coach</div>
           <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 10, lineHeight: 1.6, maxWidth: 300, ...fBody }}>
@@ -519,7 +528,7 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
             <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, ...fDisplay }}>Find your coach</div>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4, fontSize: T.captionLg, color: C.slate, ...fBody }}>
               {locating ? (
-                <><Spinner size={10} color={C.orange} /> Locating you…</>
+                <><Spinner size={10} color={C.brand} /> Locating you…</>
               ) : (
                 <>
                   <span style={{ position: "relative", width: 7, height: 7, flexShrink: 0 }}>
@@ -544,11 +553,11 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
             <button onClick={() => nav("search-filters", { initialFilters: appliedFilters, onApply: setAppliedFilters })} style={{
               position: "relative", display: "flex", alignItems: "center", justifyContent: "center",
               width: 26, height: 26, borderRadius: 8, cursor: "pointer",
-              background: hasActiveFilters ? C.orangeTint : "none", border: "none",
+              background: hasActiveFilters ? C.brandTint : "none", border: "none",
             }}>
-              <Filter size={15} color={hasActiveFilters ? C.orange : C.slate} />
+              <Filter size={15} color={hasActiveFilters ? C.brand : C.slate} />
               {hasActiveFilters && (
-                <span style={{ position: "absolute", top: -2, right: -2, width: 8, height: 8, borderRadius: 99, background: C.orange, border: `1.5px solid ${C.white}` }} />
+                <span style={{ position: "absolute", top: -2, right: -2, width: 8, height: 8, borderRadius: 99, background: C.brand, border: `1.5px solid ${C.white}` }} />
               )}
             </button>
           </div>
@@ -584,10 +593,10 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
         {hasActiveFilters && (
           <div className="cl-hide-scrollbar" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "nowrap", overflowX: "auto", marginTop: 12, paddingBottom: 2 }}>
             {activeFilterChips.map(chip => (
-              <span key={chip.key} style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0, whiteSpace: "nowrap", background: C.orangeTint, color: C.orange, borderRadius: 99, padding: "4px 6px 4px 10px", fontSize: T.captionLg, fontWeight: 600, ...fBody }}>
+              <span key={chip.key} style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0, whiteSpace: "nowrap", background: C.brandTint, color: C.brand, borderRadius: 99, padding: "4px 6px 4px 10px", fontSize: T.captionLg, fontWeight: 600, ...fBody }}>
                 {chip.label}
                 <button onClick={chip.onRemove} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 15, height: 15, borderRadius: 99, background: "none", border: "none", cursor: "pointer", padding: 0, flexShrink: 0 }}>
-                  <X size={11} color={C.orange} />
+                  <X size={11} color={C.brand} />
                 </button>
               </span>
             ))}
@@ -599,7 +608,7 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 20, marginBottom: 14 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: T.body, fontWeight: 600, color: C.jet, ...fDisplay }}>
-            {view === "favorites" ? <><Heart size={13} color={C.orange} /> Your favorites</> : <><Navigation size={13} color={C.orange} /> Coaches near you</>}
+            {view === "favorites" ? <><Heart size={13} color={C.brand} /> Your favorites</> : <><Navigation size={13} color={C.brand} /> Coaches near you</>}
           </div>
           <SegTabs strong value={view} onChange={setView} items={[{ value: "list", label: "List" }, { value: "map", label: "Map" }, { value: "favorites", label: "Favorites" }]} />
         </div>
@@ -632,6 +641,8 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
 }
 
 export function ScreenSearchFilters({ nav, params, userLocation, locating, permissionDenied, manualLabel, requestLocation, setManualLocation }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   // Nav params arrive nested under `params` (same as every other screen,
   // e.g. CoachProfile's `params.id`) — not as top-level props.
   const { initialFilters, onApply } = params || {};
@@ -695,11 +706,11 @@ export function ScreenSearchFilters({ nav, params, userLocation, locating, permi
               instead of that behaviour being implicit/hidden. */}
           <button onClick={requestLocation} style={{
             display: "flex", width: "100%", boxSizing: "border-box", alignItems: "center", gap: 8,
-            padding: "11px 14px", borderRadius: 12, border: `1px solid ${C.orange}`,
-            background: C.orangeTint, color: C.orange, fontWeight: 600, fontSize: T.bodyLg,
+            padding: "11px 14px", borderRadius: 12, border: `1px solid ${C.brand}`,
+            background: C.brandTint, color: C.brand, fontWeight: 600, fontSize: T.bodyLg,
             cursor: "pointer", marginBottom: 10, ...fBody,
           }}>
-            {locating ? <Spinner size={13} color={C.orange} /> : <MapPin size={14} />}
+            {locating ? <Spinner size={13} color={C.brand} /> : <MapPin size={14} />}
             {locating ? "Locating you…" : permissionDenied ? "Enable location access" : "Use my current location"}
           </button>
 
@@ -751,7 +762,7 @@ export function ScreenSearchFilters({ nav, params, userLocation, locating, permi
                 />
                 <span style={{ fontSize: T.labelLg, fontWeight: 700, color: C.slate, ...fBody }}>km</span>
               </div>
-              <button onClick={() => { setRadiusKm(customRadius); setShowCustomRadius(false); }} style={{ marginTop: 10, width: "100%", padding: "9px 0", borderRadius: 10, border: "none", background: C.orange, color: C.white, fontSize: T.labelLg, fontWeight: 700, cursor: "pointer", ...fBody }}>Apply</button>
+              <button onClick={() => { setRadiusKm(customRadius); setShowCustomRadius(false); }} style={{ marginTop: 10, width: "100%", padding: "9px 0", borderRadius: 10, border: "none", background: C.brand, color: C.white, fontSize: T.labelLg, fontWeight: 700, cursor: "pointer", ...fBody }}>Apply</button>
             </div>
           ) : (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -767,7 +778,7 @@ export function ScreenSearchFilters({ nav, params, userLocation, locating, permi
         </div>
 
         <SectionLabel>Max price per session — ${price}</SectionLabel>
-        <input type="range" min="20" max="150" step="5" value={price} onChange={e => setPrice(e.target.value)} style={{ width: "100%", accentColor: C.orange, marginBottom: 20 }} />
+        <input type="range" min="20" max="150" step="5" value={price} onChange={e => setPrice(e.target.value)} style={{ width: "100%", accentColor: C.brand, marginBottom: 20 }} />
 
         <SectionLabel>Minimum rating</SectionLabel>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>

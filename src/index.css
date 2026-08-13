@@ -1,7 +1,128 @@
+/* =========================================================================
+   CoachLink — Base Styles & CSS Custom Properties
+   =========================================================================
+   Root-level custom properties mirror the JS design tokens in theme/theme.js.
+   Text/neutral tokens stay NEUTRAL (gray/black) — only brand tokens are green.
+   ========================================================================= */
+
+:root {
+  /* ---------- Brand palette ---------- */
+  --cl-brand-color: #1B5E20;
+  --cl-secondary: #66BB6A;
+  --cl-accent: #A5D6A7;
+  --cl-surface: #E8F5E9;
+
+  /* ---------- Neutral tokens (black / gray) ---------- */
+  --cl-jet: #16181D;
+  --cl-jet-soft: #2A2D35;
+  --cl-slate: #6B7280;
+  --cl-slate-light: #9CA3AF;
+  --cl-border: #E7E8EC;
+  --cl-white: #FFFFFF;
+  --cl-black: #000000;
+
+  /* ---------- Brand semantic (green) ---------- */
+  --cl-brand: #66BB6A;
+  --cl-brand-tint: #A5D6A7;
+  --cl-fog: #F4F5F7;
+
+  /* ---------- Functional tokens ---------- */
+  --cl-success: #1E9E5A;
+  --cl-success-tint: #E9F9EF;
+  --cl-warn-tint: #FFF4E9;
+  --cl-warn-strong: #B8860B;
+  --cl-strong: #C2410C;
+  --cl-strong-tint: #FFE8D1;
+  --cl-error: #DC2626;
+  --cl-error-tint: #FEE2E2;
+  --cl-danger: #D64545;
+  --cl-danger-tint: #FDECEC;
+  --cl-danger-border: #F3D2D2;
+  --cl-danger-border-soft: #E8A5A5;
+  --cl-info: #2563EB;
+  --cl-live: #22C55E;
+  --cl-on-dark: #B9BCC4;
+  --cl-on-dark-muted: #9CA0AC;
+  --cl-on-dark-faint: #6F7280;
+  --cl-on-dark-divider: #2B2E38;
+
+  /* ---------- Typography scale ---------- */
+  --cl-text-micro: 10px;
+  --cl-text-tiny: 10.5px;
+  --cl-text-caption: 11px;
+  --cl-text-caption-lg: 11.5px;
+  --cl-text-label: 12px;
+  --cl-text-label-lg: 12.5px;
+  --cl-text-body: 13px;
+  --cl-text-body-lg: 13.5px;
+  --cl-text-subtitle: 14px;
+  --cl-text-subtitle-lg: 15px;
+  --cl-text-title: 16px;
+  --cl-text-title-lg: 17px;
+  --cl-text-heading: 18px;
+  --cl-text-heading-lg: 20px;
+  --cl-text-display: 22px;
+  --cl-text-display-lg: 24px;
+  --cl-text-hero: 26px;
+  --cl-text-hero-lg: 32px;
+
+  /* ---------- Font families ---------- */
+  --cl-font-display: 'Outfit', sans-serif;
+  --cl-font-body: 'Inter', sans-serif;
+}
+
+/* =========================================================================
+   DARK MODE — activated via data-theme="dark" on <html>
+   ========================================================================= */
+[data-theme="dark"] {
+  /* ---------- Brand palette ---------- */
+  --cl-brand-color: #1B5E20;
+  --cl-secondary: #81C784;
+  --cl-accent: #1B5E20;
+  --cl-surface: #0D1F0D;
+
+  /* ---------- Neutral tokens (inverted for dark bg) ---------- */
+  --cl-jet: #E5E7EB;
+  --cl-jet-soft: #D1D5DB;
+  --cl-slate: #9CA3AF;
+  --cl-slate-light: #6B7280;
+  --cl-border: #2D2D3A;
+  --cl-white: #0D1117;
+  --cl-black: #FFFFFF;
+
+  /* ---------- Brand semantic (green, adjusted for dark bg) ---------- */
+  --cl-brand: #81C784;
+  --cl-brand-tint: #1B5E20;
+  --cl-fog: #1A1A1A;
+
+  /* ---------- Functional tokens ---------- */
+  --cl-success: #4CAF50;
+  --cl-success-tint: #0D2B0D;
+  --cl-warn-tint: #2B2000;
+  --cl-warn-strong: #FFC107;
+  --cl-strong: #FF6D00;
+  --cl-strong-tint: #2B1A0A;
+  --cl-error: #EF4444;
+  --cl-error-tint: #2B0A0A;
+  --cl-danger: #EF4444;
+  --cl-danger-tint: #2B0A0A;
+  --cl-danger-border: #3B1515;
+  --cl-danger-border-soft: #4B2020;
+  --cl-info: #42A5F5;
+  --cl-live: #81C784;
+  --cl-on-dark: #B9BCC4;
+  --cl-on-dark-muted: #9CA0AC;
+  --cl-on-dark-faint: #6F7280;
+  --cl-on-dark-divider: #2B2E38;
+}
+
+/* ---------- Reset ---------- */
 html, body, #root {
   height: 100%;
+  width: 100%;
   margin: 0;
   padding: 0;
+  overflow: hidden;
 }
 
 * {
@@ -11,7 +132,7 @@ html, body, #root {
 body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--cl-font-body);
 }
 
 button, input, textarea {

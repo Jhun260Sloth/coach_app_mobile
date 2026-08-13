@@ -1,6 +1,7 @@
 import React from "react";
 import { Bell, Calendar, MessageCircle, Star, Sparkles, Percent, CreditCard, Check } from "lucide-react";
-import { C, fDisplay, fBody, T } from "../../theme/theme";
+import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
+import { useApp } from "../../context/AppContext";
 import { TopBar, EmptyState } from "../../components/ui/Primitives";
 
 const NOTIF_ICON = { booking: Calendar, message: MessageCircle, review: Star, availability: Sparkles, promo: Percent, payment: CreditCard };
@@ -10,6 +11,8 @@ const NOTIF_ICON = { booking: Calendar, message: MessageCircle, review: Star, av
 // per-notification detail/management later, instead of being squeezed into
 // a sheet meant for quick glances.
 export function ScreenNotifications({ nav, clientNotifications: notifications = [], setClientNotifications: setNotifications }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const unreadCount = notifications.filter((n) => n.unread).length;
 
   const markAllRead = () => setNotifications?.((arr) => arr.map((n) => ({ ...n, unread: false })));
@@ -30,7 +33,7 @@ export function ScreenNotifications({ nav, clientNotifications: notifications = 
       {unreadCount > 0 && (
         <button
           onClick={markAllRead}
-          style={{ display: "flex", alignItems: "center", gap: 5, alignSelf: "flex-start", background: "none", border: "none", color: C.orange, fontSize: T.labelLg, fontWeight: 600, cursor: "pointer", marginBottom: 12, padding: "2px 0", ...fBody }}
+          style={{ display: "flex", alignItems: "center", gap: 5, alignSelf: "flex-start", background: "none", border: "none", color: C.brand, fontSize: T.labelLg, fontWeight: 600, cursor: "pointer", marginBottom: 12, padding: "2px 0", ...fBody }}
         >
           <Check size={13} /> Mark all as read
         </button>
@@ -48,8 +51,8 @@ export function ScreenNotifications({ nav, clientNotifications: notifications = 
                 onClick={() => openNotification(n)}
                 style={{ width: "100%", display: "flex", gap: 12, alignItems: "flex-start", padding: "14px 4px", background: "none", border: "none", borderBottom: `1px solid ${C.border}`, cursor: "pointer", textAlign: "left" }}
               >
-                <div style={{ width: 40, height: 40, borderRadius: 12, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <Icon size={18} color={C.orange} />
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Icon size={18} color={C.brand} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
@@ -58,7 +61,7 @@ export function ScreenNotifications({ nav, clientNotifications: notifications = 
                   </div>
                   <div style={{ fontSize: T.body, color: C.slate, marginTop: 4, lineHeight: 1.5, ...fBody }}>{n.body}</div>
                 </div>
-                {n.unread && <span style={{ width: 8, height: 8, borderRadius: 99, background: C.orange, flexShrink: 0, marginTop: 6 }} />}
+                {n.unread && <span style={{ width: 8, height: 8, borderRadius: 99, background: C.brand, flexShrink: 0, marginTop: 6 }} />}
               </button>
             );
           })

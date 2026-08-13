@@ -1,16 +1,22 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
-  ChevronLeft, Star, CheckCircle2, Search,
+  ChevronLeft, Star, CheckCircle2, Search, Wifi, Battery,
 } from "lucide-react";
-import { C, fDisplay, fBody, T } from "../../theme/theme";
+import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
+import { useApp } from "../../context/AppContext";
 import { initials, hashColor } from "../../data/mockData";
 
 /* =========================================================================
    SHARED UI PRIMITIVES
+   Every component calls useApp() to get darkMode, then computes C so the
+   entire UI switches between CL (light) and CD (dark) at runtime.
    ========================================================================= */
 
-/* Small inline spinner used inside buttons and standalone loading states.
-   Inherits color from its parent via currentColor so it matches any button variant. */
+function useColors() {
+  const { darkMode } = useApp();
+  return darkMode ? CD : CL;
+}
+
 export function Spinner({ size = 15, color }) {
   return (
     <span
@@ -25,6 +31,7 @@ export function Spinner({ size = 15, color }) {
 }
 
 export function Btn({ children, onClick, variant = "primary", full, icon: Icon, disabled, loading, loadingText, size = "md", type = "button" }) {
+  const C = useColors();
   const base = {
     display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
     borderRadius: 14, fontWeight: 600, cursor: (disabled || loading) ? "default" : "pointer",
@@ -34,7 +41,7 @@ export function Btn({ children, onClick, variant = "primary", full, icon: Icon, 
     fontSize: size === "sm" ? T.body : T.subtitleLg, ...fBody,
   };
   const variants = {
-    primary: { background: C.orange, color: C.white },
+    primary: { background: C.brand, color: C.white },
     dark: { background: C.jet, color: C.white },
     secondary: { background: C.fog, color: C.jet },
     outline: { background: "transparent", color: C.jet, border: `1px solid ${C.border}` },
@@ -49,11 +56,8 @@ export function Btn({ children, onClick, variant = "primary", full, icon: Icon, 
   );
 }
 
-/* Wraps a horizontally-scrollable row (day pickers, media strips, chip rails) and renders
-   a soft edge fade + directional cue on whichever side still has clipped, un-scrolled content.
-   Purely presentational — measures the wrapped scroller via ref and updates on scroll/resize,
-   so it never shows a cue on a row that already fits, and clears it once the user reaches the end. */
 export function ScrollFadeRow({ children, style, className }) {
+  const C = useColors();
   const ref = useRef(null);
   const [state, setState] = useState({ left: false, right: false });
 
@@ -75,7 +79,6 @@ export function ScrollFadeRow({ children, style, className }) {
     ro.observe(el);
     window.addEventListener("resize", measure);
     return () => { ro.disconnect(); window.removeEventListener("resize", measure); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [children]);
 
   return (
@@ -94,6 +97,7 @@ export function ScrollFadeRow({ children, style, className }) {
 }
 
 export function Card({ children, style, onClick }) {
+  const C = useColors();
   return (
     <div
       onClick={onClick}
@@ -105,13 +109,14 @@ export function Card({ children, style, onClick }) {
 }
 
 export function Chip({ children, active, onClick, icon: Icon }) {
+  const C = useColors();
   return (
     <button
       onClick={onClick}
       style={{
         display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 13px", borderRadius: 999,
-        fontSize: T.body, fontWeight: 500, whiteSpace: "nowrap", border: `1px solid ${active ? C.orange : C.border}`,
-        background: active ? C.orangeTint : C.white, color: active ? C.orange : C.jet, ...fBody,
+        fontSize: T.body, fontWeight: 500, whiteSpace: "nowrap", border: `1px solid ${active ? C.brand : C.border}`,
+        background: active ? C.brandTint : C.white, color: active ? C.brand : C.jet, ...fBody,
       }}
     >
       {Icon && <Icon size={13} />}
@@ -121,9 +126,10 @@ export function Chip({ children, active, onClick, icon: Icon }) {
 }
 
 export function Badge({ tone = "neutral", children, icon: Icon, style }) {
+  const C = useColors();
   const tones = {
     neutral: { bg: C.fog, fg: C.slate },
-    orange: { bg: C.orangeTint, fg: C.orange },
+    orange: { bg: C.brandTint, fg: C.brand },
     success: { bg: C.successTint, fg: C.success },
     dark: { bg: C.jet, fg: C.white },
   };
@@ -151,11 +157,12 @@ export function Badge({ tone = "neutral", children, icon: Icon, style }) {
 }
 
 export function StepProgress({ step, total, label }) {
+  const C = useColors();
   return (
     <div style={{ marginBottom: 18 }}>
       <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
         {Array.from({ length: total }, (_, i) => (
-          <div key={i} style={{ flex: 1, height: 4, borderRadius: 99, background: i < step ? C.orange : C.border }} />
+          <div key={i} style={{ flex: 1, height: 4, borderRadius: 99, background: i < step ? C.brand : C.border }} />
         ))}
       </div>
       <div style={{ fontSize: T.captionLg, fontWeight: 600, color: C.slateLight, ...fBody }}>
@@ -166,6 +173,7 @@ export function StepProgress({ step, total, label }) {
 }
 
 export function CheckboxRow({ label, checked, onClick }) {
+  const C = useColors();
   return (
     <button
       onClick={onClick}
@@ -176,25 +184,26 @@ export function CheckboxRow({ label, checked, onClick }) {
     >
       <div style={{
         width: 19, height: 19, borderRadius: 6, flexShrink: 0,
-        border: `1.5px solid ${checked ? C.orange : C.border}`, background: checked ? C.orange : C.white,
+        border: `1.5px solid ${checked ? C.brand : C.border}`, background: checked ? C.brand : C.white,
         display: "flex", alignItems: "center", justifyContent: "center",
       }}>
-        {checked && <CheckCircle2Fill />}
+        {checked && <CheckCircle2Fill color={C.white} />}
       </div>
       <span style={{ fontSize: T.bodyLg, color: C.jet, ...fBody }}>{label}</span>
     </button>
   );
 }
 
-function CheckCircle2Fill() {
+function CheckCircle2Fill({ color }) {
   return (
     <svg width={12} height={12} viewBox="0 0 24 24" fill="none">
-      <path d="M20 6L9 17l-5-5" stroke={C.white} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M20 6L9 17l-5-5" stroke={color || "#FFFFFF"} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
 export function RadioRow({ label, selected, onClick }) {
+  const C = useColors();
   return (
     <button
       onClick={onClick}
@@ -205,10 +214,10 @@ export function RadioRow({ label, selected, onClick }) {
     >
       <div style={{
         width: 19, height: 19, borderRadius: 99, flexShrink: 0,
-        border: `1.5px solid ${selected ? C.orange : C.border}`, background: C.white,
+        border: `1.5px solid ${selected ? C.brand : C.border}`, background: C.white,
         display: "flex", alignItems: "center", justifyContent: "center",
       }}>
-        {selected && <div style={{ width: 10, height: 10, borderRadius: 99, background: C.orange }} />}
+        {selected && <div style={{ width: 10, height: 10, borderRadius: 99, background: C.brand }} />}
       </div>
       <span style={{ fontSize: T.bodyLg, color: C.jet, ...fBody }}>{label}</span>
     </button>
@@ -216,6 +225,7 @@ export function RadioRow({ label, selected, onClick }) {
 }
 
 export function SearchMultiSelect({ options, value, onChange, placeholder = "Search…" }) {
+  const C = useColors();
   const [query, setQuery] = React.useState("");
   const [open, setOpen] = React.useState(false);
 
@@ -234,10 +244,10 @@ export function SearchMultiSelect({ options, value, onChange, placeholder = "Sea
           {value.map((v) => (
             <span key={v} style={{
               display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 999,
-              fontSize: T.labelLg, fontWeight: 500, border: `1px solid ${C.orange}`, background: C.orangeTint, color: C.orange, ...fBody,
+              fontSize: T.labelLg, fontWeight: 500, border: `1px solid ${C.brand}`, background: C.brandTint, color: C.brand, ...fBody,
             }}>
               {v}
-              <button onClick={() => remove(v)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 0, color: C.orange }}>
+              <button onClick={() => remove(v)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 0, color: C.brand }}>
                 <svg width={11} height={11} viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" /></svg>
               </button>
             </span>
@@ -275,13 +285,8 @@ export function SearchMultiSelect({ options, value, onChange, placeholder = "Sea
   );
 }
 
-/**
- * Single-select search combobox. Shows a filled pill with a clear (x) button
- * once a value is chosen; otherwise a search input with a filtered dropdown.
- * If `allowCustom` is true (default) and the typed query doesn't match an
- * existing option, an "Add "<query>"" row lets the user pick a free-text value.
- */
 export function SearchSelect({ options, value, onChange, placeholder = "Search…", allowCustom = true }) {
+  const C = useColors();
   const [query, setQuery] = React.useState("");
   const [open, setOpen] = React.useState(false);
 
@@ -334,7 +339,7 @@ export function SearchSelect({ options, value, onChange, placeholder = "Search�
             <button
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => choose(trimmed)}
-              style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 13px", background: "none", border: "none", borderTop: filtered.length ? `1px solid ${C.border}` : "none", cursor: "pointer", fontSize: T.body, color: C.orange, fontWeight: 600, ...fBody }}
+              style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 13px", background: "none", border: "none", borderTop: filtered.length ? `1px solid ${C.border}` : "none", cursor: "pointer", fontSize: T.body, color: C.brand, fontWeight: 600, ...fBody }}
             >
               Add "{trimmed}"
             </button>
@@ -346,6 +351,7 @@ export function SearchSelect({ options, value, onChange, placeholder = "Search�
 }
 
 export function StatusPill({ status }) {
+  const C = useColors();
   const map = {
     pending: { label: "Pending", tone: "orange", pulse: true },
     confirmed: { label: "Confirmed", tone: "success" },
@@ -359,7 +365,7 @@ export function StatusPill({ status }) {
   };
   const m = map[status] || map.pending;
   const colors = {
-    orange: { bg: C.orangeTint, fg: C.orange },
+    orange: { bg: C.brandTint, fg: C.brand },
     success: { bg: C.successTint, fg: C.success },
     neutral: { bg: C.fog, fg: C.slate },
     danger: { bg: C.dangerTint, fg: C.danger },
@@ -367,7 +373,7 @@ export function StatusPill({ status }) {
   return (
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 5,
-      color: m.tone === "orange" ? C.orange : m.tone === "success" ? C.success : C.slate,
+      color: colors.fg,
       fontSize: T.captionLg, fontWeight: 700, padding: "4px,8px", borderRadius: 8, ...fBody,
     }}>
       <span style={{ width: 6, height: 6, borderRadius: 99, background: "currentColor", animation: m.pulse ? "clPulse 1.4s infinite" : "none" }} />
@@ -377,11 +383,12 @@ export function StatusPill({ status }) {
 }
 
 export function Avatar({ name, size = 42, ring }) {
+  const C = useColors();
   return (
     <div style={{
       width: size, height: size, borderRadius: size, background: hashColor(name), color: C.white,
       display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: size * 0.36,
-      flexShrink: 0, boxShadow: ring ? `0 0 0 2px ${C.white}, 0 0 0 3.5px ${C.orange}` : "none", ...fDisplay,
+      flexShrink: 0, boxShadow: ring ? `0 0 0 2px ${C.white}, 0 0 0 3.5px ${C.brand}` : "none", ...fDisplay,
     }}>
       {initials(name)}
     </div>
@@ -389,24 +396,27 @@ export function Avatar({ name, size = 42, ring }) {
 }
 
 export function StarRow({ value, size = 13 }) {
+  const C = useColors();
   return (
     <span style={{ display: "inline-flex", gap: 1 }}>
       {[1, 2, 3, 4, 5].map((i) => (
-        <Star key={i} size={size} fill={i <= Math.round(value) ? C.orange : "none"} color={i <= Math.round(value) ? C.orange : C.slateLight} />
+        <Star key={i} size={size} fill={i <= Math.round(value) ? C.brand : "none"} color={i <= Math.round(value) ? C.brand : C.slateLight} />
       ))}
     </span>
   );
 }
 
 export function Toggle({ on, onClick }) {
+  const C = useColors();
   return (
-    <button onClick={onClick} style={{ width: 42, height: 25, borderRadius: 99, background: on ? C.orange : C.border, position: "relative", flexShrink: 0, border: "none", cursor: "pointer" }}>
+    <button onClick={onClick} style={{ width: 42, height: 25, borderRadius: 99, background: on ? C.brand : C.border, position: "relative", flexShrink: 0, border: "none", cursor: "pointer" }}>
       <span style={{ position: "absolute", top: 2.5, left: on ? 20 : 2.5, width: 20, height: 20, borderRadius: 99, background: C.white, transition: "left .15s ease", boxShadow: "0 1px 2px rgba(0,0,0,.2)" }} />
     </button>
   );
 }
 
 export function SegTabs({ items, value, onChange, strong }) {
+  const C = useColors();
   return (
     <div style={{ display: "flex", background: C.fog, borderRadius: 13, padding: 3, gap: 2 }}>
       {items.map((it) => {
@@ -430,6 +440,7 @@ export function SegTabs({ items, value, onChange, strong }) {
 }
 
 export function TopBar({ title, onBack, right }) {
+  const C = useColors();
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 4px 14px" }}>
       <div style={{ width: 34 }}>
@@ -446,13 +457,14 @@ export function TopBar({ title, onBack, right }) {
 }
 
 export function EmptyState({ icon: Icon, title, body, ctaLabel, onCta, large }) {
+  const C = useColors();
   return (
     <div style={{ textAlign: "center", padding: large ? "20px 20px" : "40px 20px", color: C.slate }}>
       <div style={{
-        width: large ? 72 : 52, height: large ? 72 : 52, borderRadius: large ? 22 : 16, background: large ? C.orangeTint : C.fog,
+        width: large ? 72 : 52, height: large ? 72 : 52, borderRadius: large ? 22 : 16, background: large ? C.brandTint : C.fog,
         display: "flex", alignItems: "center", justifyContent: "center", margin: large ? "0 auto 18px" : "0 auto 14px",
       }}>
-        <Icon size={large ? 30 : 22} color={large ? C.orange : C.slateLight} />
+        <Icon size={large ? 30 : 22} color={large ? C.brand : C.slateLight} />
       </div>
       <div style={{ fontSize: large ? T.display : undefined, fontWeight: 600, color: C.jet, marginBottom: large ? 10 : 4, ...fDisplay }}>{title}</div>
       <div style={{ fontSize: large ? T.bodyLg : T.body, lineHeight: large ? 1.6 : 1.5, maxWidth: large ? 300 : undefined, marginLeft: "auto", marginRight: "auto" }}>{body}</div>
@@ -466,6 +478,7 @@ export function EmptyState({ icon: Icon, title, body, ctaLabel, onCta, large }) 
 }
 
 export function Toast({ toast }) {
+  const C = useColors();
   if (!toast) return null;
   return (
     <div style={{
@@ -473,22 +486,22 @@ export function Toast({ toast }) {
       padding: "12px 14px", borderRadius: 14, fontSize: T.body, fontWeight: 500, display: "flex",
       alignItems: "center", gap: 8, zIndex: 60, boxShadow: "0 8px 24px rgba(0,0,0,.25)", ...fBody,
     }}>
-      <CheckCircle2 size={16} color={C.orange} />
+      <CheckCircle2 size={16} color={C.brand} />
       {toast}
     </div>
   );
 }
 
 export function LogoMark({ size = 30 }) {
-  // Icon aspect ratio (from source asset) ~ 179 x 207
+  const C = useColors();
   const h = size * (207 / 179);
+  const src = C === CD ? "logo icon-white.png" : "logo icon-green.png";
   return (
-    <img src="logo icon-green.png" alt="CoachLink" width={size} height={h} style={{ display: "block", objectFit: "contain" }} />
+    <img src={src} alt="CoachLink" width={size} height={h} style={{ display: "block", objectFit: "contain" }} />
   );
 }
 
 export function LogoMarkWhite({ size = 120 }) {
-  // Icon aspect ratio (from source asset) ~ 179 x 207
   const h = size * (207 / 179);
   return (
     <img src="logo icon-white.png" alt="CoachLink" width={size} height={h} style={{ display: "block", objectFit: "contain" }} />
@@ -496,6 +509,7 @@ export function LogoMarkWhite({ size = 120 }) {
 }
 
 export function Wordmark({ size = 20, dark }) {
+  const C = useColors();
   return (
     <span style={{ fontSize: size, fontWeight: 600, ...fDisplay }}>
       <span style={{ color: dark ? C.white : C.jet }}>Coach</span>
@@ -505,6 +519,7 @@ export function Wordmark({ size = 20, dark }) {
 }
 
 export function BottomTabs({ items, value, onChange }) {
+  const C = useColors();
   return (
     <div style={{
       position: "absolute", bottom: 0, left: 0, right: 0, background: C.white,
@@ -517,9 +532,9 @@ export function BottomTabs({ items, value, onChange }) {
           <button key={it.value} onClick={() => onChange(it.value)}
             style={{ flex: 1, background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, padding: "4px 0", position: "relative" }}>
             {it.badge ? (
-              <span style={{ position: "absolute", top: -1, right: "28%", width: 7, height: 7, borderRadius: 99, background: C.orange }} />
+              <span style={{ position: "absolute", top: -1, right: "28%", width: 7, height: 7, borderRadius: 99, background: C.brand }} />
             ) : null}
-            <Icon size={20} strokeWidth={active ? 2.4 : 1.9} color={active ? C.orange : C.slateLight} />
+            <Icon size={20} strokeWidth={active ? 2.4 : 1.9} color={active ? C.brand : C.slateLight} />
             <span style={{ fontSize: T.tiny, fontWeight: active ? 700 : 500, color: active ? C.jet : C.slateLight, ...fBody }}>{it.label}</span>
           </button>
         );
@@ -529,10 +544,12 @@ export function BottomTabs({ items, value, onChange }) {
 }
 
 export function SectionLabel({ children }) {
+  const C = useColors();
   return <div style={{ fontSize: T.labelLg, fontWeight: 700, color: C.jet, marginBottom: 10, ...fDisplay }}>{children}</div>;
 }
 
 export function Row({ label, value, bold, last }) {
+  const C = useColors();
   return (
     <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "9px 0", borderBottom: last ? "none" : `1px solid ${C.border}` }}>
       <span style={{ fontSize: T.body, color: C.slate, ...fBody }}>{label}</span>
@@ -542,6 +559,7 @@ export function Row({ label, value, bold, last }) {
 }
 
 export function Field({ label, placeholder, type = "text", icon: Icon, rightIcon: RightIcon, onRight, show = true, value, onChange }) {
+  const C = useColors();
   if (!show) return null;
   return (
     <div>
@@ -556,6 +574,7 @@ export function Field({ label, placeholder, type = "text", icon: Icon, rightIcon
 }
 
 export function BottomSheet({ open, onClose, title, children, heightPct = 70 }) {
+  const C = useColors();
   if (!open) return null;
   return (
     <div style={{ position: "absolute", inset: 0, zIndex: 95 }}>
@@ -588,16 +607,49 @@ export function BottomSheet({ open, onClose, title, children, heightPct = 70 }) 
   );
 }
 
-export function StatusBar({ dark }) {
+export function SignalBars({ color = "currentColor" }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 24px 6px", fontSize: T.body, fontWeight: 600, color: dark ? C.white : C.jet, ...fBody }}>
-      <span>9:41</span>
-      <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
-        <span style={{ fontSize: T.micro}}>●●●●</span>
-        <span style={{ fontSize: T.micro}}>Wi‑Fi</span>
-        <span style={{ border: `1.3px solid ${dark ? C.white : C.jet}`, borderRadius: 3, width: 20, height: 10, position: "relative", display: "inline-block" }}>
-          <span style={{ position: "absolute", inset: 1.5, right: 3, background: dark ? C.white : C.jet, borderRadius: 1 }} />
-        </span>
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: "block" }}>
+      <rect x="0.5" y="7.5" width="2.5" height="3" rx="0.5" fill={color} />
+      <rect x="4.5" y="5.5" width="2.5" height="5" rx="0.5" fill={color} />
+      <rect x="8.5" y="3" width="2.5" height="7.5" rx="0.5" fill={color} />
+      <rect x="12.5" y="0.5" width="2.5" height="10" rx="0.5" fill={color} />
+    </svg>
+  );
+}
+
+export function BatteryIcon({ color = "currentColor", level = 82 }) {
+  return (
+    <svg width="22" height="11" viewBox="0 0 22 11" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: "block" }}>
+      <rect x="0.5" y="0.5" width="18" height="10" rx="3" stroke={color} strokeWidth="1" opacity="0.8" />
+      <path d="M20 3.75C20.4 3.75 20.6 4.0 20.6 4.5V6.5C20.6 7.0 20.4 7.25 20 7.25" fill={color} opacity="0.8" />
+      <rect x="2" y="2" width={15 * (level / 100)} height="7" rx="1.5" fill={color} />
+    </svg>
+  );
+}
+
+export function StatusBar({ dark }) {
+  const C = useColors();
+  const { darkMode } = useApp();
+  const color = dark ? (darkMode ? C.black : C.white) : C.jet;
+
+  return (
+    <div style={{
+      display: "flex", justifyContent: "space-between", alignItems: "center",
+      height: 48, padding: "0 22px",
+      fontSize: T.body, fontWeight: 600, color, ...fBody,
+      boxSizing: "border-box", pointerEvents: "none", zIndex: 90,
+    }}>
+      <span style={{
+        fontWeight: "700", fontSize: 13.5, letterSpacing: "-0.2px", lineHeight: "1",
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+      }}>
+        9:41
+      </span>
+      <div style={{ display: "flex", gap: 5, alignItems: "center", height: "100%" }}>
+        <SignalBars color={color} />
+        <Wifi size={13} color={color} strokeWidth={2.5} style={{ display: "block" }} />
+        <BatteryIcon color={color} level={85} />
       </div>
     </div>
   );

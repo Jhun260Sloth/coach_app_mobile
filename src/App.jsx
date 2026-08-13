@@ -1,72 +1,19 @@
 import React, { useState } from "react";
-
-
-import {
-  ScreenAboutYouProfile,
-} from "./screens/client/AboutYou";
-
-
 import {
   Home, Calendar, MessageCircle, User, ClipboardList, ShieldCheck, AlertCircle, Flag, Settings,
-  WifiOff, RefreshCcw, Sparkles,
+  WifiOff, RefreshCcw, Sparkles, ChevronRight, ChevronDown, ChevronUp, Layers, ArrowLeft, Search, Compass, ExternalLink, Activity,
+  Smartphone, Tablet, Sun, Moon, Maximize2, RotateCw, Sliders, Eye, EyeOff, Monitor, ZoomIn, ZoomOut
 } from "lucide-react";
 
-import { C, fBody, fDisplay, useFonts, KEYFRAMES, T } from "./theme/theme";
-import {
-  INITIAL_BOOKINGS, COACH_BOOKINGS, ADMIN_VERIFICATION_QUEUE, ADMIN_DISPUTES,
-  COACHES, INITIAL_AVAILABILITY_BLOCKS, CLIENT_NOTIFICATIONS, COACH_NOTIFICATIONS,
-} from "./data/mockData";
+import { CL, CD, fBody, fDisplay, useFonts, KEYFRAMES, T } from "./theme/theme";
+import { INITIAL_BOOKINGS } from "./data/bookings";
+import { COACHES } from "./data/coaches";
 import { LogoMark, Toast, BottomTabs, StatusBar } from "./components/ui/Primitives";
-import { useUserLocation } from "./systems/StateSystem";
-
-// Onboarding / auth
-import {
-  ScreenSplash, ScreenGetStarted, ScreenRoleSelect, ScreenAuth, ScreenCoachRegister, ScreenCoachInfo,
-  ScreenCoachExpertise, ScreenEnableBiometric, ScreenVerification,
-  ScreenVerificationPending, ScreenAdminLogin,
-  ScreenForgotPassword, ScreenResetCode, ScreenResetPassword,
-} from "./screens/onboarding/OnboardingScreens";
-
-// Client
-import { ScreenClientHome, ScreenSearchFilters } from "./screens/client/Discovery";
-import { ScreenNotifications } from "./screens/client/Notifications";
-import { ScreenCoachProfile } from "./screens/client/CoachProfile";
-import { ScreenPackageDetail } from "./screens/client/PackageDetail";
-import {
-  ScreenBookingParticipants, ScreenBookingDateTime, ScreenBookingReview, ScreenPayment,
-  ScreenBookingConfirmation, ScreenBookingRequestSent,
-} from "./screens/client/Booking";
-import { ScreenClientDashboard, ScreenLeaveReview, ScreenClientBookingDetail } from "./screens/client/Dashboard";
-import { ScreenClientProfile, ScreenClientHistory } from "./screens/client/Account";
-import { ScreenClientSetupComplete } from "./screens/client/SetupComplete";
-
-// Coach
-import { ScreenCoachDashboard } from "./screens/coach/CoachDashboard";
-import { ScreenCoachCalendar } from "./screens/coach/Calendar";
-import { ScreenCoachBookings, ScreenCoachBookingDetail } from "./screens/coach/Bookings";
-import { ScreenCoachProfileEdit } from "./screens/coach/ProfileEdit";
-import { ScreenCoachReels } from "./screens/coach/Reels";
-import { ScreenCoachPackageForm } from "./screens/coach/PackageForm";
-import { ScreenCoachEarnings } from "./screens/coach/Earnings";
-import { ScreenCoachHistory } from "./screens/coach/History";
-import { ScreenCoachServicesSetup } from "./screens/coach/ServicesSetup";
-import { ScreenCoachAvailabilitySetup } from "./screens/coach/AvailabilitySetup";
-import { ScreenCoachPayoutSetup } from "./screens/coach/PayoutSetup";
-import { ScreenCoachSetupComplete } from "./screens/coach/SetupComplete";
-
-// Shared: messaging & support
-import { ScreenMessages, ScreenChatThread } from "./screens/messaging/Messaging";
-import { ScreenSupport } from "./screens/support/Support";
-
-// Admin
-import { ScreenAdminHome } from "./screens/admin/Home";
-import { ScreenAdminVerify, ScreenAdminVerifyDetail } from "./screens/admin/Verify";
-import { ScreenAdminDisputes, ScreenAdminDisputeDetail } from "./screens/admin/Disputes";
-import { ScreenAdminMod } from "./screens/admin/Moderation";
-import { ScreenAdminSettings } from "./screens/admin/Settings";
+import { AppProvider, useApp } from "./context/AppContext";
+import { ROUTES, ROUTE_METADATA } from "./router/routes";
 
 /* =========================================================================
-   APP SHELL — navigation, role switching, top-level state
+   TAB DEFINITIONS
    ========================================================================= */
 const CLIENT_TABS = [
   { value: "client-home", label: "Discover", icon: Home },
@@ -81,404 +28,672 @@ const COACH_TABS = [
   { value: "coach-messages", label: "Messages", icon: MessageCircle },
   { value: "coach-profile-edit", label: "Profile", icon: User },
 ];
-const ADMIN_TABS = [
-  { value: "admin-home", label: "Home", icon: Home },
-  { value: "admin-verify", label: "Verify", icon: ShieldCheck },
-  { value: "admin-disputes", label: "Disputes", icon: AlertCircle },
-  { value: "admin-mod", label: "Moderate", icon: Flag },
-  { value: "admin-settings", label: "Settings", icon: Settings },
-];
 
-export default function App() {
+/* =========================================================================
+   SIDEBAR & CANVAS DESKTOP SHELL — Vercel / Notion Style System UI
+   ========================================================================= */
+function AppShell() {
   useFonts();
-  const [role, setRole] = useState("client");
-  const [screen, setScreen] = useState("splash");
-  const [params, setParams] = useState({});
-  const [history, setHistory] = useState([]);
-  const [toastMsg, setToastMsg] = useState(null);
-  const [favorites, setFavorites] = useState(["c1"]);
-  const [biometric, setBiometric] = useState(false);
-  const [verified, setVerified] = useState(false);
-  const [verificationStatus, setVerificationStatus] = useState("none"); // none | pending | approved | rejected
-  const [reachedDashboardAfterVerification, setReachedDashboardAfterVerification] = useState(false);
-  const [offline, setOffline] = useState(false);
-  const [hasCoachRole, setHasCoachRole] = useState(false);
-  const [draft, setDraft] = useState(null);
-  const [bookings, setBookings] = useState(INITIAL_BOOKINGS);
-  const [coachBookings, setCoachBookings] = useState(COACH_BOOKINGS);
-  const [coachPackages, setCoachPackages] = useState(COACHES[1].packages);
-  const [coachMedia, setCoachMedia] = useState(
-    Array.from({ length: COACHES[1].reelsCount }, (_, i) => ({
-      id: `m${i + 1}`,
-      type: i % 4 === 3 ? "photo" : "reel",
-      caption: i % 4 === 3 ? "Training photo" : "Session highlight",
-      sport: COACHES[1].sport,
-      url: null,
-    }))
-  );
-  const [availabilityBlocks, setAvailabilityBlocks] = useState(INITIAL_AVAILABILITY_BLOCKS);
-  const [verificationQueue, setVerificationQueue] = useState(ADMIN_VERIFICATION_QUEUE);
-  const [disputes, setDisputes] = useState(ADMIN_DISPUTES);
-  const [clientPrefs, setClientPrefs] = useState(null);
-  const [clientFilters, setClientFilters] = useState(null);
-  // Shared across every client screen so a GPS fix (or a manually entered
-  // location) made in one place — Dashboard, Filters, the map — is what
-  // every other place sees too, instead of each re-requesting its own.
-  const userLocationState = useUserLocation();
-  const [children, setChildren] = useState([]);
-  const [coachOnboarding, setCoachOnboarding] = useState({});
-  const updateCoachOnboarding = (patch) => setCoachOnboarding((c) => ({ ...c, ...patch }));
+  const app = useApp();
+  const {
+    screen, role, setRole, setScreen, history, setHistory, goBack, toastMsg, offline, setOffline,
+    darkMode, toggleDarkMode,
+    isFirstTimeClient, setIsFirstTimeClient, setDiscoveryPrefs, setBookings,
+    setShowPostSignupGuide, verificationStatus, reachedDashboardAfterVerification,
+    resetAll,
+  } = app;
 
-  // Drives the client-side "first time user" empty states (Discover / Bookings
-  // / Messages). Defaults to false so the prototype opens into its normal,
-  // populated demo state; flipping it on (via the "New client" toggle, or
-  // automatically when someone finishes the sign-up flow) simulates a client
-  // who's just created an account and hasn't booked or messaged anyone yet.
-  const [isFirstTimeClient, setIsFirstTimeClient] = useState(false);
-  // Coach Listings on Discover stay empty until the client submits the
-  // Personalised Coach Recommendation modal — null means "not submitted yet".
-  // Pre-seeded (non-null) here so the default demo state shows the full list.
-  const [discoveryPrefs, setDiscoveryPrefs] = useState({ seeded: true });
-  // Whether the 5-step post-sign-up guide still needs to be shown on Discover.
-  // Set true the moment a client finishes onboarding so it appears exactly
-  // once on their first visit, then flips false once they finish or skip it.
-  const [showPostSignupGuide, setShowPostSignupGuide] = useState(false);
+  const [dirFilter, setDirFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // Whether the current coach (Josh Whitfield) is open to new bookings right now.
-  // Drives the "Coach available / unavailable" state on his profile, Discover
-  // card and dashboard toggle.
-  const [coachAvailableNow, setCoachAvailableNow] = useState(true);
+  // Toolbar & Canvas Customization States
+  const [isToolbarOpen, setIsToolbarOpen] = useState(true);
+  const [devicePreset, setDevicePreset] = useState("iphone-15");
+  const [canvasTheme, setCanvasTheme] = useState("light");
+  const [zoomScale, setZoomScale] = useState(100);
+  const [showFrame, setShowFrame] = useState(true);
+  const [isLandscape, setIsLandscape] = useState(false);
+  const [customWidth, setCustomWidth] = useState(393);
+  const [customHeight, setCustomHeight] = useState(852);
+  const [isDeviceMenuOpen, setIsDeviceMenuOpen] = useState(false);
 
-  // Global notification log — a single source of truth that real in-app actions
-  // (booking accepted/declined, payment received, verification decided...) push
-  // into, tagged with who it's for. Screens merge this on top of their seed/mock
-  // notification lists via useLiveNotifications() so the bell badge and sheet
-  // reflect what's actually happening in the prototype, not just static mock data.
-  const [notifications, setNotifications] = useState([]);
-  const pushNotification = ({ audience, type = "booking", title, body }) => {
-    setNotifications((n) => [
-      { id: `rt${Date.now()}${Math.random().toString(36).slice(2, 6)}`, audience, type, title, body, time: "Just now", unread: true },
-      ...n,
-    ]);
-  };
-  const clientNotifications = notifications.filter((n) => n.audience === "client");
-  const coachNotifications = notifications.filter((n) => n.audience === "coach");
-  // Scoped updater for the client notification list — updates only
-  // client-audience items in the shared `notifications` array, leaving
-  // coach-audience ones untouched.
-  const setClientNotifications = (updater) => {
-    setNotifications((all) => {
-      const clientItems = all.filter((n) => n.audience === "client");
-      const nextClientItems = typeof updater === "function" ? updater(clientItems) : updater;
-      const nextById = new Map(nextClientItems.map((n) => [n.id, n]));
-      return all.map((n) => (n.audience === "client" ? nextById.get(n.id) || n : n));
-    });
-  };
-
-  const toast = (msg) => { setToastMsg(msg); setTimeout(() => setToastMsg(null), 2200); };
-  const nav = (s, p = {}) => { setHistory((h) => [...h, screen]); setScreen(s); setParams(p); };
-  const goBack = () => { setHistory((h) => { const n = [...h]; const last = n.pop(); if (last) setScreen(last); return n; }); };
-  const toggleFav = (id) => setFavorites((f) => f.includes(id) ? f.filter((x) => x !== id) : [...f, id]);
-
-  // Every booking now starts life as a pending request — no payment is collected
-  // until the coach has reviewed it and accepted. `d.id`, when supplied, keeps
-  // the id the client was already shown on the "Booking Request Sent" screen
-  // in sync with the record actually added here.
-  const addBooking = (d) => {
-    const id = d.id || ("b" + (bookings.length + 1));
-    const coachId = d.coach.id;
-    setBookings((b) => [{ id, coachId, coachName: d.coach.name, clientName: "Sarah Lin", service: d.pkg.name, date: d.day, time: d.time, mode: d.mode, status: "pending", price: d.total, paid: false, reviewed: false, participants: d.participants || "You", notes: d.conditions || "" }, ...b]);
-    // The prototype's Coach role is always Josh Whitfield (c2) — mirror the
-    // request into their Bookings pending queue so it's reviewable, and let
-    // them chat with the client about it, from the coach side too.
-    if (coachId === "c2") {
-      setCoachBookings((cb) => [{ id, clientName: "Sarah Lin", service: d.pkg.name, date: d.day, time: d.time, mode: d.mode, status: "pending", price: d.total, notes: d.conditions || "" }, ...cb]);
-    }
-    pushNotification({ audience: "coach", type: "booking", title: "New booking request", body: `Sarah Lin requested a ${d.pkg.name} for ${d.day}, ${d.time}.` });
-  };
-
-  // Client cancels (or withdraws a pending request). Looks the booking up first
-  // so we can notify the coach with real details, and — if it had already been
-  // paid for — kicks off a simulated refund: cancelled now, refunded a moment
-  // later, matching the Payment processing -> success pattern used elsewhere.
-  const cancelBooking = (id) => {
-    setBookings((bs) => {
-      const target = bs.find((b) => b.id === id);
-      if (target) {
-        pushNotification({
-          audience: "coach", type: "booking",
-          title: target.status === "pending" ? "Request withdrawn" : "Booking cancelled",
-          body: `${target.clientName || "A client"} ${target.status === "pending" ? "withdrew their request for" : "cancelled"} ${target.service}${target.date ? ` on ${target.date}` : ""}.`,
-        });
-        setCoachBookings((cb) => cb.map((b) => (b.id === id ? { ...b, status: "cancelled" } : b)));
-        if (target.status === "confirmed" && target.paid) {
-          setTimeout(() => {
-            setBookings((later) => later.map((b) => (b.id === id ? { ...b, refundStatus: "refunded" } : b)));
-            toast(`$${Number(target.price).toFixed(2)} refunded`);
-          }, 1400);
-          return bs.map((b) => (b.id === id ? { ...b, status: "cancelled", refundStatus: "processing" } : b));
-        }
-      }
-      return bs.map((b) => (b.id === id ? { ...b, status: "cancelled" } : b));
-    });
-  };
-
-  const rescheduleBooking = (id, { date, time }) => setBookings((bs) => bs.map((b) => (b.id === id ? { ...b, date, time } : b)));
-
-  // Marks a confirmed booking as paid once ScreenPayment succeeds, and lets the
-  // coach know a charge actually landed (distinct from just "confirmed").
-  const markBookingPaid = (id) => setBookings((bs) => {
-    const target = bs.find((b) => b.id === id);
-    if (target) {
-      pushNotification({ audience: "coach", type: "booking", title: "Payment received", body: `Payment of $${Number(target.price).toFixed(2)} received for ${target.service}.` });
-    }
-    return bs.map((b) => (b.id === id ? { ...b, paid: true, paymentDue: false } : b));
-  });
-
-  // Shared accept/decline handler for a coach's booking request — called from
-  // both the Bookings tab and the coach dashboard's quick-action cards. Keeps
-  // the coach's own record and the client's mirrored booking in sync, and
-  // notifies the client (payment prompt on accept, a heads-up on decline).
-  const respondBooking = (id, status) => {
-    setCoachBookings((arr) => arr.map((b) => (b.id === id ? { ...b, status } : b)));
-    const cb = coachBookings.find((b) => b.id === id);
-    setBookings((arr) => arr.map((b) => (b.id === id ? { ...b, status, paymentDue: status === "confirmed" ? true : b.paymentDue } : b)));
-    if (cb) {
-      if (status === "confirmed") {
-        pushNotification({ audience: "client", type: "payment", title: "Send your payment", body: `${COACHES[1].name} accepted your ${cb.service} request — send payment to confirm your session on ${cb.date}.`, bookingId: id });
-      } else if (status === "cancelled") {
-        pushNotification({ audience: "client", type: "booking", title: "Booking declined", body: `${COACHES[1].name} declined your ${cb.service} request for ${cb.date}.`, bookingId: id });
-      }
-    }
-  };
-
-  const handleClientPrefs = (prefs) => {
-    setClientPrefs(prefs);
-    // Participant profiles created during onboarding become managed child profiles.
-    if (prefs?.children?.length) {
-      setChildren((c) => [
-        ...c,
-        ...prefs.children
-          .filter((nc) => nc.name && nc.name.trim().length > 0)
-          .filter((nc) => !c.some((ec) => ec.id === nc.id))
-          .map((nc) => ({ sport: [], goals: "", postalCode: prefs.postalCode || "", preferences: "", hasPhoto: false, ...nc })),
-      ]);
-    }
-  };
-  const addChild = (child) => setChildren((c) => [...c, { id: Date.now(), name: "", age: "", sport: [], goals: "", postalCode: "", preferences: "", hasPhoto: false, ...child }]);
-  const updateChild = (id, patch) => setChildren((c) => c.map((ch) => (ch.id === id ? { ...ch, ...patch } : ch)));
-  const removeChild = (id) => setChildren((c) => c.filter((ch) => ch.id !== id));
-
-  // Called when the current (Josh Whitfield) coach profile submits verification documents.
-  // Adds a live entry to the admin verification queue and marks the submission as pending.
-  const submitVerification = ({ documents, worksWithMinors }) => {
-    setVerificationStatus("pending");
-    setVerificationQueue((q) => [
-      {
-        id: "v" + (q.length + 1),
-        name: coachOnboarding.displayName || "New Coach",
-        sport: (coachOnboarding.primarySports && coachOnboarding.primarySports[0]) || "Coaching",
-        type: documents.map((d) => d.label).join(" + "),
-        suburb: coachOnboarding.location ? `${coachOnboarding.location.suburb}, ${coachOnboarding.location.state}` : "",
-        experience: coachOnboarding.yearsExperience || "",
-        documents,
-        submittedByUser: true,
-      },
-      ...q,
-    ]);
-  };
-
-  // Admin approves or rejects an applicant. If the applicant is the current user's
-  // own submission, this unlocks full Coach UI access (clears the "verification
-  // pending" banner and grants a verified badge on the dashboard).
-  const decideVerification = (id, approve) => {
-    const applicant = verificationQueue.find((v) => v.id === id);
-    setVerificationQueue((q) => q.filter((v) => v.id !== id));
-    if (applicant && applicant.submittedByUser) {
-      setVerificationStatus(approve ? "approved" : "rejected");
-      if (approve) setVerified(true);
-      pushNotification({
-        audience: "coach", type: "verification",
-        title: approve ? "You're verified!" : "Verification rejected",
-        body: approve ? "Your verification was approved. You can now accept bookings." : "One or more documents couldn't be confirmed — please resubmit.",
-      });
-    }
-    toast(approve ? `${applicant ? applicant.name : "Coach"} approved` : `${applicant ? applicant.name : "Coach"} rejected`);
-    nav("admin-verify");
-  };
-
-  const resolveDispute = (id) => setDisputes((d) => d.filter((x) => x.id !== id));
-
-  // Create-or-update a coach package. Used by the Create/Edit Package flow.
-  const savePackage = (record) => setCoachPackages((pkgs) => {
-    const exists = pkgs.some((p) => p.id === record.id);
-    return exists ? pkgs.map((p) => (p.id === record.id ? record : p)) : [...pkgs, record];
-  });
-  const removePackage = (id) => {
-    setCoachPackages((pkgs) => pkgs.filter((p) => p.id !== id));
-    // Availability blocks referencing the removed package should drop it too.
-    setAvailabilityBlocks((blocks) => blocks.map((b) => ({ ...b, packageIds: b.packageIds.filter((pid) => pid !== id) })));
-  };
-
-  // Reels & photos — coach's own media library shown on their public profile.
-  const addMedia = (item) => setCoachMedia((m) => [{ id: Date.now(), ...item }, ...m]);
-  const removeMedia = (id) => setCoachMedia((m) => m.filter((x) => x.id !== id));
-
-  const isDarkScreen = screen === "splash" || screen === "admin-login";
-  const tabsForRole = role === "coach" ? COACH_TABS : role === "admin" ? ADMIN_TABS : CLIENT_TABS;
-  // Some screens render outside the tab bar entirely (e.g. the post-verification
-  // setup wizard) — they simply won't match any entry in tabsForRole, so the
-  // bottom nav stays hidden while the coach steps through them.
-  const TAB_ALIASES = {};
-  const activeTabScreen = TAB_ALIASES[screen] || screen;
+  const C = darkMode ? CD : CL;
+  const isDarkScreen = screen === "splash";
+  const tabsForRole = role === "coach" ? COACH_TABS : CLIENT_TABS;
+  const activeTabScreen = screen;
   const showTabs = tabsForRole.some((t) => t.value === activeTabScreen);
 
-const screenProps = {
-  nav, params, toast, role, favorites, toggleFav, biometric, setBiometric, verified, verificationStatus,
-  reachedDashboardAfterVerification, setReachedDashboardAfterVerification, offline, draft, setDraft,
-  addBooking, cancelBooking, rescheduleBooking, respondBooking, markBookingPaid, bookings, setBookings,
-  coachBookings, setCoachBookings, setRole, addCoachRole: () => setHasCoachRole(true), submitVerification,
-  verificationQueue, decideVerification, disputes, resolveDispute, clientPrefs, onComplete: handleClientPrefs,
-  children, addChild, updateChild, removeChild, coachOnboarding, updateCoachOnboarding, coachPackages,
-  savePackage, removePackage, availabilityBlocks, setAvailabilityBlocks, coachMedia, addMedia, removeMedia,
-  coachAvailableNow, setCoachAvailableNow, pushNotification, clientNotifications, setClientNotifications,
-  coachNotifications, isFirstTimeClient, setIsFirstTimeClient, discoveryPrefs, setDiscoveryPrefs,
-  showPostSignupGuide, setShowPostSignupGuide, filters: clientFilters, onFiltersChange: setClientFilters,
-  ...userLocationState,
-};
+  // Resolve current screen component
+  const ScreenComponent = ROUTES[screen] || ROUTES["splash"];
+  const currentMeta = ROUTE_METADATA[screen] || { title: screen, category: "App Screen", role };
 
-  function renderScreen() {
-    switch (screen) {
-      case "splash": return <ScreenSplash nav={nav} />;
-      case "get-started": return <ScreenGetStarted nav={nav} />;
-      case "role-select": return <ScreenRoleSelect nav={nav} setRole={setRole} />;
-      case "auth": return <ScreenAuth {...screenProps} />;
-      case "forgot-password": return <ScreenForgotPassword {...screenProps} />;
-      case "reset-code": return <ScreenResetCode {...screenProps} />;
-      case "reset-password": return <ScreenResetPassword {...screenProps} />;
-      case "enable-biometric": return <ScreenEnableBiometric {...screenProps} />;
-      case "coach-register": return <ScreenCoachRegister {...screenProps} />;
-      case "coach-info": return <ScreenCoachInfo {...screenProps} />;
-      case "coach-expertise": return <ScreenCoachExpertise {...screenProps} />;
-      case "about-you-profile": return <ScreenAboutYouProfile {...screenProps} />;
-      // "account-type" / "about-you-participants" / "about-you-self" removed from the
-      // flow — "Let's learn about you" now goes straight to client-setup-complete.
-      case "client-setup-complete": return <ScreenClientSetupComplete {...screenProps} />;
-      case "verification": return <ScreenVerification {...screenProps} />;
-      case "verification-pending": return <ScreenVerificationPending {...screenProps} />;
-      case "admin-login": return <ScreenAdminLogin {...screenProps} />;
+  const screenProps = { ...app };
 
-      case "client-home": return <ScreenClientHome {...screenProps} />;
-      case "notifications": return <ScreenNotifications {...screenProps} />;
-      case "search-filters": return <ScreenSearchFilters {...screenProps} />;
-      case "coach-profile": return <ScreenCoachProfile {...screenProps} />;
-      case "package-detail": return <ScreenPackageDetail {...screenProps} />;
-      case "booking-participants": return <ScreenBookingParticipants {...screenProps} />;
-      case "booking-datetime": return <ScreenBookingDateTime {...screenProps} />;
-      case "booking-review": return <ScreenBookingReview {...screenProps} />;
-      case "payment": return <ScreenPayment {...screenProps} />;
-      case "booking-confirmation": return <ScreenBookingConfirmation {...screenProps} />;
-      case "booking-request-sent": return <ScreenBookingRequestSent {...screenProps} />;
-      case "client-dashboard": return <ScreenClientDashboard {...screenProps} />;
-      case "client-booking-detail": return <ScreenClientBookingDetail {...screenProps} />;
-      case "leave-review": return <ScreenLeaveReview {...screenProps} />;
-      case "client-messages": return <ScreenMessages {...screenProps} />;
-      case "client-profile": return <ScreenClientProfile {...screenProps} />;
-      case "client-history": return <ScreenClientHistory {...screenProps} />;
+  // Filtered route list for directory
+  const routeKeys = Object.keys(ROUTES);
+  const filteredRoutes = routeKeys.filter((key) => {
+    const meta = ROUTE_METADATA[key] || { title: key, category: "Other" };
+    const matchesFilter = dirFilter === "all" || meta.category === dirFilter;
+    const matchesSearch = !searchQuery.trim() ||
+      key.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      meta.title.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesFilter && matchesSearch;
+  });
 
-      case "coach-dashboard": return <ScreenCoachDashboard {...screenProps} />;
-      case "coach-services-setup": return <ScreenCoachServicesSetup {...screenProps} />;
-      case "coach-availability-setup": return <ScreenCoachAvailabilitySetup {...screenProps} />;
-      case "coach-payout-setup": return <ScreenCoachPayoutSetup {...screenProps} />;
-      case "coach-setup-complete": return <ScreenCoachSetupComplete {...screenProps} />;
-      case "coach-calendar": return <ScreenCoachCalendar {...screenProps} />;
-      case "coach-bookings": return <ScreenCoachBookings {...screenProps} />;
-      case "coach-booking-detail": return <ScreenCoachBookingDetail {...screenProps} />;
-      case "coach-profile-edit": return <ScreenCoachProfileEdit {...screenProps} />;
-      case "coach-reels": return <ScreenCoachReels {...screenProps} />;
-      case "coach-create-package":
-      case "coach-edit-package":
-        return <ScreenCoachPackageForm {...screenProps} />;
-      case "coach-earnings": return <ScreenCoachEarnings {...screenProps} />;
-      case "coach-history": return <ScreenCoachHistory {...screenProps} />;
-      case "coach-messages": return <ScreenMessages {...screenProps} />;
+  // Device Presets definitions
+  const PRESETS = {
+    "iphone-15": { name: "iPhone 15", icon: Smartphone, width: 393, height: 852, radius: 54, innerRadius: 44, hasIsland: true },
+    "iphone-se": { name: "iPhone SE", icon: Smartphone, width: 375, height: 667, radius: 40, innerRadius: 30, hasIsland: false },
+    "android": { name: "Android Pro", icon: Smartphone, width: 412, height: 915, radius: 48, innerRadius: 38, hasIsland: false },
+    "tablet": { name: "iPad / Tablet", icon: Tablet, width: 768, height: 1024, radius: 36, innerRadius: 26, hasIsland: false },
+    "custom": { name: "Custom Size", icon: Sliders, width: customWidth, height: customHeight, radius: 24, innerRadius: 16, hasIsland: false },
+  };
 
-      case "chat-thread": return <ScreenChatThread {...screenProps} />;
-      case "support": return <ScreenSupport {...screenProps} />;
+  const activePreset = PRESETS[devicePreset] || PRESETS["iphone-15"];
+  const targetWidth = isLandscape ? activePreset.height : activePreset.width;
+  const targetHeight = isLandscape ? activePreset.width : activePreset.height;
 
-      case "admin-home": return <ScreenAdminHome {...screenProps} />;
-      case "admin-verify": return <ScreenAdminVerify {...screenProps} />;
-      case "admin-verify-detail": return <ScreenAdminVerifyDetail {...screenProps} />;
-      case "admin-disputes": return <ScreenAdminDisputes {...screenProps} />;
-      case "admin-dispute-detail": return <ScreenAdminDisputeDetail {...screenProps} />;
-      case "admin-mod": return <ScreenAdminMod {...screenProps} />;
-      case "admin-settings": return <ScreenAdminSettings {...screenProps} />;
-      default: return <ScreenSplash nav={nav} />;
-    }
-  }
+  const studioTheme = darkMode ? "dark" : canvasTheme;
+  const studioBg = studioTheme === "dark" ? "#0A0B0E" : "#FAFAFA";
+  const studioCanvasBg = studioTheme === "dark"
+    ? "radial-gradient(circle at 50% 0%, #171717 0%, #0A0A0A 100%)"
+    : "radial-gradient(circle at 50% 0%, #F5F5F5 0%, #E5E5E5 100%)";
+
+  // Vercel / Notion Style tokens for SYSTEM UI (outer wrapper only)
+  const vSystem = {
+    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    bgSidebar: studioTheme === "dark" ? "#0D1117" : "#FFFFFF",
+    border: studioTheme === "dark" ? "#21262D" : "#E5E7EB",
+    textPrimary: studioTheme === "dark" ? "#E8F5E9" : "#111827",
+    textSecondary: studioTheme === "dark" ? "#81A881" : "#6B7280",
+    textMuted: studioTheme === "dark" ? "#5C8A5C" : "#9CA3AF",
+    bgHover: studioTheme === "dark" ? "#21262D" : "#F3F4F6",
+    bgActive: studioTheme === "dark" ? "#161B22" : "#F9FAFB",
+  };
 
   return (
-    <div style={{ minHeight: "100%", width: "100%", display: "flex", flexDirection: "column", alignItems: "center", padding: "28px 12px 40px", background: `radial-gradient(circle at 50% 0%, #EEEFF3 0%, ${C.fog} 60%)`, ...fBody }}>
+    <div style={{ width: "100vw", height: "100vh", overflow: "hidden", display: "flex", background: studioBg, fontFamily: vSystem.fontFamily }}>
       <style>{KEYFRAMES}</style>
 
-      {/* Prototype controls — outside the device frame */}
-      <div style={{ width: 393, maxWidth: "100%", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <LogoMark size={20} />
-          <span style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, ...fDisplay }}>CoachLink — interactive prototype</span>
-        </div>
-      </div>
-      <div style={{ width: 393, maxWidth: "100%", background: C.white, border: `1px solid ${C.border}`, borderRadius: 16, padding: 10, marginBottom: 16, display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
-        <span style={{ fontSize: T.caption, color: C.slateLight, fontWeight: 600, ...fBody }}>VIEW AS</span>
-        {["client", "coach", "admin"].map((r) => (
-          <button key={r} onClick={() => {
-            setRole(r); setHistory([]);
-            if (r === "coach") {
-              const stillOnVerification = (verificationStatus === "pending" || verificationStatus === "approved") && !reachedDashboardAfterVerification;
-              setScreen(stillOnVerification ? "verification-pending" : "coach-dashboard");
-            } else {
-              setScreen(r === "admin" ? "admin-login" : "client-home");
-            }
-          }}
-            style={{ padding: "6px 12px", borderRadius: 999, border: `1px solid ${role === r ? C.orange : C.border}`, background: role === r ? C.orangeTint : C.white, color: role === r ? C.orange : C.jet, fontSize: T.label, fontWeight: 600, cursor: "pointer", textTransform: "capitalize", ...fBody }}>
-            {r}
-          </button>
-        ))}
-        <div style={{ flex: 1 }} />
-        {role === "client" && (
-          <button onClick={() => { setIsFirstTimeClient((v) => !v); if (!isFirstTimeClient) { setDiscoveryPrefs(null); setBookings([]); setShowPostSignupGuide(true); } else { setDiscoveryPrefs({ seeded: true }); setBookings(INITIAL_BOOKINGS); setShowPostSignupGuide(false); } }} title="Simulate a first-time client with no bookings, chats or coach picks yet"
-            style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 999, border: `1px solid ${isFirstTimeClient ? C.orange : C.border}`, background: isFirstTimeClient ? C.orangeTint : C.white, color: isFirstTimeClient ? C.orange : C.slate, fontSize: T.captionLg, fontWeight: 600, cursor: "pointer", ...fBody }}>
-            <Sparkles size={12} /> New client
-          </button>
-        )}
-        <button onClick={() => setOffline((v) => !v)} title="Simulate offline"
-          style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 999, border: `1px solid ${offline ? C.orange : C.border}`, background: offline ? C.orangeTint : C.white, color: offline ? C.orange : C.slate, fontSize: T.captionLg, fontWeight: 600, cursor: "pointer", ...fBody }}>
-          <WifiOff size={12} /> Offline
-        </button>
-        <button onClick={() => { setScreen(role === "admin" ? "admin-login" : "splash"); setHistory([]); setBookings(INITIAL_BOOKINGS); setCoachBookings(COACH_BOOKINGS); setNotifications([]); setVerified(false); setVerificationStatus("none"); setReachedDashboardAfterVerification(false); setVerificationQueue(ADMIN_VERIFICATION_QUEUE); setDisputes(ADMIN_DISPUTES); setClientPrefs(null); setChildren([]); setCoachOnboarding({}); setBiometric(false); setCoachPackages(COACHES[1].packages); setAvailabilityBlocks(INITIAL_AVAILABILITY_BLOCKS); setCoachMedia(Array.from({ length: COACHES[1].reelsCount }, (_, i) => ({ id: `m${i + 1}`, type: i % 4 === 3 ? "photo" : "reel", caption: i % 4 === 3 ? "Training photo" : "Session highlight", sport: COACHES[1].sport, url: null }))); setIsFirstTimeClient(false); setDiscoveryPrefs({ seeded: true }); }}
-
-          style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 999, border: `1px solid ${C.border}`, background: C.white, color: C.slate, fontSize: T.captionLg, fontWeight: 600, cursor: "pointer", ...fBody }}>
-          <RefreshCcw size={12} /> Reset
-        </button>
-      </div>
-
-      {/* Device frame — iPhone 15 */}
-      <div style={{ width: 393, maxWidth: "100%", height: 852, maxHeight: "88vh", background: "linear-gradient(160deg,#3a3d45,#101114)", borderRadius: 58, padding: 14, boxShadow: "0 30px 60px -20px rgba(22,24,29,.4)", position: "relative" }}>
-        <div style={{ width: "100%", height: "100%", background: isDarkScreen ? C.jet : C.white, borderRadius: 46, overflow: "hidden", position: "relative", border: "1px solid rgba(255,255,255,.08)" }}>
-          {/* Dynamic Island */}
-          <div style={{ position: "absolute", top: 11, left: "50%", transform: "translateX(-50%)", width: 126, height: 37, background: C.black, borderRadius: 20, zIndex: 100 }} />
-          <StatusBar dark={isDarkScreen} />
-          <div style={{ height: "calc(100% - 34px)", position: "relative" }}>
-            {renderScreen()}
-            <Toast toast={toastMsg} />
+      {/* =========================================================================
+          LEFT SIDEBAR — Notion / Vercel Style Controls & Screen Directory
+          ========================================================================= */}
+      <aside style={{
+        width: 340, minWidth: 300, maxWidth: 360, height: "100vh", background: vSystem.bgSidebar,
+        borderRight: `1px solid ${vSystem.border}`, display: "flex", flexDirection: "column",
+        zIndex: 20, flexShrink: 0, fontFamily: vSystem.fontFamily,
+      }}>
+        {/* Header */}
+        <div style={{ padding: "16px 18px 14px", borderBottom: `1px solid ${vSystem.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <LogoMark size={22} />
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: vSystem.textPrimary, letterSpacing: "-0.3px", fontFamily: vSystem.fontFamily }}>
+                CoachLink Studio
+              </div>
+              <div style={{ fontSize: 11, color: vSystem.textSecondary, fontWeight: 500, marginTop: -1 }}>
+                EITB App Prototype
+              </div>
+            </div>
           </div>
-          {showTabs && <BottomTabs items={tabsForRole} value={activeTabScreen} onChange={(v) => { setHistory([]); setScreen(v); }} />}
         </div>
-      </div>
 
-      <div style={{ width: 393, maxWidth: "100%", marginTop: 14, fontSize: T.captionLg, color: C.slateLight, textAlign: "center", lineHeight: 1.6, ...fBody }}>
-        High-fidelity front-end prototype with mock data — booking, payments and verification flows are simulated for demonstration.
-      </div>
+        {/* Scrollable Control Body */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "14px 18px" }} className="cl-hide-scrollbar">
+          
+          {/* SECTION 1: ROLE SWITCHER (Vercel Segmented Control) */}
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.06em", color: vSystem.textMuted, fontWeight: 700, marginBottom: 7 }}>
+              Role Persona
+            </div>
+            <div style={{ display: "flex", background: vSystem.bgHover, borderRadius: 8, padding: 2, border: `1px solid ${vSystem.border}` }}>
+              {["client", "coach"].map((r) => {
+                const active = role === r;
+                return (
+                  <button
+                    key={r}
+                    onClick={() => {
+                      setRole(r); setHistory([]);
+                      if (r === "coach") {
+                        const stillOnVerification = (verificationStatus === "pending" || verificationStatus === "approved") && !reachedDashboardAfterVerification;
+                        setScreen(stillOnVerification ? "verification-pending" : "coach-dashboard");
+                      } else {
+                        setScreen("client-home");
+                      }
+                    }}
+                    style={{
+                      flex: 1, padding: "6px 0", borderRadius: 6, border: "none", cursor: "pointer",
+                      background: active ? vSystem.bgSidebar : "transparent",
+                      color: active ? vSystem.textPrimary : vSystem.textSecondary,
+                      fontWeight: active ? 600 : 500, fontSize: 12,
+                      boxShadow: active ? "0 1px 2px rgba(0,0,0,0.06)" : "none",
+                      textTransform: "capitalize", transition: "all 0.12s ease", fontFamily: vSystem.fontFamily,
+                    }}
+                  >
+                    {r}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Action Toggles */}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+              {role === "client" && (
+                <button
+                  onClick={() => {
+                    setIsFirstTimeClient((v) => !v);
+                    if (!isFirstTimeClient) { setDiscoveryPrefs(null); setBookings([]); setShowPostSignupGuide(true); }
+                    else { setDiscoveryPrefs({ seeded: true }); setBookings(INITIAL_BOOKINGS); setShowPostSignupGuide(false); }
+                  }}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 5, padding: "4px 8px", borderRadius: 6,
+                    border: `1px solid ${isFirstTimeClient ? "#10B981" : vSystem.border}`,
+                    background: isFirstTimeClient ? "#ECFDF5" : vSystem.bgSidebar,
+                    color: isFirstTimeClient ? "#047857" : vSystem.textPrimary, fontSize: 11, fontWeight: 500, cursor: "pointer", fontFamily: vSystem.fontFamily,
+                  }}
+                >
+                  <Sparkles size={11} /> New Client
+                </button>
+              )}
+              <button
+                onClick={() => setOffline((v) => !v)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 5, padding: "4px 8px", borderRadius: 6,
+                  border: `1px solid ${offline ? "#EF4444" : vSystem.border}`,
+                  background: offline ? "#FEF2F2" : vSystem.bgSidebar,
+                  color: offline ? "#B91C1C" : vSystem.textPrimary, fontSize: 11, fontWeight: 500, cursor: "pointer", fontFamily: vSystem.fontFamily,
+                }}
+              >
+                <WifiOff size={11} /> {offline ? "Offline" : "Online"}
+              </button>
+              <button
+                onClick={toggleDarkMode}
+                title="Toggle app dark mode"
+                style={{
+                  display: "flex", alignItems: "center", gap: 5, padding: "4px 8px", borderRadius: 6,
+                  border: `1px solid ${vSystem.border}`,
+                  background: darkMode ? C.brandTint : vSystem.bgSidebar,
+                  color: darkMode ? C.brand : vSystem.textPrimary, fontSize: 11, fontWeight: 500, cursor: "pointer", fontFamily: vSystem.fontFamily,
+                }}
+              >
+                {darkMode ? <Moon size={11} /> : <Sun size={11} />} {darkMode ? "Dark" : "Light"}
+              </button>
+              <button
+                onClick={resetAll}
+                style={{
+                  display: "flex", alignItems: "center", gap: 5, padding: "4px 8px", borderRadius: 6,
+                  border: `1px solid ${vSystem.border}`, background: vSystem.bgSidebar, color: vSystem.textPrimary,
+                  fontSize: 11, fontWeight: 500, cursor: "pointer", fontFamily: vSystem.fontFamily,
+                }}
+              >
+                <RefreshCcw size={11} /> Reset State
+              </button>
+            </div>
+          </div>
+
+          {/* SECTION 2: ACTIVE FLOW & INSPECTOR */}
+          <div style={{ background: vSystem.bgActive, borderRadius: 10, padding: 12, marginBottom: 18, border: `1px solid ${vSystem.border}` }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, fontWeight: 700, color: vSystem.textSecondary, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                <Activity size={11} color={vSystem.textPrimary} /> Active Screen Flow
+              </div>
+              {history.length > 0 && (
+                <button
+                  onClick={goBack}
+                  style={{ display: "flex", alignItems: "center", gap: 3, background: vSystem.bgSidebar, border: `1px solid ${vSystem.border}`, borderRadius: 5, padding: "2px 6px", fontSize: 10, fontWeight: 600, color: vSystem.textPrimary, cursor: "pointer" }}
+                >
+                  <ArrowLeft size={9} /> Back
+                </button>
+              )}
+            </div>
+
+            <div style={{ fontSize: 13, fontWeight: 700, color: vSystem.textPrimary, letterSpacing: "-0.2px", fontFamily: vSystem.fontFamily }}>
+              {currentMeta.title}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+              <span style={{ fontSize: 10, fontFamily: "monospace", background: vSystem.bgSidebar, border: `1px solid ${vSystem.border}`, borderRadius: 4, padding: "1px 5px", color: vSystem.textSecondary }}>
+                {screen}
+              </span>
+              <span style={{ fontSize: 10, fontWeight: 600, color: vSystem.textPrimary, background: vSystem.bgHover, borderRadius: 4, padding: "1px 5px", border: `1px solid ${vSystem.border}` }}>
+                {currentMeta.category}
+              </span>
+            </div>
+
+            {/* Breadcrumb Flow Stack */}
+            {history.length > 0 && (
+              <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${vSystem.border}` }}>
+                <div style={{ fontSize: 10, color: vSystem.textMuted, fontWeight: 500, marginBottom: 3 }}>
+                  Navigation Stack ({history.length}):
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 3, flexWrap: "wrap" }}>
+                  {history.slice(-4).map((hStep, idx) => (
+                    <React.Fragment key={idx}>
+                      <span
+                        onClick={() => setScreen(hStep)}
+                        style={{ fontSize: 10, color: vSystem.textSecondary, cursor: "pointer", textDecoration: "underline" }}
+                      >
+                        {hStep}
+                      </span>
+                      <ChevronRight size={9} color={vSystem.textMuted} />
+                    </React.Fragment>
+                  ))}
+                  <span style={{ fontSize: 10, fontWeight: 700, color: vSystem.textPrimary }}>{screen}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* SECTION 3: SCREEN DIRECTORY */}
+          <div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+              <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.06em", color: vSystem.textMuted, fontWeight: 700 }}>
+                Screen Directory ({filteredRoutes.length})
+              </div>
+              <Compass size={13} color={vSystem.textMuted} />
+            </div>
+
+            {/* Search Input */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6, background: vSystem.bgActive, border: `1px solid ${vSystem.border}`, borderRadius: 8, padding: "5px 9px", marginBottom: 8 }}>
+              <Search size={13} color={vSystem.textMuted} />
+              <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search screens..."
+                style={{ border: "none", background: "transparent", outline: "none", fontSize: 12, flex: 1, color: vSystem.textPrimary, fontFamily: vSystem.fontFamily }}
+              />
+            </div>
+
+            {/* Category Chips */}
+            <div style={{ display: "flex", gap: 4, overflowX: "auto", paddingBottom: 6, marginBottom: 8 }} className="cl-hide-scrollbar">
+              {["all", "Client", "Coach", "Onboarding", "Shared"].map((cat) => {
+                const active = dirFilter === cat;
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => setDirFilter(cat)}
+                    style={{
+                      padding: "2px 8px", borderRadius: 6, border: `1px solid ${active ? vSystem.textPrimary : vSystem.border}`,
+                      background: active ? vSystem.textPrimary : vSystem.bgSidebar, color: active ? vSystem.bgSidebar : vSystem.textSecondary,
+                      fontSize: 11, fontWeight: active ? 600 : 500, cursor: "pointer", whiteSpace: "nowrap", fontFamily: vSystem.fontFamily,
+                    }}
+                  >
+                    {cat}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Screen List */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 2, maxHeight: 250, overflowY: "auto" }} className="cl-hide-scrollbar">
+              {filteredRoutes.map((key) => {
+                const meta = ROUTE_METADATA[key] || { title: key, category: "App" };
+                const isSelected = screen === key;
+                return (
+                  <button
+                    key={key}
+                    onClick={() => {
+                      setScreen(key);
+                      if (meta.role && meta.role !== role) setRole(meta.role);
+                    }}
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%",
+                      padding: "6px 8px", borderRadius: 6, border: `1px solid ${isSelected ? vSystem.textPrimary : "transparent"}`,
+                      background: isSelected ? vSystem.bgHover : "transparent", textAlign: "left", cursor: "pointer",
+                      transition: "all 0.1s ease",
+                    }}
+                  >
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontSize: 12, fontWeight: isSelected ? 700 : 500, color: isSelected ? vSystem.textPrimary : vSystem.textSecondary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontFamily: vSystem.fontFamily }}>
+                        {meta.title}
+                      </div>
+                      <div style={{ fontSize: 10, color: vSystem.textMuted, fontFamily: "monospace" }}>
+                        {key}
+                      </div>
+                    </div>
+                    <ChevronRight size={12} color={isSelected ? vSystem.textPrimary : vSystem.border} />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: "10px 18px", borderTop: `1px solid ${vSystem.border}`, fontSize: 11, color: vSystem.textMuted, textAlign: "center" }}>
+          EITB App Prototype
+        </div>
+      </aside>
+
+      {/* =========================================================================
+          RIGHT MAIN VIEWPORT — CANVAS WORKSPACE + COLLAPSIBLE TOP PREVIEW TOOLBAR
+          ========================================================================= */}
+      <main style={{
+        flex: 1, height: "100vh", display: "flex", flexDirection: "column",
+        background: studioCanvasBg,
+        position: "relative", overflow: "hidden", transition: "background 0.2s ease",
+      }}>
+
+        {/* COLLAPSIBLE TOP PREVIEW TOOLBAR */}
+        {isToolbarOpen ? (
+          <header style={{
+            padding: "8px 16px", borderBottom: `1px solid ${studioTheme === "dark" ? "#262626" : "#E5E7EB"}`,
+            background: studioTheme === "dark" ? "rgba(18,18,18,0.92)" : "rgba(255,255,255,0.92)",
+            backdropFilter: "blur(12px)", display: "flex", flexDirection: "column", gap: 8,
+            zIndex: 15, flexShrink: 0, transition: "all 0.2s ease",
+          }}>
+            {/* Main Row */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+              
+              {/* Left Controls: Responsive Device Dropdown */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 11, color: studioTheme === "dark" ? "#A3A3A3" : "#6B7280", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                  Device:
+                </span>
+                
+                <div style={{ position: "relative" }}>
+                  <button
+                    onClick={() => setIsDeviceMenuOpen((v) => !v)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 6, padding: "5px 10px", borderRadius: 6,
+                      border: `1px solid ${studioTheme === "dark" ? "#333333" : "#D1D5DB"}`,
+                      background: studioTheme === "dark" ? "#171717" : "#FFFFFF",
+                      color: studioTheme === "dark" ? "#FFFFFF" : "#111827",
+                      fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: vSystem.fontFamily,
+                    }}
+                  >
+                    {activePreset.icon && React.createElement(activePreset.icon, { size: 13 })}
+                    <span>{activePreset.name}</span>
+                    <ChevronDown size={12} color={studioTheme === "dark" ? "#A3A3A3" : "#6B7280"} />
+                  </button>
+
+                  {isDeviceMenuOpen && (
+                    <div
+                      onMouseLeave={() => setIsDeviceMenuOpen(false)}
+                      style={{
+                        position: "absolute", top: "calc(100% + 4px)", left: 0, minWidth: 210,
+                        background: studioTheme === "dark" ? "#171717" : "#FFFFFF",
+                        border: `1px solid ${studioTheme === "dark" ? "#333333" : "#E5E7EB"}`,
+                        borderRadius: 8, boxShadow: "0 10px 25px rgba(0,0,0,0.15)", zIndex: 50,
+                        padding: 4, display: "flex", flexDirection: "column", gap: 2,
+                      }}
+                    >
+                      {Object.keys(PRESETS).map((pKey) => {
+                        const preset = PRESETS[pKey];
+                        const Icon = preset.icon;
+                        const isSelected = devicePreset === pKey;
+                        return (
+                          <button
+                            key={pKey}
+                            onClick={() => {
+                              setDevicePreset(pKey);
+                              setIsDeviceMenuOpen(false);
+                            }}
+                            style={{
+                              display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
+                              padding: "6px 9px", borderRadius: 6, border: "none",
+                              background: isSelected ? (studioTheme === "dark" ? "#262626" : "#F3F4F6") : "transparent",
+                              color: isSelected ? (studioTheme === "dark" ? "#FFFFFF" : "#000000") : (studioTheme === "dark" ? "#A3A3A3" : "#374151"),
+                              fontWeight: isSelected ? 600 : 500, fontSize: 12, textAlign: "left", cursor: "pointer",
+                              fontFamily: vSystem.fontFamily, transition: "all 0.1s ease",
+                            }}
+                          >
+                            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                              <Icon size={13} />
+                              <span>{preset.name}</span>
+                            </div>
+                            <span style={{ fontSize: 10, fontFamily: "monospace", color: vSystem.textMuted }}>
+                              {preset.width}×{preset.height}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Dimension Badge */}
+                <span style={{
+                  fontSize: 11, fontWeight: 600, fontFamily: "monospace", padding: "3px 8px", borderRadius: 5,
+                  background: studioTheme === "dark" ? "#262626" : "#F3F4F6",
+                  color: studioTheme === "dark" ? "#D4D4D4" : "#4B5563", border: `1px solid ${studioTheme === "dark" ? "#333" : "#E5E7EB"}`,
+                }}>
+                  {targetWidth} × {targetHeight} px
+                </span>
+              </div>
+
+              {/* Right Controls: Rotate, Frame Toggle, Zoom & Canvas Theme */}
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                
+                {/* Rotate Portrait / Landscape */}
+                <button
+                  onClick={() => setIsLandscape((v) => !v)}
+                  title="Rotate Screen (Portrait / Landscape)"
+                  style={{
+                    display: "flex", alignItems: "center", gap: 5, padding: "4px 9px", borderRadius: 6,
+                    border: `1px solid ${isLandscape ? "#000000" : studioTheme === "dark" ? "#333333" : "#D1D5DB"}`,
+                    background: isLandscape ? "#000000" : studioTheme === "dark" ? "#171717" : "#FFFFFF",
+                    color: isLandscape ? "#FFFFFF" : studioTheme === "dark" ? "#FFFFFF" : "#111827",
+                    fontSize: 11, fontWeight: 500, cursor: "pointer", fontFamily: vSystem.fontFamily,
+                  }}
+                >
+                  <RotateCw size={12} />
+                  <span>{isLandscape ? "Landscape" : "Portrait"}</span>
+                </button>
+
+                {/* Frame On/Off Toggle */}
+                <button
+                  onClick={() => setShowFrame((v) => !v)}
+                  title="Toggle Device Frame Border & Chassis"
+                  style={{
+                    display: "flex", alignItems: "center", gap: 5, padding: "4px 9px", borderRadius: 6,
+                    border: `1px solid ${!showFrame ? "#000000" : studioTheme === "dark" ? "#333333" : "#D1D5DB"}`,
+                    background: !showFrame ? "#000000" : studioTheme === "dark" ? "#171717" : "#FFFFFF",
+                    color: !showFrame ? "#FFFFFF" : studioTheme === "dark" ? "#FFFFFF" : "#111827",
+                    fontSize: 11, fontWeight: 500, cursor: "pointer", fontFamily: vSystem.fontFamily,
+                  }}
+                >
+                  {!showFrame ? <EyeOff size={12} /> : <Eye size={12} />}
+                  <span>{showFrame ? "Frame On" : "Screen Only"}</span>
+                </button>
+
+                {/* Zoom Levels */}
+                <div style={{ display: "flex", background: studioTheme === "dark" ? "#262626" : "#F3F4F6", borderRadius: 6, padding: 2, border: `1px solid ${studioTheme === "dark" ? "#333" : "#E5E7EB"}` }}>
+                  {[80, 90, 100, 110].map((z) => (
+                    <button
+                      key={z}
+                      onClick={() => setZoomScale(z)}
+                      style={{
+                        padding: "2px 7px", borderRadius: 4, border: "none", cursor: "pointer",
+                        background: zoomScale === z ? (studioTheme === "dark" ? "#404040" : "#FFFFFF") : "transparent",
+                        color: zoomScale === z ? (studioTheme === "dark" ? "#FFFFFF" : "#000000") : (studioTheme === "dark" ? "#A3A3A3" : "#6B7280"),
+                        fontWeight: zoomScale === z ? 600 : 500, fontSize: 11, fontFamily: vSystem.fontFamily,
+                      }}
+                    >
+                      {z}%
+                    </button>
+                  ))}
+                </div>
+
+                {/* Dark Mode Toggle (toggles the phone app's dark/light mode) */}
+                <button
+                  onClick={toggleDarkMode}
+                  title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 6,
+                    border: `1px solid ${studioTheme === "dark" ? "#333333" : "#D1D5DB"}`,
+                    background: studioTheme === "dark" ? "#171717" : "#FFFFFF",
+                    color: studioTheme === "dark" ? "#FACC15" : "#111827", cursor: "pointer",
+                  }}
+                >
+                  {darkMode ? <Sun size={13} /> : <Moon size={13} />}
+                </button>
+
+                {/* Collapse Toolbar Arrow Button */}
+                <button
+                  onClick={() => setIsToolbarOpen(false)}
+                  title="Collapse Toolbar"
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 6,
+                    border: `1px solid ${studioTheme === "dark" ? "#333333" : "#D1D5DB"}`,
+                    background: studioTheme === "dark" ? "#171717" : "#FFFFFF",
+                    color: studioTheme === "dark" ? "#A3A3A3" : "#6B7280", cursor: "pointer",
+                  }}
+                >
+                  <ChevronUp size={14} />
+                </button>
+
+              </div>
+            </div>
+
+            {/* Custom Sliders */}
+            {devicePreset === "custom" && (
+              <div style={{
+                display: "flex", alignItems: "center", gap: 20, paddingTop: 6,
+                borderTop: `1px solid ${studioTheme === "dark" ? "#262626" : "#E5E7EB"}`,
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: studioTheme === "dark" ? "#E5E5E5" : "#111827" }}>Width: {customWidth}px</span>
+                  <input
+                    type="range" min={320} max={1024} step={5}
+                    value={customWidth} onChange={(e) => setCustomWidth(Number(e.target.value))}
+                    style={{ cursor: "pointer", accentColor: "#000000" }}
+                  />
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: studioTheme === "dark" ? "#E5E5E5" : "#111827" }}>Height: {customHeight}px</span>
+                  <input
+                    type="range" min={500} max={1200} step={5}
+                    value={customHeight} onChange={(e) => setCustomHeight(Number(e.target.value))}
+                    style={{ cursor: "pointer", accentColor: "#000000" }}
+                  />
+                </div>
+              </div>
+            )}
+          </header>
+        ) : (
+          /* FLOATING ARROW TRIGGER TO EXPAND TOOLBAR WHEN COLLAPSED */
+          <div style={{ position: "absolute", top: 12, right: 20, zIndex: 15 }}>
+            <button
+              onClick={() => setIsToolbarOpen(true)}
+              title="Expand Toolbar Controls"
+              style={{
+                display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20,
+                border: `1px solid ${studioTheme === "dark" ? "#333333" : "#D1D5DB"}`,
+                background: studioTheme === "dark" ? "rgba(24,24,24,0.92)" : "rgba(255,255,255,0.92)",
+                backdropFilter: "blur(8px)", color: studioTheme === "dark" ? "#FFFFFF" : "#111827",
+                fontSize: 11, fontWeight: 600, cursor: "pointer", boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                fontFamily: vSystem.fontFamily,
+              }}
+            >
+              <span>{activePreset.name} ({targetWidth}×{targetHeight})</span>
+              <ChevronDown size={14} />
+            </button>
+          </div>
+        )}
+
+        {/* WORKSPACE CANVAS WITH DEVICE FRAME */}
+        <div style={{
+          flex: 1, width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center",
+          padding: "24px 16px", overflowY: "auto", position: "relative",
+        }}>
+          {/* Scalable Container */}
+          <div style={{
+            transform: `scale(${zoomScale / 100})`, transformOrigin: "center center",
+            transition: "transform 0.2s ease, width 0.25s ease, height 0.25s ease",
+            display: "flex", alignItems: "center", justifyContent: "center", margin: "auto",
+          }}>
+
+            {/* DEVICE FRAME / SCREEN VIEWPORT */}
+            <div style={{
+              width: targetWidth, minWidth: targetWidth, height: targetHeight, minHeight: targetHeight,
+              background: showFrame ? (darkMode ? "#1B2A1B" : "#18181B") : "transparent",
+              borderRadius: showFrame ? activePreset.radius : 16,
+              padding: showFrame ? 10 : 0,
+              boxShadow: showFrame
+                ? (canvasTheme === "dark"
+                    ? "0 25px 60px -15px rgba(0,0,0,0.9), inset 0 0 0 1.5px rgba(255,255,255,0.15)"
+                    : "0 25px 50px -12px rgba(22,24,29,0.22), inset 0 0 0 1.5px rgba(0,0,0,0.1)")
+                : "0 8px 32px rgba(0,0,0,0.08)",
+              position: "relative", display: "flex", flexDirection: "column", flexShrink: 0,
+              transition: "all 0.25s ease",
+            }}>
+              
+              {/* Protruding Physical Hardware Side Buttons */}
+              {showFrame && !isLandscape && (devicePreset === "iphone-15" || devicePreset === "iphone-se" || devicePreset === "android") && (
+                <>
+                  <div style={{ position: "absolute", left: -2.5, top: 110, width: 2.5, height: 16, background: "#27272A", borderRadius: "3px 0 0 3px" }} />
+                  <div style={{ position: "absolute", left: -2.5, top: 146, width: 2.5, height: 44, background: "#27272A", borderRadius: "3px 0 0 3px" }} />
+                  <div style={{ position: "absolute", left: -2.5, top: 202, width: 2.5, height: 44, background: "#27272A", borderRadius: "3px 0 0 3px" }} />
+                  <div style={{ position: "absolute", right: -2.5, top: 172, width: 2.5, height: 68, background: "#27272A", borderRadius: "0 3px 3px 0" }} />
+                </>
+              )}
+              
+              {/* Inner Screen Display */}
+              <div style={{
+                width: "100%", height: "100%", background: C.white,
+                borderRadius: showFrame ? activePreset.innerRadius : 14,
+                overflow: "hidden", position: "relative",
+                border: showFrame ? "2px solid #09090B" : `1px solid ${C.border}`,
+                display: "flex", flexDirection: "column",
+                boxShadow: showFrame ? "inset 0 0 0 1px rgba(255,255,255,0.05)" : "none",
+              }}>
+                {/* Device Camera / Notch Rendering */}
+                {showFrame && !isLandscape && (
+                  <>
+                    {devicePreset === "iphone-15" && (
+                      <div style={{ position: "absolute", top: 8.5, left: "50%", transform: "translateX(-50%)", width: 120, height: 31, background: "#09090B", borderRadius: 18, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 10 }}>
+                        <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#18181B", border: "1px solid #27272A", opacity: 0.85 }} />
+                      </div>
+                    )}
+                    {devicePreset === "android" && (
+                      <div style={{ position: "absolute", top: 16.5, left: "50%", transform: "translateX(-50%)", width: 15, height: 15, background: "#09090B", borderRadius: 999, border: "1.5px solid rgba(255,255,255,0.18)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#18181B" }} />
+                      </div>
+                    )}
+                  </>
+                )}
+                
+                <StatusBar dark={screen === "splash"} />
+
+                {/* Active Screen Component */}
+                <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+                  <ScreenComponent {...screenProps} />
+                  <Toast toast={toastMsg} />
+                </div>
+
+                {/* Bottom Tab Bar */}
+                {showTabs && <BottomTabs items={tabsForRole} value={activeTabScreen} onChange={(v) => { setHistory([]); setScreen(v); }} />}
+
+                {/* iOS Bottom Home Indicator Swipe Bar */}
+                {showFrame && !isLandscape && devicePreset === "iphone-15" && (
+                  <div style={{
+                    position: "absolute", bottom: 6, left: "50%", transform: "translateX(-50%)",
+                    width: 120, height: 4.5, borderRadius: 100,
+                    background: (screen === "splash" || darkMode) ? "#FFFFFF" : "#000000",
+                    opacity: 0.35, zIndex: 100, pointerEvents: "none",
+                  }} />
+                )}
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </main>
     </div>
+  );
+}
+
+/* =========================================================================
+   ROOT — wraps the shell in the context provider
+   ========================================================================= */
+export default function App() {
+  return (
+    <AppProvider>
+      <AppShell />
+    </AppProvider>
   );
 }

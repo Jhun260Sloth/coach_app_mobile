@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { Plus, X, CalendarDays } from "lucide-react";
-import { C, fDisplay, fBody, T } from "../../theme/theme";
-import { SectionLabel, Card, Btn, TopBar, StepProgress, Toggle, Badge } from "../../components/ui/Primitives";
+import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
+import { SectionLabel, Card, Btn, TopBar, Toggle, Badge } from "../../components/ui/Primitives";
+import { useApp } from "../../context/AppContext";
 
 const DAYS = [
   { key: "mon", label: "Monday" },
@@ -26,29 +27,13 @@ function defaultAvailability() {
   return availability;
 }
 
-const timeInputStyle = {
-  border: `1.5px solid ${C.border}`, borderRadius: 11, padding: "8px 10px", fontSize: T.labelLg,
-  outline: "none", flex: 1, minWidth: 0, boxSizing: "border-box", ...fBody,
-};
-
-function SyncRow({ label, synced, onToggle }) {
-  return (
-    <Card style={{ padding: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-        <div style={{ width: 34, height: 34, borderRadius: 10, background: C.fog, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <CalendarDays size={16} color={C.slate} />
-        </div>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{label}</div>
-          <div style={{ fontSize: T.caption, color: C.slateLight, ...fBody }}>{synced ? "Connected" : "Not connected"}</div>
-        </div>
-      </div>
-      <Btn size="sm" variant={synced ? "secondary" : "outline"} onClick={onToggle}>{synced ? "Synced" : "Sync"}</Btn>
-    </Card>
-  );
-}
-
 export function ScreenCoachAvailabilitySetup({ nav, toast }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
+  const timeInputStyle = {
+    border: `1.5px solid ${C.border}`, borderRadius: 11, padding: "8px 10px", fontSize: T.labelLg,
+    outline: "none", flex: 1, minWidth: 0, boxSizing: "border-box", ...fBody,
+  };
   const [availability, setAvailability] = useState(defaultAvailability);
   const [googleSynced, setGoogleSynced] = useState(false);
   const [appleSynced, setAppleSynced] = useState(false);
@@ -95,13 +80,29 @@ export function ScreenCoachAvailabilitySetup({ nav, toast }) {
   };
   const removeOneOff = (d) => setUnavailableDates((u) => u.filter((x) => x !== d));
 
+  function SyncRow({ label, synced, onToggle }) {
+    return (
+      <Card style={{ padding: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 10, background: C.fog, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <CalendarDays size={16} color={C.slate} />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{label}</div>
+            <div style={{ fontSize: T.caption, color: C.slateLight, ...fBody }}>{synced ? "Connected" : "Not connected"}</div>
+          </div>
+        </div>
+        <Btn size="sm" variant={synced ? "secondary" : "outline"} onClick={onToggle}>{synced ? "Synced" : "Sync"}</Btn>
+      </Card>
+    );
+  }
+
   const canContinue = DAYS.some((d) => availability[d.key].enabled);
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "18px 20px 0", flex: 1, overflowY: "auto", paddingBottom: 100 }}>
         <TopBar title="Availability setup" onBack={() => nav("coach-services-setup")} />
-        <StepProgress step={2} total={3} label="Availability" />
 
         <div style={{ fontSize: T.subtitleLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fDisplay }}>
           Availability Setup
@@ -134,8 +135,8 @@ export function ScreenCoachAvailabilitySetup({ nav, toast }) {
                     </div>
                   ))}
                   <button onClick={() => addSlot(d.key)} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", cursor: "pointer", padding: "2px 0" }}>
-                    <Plus size={13} color={C.orange} />
-                    <span style={{ fontSize: T.label, color: C.orange, fontWeight: 600, ...fBody }}>Add time slot</span>
+                    <Plus size={13} color={C.brand} />
+                    <span style={{ fontSize: T.label, color: C.brand, fontWeight: 600, ...fBody }}>Add time slot</span>
                   </button>
                 </div>
               )}

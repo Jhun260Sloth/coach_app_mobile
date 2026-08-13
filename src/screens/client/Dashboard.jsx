@@ -4,7 +4,8 @@ import {
   AlertTriangle, CreditCard, ShieldCheck, LifeBuoy, Hourglass, RefreshCcw, ChevronLeft, ChevronRight, CalendarX2,
   List as ListIcon,
 } from "lucide-react";
-import { C, fDisplay, fBody, T } from "../../theme/theme";
+import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
+import { useApp } from "../../context/AppContext";
 import { COACHES } from "../../data/mockData";
 import {
   Avatar, Card, Badge, SegTabs, SectionLabel, Btn, TopBar, EmptyState, StatusPill, Chip, BottomSheet, Row, ScrollFadeRow,
@@ -81,6 +82,8 @@ function getCancellationOutcome(booking, coach) {
 }
 
 export function ScreenClientDashboard({ nav, bookings, offline, toast, cancelBooking, rescheduleBooking, payBooking, isFirstTimeClient }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const [tab, setTab] = useState("pending");
   const [view, setView] = useState("list");
   // First-time clients haven't booked anything yet — show a single, unified
@@ -172,7 +175,7 @@ export function ScreenClientDashboard({ nav, bookings, offline, toast, cancelBoo
         </div>
         {offline && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.jet, color: C.white, padding: "9px 12px", borderRadius: 12, marginTop: 12, fontSize: T.label, ...fBody }}>
-            <WifiOff size={14} color={C.orange} /> You're offline — showing your last saved sessions.
+            <WifiOff size={14} color={C.brand} /> You're offline — showing your last saved sessions.
           </div>
         )}
         {!showEmptyDashboard && view === "list" && (
@@ -236,13 +239,13 @@ export function ScreenClientDashboard({ nav, bookings, offline, toast, cancelBoo
                   return (
                     <button key={di} onClick={() => setSelectedDate(d)} style={{
                       aspectRatio: "1", borderRadius: 10, cursor: "pointer",
-                      border: `1px solid ${isSelected ? C.orange : C.border}`,
-                      background: isSelected ? C.orangeTint : C.white,
+                      border: `1px solid ${isSelected ? C.brand : C.border}`,
+                      background: isSelected ? C.brandTint : C.white,
                       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3,
                       opacity: inRange ? 1 : 0.35,
                     }}>
                       <span style={{ fontSize: T.label, fontWeight: isSelected ? 700 : 500, color: C.jet, ...fBody }}>{d.getDate()}</span>
-                      <span style={{ width: 5, height: 5, borderRadius: 99, background: count > 0 ? C.orange : "transparent" }} />
+                      <span style={{ width: 5, height: 5, borderRadius: 99, background: count > 0 ? C.brand : "transparent" }} />
                     </button>
                   );
                 })}
@@ -277,6 +280,8 @@ export function ScreenClientDashboard({ nav, bookings, offline, toast, cancelBoo
 
 /* Reschedule — lets the client pick a new day/time from the coach's live availability */
 function RescheduleSheet({ booking, onClose, onConfirm }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const coach = booking ? COACHES.find((c) => c.id === booking.coachId) : null;
   const days = coach ? Object.keys(coach.availability) : [];
   const [day, setDay] = useState(null);
@@ -320,8 +325,8 @@ function RescheduleSheet({ booking, onClose, onConfirm }) {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 20 }}>
                 {(coach.availability[day] || []).map((t) => (
                   <button key={t} onClick={() => setTime(t)} style={{
-                    padding: "12px 0", borderRadius: 12, border: `1.5px solid ${time === t ? C.orange : C.border}`,
-                    background: time === t ? C.orangeTint : C.white, color: time === t ? C.orange : C.jet,
+                    padding: "12px 0", borderRadius: 12, border: `1.5px solid ${time === t ? C.brand : C.border}`,
+                    background: time === t ? C.brandTint : C.white, color: time === t ? C.brand : C.jet,
                     fontWeight: 600, fontSize: T.bodyLg, cursor: "pointer", ...fBody,
                   }}>{t}</button>
                 ))}
@@ -347,6 +352,8 @@ function RescheduleSheet({ booking, onClose, onConfirm }) {
    confirmation) before anything is cancelled. A still-pending request never had
    payment collected, so it keeps the lighter "withdraw" confirmation instead. */
 function CancelSheet({ booking, onClose, onConfirm, pending }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const coach = booking ? COACHES.find((c) => c.id === booking.coachId) : null;
   const [understood, setUnderstood] = useState(false);
   useEffect(() => { if (booking) setUnderstood(false); }, [booking?.id]);
@@ -365,7 +372,7 @@ function CancelSheet({ booking, onClose, onConfirm, pending }) {
             </Card>
 
             <div style={{ display: "flex", alignItems: "flex-start", gap: 8, background: C.warnTint, borderRadius: 12, padding: 12, marginBottom: 18 }}>
-              <AlertTriangle size={14} color={C.orange} style={{ marginTop: 2, flexShrink: 0 }} />
+              <AlertTriangle size={14} color={C.brand} style={{ marginTop: 2, flexShrink: 0 }} />
               <span style={{ fontSize: T.label, color: C.slate, lineHeight: 1.5, ...fBody }}>
                 {booking.coachName.split(" ")[0]} hasn't responded to this request yet — withdrawing it now won't incur any charge.
               </span>
@@ -435,7 +442,7 @@ function CancelSheet({ booking, onClose, onConfirm, pending }) {
           </div>
 
           <button onClick={() => setUnderstood((v) => !v)} style={{ display: "flex", width: "100%", gap: 10, alignItems: "flex-start", background: "none", border: "none", cursor: "pointer", textAlign: "left", marginBottom: 18 }}>
-            <div style={{ width: 18, height: 18, borderRadius: 5, border: `1.5px solid ${understood ? C.orange : C.border}`, background: understood ? C.orange : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+            <div style={{ width: 18, height: 18, borderRadius: 5, border: `1.5px solid ${understood ? C.brand : C.border}`, background: understood ? C.brand : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
               {understood && <CheckCircle2 size={12} color={C.white} />}
             </div>
             <span style={{ fontSize: T.label, color: C.jet, lineHeight: 1.5, ...fBody }}>I understand the cancellation policy and refund outcome.</span>
@@ -453,6 +460,8 @@ function CancelSheet({ booking, onClose, onConfirm, pending }) {
 
 /* Receipt — shown when a payments list item is tapped (also used in Account > Payment history) */
 export function ReceiptSheet({ booking, onClose }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const fee = booking ? Math.round(booking.price * 0.06 * 100) / 100 : 0;
   const subtotal = booking ? Math.round((booking.price - fee) * 100) / 100 : 0;
   return (
@@ -498,12 +507,14 @@ export function ReceiptSheet({ booking, onClose }) {
 }
 
 export function BookingCard({ b, nav, past, onReschedule, onCancel, onPay }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const pending = b.status === "pending";
   const paymentDue = !past && b.status === "confirmed" && b.paymentDue;
   return (
     <Card
       onClick={() => nav("client-booking-detail", { id: b.id })}
-      style={{ marginBottom: 14, border: `1px solid ${paymentDue ? C.orange : C.border}`, boxShadow: "0 1px 2px rgba(22,24,29,.04)" }}
+      style={{ marginBottom: 14, border: `1px solid ${paymentDue ? C.brand : C.border}`, boxShadow: "0 1px 2px rgba(22,24,29,.04)" }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
         <div style={{ display: "flex", gap: 10, minWidth: 0 }}>
@@ -519,8 +530,8 @@ export function BookingCard({ b, nav, past, onReschedule, onCancel, onPay }) {
         <StatusPill status={b.status} />
       </div>
       {paymentDue && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.orangeTint, borderRadius: 12, padding: "9px 12px", marginTop: 12 }} onClick={(e) => e.stopPropagation()}>
-          <CreditCard size={14} color={C.orange} style={{ flexShrink: 0 }} />
+        <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.brandTint, borderRadius: 12, padding: "9px 12px", marginTop: 12 }} onClick={(e) => e.stopPropagation()}>
+          <CreditCard size={14} color={C.brand} style={{ flexShrink: 0 }} />
           <span style={{ flex: 1, fontSize: T.label, color: C.jet, lineHeight: 1.4, ...fBody }}>{(b.coachName || "Your coach").split(" ")[0]} accepted — send your payment to lock in the session.</span>
           <Btn size="sm" variant="dark" onClick={onPay}>Pay now</Btn>
         </div>
@@ -567,6 +578,8 @@ export function BookingCard({ b, nav, past, onReschedule, onCancel, onPay }) {
    Surfaces the same categories of information (party info, session details, notes,
    booking policy) but never exposes the Accept/Decline workflow, which is coach-only. */
 export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancelBooking, rescheduleBooking, setDraft, payBooking }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const booking = bookings.find((b) => b.id === params.id);
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -684,9 +697,9 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
         )}
 
         {isUpcoming && booking.paymentDue && (
-          <Card style={{ marginBottom: 14, background: C.orangeTint, border: "none" }}>
+          <Card style={{ marginBottom: 14, background: C.brandTint, border: "none" }}>
             <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-              <CreditCard size={16} color={C.orange} style={{ flexShrink: 0, marginTop: 1 }} />
+              <CreditCard size={16} color={C.brand} style={{ flexShrink: 0, marginTop: 1 }} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{booking.coachName.split(" ")[0]} accepted your request</div>
                 <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, lineHeight: 1.5, ...fBody }}>Send your payment to lock in the session — funds are held securely until it's complete.</div>
@@ -745,6 +758,8 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
 }
 
 export function ScreenLeaveReview({ nav, params, toast }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const [rating, setRating] = useState(5);
   const [tags, setTags] = useState([]);
   const options = ["Great communicator", "Punctual", "Well prepared", "Motivating", "Flexible"];
@@ -758,7 +773,7 @@ export function ScreenLeaveReview({ nav, params, toast }) {
         <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 12 }}>
           {[1, 2, 3, 4, 5].map((i) => (
             <button key={i} onClick={() => setRating(i)} style={{ background: "none", border: "none", cursor: "pointer" }}>
-              <Star size={30} fill={i <= rating ? C.orange : "none"} color={i <= rating ? C.orange : C.slateLight} />
+              <Star size={30} fill={i <= rating ? C.brand : "none"} color={i <= rating ? C.brand : C.slateLight} />
             </button>
           ))}
         </div>

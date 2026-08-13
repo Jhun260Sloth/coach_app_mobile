@@ -1,10 +1,14 @@
-import { C } from "../theme/theme";
+import { CL, CD } from "../theme/theme";
 
 /* =========================================================================
    MAP UTILITIES — framework-agnostic helpers shared by the map components.
    Kept out of the component tree so none of this re-runs on re-render, and
    so the CDN script/style tags are only ever injected once per page.
    ========================================================================= */
+
+export function getMapColors(darkMode) {
+  return darkMode ? CD : CL;
+}
 
 export const LEAFLET_CSS_URL = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
 export const LEAFLET_JS_URL = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
@@ -138,7 +142,7 @@ export function loadLeaflet() {
   return window.__clLeafletPromise;
 }
 
-export function injectMapStyles() {
+export function injectMapStyles(C) {
   if (document.getElementById(MAP_STYLE_ID)) return;
   const style = document.createElement("style");
   style.id = MAP_STYLE_ID;
@@ -150,7 +154,7 @@ export function injectMapStyles() {
     .cl-user-dot-wrap::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: #3B82F6; border: 3px solid ${C.white}; box-shadow: 0 1px 5px rgba(0,0,0,.35); }
     .cl-coach-pin { position: relative; width: 30px; height: 38px; cursor: pointer; }
     .cl-coach-pin .cl-pin-tag { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 4px; background: ${C.jet}; color: ${C.white}; font-size: 11px; font-weight: 700; padding: 5px 9px; border-radius: 10px; white-space: nowrap; max-width: 120px; overflow: hidden; text-overflow: ellipsis; font-family: 'Inter', sans-serif; box-shadow: 0 2px 6px rgba(0,0,0,.18); }
-    .cl-coach-pin.selected .cl-pin-tag { background: ${C.orange}; color: ${C.jet}; }
+    .cl-coach-pin.selected .cl-pin-tag { background: ${C.brand}; color: ${C.jet}; }
     .cl-coach-pin .cl-pin-svg { filter: drop-shadow(0 2px 3px rgba(0,0,0,.28)); transition: transform .12s ease; }
     .cl-coach-pin.selected .cl-pin-svg { transform: scale(1.12); }
     .leaflet-top.leaflet-right { top: 132px !important; }
@@ -171,8 +175,8 @@ export function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
 }
 
-export function coachPinIcon(L, name, selected) {
-  const fill = selected ? C.jet : C.orange;
+export function coachPinIcon(C, L, name, selected) {
+  const fill = selected ? C.jet : C.brand;
   const html = `
     <div class="cl-coach-pin${selected ? " selected" : ""}">
       <div class="cl-pin-tag">${escapeHtml(name)}</div>

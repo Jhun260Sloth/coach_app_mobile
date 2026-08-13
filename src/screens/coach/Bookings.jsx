@@ -3,11 +3,12 @@ import {
   User, ClipboardList, ShieldCheck, Info, MessagesSquare, MessageCircle,
   ChevronLeft, ChevronRight, CalendarX2,
 } from "lucide-react";
-import { C, fDisplay, fBody, T } from "../../theme/theme";
+import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { CLIENT_PROFILES, BOOKING_ENQUIRY_MESSAGES, CONFIG } from "../../data/mockData";
 import {
   Avatar, Card, SegTabs, EmptyState, StatusPill, Btn, TopBar, Row, SectionLabel, Badge,
 } from "../../components/ui/Primitives";
+import { useApp } from "../../context/AppContext";
 
 /* ---- date helpers for the calendar view (booking dates look like "Tue, 22 Jul") ---- */
 const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -37,6 +38,8 @@ function buildMonthGrid(cursor) {
 }
 
 export function ScreenCoachBookings({ nav, coachBookings }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const [tab, setTab] = useState("pending");
   const [view, setView] = useState("list");
   const [calMode, setCalMode] = useState("month");
@@ -130,13 +133,13 @@ export function ScreenCoachBookings({ nav, coachBookings }) {
                   return (
                     <button key={di} onClick={() => setSelectedDate(d)} style={{
                       aspectRatio: "1", borderRadius: 10, cursor: "pointer",
-                      border: `1px solid ${isSelected ? C.orange : C.border}`,
-                      background: isSelected ? C.orangeTint : C.white,
+                      border: `1px solid ${isSelected ? C.brand : C.border}`,
+                      background: isSelected ? C.brandTint : C.white,
                       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3,
                       opacity: inRange ? 1 : 0.35,
                     }}>
                       <span style={{ fontSize: T.label, fontWeight: isSelected ? 700 : 500, color: C.jet, ...fBody }}>{d.getDate()}</span>
-                      <span style={{ width: 5, height: 5, borderRadius: 99, background: count > 0 ? C.orange : "transparent" }} />
+                      <span style={{ width: 5, height: 5, borderRadius: 99, background: count > 0 ? C.brand : "transparent" }} />
                     </button>
                   );
                 })}
@@ -158,6 +161,8 @@ export function ScreenCoachBookings({ nav, coachBookings }) {
 }
 
 export function ScreenCoachBookingDetail({ nav, params, coachBookings, respondBooking, toast }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const booking = coachBookings.find((b) => b.id === params.id);
   const [responding, setResponding] = useState(null);
   const respond = (status) => {
@@ -238,8 +243,8 @@ export function ScreenCoachBookingDetail({ nav, params, coachBookings, respondBo
 
         <SectionLabel>Questions before you decide?</SectionLabel>
         <Card style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ width: 38, height: 38, borderRadius: 12, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <MessagesSquare size={17} color={C.orange} />
+          <div style={{ width: 38, height: 38, borderRadius: 12, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <MessagesSquare size={17} color={C.brand} />
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>Message {booking.clientName.split(" ")[0]}</div>

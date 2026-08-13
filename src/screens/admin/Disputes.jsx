@@ -1,9 +1,12 @@
 import React from "react";
 import { AlertCircle, FileText, Banknote } from "lucide-react";
-import { C, fDisplay, fBody, T } from "../../theme/theme";
+import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
+import { useApp } from "../../context/AppContext";
 import { Card, Badge, EmptyState, Btn, TopBar, SectionLabel, Row } from "../../components/ui/Primitives";
 
 export function ScreenAdminDisputes({ nav, disputes }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "18px 20px 0" }}>
@@ -29,6 +32,8 @@ export function ScreenAdminDisputes({ nav, disputes }) {
 }
 
 export function ScreenAdminDisputeDetail({ nav, params, disputes, resolveDispute, toast }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const dispute = disputes.find((d) => d.id === params.id);
   if (!dispute) return <EmptyState icon={AlertCircle} title="Dispute not found" body="This dispute may have already been resolved." />;
   const resolve = (action) => {

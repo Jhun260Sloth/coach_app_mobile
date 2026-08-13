@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { LocateFixed } from "lucide-react";
-import { C } from "../../theme/theme";
+import { CL, CD } from "../../theme/theme";
+import { useApp } from "../../context/AppContext";
 import {
-  loadLeaflet, injectMapStyles, coachPinIcon, userLocationIcon, fetchRoute, haversineKm,
+  loadLeaflet, getMapColors, injectMapStyles, coachPinIcon, userLocationIcon, fetchRoute, haversineKm,
   AUSTRALIA_CENTER, AUSTRALIA_ZOOM, FALLBACK_USER_LOCATION, LOCATE_ZOOM,
   MAP_STYLES, DEFAULT_MAP_STYLE_ID,
 } from "../../lib/mapUtils";
@@ -24,6 +25,9 @@ import { MapStyleSwitcher } from "./MapStyleSwitcher";
  * Leaflet to redraw tiles or every marker, only what actually changed.
  */
 export function CoachMapView({ coaches = [], onOpen, onClose }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
+  const colors = getMapColors(darkMode);
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const leafletRef = useRef(null);
@@ -114,7 +118,7 @@ export function CoachMapView({ coaches = [], onOpen, onClose }) {
   // handle their own smooth flyTo/flyToBounds animations instead. ---
   useEffect(() => {
     let cancelled = false;
-    injectMapStyles();
+    injectMapStyles(colors);
     loadLeaflet().then(L => {
       if (cancelled || !containerRef.current || mapRef.current) return;
       leafletRef.current = L;
@@ -232,7 +236,7 @@ export function CoachMapView({ coaches = [], onOpen, onClose }) {
     });
     visibleCoaches.forEach(c => {
       const isSelected = selectedCoach?.id === c.id;
-      const icon = coachPinIcon(L, c.name, isSelected);
+      const icon = coachPinIcon(C, L, c.name, isSelected);
       if (markersRef.current[c.id]) {
         markersRef.current[c.id].setIcon(icon);
       } else {

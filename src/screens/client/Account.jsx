@@ -5,7 +5,8 @@ import {
   CalendarDays, CreditCard as CardIcon, Stethoscope, UserCheck, History as HistoryIcon, MessageCircle, Star,
   Sparkles, Percent, ShieldCheck,
 } from "lucide-react";
-import { C, fDisplay, fBody, T } from "../../theme/theme";
+import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
+import { useApp } from "../../context/AppContext";
 import { Avatar, Btn, SectionLabel, Toggle, BottomSheet, Field, Chip, Card, Badge, EmptyState, TopBar, SegTabs } from "../../components/ui/Primitives";
 import { SPORTS, CLIENT_NOTIFICATIONS } from "../../data/mockData";
 import { ReceiptSheet } from "./Dashboard";
@@ -21,6 +22,8 @@ const emptyChildDraft = {
 const emptyCardDraft = { number: "", name: "", expiry: "", cvc: "" };
 
 export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCoachRole, children = [], addChild, updateChild, removeChild, bookings = [], clientPrefs, onComplete }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const [sheet, setSheet] = useState(null); // which bottom sheet is open
   const [editingChildId, setEditingChildId] = useState(null); // null = creating new
   const [childDraft, setChildDraft] = useState(emptyChildDraft);
@@ -236,7 +239,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
                 <Camera size={20} color={C.slateLight} />
               </div>
             )}
-            <div style={{ position: "absolute", bottom: -2, right: -2, width: 24, height: 24, borderRadius: 24, background: C.orange, border: `2px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ position: "absolute", bottom: -2, right: -2, width: 24, height: 24, borderRadius: 24, background: C.brand, border: `2px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Camera size={11} color={C.white} />
             </div>
           </button>
@@ -468,7 +471,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
               <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>Expires {card.exp}{card.isDefault ? " · Default" : ""}</div>
             </div>
             {!card.isDefault && (
-              <button onClick={() => makeDefault(card.id)} style={{ background: "none", border: "none", color: C.orange, fontSize: T.label, fontWeight: 600, cursor: "pointer", ...fBody }}>Set default</button>
+              <button onClick={() => makeDefault(card.id)} style={{ background: "none", border: "none", color: C.brand, fontSize: T.label, fontWeight: 600, cursor: "pointer", ...fBody }}>Set default</button>
             )}
             <button onClick={() => removeCard(card.id)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 4 }}>
               <Trash2 size={15} color={C.slateLight} />
@@ -589,6 +592,8 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
 const CLIENT_ACTIVITY_ICON = { booking: Calendar, message: MessageCircle, review: Star, availability: Sparkles, promo: Percent, payment: CreditCard, verification: ShieldCheck };
 
 export function ScreenClientHistory({ nav, bookings = [], clientNotifications = [] }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const [tab, setTab] = useState("payments");
   const [receiptTarget, setReceiptTarget] = useState(null);
   const [activity] = useLiveNotifications(clientNotifications, CLIENT_NOTIFICATIONS);
@@ -638,8 +643,8 @@ export function ScreenClientHistory({ nav, bookings = [], clientNotifications = 
               const Icon = CLIENT_ACTIVITY_ICON[n.type] || HistoryIcon;
               return (
                 <Card key={n.id} style={{ marginBottom: 10, display: "flex", gap: 12, alignItems: "flex-start" }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 11, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <Icon size={16} color={C.orange} />
+                  <div style={{ width: 36, height: 36, borderRadius: 11, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Icon size={16} color={C.brand} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>

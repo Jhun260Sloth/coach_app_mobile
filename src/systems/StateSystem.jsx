@@ -5,17 +5,20 @@ import {
   Send, MessageCircle, CreditCard, DollarSign, RotateCcw, Lock, UserX, Sparkles,
   PartyPopper, Info, TrendingUp, PauseCircle, Undo2, Search, ClipboardList, Radio,
 } from "lucide-react";
-import { C, fDisplay, fBody, T } from "../theme/theme";
+import { CL, CD, fDisplay, fBody, T } from "../theme/theme";
+import { useApp } from "../context/AppContext";
 import { FALLBACK_USER_LOCATION } from "../lib/mapUtils";
 
 /* =========================================================================
+   COLOR HELPER — returns C (current palette) for use in components
+   ========================================================================= */
+function useColors() {
+  const { darkMode } = useApp();
+  return darkMode ? CD : CL;
+}
+
+/* =========================================================================
    LOCATION
-   -------------------------------------------------------------------------
-   Single shared GPS read, lifted to the app level so every screen (Discovery,
-   the map, Filters) agrees on where "you" are instead of each re-requesting
-   its own fix. Tracks whether the browser actually denied permission (vs.
-   just being slow) so the UI can offer "enable location" distinctly from
-   "enter it yourself", and exposes setManualLocation for the latter.
    ========================================================================= */
 export function useUserLocation() {
   const [userLocation, setUserLocation] = useState(null);
@@ -39,8 +42,6 @@ export function useUserLocation() {
     );
   }, []);
 
-  // "Enter your location manually" — resolves a chosen suburb to a point so
-  // distance sorting/filtering still works without GPS access.
   const setManualLocation = React.useCallback((loc, label) => {
     setUserLocation(loc);
     setManualLabel(label);
@@ -55,27 +56,18 @@ export function useUserLocation() {
 
 /* =========================================================================
    STATE, FEEDBACK & NOTIFICATION SYSTEM
-   -------------------------------------------------------------------------
-   A single source of truth for every "how does this feel to the user"
-   moment in the app: what icon, what tone, what headline, what explanation,
-   what the person can *do* next, and what gets said in a notification.
-
-   Every entry follows the same shape so any screen can render it the same
-   way via <StatusBanner state="bookingDeclined" /> instead of hand-rolling
-   copy and colors per screen.
    ========================================================================= */
 
-export const TONES = {
-  success: { fg: C.success, bg: C.successTint },
-  warning: { fg: C.orange, bg: C.orangeTint },
-  danger: { fg: C.danger, bg: C.dangerTint },
-  neutral: { fg: C.slate, bg: C.fog },
-  info: { fg: C.jet, bg: C.fog },
-};
+export function getTones(C) {
+  return {
+    success: { fg: C.success, bg: C.successTint },
+    warning: { fg: C.brand, bg: C.brandTint },
+    danger: { fg: C.danger, bg: C.dangerTint },
+    neutral: { fg: C.slate, bg: C.fog },
+    info: { fg: C.jet, bg: C.fog },
+  };
+}
 
-// icon, tone, title, message, primary/secondary CTA labels + the "next step" copy
-// shown under the message, and a notify() template used when this state fires
-// a push to the other party (client <-> coach).
 export const STATE_CATALOG = {
   // ---- Coach availability ----
   coachAvailable: {
@@ -284,10 +276,11 @@ function resolveState(state, params) {
 }
 
 /* -------------------------------------------------------------------------
-   StatusBanner — the workhorse component. Drop it anywhere a screen needs
-   to explain "here's the current state, here's what you can do about it".
+   StatusBanner — the workhorse component.
    ------------------------------------------------------------------------- */
 export function StatusBanner({ state, params, title, message, next, onPrimary, onSecondary, primaryLabel, secondaryLabel, compact, style }) {
+  const C = useColors();
+  const TONES = getTones(C);
   const cfg = resolveState(state, params);
   const tone = TONES[cfg.tone] || TONES.neutral;
   const Icon = cfg.icon || Info;
@@ -328,10 +321,11 @@ export function StatusBanner({ state, params, title, message, next, onPrimary, o
 }
 
 /* -------------------------------------------------------------------------
-   ResultOverlay — full-screen transient overlay for Action -> Processing ->
-   Success/Failure sequences (payments, verification submits, etc).
+   ResultOverlay — full-screen transient overlay
    ------------------------------------------------------------------------- */
 export function ResultOverlay({ open, state, params, title, message }) {
+  const C = useColors();
+  const TONES = getTones(C);
   if (!open) return null;
   const cfg = resolveState(state, params);
   const tone = TONES[cfg.tone] || TONES.neutral;
@@ -351,13 +345,15 @@ export function ResultOverlay({ open, state, params, title, message }) {
 }
 
 function Spin() {
-  return <span style={{ width: 24, height: 24, borderRadius: "50%", border: "2.5px solid rgba(255,255,255,.3)", borderTopColor: C.white, display: "inline-block", animation: "clSpin .7s linear infinite" }} />;
+  return <span style={{ width: 24, height: 24, borderRadius: "50%", border: "2.5px solid rgba(255,255,255,.3)", borderTopColor: "#FFFFFF", display: "inline-block", animation: "clSpin .7s linear infinite" }} />;
 }
 
 /* -------------------------------------------------------------------------
-   InlineStatus — a tiny icon + label, for use inline in lists/rows.
+   InlineStatus — tiny icon + label
    ------------------------------------------------------------------------- */
 export function InlineStatus({ state, params, label }) {
+  const C = useColors();
+  const TONES = getTones(C);
   const cfg = resolveState(state, params);
   const tone = TONES[cfg.tone] || TONES.neutral;
   const Icon = cfg.icon || Info;
@@ -369,9 +365,10 @@ export function InlineStatus({ state, params, label }) {
 }
 
 /* -------------------------------------------------------------------------
-   Notification bell button — reusable trigger with an unread-count dot.
+   NotificationBellButton — reusable trigger with unread-count dot
    ------------------------------------------------------------------------- */
 export function NotificationBellButton({ count = 0, onClick }) {
+  const C = useColors();
   return (
     <button onClick={onClick} style={{ background: "none", border: "none", cursor: "pointer" }}>
       <div style={{ position: "relative" }}>
@@ -379,7 +376,7 @@ export function NotificationBellButton({ count = 0, onClick }) {
         {count > 0 && (
           <span style={{
             position: "absolute", top: -4, right: -6, minWidth: 15, height: 15, padding: "0 3px",
-            background: C.orange, borderRadius: 99, border: `1.5px solid ${C.white}`,
+            background: C.brand, borderRadius: 99, border: `1.5px solid ${C.white}`,
             display: "flex", alignItems: "center", justifyContent: "center", fontSize: T.micro, fontWeight: 700, color: C.white, ...fBody,
           }}>
             {count}
@@ -391,9 +388,7 @@ export function NotificationBellButton({ count = 0, onClick }) {
 }
 
 /* -------------------------------------------------------------------------
-   useLiveNotifications — merges live, app-generated notifications (pushed
-   as real actions happen: bookings accepted, payments made, etc) on top of
-   a screen's seed/mock list, newest first, without duplicating on re-render.
+   useLiveNotifications — merges live notifications on top of seed list
    ------------------------------------------------------------------------- */
 export function useLiveNotifications(runtime = [], initialSeed = []) {
   const [items, setItems] = useState(initialSeed);
@@ -404,16 +399,15 @@ export function useLiveNotifications(runtime = [], initialSeed = []) {
       fresh.forEach((n) => seen.current.add(n.id));
       setItems((arr) => [...fresh, ...arr]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [runtime]);
   return [items, setItems];
 }
 
 /* -------------------------------------------------------------------------
-   ActionFlow — a tiny horizontal trail showing Action -> Processing ->
-   Result -> Notify, used on detail screens so the pattern is always visible.
+   ActionFlow — horizontal trail: Action -> Processing -> Result -> Notify
    ------------------------------------------------------------------------- */
 export function ActionFlow({ steps, activeIndex }) {
+  const C = useColors();
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 14 }}>
       {steps.map((s, i) => (
@@ -421,14 +415,14 @@ export function ActionFlow({ steps, activeIndex }) {
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
             <span style={{
               width: 16, height: 16, borderRadius: 99, flexShrink: 0,
-              background: i <= activeIndex ? C.orange : C.border,
+              background: i <= activeIndex ? C.brand : C.border,
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
               {i < activeIndex && <CheckCircle2 size={11} color={C.white} />}
             </span>
             <span style={{ fontSize: T.tiny, fontWeight: 700, color: i <= activeIndex ? C.jet : C.slateLight, ...fBody, whiteSpace: "nowrap" }}>{s}</span>
           </div>
-          {i < steps.length - 1 && <div style={{ flex: 1, height: 1, background: i < activeIndex ? C.orange : C.border, minWidth: 8 }} />}
+          {i < steps.length - 1 && <div style={{ flex: 1, height: 1, background: i < activeIndex ? C.brand : C.border, minWidth: 8 }} />}
         </React.Fragment>
       ))}
     </div>

@@ -3,12 +3,15 @@ import {
   MapPin, Phone, Camera, ShieldCheck, Plus, Users, User, CalendarDays,
   AlertTriangle, LocateFixed, Search, Stethoscope, UserCheck,
 } from "lucide-react";
-import { C, fDisplay, fBody, T } from "../../theme/theme";
+import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
+import { useApp } from "../../context/AppContext";
 import { AU_SUBURBS, GENDER_OPTIONS } from "../../data/mockData";
 import { Chip, SectionLabel, Btn, TopBar, Field, Card, Avatar, Badge } from "../../components/ui/Primitives";
 
 const TOTAL_STEPS = 1;
 function StepDots({ step }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   return (
     <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
       {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
@@ -19,6 +22,8 @@ function StepDots({ step }) {
 }
 
 function StepHeader({ step, title, subtitle, onBack }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   return (
     <div style={{ padding: "20px 20px 0" }}>
       {onBack && <TopBar title="" onBack={onBack} />}
@@ -30,12 +35,6 @@ function StepHeader({ step, title, subtitle, onBack }) {
     </div>
   );
 }
-
-const inputStyle = {
-  width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px",
-  fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", ...fBody,
-};
-const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
 
 /* Step 1 of 3 — build your profile (mobile, age, postal code, profile pic) */
 function calcAge(dobStr) {
@@ -50,6 +49,8 @@ function calcAge(dobStr) {
 }
 
 export function ScreenAboutYouProfile({ nav }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const [mobile, setMobile] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [dob, setDob] = useState("");
@@ -83,7 +84,7 @@ export function ScreenAboutYouProfile({ nav }) {
                 <Camera size={22} color={C.slateLight} />
               </div>
             )}
-            <div style={{ position: "absolute", bottom: -2, right: -2, width: 28, height: 28, borderRadius: 28, background: C.orange, border: `2px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ position: "absolute", bottom: -2, right: -2, width: 28, height: 28, borderRadius: 28, background: C.brand, border: `2px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Camera size={13} color={C.white} />
             </div>
           </button>
@@ -147,7 +148,7 @@ export function ScreenAboutYouProfile({ nav }) {
 
         <Card style={{ marginBottom: 20, background: C.fog, border: "none" }}>
           <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-            <ShieldCheck size={16} color={C.orange} style={{ flexShrink: 0, marginTop: 1 }} />
+            <ShieldCheck size={16} color={C.brand} style={{ flexShrink: 0, marginTop: 1 }} />
             <div style={{ fontSize: T.label, color: C.slate, lineHeight: 1.6, ...fBody }}>
               <strong style={{ color: C.jet }}>Why we ask:</strong> your postal code helps us match you with coaches nearby, your date of birth confirms you're old enough to hold your own account, and your photo helps coaches recognise you at sessions. None of this is shown publicly without your permission.
             </div>
@@ -166,6 +167,8 @@ export function ScreenAboutYouProfile({ nav }) {
 
 /* Step 2 of 3 — account type: who is this booking for? */
 export function ScreenAccountType({ nav, params }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const [accountType, setAccountType] = useState(null); // "self" | "child"
 
   const goNext = () => {
@@ -178,17 +181,17 @@ export function ScreenAccountType({ nav, params }) {
     return (
       <button
         onClick={() => setAccountType(value)}
-        style={{ width: "100%", textAlign: "left", background: active ? C.orangeTint : C.white, border: `1.5px solid ${active ? C.orange : C.border}`, borderRadius: 18, padding: 16, display: "flex", gap: 14, alignItems: "flex-start", cursor: "pointer", marginBottom: 12 }}
+        style={{ width: "100%", textAlign: "left", background: active ? C.brandTint : C.white, border: `1.5px solid ${active ? C.brand : C.border}`, borderRadius: 18, padding: 16, display: "flex", gap: 14, alignItems: "flex-start", cursor: "pointer", marginBottom: 12 }}
       >
-        <div style={{ width: 44, height: 44, borderRadius: 13, background: active ? C.orange : C.fog, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <div style={{ width: 44, height: 44, borderRadius: 13, background: active ? C.brand : C.fog, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           <Icon size={20} color={active ? C.white : C.slate} />
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 600, color: C.jet, fontSize: T.subtitleLg, marginBottom: 3, ...fDisplay }}>{title}</div>
           <div style={{ fontSize: T.labelLg, color: C.slate, lineHeight: 1.5, ...fBody }}>{body}</div>
         </div>
-        <div style={{ width: 20, height: 20, borderRadius: 99, border: `1.5px solid ${active ? C.orange : C.border}`, background: C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
-          {active && <div style={{ width: 10, height: 10, borderRadius: 99, background: C.orange }} />}
+        <div style={{ width: 20, height: 20, borderRadius: 99, border: `1.5px solid ${active ? C.brand : C.border}`, background: C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
+          {active && <div style={{ width: 10, height: 10, borderRadius: 99, background: C.brand }} />}
         </div>
       </button>
     );
@@ -205,7 +208,7 @@ export function ScreenAccountType({ nav, params }) {
 
         <Card style={{ marginTop: 8, marginBottom: 20, background: C.fog, border: "none" }}>
           <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-            <ShieldCheck size={16} color={C.orange} style={{ flexShrink: 0, marginTop: 1 }} />
+            <ShieldCheck size={16} color={C.brand} style={{ flexShrink: 0, marginTop: 1 }} />
             <div style={{ fontSize: T.label, color: C.slate, lineHeight: 1.6, ...fBody }}>
               Keeping each child on their own participant profile means coaches see only that child's age and needs — bookings, history and messages stay separate per child.
             </div>
@@ -236,6 +239,13 @@ export const emptyParticipantDraft = {
 // this field set is being used to create/edit a CHILD's participant profile,
 // since an adult booking for themselves doesn't need a guardian on file.
 export function ParticipantFields({ draft, setDraft, showGuardianInfo = false }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
+  const inputStyle = {
+    width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px",
+    fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", ...fBody,
+  };
+  const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
   const [addingSport, setAddingSport] = useState(false);
   const [customSport, setCustomSport] = useState("");
   const [locationQuery, setLocationQuery] = useState("");
@@ -307,9 +317,9 @@ export function ParticipantFields({ draft, setDraft, showGuardianInfo = false })
           <div style={labelStyle}>Location / postcode</div>
           {draft.postalCode ? (
             <div style={{ display: "flex", alignItems: "center", gap: 10, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
-              <MapPin size={16} color={C.orange} style={{ flexShrink: 0 }} />
+              <MapPin size={16} color={C.brand} style={{ flexShrink: 0 }} />
               <span style={{ flex: 1, fontSize: T.bodyLg, color: C.jet, fontWeight: 500, ...fBody }}>{draft.postalCode}</span>
-              <button onClick={() => patch({ postalCode: "" })} style={{ background: "none", border: "none", color: C.orange, fontSize: T.label, fontWeight: 600, cursor: "pointer", ...fBody }}>Change</button>
+              <button onClick={() => patch({ postalCode: "" })} style={{ background: "none", border: "none", color: C.brand, fontSize: T.label, fontWeight: 600, cursor: "pointer", ...fBody }}>Change</button>
             </div>
           ) : (
             <>
@@ -334,7 +344,7 @@ export function ParticipantFields({ draft, setDraft, showGuardianInfo = false })
                   ))}
                 </div>
               )}
-              <button onClick={useCurrentLocation} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: C.orange, fontSize: T.labelLg, fontWeight: 600, marginTop: 8, padding: 0, ...fBody }}>
+              <button onClick={useCurrentLocation} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: C.brand, fontSize: T.labelLg, fontWeight: 600, marginTop: 8, padding: 0, ...fBody }}>
                 <LocateFixed size={14} /> Use current location
               </button>
             </>
@@ -382,7 +392,7 @@ export function ParticipantFields({ draft, setDraft, showGuardianInfo = false })
           <Btn size="sm" onClick={addCustomSport}>Add</Btn>
         </div>
       ) : (
-        <button onClick={() => setAddingSport(true)} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: C.orange, fontSize: T.labelLg, fontWeight: 600, marginBottom: 20, padding: 0, ...fBody }}>
+        <button onClick={() => setAddingSport(true)} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: C.brand, fontSize: T.labelLg, fontWeight: 600, marginBottom: 20, padding: 0, ...fBody }}>
           <Plus size={14} /> Add another sport
         </button>
       )}
@@ -434,6 +444,8 @@ export function ParticipantFields({ draft, setDraft, showGuardianInfo = false })
 /* Step 3 of 3 (child path) — add one or more participant profiles. Each save
    persists immediately via addChild; there is no limit on how many can be added. */
 export function ScreenAboutYouParticipants({ nav, params, addChild, toast }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const [draft, setDraft] = useState(emptyParticipantDraft);
   const [savedCount, setSavedCount] = useState(0);
 
@@ -487,6 +499,8 @@ export function ScreenAboutYouParticipants({ nav, params, addChild, toast }) {
 /* Step 3 of 3 (self path) — same field set as the participant flow, for the
    account holder's own profile. */
 export function ScreenAboutYouSelf({ nav, params, onComplete }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const [draft, setDraft] = useState(emptyParticipantDraft);
   const canContinue = draft.name.trim().length > 0 && !!draft.dob;
 

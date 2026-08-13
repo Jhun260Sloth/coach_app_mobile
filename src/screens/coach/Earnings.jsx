@@ -1,10 +1,13 @@
 import React from "react";
 import { Banknote, Percent, Wallet, ChevronRight, Download } from "lucide-react";
-import { C, fDisplay, fBody, T } from "../../theme/theme";
+import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
+import { useApp } from "../../context/AppContext";
 import { CONFIG } from "../../data/mockData";
 import { Card, Badge, SectionLabel, Row } from "../../components/ui/Primitives";
 
 export function ScreenCoachEarnings({ nav, coachBookings }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const completed = coachBookings.filter((b) => b.status === "completed");
   const gross = completed.reduce((s, b) => s + b.price, 0);
   const commission = Math.round(gross * CONFIG.commissionRate);
@@ -39,7 +42,7 @@ export function ScreenCoachEarnings({ nav, coachBookings }) {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <SectionLabel>Recent transactions</SectionLabel>
           {completed.length > 0 && (
-            <button onClick={() => nav("coach-history")} style={{ background: "none", border: "none", color: C.orange, fontWeight: 600, fontSize: T.label, cursor: "pointer", ...fBody }}>
+            <button onClick={() => nav("coach-history")} style={{ background: "none", border: "none", color: C.brand, fontWeight: 600, fontSize: T.label, cursor: "pointer", ...fBody }}>
               View all
             </button>
           )}

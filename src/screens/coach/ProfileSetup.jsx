@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
 import { Camera, Plus, X, FileCheck2, Upload } from "lucide-react";
-import { C, fDisplay, fBody, T } from "../../theme/theme";
+import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
+import { useApp } from "../../context/AppContext";
 import { Avatar, SectionLabel, Chip, Card, Btn, TopBar } from "../../components/ui/Primitives";
 
 const SPORT_OPTIONS = [
@@ -10,6 +11,8 @@ const SPORT_OPTIONS = [
 const EXPERIENCE_OPTIONS = ["<1 year", "1–2 years", "3–5 years", "6–9 years", "10+ years"];
 
 export function ScreenCoachProfileSetup({ nav, toast }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const [avatar, setAvatar] = useState(null);
   const [bio, setBio] = useState("");
   const [sports, setSports] = useState([]);
@@ -71,7 +74,7 @@ export function ScreenCoachProfileSetup({ nav, toast }) {
             ) : (
               <Avatar name="New Coach" size={84} />
             )}
-            <button onClick={() => avatarInputRef.current?.click()} style={{ position: "absolute", bottom: -2, right: -2, width: 28, height: 28, borderRadius: 99, background: C.orange, border: `2px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+            <button onClick={() => avatarInputRef.current?.click()} style={{ position: "absolute", bottom: -2, right: -2, width: 28, height: 28, borderRadius: 99, background: C.brand, border: `2px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
               <Camera size={13} color={C.white} />
             </button>
           </div>
@@ -119,7 +122,7 @@ export function ScreenCoachProfileSetup({ nav, toast }) {
         {certs.map((c, i) => (
           <Card key={i} style={{ marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-              <FileCheck2 size={16} color={C.orange} style={{ flexShrink: 0 }} />
+              <FileCheck2 size={16} color={C.brand} style={{ flexShrink: 0 }} />
               <span style={{ fontSize: T.labelLg, color: C.jet, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", ...fBody }}>{c.name}</span>
             </div>
             <button onClick={() => removeCert(i)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", flexShrink: 0 }}>

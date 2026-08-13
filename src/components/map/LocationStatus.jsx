@@ -1,6 +1,7 @@
 import React from "react";
 import { Navigation } from "lucide-react";
-import { C, fBody, T } from "../../theme/theme";
+import { CL, CD, fBody, T } from "../../theme/theme";
+import { useApp } from "../../context/AppContext";
 import { Spinner } from "../ui/Primitives";
 
 // Two tiny, independently-memoised pills: one while we're waiting on the first
@@ -8,6 +9,8 @@ import { Spinner } from "../ui/Primitives";
 // Split out so they re-render only when their own boolean flips, not on every
 // map interaction happening in the parent.
 function LocationStatusBase({ locating, fixed }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   if (!locating && !fixed) return null;
   return (
     <div style={{
@@ -17,7 +20,7 @@ function LocationStatusBase({ locating, fixed }) {
     }}>
       {locating ? (
         <>
-          <Spinner size={11} color={C.orange} /> Locating you…
+          <Spinner size={11} color={C.brand} /> Locating you…
         </>
       ) : (
         <>

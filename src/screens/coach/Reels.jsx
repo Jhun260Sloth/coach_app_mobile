@@ -1,62 +1,65 @@
 import React, { useRef, useState } from "react";
 import { UploadCloud, Play, Image as ImageIcon, Trash2, Film, Camera } from "lucide-react";
-import { C, fDisplay, fBody, T } from "../../theme/theme";
+import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { COACHES, SPORTS } from "../../data/mockData";
 import { TopBar, Btn, Card, Chip, Field, BottomSheet, EmptyState, Badge } from "../../components/ui/Primitives";
-
-/* One tile in the reels & photos grid. Shows a real preview when the item
-   was actually uploaded in this session (item.url), otherwise falls back to
-   a placeholder tile so the seeded mock library still reads as media. */
-function MediaTile({ item, onDelete }) {
-  const isReel = item.type === "reel";
-  return (
-    <div style={{ position: "relative" }}>
-      <div
-        style={{
-          aspectRatio: "3/4", borderRadius: 16, overflow: "hidden", position: "relative",
-          background: `linear-gradient(160deg, ${C.jetSoft}, ${C.jet})`,
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}
-      >
-        {item.url ? (
-          isReel ? (
-            <video src={item.url} muted loop autoPlay playsInline style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          ) : (
-            <img src={item.url} alt={item.caption} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-          )
-        ) : (
-          <div style={{ width: 34, height: 34, borderRadius: 99, background: "rgba(255,255,255,.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            {isReel ? <Play size={14} color={C.white} fill={C.white} /> : <ImageIcon size={15} color={C.white} />}
-          </div>
-        )}
-        {item.url && isReel && (
-          <div style={{ position: "absolute", bottom: 8, left: 8, width: 26, height: 26, borderRadius: 99, background: "rgba(22,24,29,.55)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Play size={11} color={C.white} fill={C.white} />
-          </div>
-        )}
-        <button
-          onClick={onDelete}
-          aria-label="Delete"
-          style={{ position: "absolute", top: 8, right: 8, width: 26, height: 26, borderRadius: 99, background: "rgba(22,24,29,.55)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-        >
-          <Trash2 size={12} color={C.white} />
-        </button>
-      </div>
-      <div style={{ marginTop: 6 }}>
-        <div style={{ fontSize: T.label, fontWeight: 600, color: C.jet, ...fBody, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.caption || (isReel ? "Untitled reel" : "Untitled photo")}</div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
-          <Badge tone="neutral">{isReel ? "Reel" : "Photo"}</Badge>
-          {item.sport && <span style={{ fontSize: T.caption, color: C.slateLight, ...fBody }}>{item.sport}</span>}
-        </div>
-      </div>
-    </div>
-  );
-}
+import { useApp } from "../../context/AppContext";
 
 export function ScreenCoachReels({ nav, toast, coachMedia = [], addMedia, removeMedia }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const coach = COACHES[1];
   const fileInputRef = useRef(null);
   const [pendingUpload, setPendingUpload] = useState(null); // { url, type, caption, sport }
+
+  /* One tile in the reels & photos grid. Shows a real preview when the item
+     was actually uploaded in this session (item.url), otherwise falls back to
+     a placeholder tile so the seeded mock library still reads as media. */
+  function MediaTile({ item, onDelete }) {
+    const isReel = item.type === "reel";
+    return (
+      <div style={{ position: "relative" }}>
+        <div
+          style={{
+            aspectRatio: "3/4", borderRadius: 16, overflow: "hidden", position: "relative",
+            background: `linear-gradient(160deg, ${C.jetSoft}, ${C.jet})`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+        >
+          {item.url ? (
+            isReel ? (
+              <video src={item.url} muted loop autoPlay playsInline style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            ) : (
+              <img src={item.url} alt={item.caption} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+            )
+          ) : (
+            <div style={{ width: 34, height: 34, borderRadius: 99, background: "rgba(255,255,255,.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {isReel ? <Play size={14} color={C.white} fill={C.white} /> : <ImageIcon size={15} color={C.white} />}
+            </div>
+          )}
+          {item.url && isReel && (
+            <div style={{ position: "absolute", bottom: 8, left: 8, width: 26, height: 26, borderRadius: 99, background: "rgba(22,24,29,.55)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Play size={11} color={C.white} fill={C.white} />
+            </div>
+          )}
+          <button
+            onClick={onDelete}
+            aria-label="Delete"
+            style={{ position: "absolute", top: 8, right: 8, width: 26, height: 26, borderRadius: 99, background: "rgba(22,24,29,.55)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+          >
+            <Trash2 size={12} color={C.white} />
+          </button>
+        </div>
+        <div style={{ marginTop: 6 }}>
+          <div style={{ fontSize: T.label, fontWeight: 600, color: C.jet, ...fBody, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.caption || (isReel ? "Untitled reel" : "Untitled photo")}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
+            <Badge tone="neutral">{isReel ? "Reel" : "Photo"}</Badge>
+            {item.sport && <span style={{ fontSize: T.caption, color: C.slateLight, ...fBody }}>{item.sport}</span>}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const onFileChange = (e) => {
     const file = e.target.files?.[0];

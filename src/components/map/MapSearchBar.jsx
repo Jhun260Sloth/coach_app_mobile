@@ -1,10 +1,13 @@
 import React from "react";
 import { Search, X, MapPin } from "lucide-react";
-import { C, fBody, T } from "../../theme/theme";
+import { CL, CD, fBody, T } from "../../theme/theme";
+import { useApp } from "../../context/AppContext";
 
 // Split out from the map so typing in the search field doesn't re-render the
 // Leaflet map/marker tree on every keystroke — only this bar re-renders.
 function MapSearchBarBase({ value, onChange, onClear, onClose, onFocus, onBlur, showSuggestions, suggestions, onSelectSuggestion }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   return (
     <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 401 }}>
       {/* Full-width, flush to the edges — no side margins — white bar with a bottom shadow */}

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { DollarSign, Users, MapPin } from "lucide-react";
-import { C, fBody, T } from "../../theme/theme";
+import { CL, CD, fBody, T } from "../../theme/theme";
+import { useApp } from "../../context/AppContext";
 import { Chip, Btn, SearchSelect } from "./Primitives";
 
 export const PACKAGE_TYPE_OPTIONS = [
@@ -17,17 +18,6 @@ export const SESSION_DURATION_OPTIONS = [30, 45, 60, 90, 120];
 // "Come to You" means the coach travels to the client's location, so no
 // fixed venue is required — only an optional travel area/radius note.
 export const DELIVERY_MODE_OPTIONS = ["In-person", "Online", "Come to You"];
-
-const inputStyle = {
-  width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "10px 13px",
-  fontSize: T.body, outline: "none", boxSizing: "border-box", ...fBody,
-};
-const fieldWrapStyle = {
-  display: "flex", alignItems: "center", gap: 6, border: `1.5px solid ${C.border}`,
-  borderRadius: 13, padding: "11px 13px", boxSizing: "border-box",
-};
-const fieldInputStyle = { border: "none", outline: "none", flex: 1, fontSize: T.body, minWidth: 0, ...fBody };
-const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
 
 export function emptyPackage() {
   return {
@@ -144,6 +134,20 @@ export function packageFormToRecord(pkg, existingId) {
  * object via onSave.
  */
 export function ServicePackageForm({ initial, onSave, onCancel, saveLabel = "Add Service" }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
+
+  const inputStyle = {
+    width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "10px 13px",
+    fontSize: T.body, outline: "none", boxSizing: "border-box", ...fBody,
+  };
+  const fieldWrapStyle = {
+    display: "flex", alignItems: "center", gap: 6, border: `1.5px solid ${C.border}`,
+    borderRadius: 13, padding: "11px 13px", boxSizing: "border-box",
+  };
+  const fieldInputStyle = { border: "none", outline: "none", flex: 1, fontSize: T.body, minWidth: 0, ...fBody };
+  const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
+
   const [pkg, setPkg] = useState(() => ({ ...emptyPackage(), ...(initial || {}) }));
   const set = (patch) => setPkg((p) => ({ ...p, ...patch }));
   const valid = isPackageValid(pkg);

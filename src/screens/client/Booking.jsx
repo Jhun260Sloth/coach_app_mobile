@@ -6,7 +6,8 @@ import {
   Users, User, ShieldCheck, Phone, Stethoscope, AlertTriangle, UserPlus, MapPin, Send, Home,
   Repeat as RepeatIcon, UserCheck, Camera,
 } from "lucide-react";
-import { C, fDisplay, fBody, T } from "../../theme/theme";
+import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
+import { useApp } from "../../context/AppContext";
 import {
   Avatar, Card, Chip, SectionLabel, Btn, TopBar, Toggle, Field, Row, RadioRow, BottomSheet,
 } from "../../components/ui/Primitives";
@@ -183,6 +184,8 @@ const emptyChildDraft = {
  * both already know who the session is for.
  */
 export function ScreenBookingParticipants({ nav, params, children = [], addChild, toast }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const coach = COACHES.find((c) => c.id === params.coachId);
   const pkg = coach.packages.find((p) => p.id === params.packageId);
   const allowsMultiple = packageAllowsMultipleParticipants(pkg);
@@ -309,7 +312,7 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
                 <Camera size={20} color={C.slateLight} />
               </div>
             )}
-            <div style={{ position: "absolute", bottom: -2, right: -2, width: 24, height: 24, borderRadius: 24, background: C.orange, border: `2px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ position: "absolute", bottom: -2, right: -2, width: 24, height: 24, borderRadius: 24, background: C.brand, border: `2px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Camera size={11} color={C.white} />
             </div>
           </button>
@@ -368,6 +371,8 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
 }
 
 export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings = [] }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const coach = COACHES.find((c) => c.id === params.coachId);
   const pkg = coach.packages.find((p) => p.id === params.packageId);
 
@@ -435,7 +440,7 @@ export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings =
           </div>
           {hasDateTime && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
-              <Calendar size={15} color={C.orange} />
+              <Calendar size={15} color={C.brand} />
               <span style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>
                 {formatFullDateFromDate(selectedDate)} · {formatTimeRange12(time, pkg.duration)}
               </span>
@@ -522,7 +527,7 @@ export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings =
 
             {/* Session Summary */}
             <SectionLabel>Session Summary</SectionLabel>
-            <Card style={{ marginBottom: 18, background: C.orangeTint, border: "none" }}>
+            <Card style={{ marginBottom: 18, background: C.brandTint, border: "none" }}>
               <Row label="Package" value={pkg.name} />
               <Row label="Coach" value={coach.name} />
               <Row label="Date" value={formatFullDateFromDate(selectedDate)} />
@@ -562,6 +567,8 @@ export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings =
 }
 
 export function ScreenBookingReview({ nav, draft, setDraft, toast, children = [], bookings = [], addBooking }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   // Who's attending was already chosen on the previous step (ScreenBookingParticipants).
   const participants = draft.participants || ["self"];
   const [guardianName, setGuardianName] = useState("");
@@ -636,7 +643,7 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast, children = []
         {includesMinor && (
           <Card style={{ marginBottom: 14 }}>
             <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 12 }}>
-              <ShieldCheck size={16} color={C.orange} style={{ flexShrink: 0, marginTop: 1 }} />
+              <ShieldCheck size={16} color={C.brand} style={{ flexShrink: 0, marginTop: 1 }} />
               <div>
                 <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Child safety details</div>
                 <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, lineHeight: 1.55, ...fBody }}>
@@ -669,8 +676,8 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast, children = []
                       <span style={{ fontSize: T.caption, color: C.success, fontWeight: 600, ...fBody }}>Pulled from {c.name || "this"}'s profile</span>
                     ) : (
                       <button onClick={() => nav("client-profile")} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center", gap: 4 }}>
-                        <AlertTriangle size={12} color={C.orange} />
-                        <span style={{ fontSize: T.caption, color: C.orange, fontWeight: 600, ...fBody }}>No safety details saved on this profile yet — add them below or from Account</span>
+                        <AlertTriangle size={12} color={C.brand} />
+                        <span style={{ fontSize: T.caption, color: C.brand, fontWeight: 600, ...fBody }}>No safety details saved on this profile yet — add them below or from Account</span>
                       </button>
                     )}
                   </div>
@@ -718,7 +725,7 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast, children = []
                 <span style={{ fontSize: T.captionLg, color: C.jet, lineHeight: 1.5, ...fBody }}>Safeguarding: sessions involving minors require a checked-in guardian or approved drop-off arrangement, and any concerns can be reported to CoachLink support at any time.</span>
               </div>
               <button onClick={() => setConsent(!consent)} style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}>
-                <div style={{ width: 18, height: 18, borderRadius: 5, border: `1.5px solid ${consent ? C.orange : C.border}`, background: consent ? C.orange : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+                <div style={{ width: 18, height: 18, borderRadius: 5, border: `1.5px solid ${consent ? C.brand : C.border}`, background: consent ? C.brand : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
                   {consent && <CheckCircle2 size={12} color={C.white} />}
                 </div>
                 <span style={{ fontSize: T.label, color: C.jet, lineHeight: 1.5, ...fBody }}>I confirm I am the parent or legal guardian and consent to this booking, including CoachLink's handling of the participant's data.</span>
@@ -763,6 +770,8 @@ export function ScreenBookingReview({ nav, draft, setDraft, toast, children = []
 }
 
 export function ScreenPayment({ nav, params, draft, toast, addBooking, markBookingPaid, pushNotification, biometric, offline }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const [confirming, setConfirming] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [result, setResult] = useState(null); // null | "success" | "failed" | "cancelled"
@@ -837,7 +846,7 @@ export function ScreenPayment({ nav, params, draft, toast, addBooking, markBooki
             <CreditCard size={13} color={C.white} />
           </div>
           <div style={{ fontSize: T.body, color: C.jet, fontWeight: 500, ...fBody }}>Visa •••• 4821</div>
-          <CheckCircle2 size={16} color={C.orange} style={{ marginLeft: "auto" }} />
+          <CheckCircle2 size={16} color={C.brand} style={{ marginLeft: "auto" }} />
         </Card>
         <Btn variant="outline" size="sm" icon={Plus}>Add new card</Btn>
 
@@ -887,6 +896,8 @@ export function ScreenPayment({ nav, params, draft, toast, addBooking, markBooki
 }
 
 export function ScreenBookingConfirmation({ nav, draft, toast }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const [synced, setSynced] = useState(false);
   const [locShare, setLocShare] = useState(false);
   return (
@@ -944,11 +955,13 @@ export function ScreenBookingConfirmation({ nav, draft, toast }) {
  * accepting or declining.
  */
 export function ScreenBookingRequestSent({ nav, params }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   return (
     <div style={{ padding: "28px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ textAlign: "center", marginBottom: 24 }}>
-        <div style={{ width: 60, height: 60, borderRadius: 20, background: C.orangeTint, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
-          <Send size={26} color={C.orange} />
+        <div style={{ width: 60, height: 60, borderRadius: 20, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
+          <Send size={26} color={C.brand} />
         </div>
         <div style={{ fontSize: T.headingLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Booking Request Sent</div>
         <div style={{ fontSize: T.body, color: C.slate, marginTop: 8, lineHeight: 1.6, maxWidth: 300, marginLeft: "auto", marginRight: "auto", ...fBody }}>

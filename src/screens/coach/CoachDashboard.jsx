@@ -13,7 +13,7 @@ import {
   Flag,
   Clock,
 } from "lucide-react";
-import { C, fDisplay, fBody, T } from "../../theme/theme";
+import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { REVIEWS, CONFIG, COACH_NOTIFICATIONS } from "../../data/mockData";
 import {
   Avatar,
@@ -27,6 +27,7 @@ import {
 } from "../../components/ui/Primitives";
 import { useLiveNotifications } from "../../systems/StateSystem";
 import { useReviewActions, DISPUTE_REASONS } from "../../systems/ReviewsSystem";
+import { useApp } from "../../context/AppContext";
 
 const NOTIF_ICON = {
   message: MessageCircle,
@@ -35,33 +36,6 @@ const NOTIF_ICON = {
   review: Star,
   promo: Percent,
 };
-
-export function StatMini({ label, value, icon: Icon }) {
-  return (
-    <Card style={{ flex: 1, textAlign: "center", padding: "12px 6px" }}>
-      <Icon size={15} color={C.orange} style={{ margin: "0 auto 6px" }} />
-      <div
-        style={{
-          fontSize: T.title,
-          fontWeight: 700,
-          color: C.jet,
-          ...fDisplay,
-        }}
-      >
-        {value}
-      </div>
-      <div
-        style={{
-          fontSize: T.tiny,
-          color: C.slate,
-          ...fBody,
-        }}
-      >
-        {label}
-      </div>
-    </Card>
-  );
-}
 
 export function ScreenCoachDashboard({
   nav,
@@ -73,6 +47,8 @@ export function ScreenCoachDashboard({
   offline,
   pushNotification,
 }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const [notifOpen, setNotifOpen] = useState(false);
   const [respondingId, setRespondingId] = useState(null);
   const { getReply, getDispute, submitReply, submitDispute } = useReviewActions();
@@ -145,6 +121,33 @@ export function ScreenCoachDashboard({
         unread: false,
       }))
     );
+
+  function StatMini({ label, value, icon: Icon }) {
+    return (
+      <Card style={{ flex: 1, textAlign: "center", padding: "12px 6px" }}>
+        <Icon size={15} color={C.brand} style={{ margin: "0 auto 6px" }} />
+        <div
+          style={{
+            fontSize: T.title,
+            fontWeight: 700,
+            color: C.jet,
+            ...fDisplay,
+          }}
+        >
+          {value}
+        </div>
+        <div
+          style={{
+            fontSize: T.tiny,
+            color: C.slate,
+            ...fBody,
+          }}
+        >
+          {label}
+        </div>
+      </Card>
+    );
+  }
 
   const openNotification = (n) => {
     setNotifications((arr) =>
@@ -253,7 +256,7 @@ export function ScreenCoachDashboard({
                       minWidth: 15,
                       height: 15,
                       padding: "0 3px",
-                      background: C.orange,
+                      background: C.brand,
                       borderRadius: 99,
                       border: `1.5px solid ${C.white}`,
                       display: "flex",
@@ -301,7 +304,7 @@ export function ScreenCoachDashboard({
               ...fBody,
             }}
           >
-            <WifiOff size={14} color={C.orange} />
+            <WifiOff size={14} color={C.brand} />
             Offline — showing your last synced data.
           </div>
         )}
@@ -347,7 +350,7 @@ export function ScreenCoachDashboard({
 
           <div
             style={{
-              background: C.orangeTint,
+              background: C.brandTint,
               borderRadius: 18,
               padding: 16,
             }}
@@ -355,7 +358,7 @@ export function ScreenCoachDashboard({
             <div
               style={{
                 fontSize: T.caption,
-                color: C.orange,
+                color: C.brand,
                 fontWeight: 600,
                 ...fBody,
               }}
@@ -421,7 +424,7 @@ export function ScreenCoachDashboard({
             style={{
               background: "none",
               border: "none",
-              color: C.orange,
+              color: C.brand,
               fontSize: T.label,
               fontWeight: 600,
               cursor: "pointer",
@@ -678,7 +681,7 @@ export function ScreenCoachDashboard({
 
               {reply && (
                 <div style={{ marginTop: 10, background: C.fog, borderRadius: 10, padding: "10px 12px" }}>
-                  <div style={{ fontSize: T.caption, fontWeight: 700, color: C.orange, ...fBody }}>Your reply</div>
+                  <div style={{ fontSize: T.caption, fontWeight: 700, color: C.brand, ...fBody }}>Your reply</div>
                   <p style={{ fontSize: T.labelLg, color: C.jet, marginTop: 3, lineHeight: 1.5, ...fBody }}>{reply.text}</p>
                 </div>
               )}
@@ -752,12 +755,12 @@ export function ScreenCoachDashboard({
                     style={{
                       display: "flex", alignItems: "center", justifyContent: "space-between",
                       padding: "12px 14px", borderRadius: 12, cursor: "pointer", textAlign: "left",
-                      border: `1.5px solid ${disputeReason === reason ? C.orange : C.border}`,
-                      background: disputeReason === reason ? C.orangeTint : C.white,
+                      border: `1.5px solid ${disputeReason === reason ? C.brand : C.border}`,
+                      background: disputeReason === reason ? C.brandTint : C.white,
                     }}
                   >
                     <span style={{ fontSize: T.body, color: C.jet, ...fBody }}>{reason}</span>
-                    {disputeReason === reason && <Check size={16} color={C.orange} />}
+                    {disputeReason === reason && <Check size={16} color={C.brand} />}
                   </button>
                 ))}
               </div>
@@ -801,7 +804,7 @@ export function ScreenCoachDashboard({
               gap: 5,
               background: "none",
               border: "none",
-              color: C.orange,
+              color: C.brand,
               fontSize: T.labelLg,
               fontWeight: 600,
               cursor: "pointer",
@@ -843,14 +846,14 @@ export function ScreenCoachDashboard({
                   background:
                     n.type === "verification"
                       ? C.warnTint
-                      : C.orangeTint,
+                      : C.brandTint,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   flexShrink: 0,
                 }}
               >
-                <Icon size={16} color={C.orange} />
+                <Icon size={16} color={C.brand} />
               </div>
 
               <div
@@ -908,7 +911,7 @@ export function ScreenCoachDashboard({
                     width: 8,
                     height: 8,
                     borderRadius: 99,
-                    background: C.orange,
+                    background: C.brand,
                     flexShrink: 0,
                     marginTop: 5,
                   }}

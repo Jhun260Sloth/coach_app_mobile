@@ -1,12 +1,15 @@
 import React, { useState } from "react";
 import { Trash2 } from "lucide-react";
-import { C, fDisplay, fBody, T } from "../../theme/theme";
-import { SectionLabel, Card, Btn, TopBar, StepProgress } from "../../components/ui/Primitives";
+import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
+import { useApp } from "../../context/AppContext";
+import { SectionLabel, Card, Btn, TopBar } from "../../components/ui/Primitives";
 import { ServicePackageForm, packageSummary, packageFormToRecord } from "../../components/ui/ServicePackageForm";
 
 let svcIdCounter = 1;
 
 export function ScreenCoachServicesSetup({ nav, toast, savePackage, removePackage }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
   const [services, setServices] = useState([]);
 
   const addService = (pkg) => {
@@ -28,7 +31,6 @@ export function ScreenCoachServicesSetup({ nav, toast, savePackage, removePackag
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "18px 20px 0", flex: 1, overflowY: "auto", paddingBottom: 100 }}>
         <TopBar title="Coaching services" onBack={() => nav("verification-pending")} />
-        <StepProgress step={1} total={3} label="Services" />
 
         <div style={{ fontSize: T.subtitleLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fDisplay }}>
           Add coaching services
