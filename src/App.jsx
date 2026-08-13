@@ -13,6 +13,52 @@ import { AppProvider, useApp } from "./context/AppContext";
 import { ROUTES, ROUTE_METADATA } from "./router/routes";
 
 /* =========================================================================
+   ERROR BOUNDARY — Catches any screen-level exceptions gracefully
+   ========================================================================= */
+class ScreenErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error("Screen Error caught:", error, errorInfo);
+  }
+  componentDidUpdate(prevProps) {
+    if (prevProps.screen !== this.props.screen) {
+      this.setState({ hasError: false, error: null });
+    }
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, textAlign: "center", background: "#FFFFFF" }}>
+          <div style={{ width: 48, height: 48, borderRadius: 16, background: "#FEE2E2", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
+            <AlertCircle size={24} color="#EF4444" />
+          </div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: "#111827", marginBottom: 6 }}>Screen Display Error</div>
+          <div style={{ fontSize: 12, color: "#6B7280", lineHeight: 1.5, marginBottom: 20, maxWidth: 280 }}>
+            {this.state.error?.message || "An unexpected error occurred while rendering this screen."}
+          </div>
+          <button
+            onClick={() => {
+              this.setState({ hasError: false });
+              this.props.onReset?.();
+            }}
+            style={{ padding: "10px 20px", borderRadius: 12, background: "#111827", color: "#FFFFFF", border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+          >
+            Reset to Discover Home
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+/* =========================================================================
    TAB DEFINITIONS
    ========================================================================= */
 const CLIENT_TABS = [
@@ -93,7 +139,7 @@ function AppShell() {
   const targetWidth = isLandscape ? activePreset.height : activePreset.width;
   const targetHeight = isLandscape ? activePreset.width : activePreset.height;
 
-  const studioTheme = darkMode ? "dark" : canvasTheme;
+  const studioTheme = canvasTheme;
   const studioBg = studioTheme === "dark" ? "#0A0B0E" : "#FAFAFA";
   const studioCanvasBg = studioTheme === "dark"
     ? "radial-gradient(circle at 50% 0%, #171717 0%, #0A0A0A 100%)"
@@ -205,18 +251,6 @@ function AppShell() {
                 }}
               >
                 <WifiOff size={11} /> {offline ? "Offline" : "Online"}
-              </button>
-              <button
-                onClick={toggleDarkMode}
-                title="Toggle app dark mode"
-                style={{
-                  display: "flex", alignItems: "center", gap: 5, padding: "4px 8px", borderRadius: 6,
-                  border: `1px solid ${vSystem.border}`,
-                  background: darkMode ? C.brandTint : vSystem.bgSidebar,
-                  color: darkMode ? C.brand : vSystem.textPrimary, fontSize: 11, fontWeight: 500, cursor: "pointer", fontFamily: vSystem.fontFamily,
-                }}
-              >
-                {darkMode ? <Moon size={11} /> : <Sun size={11} />} {darkMode ? "Dark" : "Light"}
               </button>
               <button
                 onClick={resetAll}
@@ -607,7 +641,7 @@ function AppShell() {
             {/* DEVICE FRAME / SCREEN VIEWPORT */}
             <div style={{
               width: targetWidth, minWidth: targetWidth, height: targetHeight, minHeight: targetHeight,
-              background: showFrame ? (darkMode ? "#1B2A1B" : "#18181B") : "transparent",
+              background: showFrame ? "#18181B" : "transparent",
               borderRadius: showFrame ? activePreset.radius : 16,
               padding: showFrame ? 10 : 0,
               boxShadow: showFrame
@@ -658,7 +692,9 @@ function AppShell() {
 
                 {/* Active Screen Component */}
                 <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
-                  <ScreenComponent {...screenProps} />
+                  <ScreenErrorBoundary screen={screen} onReset={() => { setRole("client"); setScreen("client-home"); }}>
+                    <ScreenComponent {...screenProps} />
+                  </ScreenErrorBoundary>
                   <Toast toast={toastMsg} />
                 </div>
 

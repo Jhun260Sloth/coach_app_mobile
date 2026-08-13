@@ -81,23 +81,24 @@ function getCancellationOutcome(booking, coach) {
   return { refundPct, ruleLabel, hoursUntil, tier };
 }
 
-export function ScreenClientDashboard({ nav, bookings, offline, toast, cancelBooking, rescheduleBooking, payBooking, isFirstTimeClient }) {
+export function ScreenClientDashboard({ nav, bookings = [], offline, toast, cancelBooking, rescheduleBooking, payBooking, isFirstTimeClient }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const [tab, setTab] = useState("pending");
   const [view, setView] = useState("list");
+  const safeBookings = Array.isArray(bookings) ? bookings : [];
   // First-time clients haven't booked anything yet — show a single, unified
   // empty state pointing them at Discover, instead of the tabbed/calendar UI.
-  const showEmptyDashboard = isFirstTimeClient && bookings.length === 0;
+  const showEmptyDashboard = isFirstTimeClient && safeBookings.length === 0;
   const [calMode, setCalMode] = useState("month");
   const [rescheduleTarget, setRescheduleTarget] = useState(null);
   const [cancelTarget, setCancelTarget] = useState(null);
 
-  const upcoming = bookings.filter((b) => b.status === "confirmed");
-  const pending = bookings.filter((b) => b.status === "pending");
-  const past = bookings.filter((b) => b.status === "completed" || b.status === "cancelled");
+  const upcoming = safeBookings.filter((b) => b?.status === "confirmed");
+  const pending = safeBookings.filter((b) => b?.status === "pending");
+  const past = safeBookings.filter((b) => b?.status === "completed" || b?.status === "cancelled");
 
-  const dated = useMemo(() => bookings.map((b) => ({ ...b, _date: parseBookingDate(b.date) })), [bookings]);
+  const dated = useMemo(() => safeBookings.map((b) => ({ ...b, _date: parseBookingDate(b.date) })), [safeBookings]);
   const initialDate = useMemo(() => (dated.find((b) => b._date)?._date) || new Date(), [dated]);
   const [cursor, setCursor] = useState(initialDate);
   const [selectedDate, setSelectedDate] = useState(initialDate);

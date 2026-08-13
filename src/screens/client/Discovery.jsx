@@ -331,7 +331,7 @@ export function PersonalisedRecommendationModal({ open, onClose, onSubmit, userL
   );
 }
 
-export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFiltersChange, clientNotifications: notifications, setClientNotifications: setNotifications, coachAvailableNow, isFirstTimeClient, discoveryPrefs, setDiscoveryPrefs, showPostSignupGuide, setShowPostSignupGuide }) {
+export function ScreenClientHome({ nav, favorites = [], toggleFav, filters, onFiltersChange, clientNotifications: notifications = [], setClientNotifications: setNotifications, coachAvailableNow, isFirstTimeClient, discoveryPrefs, setDiscoveryPrefs, showPostSignupGuide, setShowPostSignupGuide }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const [view, setView] = useState("list");
@@ -346,12 +346,19 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
   // The pulse CSS the location pill reuses is normally injected by the map
   // view — bring it in here too so it still looks right if you land on
   // List/Favorites without ever opening the map.
-  useEffect(() => { injectMapStyles(); }, []);
+  useEffect(() => { injectMapStyles(C); }, []);
 
-  const appliedFilters = filters || DEFAULT_FILTERS;
+  const appliedFilters = useMemo(() => ({
+    ...DEFAULT_FILTERS,
+    ...(filters || {}),
+    sports: (filters && Array.isArray(filters.sports)) ? filters.sports : DEFAULT_FILTERS.sports,
+    areas: (filters && Array.isArray(filters.areas)) ? filters.areas : DEFAULT_FILTERS.areas,
+  }), [filters]);
   const setAppliedFilters = onFiltersChange || (() => {});
   const radiusKm = appliedFilters.radiusKm ?? 5;
-  const unreadCount = notifications.filter(n => n.unread).length;
+  const safeNotifications = Array.isArray(notifications) ? notifications : [];
+  const safeFavorites = Array.isArray(favorites) ? favorites : [];
+  const unreadCount = safeNotifications.filter(n => n?.unread).length;
 
   // First-time clients haven't told us what they're looking for yet, so the
   // Coach Listings section stays empty and prompts for preferences instead
@@ -390,14 +397,14 @@ export function ScreenClientHome({ nav, favorites, toggleFav, filters, onFilters
     const matchesQuery = !q || c.suburb.toLowerCase().includes(q) || c.name.toLowerCase().includes(q) || c.sport.toLowerCase().includes(q);
     const matchesAreas = !appliedFilters.areas.length || appliedFilters.areas.some(a => c.suburb.toLowerCase().includes(a.toLowerCase()));
     const matchesSport = !appliedFilters.sports?.length || appliedFilters.sports.includes(c.sport);
-    const matchesPrice = c.packages[0].price <= (appliedFilters.maxPrice ?? DEFAULT_FILTERS.maxPrice);
+    const matchesPrice = c.packages && c.packages[0] ? c.packages[0].price <= (appliedFilters.maxPrice ?? DEFAULT_FILTERS.maxPrice) : true;
     const matchesRating = c.rating >= (appliedFilters.minRating ?? 0);
     return matchesQuery && matchesAreas && matchesSport && matchesPrice && matchesRating;
   });
   const filtered = searchAndAreaFiltered
     .filter(c => radiusKm == null || c.liveDistanceKm <= radiusKm)
     .sort((a, b) => a.liveDistanceKm - b.liveDistanceKm);
-  const favCoaches = COACHES.filter(c => favorites.includes(c.id));
+  const favCoaches = COACHES.filter(c => safeFavorites.includes(c.id));
 
   // Every filter currently applied, each individually removable — feeds both
   // the "active filters" row on the dashboard and the badge on the Filter icon.

@@ -4,7 +4,7 @@ import {
   INITIAL_AVAILABILITY_BLOCKS,
 } from "../data/bookings";
 import { COACHES } from "../data/coaches";
-import { useUserLocation } from "../systems/StateSystem";
+import { useUserLocation } from "../utils/useUserLocation";
 import { applyTheme } from "../theme/theme";
 
 /* =========================================================================
@@ -273,7 +273,6 @@ export function AppProvider({ children }) {
       });
     }
     toast(approve ? `${applicant ? applicant.name : "Coach"} approved` : `${applicant ? applicant.name : "Coach"} rejected`);
-    nav("admin-verify");
   };
 
   const resolveDispute = (id) => setDisputes((d) => d.filter((x) => x.id !== id));

@@ -52,10 +52,10 @@ export function CoverBanner({ sport, height = 150 }) {
   );
 }
 
-export function ScreenCoachProfile({ nav, params, favorites, toggleFav, coachAvailableNow }) {
+export function ScreenCoachProfile({ nav, params = {}, favorites = [], toggleFav, coachAvailableNow }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
-  const coach = COACHES.find((c) => c.id === params.id) || COACHES[0];
+  const coach = COACHES.find((c) => c.id === (params?.id)) || COACHES[0];
   const { getReply } = useReviewActions();
   const [tab, setTab] = useState("about");
   const [selectedPkgId, setSelectedPkgId] = useState(null);
@@ -68,7 +68,8 @@ export function ScreenCoachProfile({ nav, params, favorites, toggleFav, coachAva
   const pagedReviews = REVIEWS.slice((reviewPage - 1) * REVIEWS_PER_PAGE, reviewPage * REVIEWS_PER_PAGE);
   useEffect(() => { setReviewPage(1); }, [tab, coach.id]);
   const selectedPkg = coach.packages.find((p) => p.id === selectedPkgId) || null;
-  const fav = favorites.includes(coach.id);
+  const safeFavorites = Array.isArray(favorites) ? favorites : [];
+  const fav = safeFavorites.includes(coach.id);
   const unavailable = coach.id === LIVE_AVAILABILITY_COACH_ID && coachAvailableNow === false;
 
   // Calendar + slots reflect the selected package's derived availability, or

@@ -13,8 +13,13 @@ import { initials, hashColor } from "../../data/mockData";
    ========================================================================= */
 
 function useColors() {
-  const { darkMode } = useApp();
-  return darkMode ? CD : CL;
+  try {
+    const app = useApp();
+    const darkMode = app?.darkMode ?? false;
+    return (darkMode ? CD : CL) || CL;
+  } catch (e) {
+    return CL;
+  }
 }
 
 export function Spinner({ size = 15, color }) {

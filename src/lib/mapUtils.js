@@ -142,7 +142,7 @@ export function loadLeaflet() {
   return window.__clLeafletPromise;
 }
 
-export function injectMapStyles(C) {
+export function injectMapStyles(C = CL) {
   if (document.getElementById(MAP_STYLE_ID)) return;
   const style = document.createElement("style");
   style.id = MAP_STYLE_ID;
