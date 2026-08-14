@@ -28,13 +28,13 @@ const NOTIF_ICON = { booking: Calendar, message: MessageCircle, review: Star, av
 
 const oneLine = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
 
-export function CoachListCard({ coach, onOpen, unavailable }) {
+export function CoachListCard({ coach, onOpen, unavailable, style }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   return (
     <Card
       onClick={onOpen}
-      style={{ marginBottom: 14, border: `1px solid ${C.border}`, boxShadow: "0 1px 2px rgba(22,24,29,.04)", opacity: unavailable ? 0.8 : 1 }}
+      style={{ marginBottom: 14, border: `1px solid ${C.border}`, boxShadow: "0 1px 2px rgba(22,24,29,.04)", opacity: unavailable ? 0.8 : 1, ...style }}
     >
       <div style={{ display: "flex", gap: 12 }}>
         <div style={{ position: "relative", flexShrink: 0 }}>
@@ -284,7 +284,7 @@ export function PersonalisedRecommendationModal({ open, onClose, onSubmit, userL
         value={locationText}
         onChange={(e) => { setLocationText(e.target.value); setUseCurrentLocation(false); }}
         placeholder="Suburb, city or postcode"
-        style={{ width: "100%", boxSizing: "border-box", background: C.fog, border: "none", borderRadius: 12, padding: "11px 14px", fontSize: T.bodyLg, color: C.jet, outline: "none", marginBottom: 22, ...fBody }}
+        style={{ width: "100%", boxSizing: "border-box", background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, color: C.jet, outline: "none", marginBottom: 22, ...fBody }}
       />
 
       <SectionLabel>Search Radius</SectionLabel>
@@ -295,7 +295,7 @@ export function PersonalisedRecommendationModal({ open, onClose, onSubmit, userL
               type="number" min={CUSTOM_RADIUS_MIN_KM} max={CUSTOM_RADIUS_MAX_KM} value={customRadius}
               onChange={(e) => setCustomRadius(e.target.value)}
               placeholder={`${CUSTOM_RADIUS_MIN_KM}–${CUSTOM_RADIUS_MAX_KM}`}
-              style={{ flex: 1, boxSizing: "border-box", background: C.fog, border: "none", borderRadius: 12, padding: "11px 14px", fontSize: T.bodyLg, color: C.jet, outline: "none", ...fBody }}
+              style={{ flex: 1, boxSizing: "border-box", background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, color: C.jet, outline: "none", ...fBody }}
             />
             <span style={{ fontSize: T.bodyLg, color: C.slate, ...fBody }}>km</span>
             <button onClick={applyCustomRadius} style={{ padding: "11px 16px", borderRadius: 12, border: "none", background: C.brand, color: C.white, fontSize: T.labelLg, fontWeight: 700, cursor: "pointer", ...fBody }}>Set</button>
@@ -323,7 +323,7 @@ export function PersonalisedRecommendationModal({ open, onClose, onSubmit, userL
         onChange={(e) => setGoals(e.target.value)}
         placeholder="e.g. Improve my technique, train for a competition, build confidence…"
         rows={3}
-        style={{ width: "100%", boxSizing: "border-box", background: C.fog, border: "none", borderRadius: 12, padding: "11px 14px", fontSize: T.bodyLg, color: C.jet, outline: "none", resize: "none", marginBottom: 24, ...fBody }}
+        style={{ width: "100%", boxSizing: "border-box", background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, color: C.jet, outline: "none", resize: "none", marginBottom: 24, ...fBody }}
       />
 
       <Btn full disabled={!canSubmit} loading={submitting} loadingText="Finding your matches…" onClick={handleSubmit}>Find My Coaches</Btn>
@@ -504,7 +504,7 @@ export function ScreenClientHome({ nav, favorites = [], toggleFav, filters, onFi
   if (showRecommendationPrompt) {
     return (
       <div style={{ height: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
-        <div style={{ padding: "18px 20px 0", display: "flex", justifyContent: "flex-end" }}>
+        <div style={{ padding: "18px 18px 0", display: "flex", justifyContent: "flex-end" }}>
           <NotificationBellButton count={unreadCount} onClick={() => setNotifOpen(true)} />
         </div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "0 28px 40px" }}>
@@ -528,7 +528,7 @@ export function ScreenClientHome({ nav, favorites = [], toggleFav, filters, onFi
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
-      <div style={{ padding: "18px 20px 0" }}>
+      <div style={{ padding: "18px 18px 0" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <div style={{ fontSize: T.labelLg, color: C.slate, ...fBody }}>Good morning</div>
@@ -551,7 +551,7 @@ export function ScreenClientHome({ nav, favorites = [], toggleFav, filters, onFi
         </div>
 
         <div style={{ position: "relative", marginTop: 18 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, background: C.fog, borderRadius: 14, padding: "13px 14px" }}>
+          <div className="cl-input" style={{ display: "flex", alignItems: "center", gap: 10, border: `1.5px solid ${C.border}`, background: C.white, borderRadius: 13, padding: "11px 13px" }}>
             <Search size={16} color={C.slateLight} />
             <input value={searchText} onChange={e => { setSearchText(e.target.value); setShowSuggestions(true); }}
               onFocus={() => setShowSuggestions(true)} onBlur={() => setTimeout(() => setShowSuggestions(false), 120)}
@@ -621,11 +621,15 @@ export function ScreenClientHome({ nav, favorites = [], toggleFav, filters, onFi
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 100px" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: 116 }} className="cl-hide-scrollbar">
         {view === "favorites" ? (
           favCoaches.length === 0
             ? <EmptyState icon={Heart} title="No favorites yet" body="Tap the heart on a coach's card or profile to save them here." />
-            : favCoaches.map(c => <CoachListCard key={c.id} coach={c} onOpen={() => nav("coach-profile", { id: c.id })} />)
+            : (
+              <div className="cl-stagger">
+                {favCoaches.map((c, i) => <CoachListCard key={c.id} coach={c} style={{ animationDelay: `${Math.min(i, 8) * 45}ms` }} onOpen={() => nav("coach-profile", { id: c.id })} />)}
+              </div>
+            )
         ) : filtered.length === 0
           ? (
             <StatusBanner
@@ -636,7 +640,11 @@ export function ScreenClientHome({ nav, favorites = [], toggleFav, filters, onFi
               secondaryLabel="Browse all coaches"
             />
           )
-          : filtered.map(c => <CoachListCard key={c.id} coach={c} unavailable={c.id === LIVE_AVAILABILITY_COACH_ID && !coachAvailableNow} onOpen={() => nav("coach-profile", { id: c.id })} />)
+          : (
+            <div className="cl-stagger">
+              {filtered.map((c, i) => <CoachListCard key={c.id} coach={c} unavailable={c.id === LIVE_AVAILABILITY_COACH_ID && !coachAvailableNow} style={{ animationDelay: `${Math.min(i, 8) * 45}ms` }} onOpen={() => nav("coach-profile", { id: c.id })} />)}
+            </div>
+          )
         }
       </div>
 
@@ -696,11 +704,11 @@ export function ScreenSearchFilters({ nav, params, userLocation, locating, permi
   const applyAndShow = () => { onApply?.({ sports, areas, maxPrice: price, minRating, radiusKm }); nav("client-home"); };
 
   return (
-    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column", overflowX: "hidden" }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column", overflowX: "hidden" }}>
       <TopBar title="Filters" onBack={() => nav("client-home")} />
       {/* Single vertical scroll region for every filter section; Reset and
           Show results stay fixed below it, outside the scroll area. */}
-      <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
+      <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
         <SectionLabel>Sport</SectionLabel>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
           {SPORTS.map(s => <Chip key={s} active={sports.includes(s)} onClick={() => setSports(arr => arr.includes(s) ? arr.filter(x => x !== s) : [...arr, s])}>{s}</Chip>)}
@@ -736,7 +744,7 @@ export function ScreenSearchFilters({ nav, params, userLocation, locating, permi
               </div>
               <div style={{ position: "relative" }}>
                 <input value={locationInput} onChange={e => setLocationInput(e.target.value)} placeholder="Enter your suburb or area"
-                  style={{ width: "100%", boxSizing: "border-box", background: C.fog, border: "none", borderRadius: 12, padding: "11px 14px", fontSize: T.bodyLg, color: C.jet, outline: "none", ...fBody }} />
+                  style={{ width: "100%", boxSizing: "border-box", background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, color: C.jet, outline: "none", ...fBody }} />
                 {locationSuggestions.length > 0 && (
                   <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, zIndex: 20, background: C.white, borderRadius: 12, border: `1px solid ${C.border}`, boxShadow: "0 8px 24px rgba(0,0,0,0.08)", overflow: "hidden" }}>
                     {locationSuggestions.map(s => (
@@ -765,7 +773,7 @@ export function ScreenSearchFilters({ nav, params, userLocation, locating, permi
                     const v = Number(e.target.value);
                     setCustomRadius(Number.isNaN(v) ? CUSTOM_RADIUS_MIN_KM : Math.min(CUSTOM_RADIUS_MAX_KM, Math.max(CUSTOM_RADIUS_MIN_KM, v)));
                   }}
-                  style={{ flex: 1, boxSizing: "border-box", border: `1.5px solid ${C.border}`, borderRadius: 10, padding: "9px 12px", fontSize: T.bodyLg, color: C.jet, outline: "none", background: C.white, ...fBody }}
+                  style={{ flex: 1, boxSizing: "border-box", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, color: C.jet, outline: "none", background: C.white, ...fBody }}
                 />
                 <span style={{ fontSize: T.labelLg, fontWeight: 700, color: C.slate, ...fBody }}>km</span>
               </div>
@@ -795,7 +803,7 @@ export function ScreenSearchFilters({ nav, params, userLocation, locating, permi
 
       {/* Fixed footer, outside the scroll area — result feedback lives here
           rather than as its own filter-like control up in Distance. */}
-      <div style={{ padding: "12px 0 14px", flexShrink: 0 }}>
+      <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
         <div style={{ textAlign: "center", fontSize: T.captionLg, color: C.slate, marginBottom: 10, ...fBody }}>
           {previewCount} coach{previewCount === 1 ? "" : "es"} match{previewCount === 1 ? "es" : ""} these filters
         </div>

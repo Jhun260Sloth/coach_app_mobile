@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   ChevronLeft, Star, CheckCircle2, Search, Wifi, Battery,
 } from "lucide-react";
-import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
+import { CL, CD, fDisplay, fBody, T, LAYOUT } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { initials, hashColor } from "../../data/mockData";
 
@@ -39,14 +39,15 @@ export function Btn({ children, onClick, variant = "primary", full, icon: Icon, 
   const C = useColors();
   const base = {
     display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
-    borderRadius: 14, fontWeight: 600, cursor: (disabled || loading) ? "default" : "pointer",
-    border: "1px solid transparent", transition: "opacity .15s ease",
+    borderRadius: LAYOUT.buttonRadius, fontWeight: 600, cursor: (disabled || loading) ? "default" : "pointer",
+    border: "1px solid transparent",
+    transition: "opacity .16s ease, transform .14s cubic-bezier(.2,.7,.3,1), background .15s ease",
     opacity: disabled ? 0.5 : 1, width: full ? "100%" : "auto",
     padding: size === "sm" ? "9px 14px" : "13px 18px",
     fontSize: size === "sm" ? T.body : T.subtitleLg, ...fBody,
   };
   const variants = {
-    primary: { background: C.brand, color: C.white },
+    primary: { background: C.brand, color: C.white, boxShadow: `0 6px 16px -6px ${darkenHex(C.brand, 0.35)}` },
     dark: { background: C.jet, color: C.white },
     secondary: { background: C.fog, color: C.jet },
     outline: { background: "transparent", color: C.jet, border: `1px solid ${C.border}` },
@@ -59,6 +60,16 @@ export function Btn({ children, onClick, variant = "primary", full, icon: Icon, 
       {loading ? (loadingText || children) : children}
     </button>
   );
+}
+
+/* Subtle brand-coloured soft shadow behind primary buttons. */
+function darkenHex(hex, alpha) {
+  const h = (hex || "").replace("#", "");
+  if (h.length < 6) return "transparent";
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 export function ScrollFadeRow({ children, style, className }) {
@@ -106,6 +117,7 @@ export function Card({ children, style, onClick }) {
   return (
     <div
       onClick={onClick}
+      className="cl-card"
       style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 18, padding: 14, cursor: onClick ? "pointer" : "default", ...style }}
     >
       {children}
@@ -260,7 +272,7 @@ export function SearchMultiSelect({ options, value, onChange, placeholder = "Sea
         </div>
       )}
       <div style={{ position: "relative" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
+        <div className="cl-input" style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: LAYOUT.inputRadius, padding: "11px 13px", background: C.white }}>
           <Search size={15} color={C.slateLight} />
           <input
             value={query}
@@ -268,11 +280,11 @@ export function SearchMultiSelect({ options, value, onChange, placeholder = "Sea
             onFocus={() => setOpen(true)}
             onBlur={() => setTimeout(() => setOpen(false), 150)}
             placeholder={placeholder}
-            style={{ border: "none", outline: "none", flex: 1, fontSize: T.bodyLg, minWidth: 0, ...fBody }}
+            style={{ border: "none", outline: "none", flex: 1, fontSize: T.bodyLg, minWidth: 0, background: "transparent", color: C.jet, ...fBody }}
           />
         </div>
         {open && filtered.length > 0 && (
-          <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.white, border: `1px solid ${C.border}`, borderRadius: 13, boxShadow: "0 10px 24px rgba(0,0,0,.10)", zIndex: 30, maxHeight: 190, overflowY: "auto" }}>
+          <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.white, border: `1px solid ${C.border}`, borderRadius: 13, boxShadow: "0 10px 24px rgba(0,0,0,.10)", zIndex: 30, maxHeight: 190, overflowY: "auto", animation: "clFadeUp .18s ease" }}>
             {filtered.map((o) => (
               <button
                 key={o}
@@ -306,7 +318,7 @@ export function SearchSelect({ options, value, onChange, placeholder = "Searchâ€
 
   if (value) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
+      <div className="cl-input" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: LAYOUT.inputRadius, padding: "11px 13px", background: C.white }}>
         <span style={{ fontSize: T.bodyLg, color: C.jet, fontWeight: 500, ...fBody }}>{value}</span>
         <button onClick={clear} aria-label="Clear" style={{ background: "none", border: "none", cursor: "pointer", display: "flex", color: C.slateLight, flexShrink: 0 }}>
           <svg width={13} height={13} viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth={2.3} strokeLinecap="round" /></svg>
@@ -317,7 +329,7 @@ export function SearchSelect({ options, value, onChange, placeholder = "Searchâ€
 
   return (
     <div style={{ position: "relative" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
+      <div className="cl-input" style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: LAYOUT.inputRadius, padding: "11px 13px", background: C.white }}>
         <Search size={15} color={C.slateLight} />
         <input
           value={query}
@@ -325,11 +337,11 @@ export function SearchSelect({ options, value, onChange, placeholder = "Searchâ€
           onFocus={() => setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
           placeholder={placeholder}
-          style={{ border: "none", outline: "none", flex: 1, fontSize: T.bodyLg, minWidth: 0, ...fBody }}
+          style={{ border: "none", outline: "none", flex: 1, fontSize: T.bodyLg, minWidth: 0, background: "transparent", color: C.jet, ...fBody }}
         />
       </div>
       {open && (filtered.length > 0 || showAddCustom) && (
-        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.white, border: `1px solid ${C.border}`, borderRadius: 13, boxShadow: "0 10px 24px rgba(0,0,0,.10)", zIndex: 30, maxHeight: 190, overflowY: "auto" }}>
+        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.white, border: `1px solid ${C.border}`, borderRadius: 13, boxShadow: "0 10px 24px rgba(0,0,0,.10)", zIndex: 30, maxHeight: 190, overflowY: "auto", animation: "clFadeUp .18s ease" }}>
           {filtered.map((o) => (
             <button
               key={o}
@@ -379,7 +391,8 @@ export function StatusPill({ status }) {
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 5,
       color: colors.fg,
-      fontSize: T.captionLg, fontWeight: 700, padding: "4px,8px", borderRadius: 8, ...fBody,
+      fontSize: T.captionLg, fontWeight: 700, padding: "4px 8px", borderRadius: 8,
+      background: colors.bg, ...fBody,
     }}>
       <span style={{ width: 6, height: 6, borderRadius: 99, background: "currentColor", animation: m.pulse ? "clPulse 1.4s infinite" : "none" }} />
       {m.label}
@@ -426,7 +439,7 @@ export function StarRow({ value, size = 13 }) {
 export function Toggle({ on, onClick }) {
   const C = useColors();
   return (
-    <button onClick={onClick} style={{ width: 42, height: 25, borderRadius: 99, background: on ? C.brand : C.border, position: "relative", flexShrink: 0, border: "none", cursor: "pointer" }}>
+    <button onClick={onClick} style={{ width: 42, height: 25, borderRadius: 99, background: on ? C.brand : C.border, position: "relative", flexShrink: 0, border: "none", cursor: "pointer", transition: "background .2s ease" }}>
       <span style={{ position: "absolute", top: 2.5, left: on ? 20 : 2.5, width: 20, height: 20, borderRadius: 99, background: C.white, transition: "left .15s ease", boxShadow: "0 1px 2px rgba(0,0,0,.2)" }} />
     </button>
   );
@@ -456,19 +469,38 @@ export function SegTabs({ items, value, onChange, strong }) {
   );
 }
 
-export function TopBar({ title, onBack, right }) {
+export function TopBar({ title, onBack, right, border }) {
   const C = useColors();
+  const { darkMode } = useApp();
+  const hasBorder = border !== undefined ? border : !!title;
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 4px 14px" }}>
-      <div style={{ width: 34 }}>
+    <div style={{
+      display: "flex", alignItems: "center", justifyContent: "space-between",
+      height: LAYOUT.topBarH, padding: `0 ${LAYOUT.pagePadX}px`, boxSizing: "border-box",
+      position: "sticky", top: 0, zIndex: 25,
+      background: darkMode ? "rgba(13,17,23,0.86)" : "rgba(255,255,255,0.86)",
+      backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)",
+      borderBottom: hasBorder ? `1px solid ${C.border}` : "none",
+    }}>
+      <div style={{ width: 38, display: "flex", alignItems: "center", flexShrink: 0 }}>
         {onBack && (
-          <button onClick={onBack} style={{ width: 34, height: 34, borderRadius: 11, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-            <ChevronLeft size={18} color={C.jet} />
+          <button
+            onClick={onBack}
+            aria-label="Go back"
+            style={{
+              width: 38, height: 38, borderRadius: 999, background: C.fog,
+              border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center",
+              cursor: "pointer", boxShadow: "0 1px 2px rgba(22,24,29,.04)",
+              transition: "transform .12s ease, background .12s ease",
+              padding: 0,
+            }}
+          >
+            <ChevronLeft size={19} color={C.jet} style={{ marginRight: 1 }} />
           </button>
         )}
       </div>
-      <div style={{ fontSize: T.titleLg, fontWeight: 600, color: C.jet, ...fDisplay }}>{title}</div>
-      <div style={{ width: 34, display: "flex", justifyContent: "flex-end" }}>{right}</div>
+      <div style={{ fontSize: T.titleLg, fontWeight: 700, color: C.jet, letterSpacing: "-0.2px", ...fDisplay, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", padding: "0 8px", textAlign: "center", flex: 1 }}>{title}</div>
+      <div style={{ width: 38, display: "flex", justifyContent: "flex-end", alignItems: "center", flexShrink: 0 }}>{right}</div>
     </div>
   );
 }
@@ -476,7 +508,7 @@ export function TopBar({ title, onBack, right }) {
 export function EmptyState({ icon: Icon, title, body, ctaLabel, onCta, large }) {
   const C = useColors();
   return (
-    <div style={{ textAlign: "center", padding: large ? "20px 20px" : "40px 20px", color: C.slate }}>
+    <div style={{ textAlign: "center", padding: large ? "20px 20px" : "40px 20px", color: C.slate, animation: "clFadeUp .35s ease" }}>
       <div style={{
         width: large ? 72 : 52, height: large ? 72 : 52, borderRadius: large ? 22 : 16, background: large ? C.brandTint : C.fog,
         display: "flex", alignItems: "center", justifyContent: "center", margin: large ? "0 auto 18px" : "0 auto 14px",
@@ -498,13 +530,19 @@ export function Toast({ toast }) {
   const C = useColors();
   if (!toast) return null;
   return (
-    <div style={{
-      position: "absolute", bottom: 96, left: 16, right: 16, background: C.jet, color: C.white,
-      padding: "12px 14px", borderRadius: 14, fontSize: T.body, fontWeight: 500, display: "flex",
-      alignItems: "center", gap: 8, zIndex: 60, boxShadow: "0 8px 24px rgba(0,0,0,.25)", ...fBody,
-    }}>
-      <CheckCircle2 size={16} color={C.brand} />
-      {toast}
+    <div
+      role="status"
+      style={{
+        position: "absolute", bottom: 100, left: 16, right: 16, background: C.jet, color: C.white,
+        padding: "10px 12px", borderRadius: 16, fontSize: T.body, fontWeight: 500, display: "flex",
+        alignItems: "center", gap: 10, zIndex: 60, boxShadow: "0 12px 32px rgba(0,0,0,.28)",
+        animation: "clToastIn .3s cubic-bezier(.22,1,.36,1)", ...fBody,
+      }}
+    >
+      <span style={{ width: 26, height: 26, borderRadius: 9, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <CheckCircle2 size={14} color={C.brand} />
+      </span>
+      <span style={{ flex: 1, minWidth: 0 }}>{toast}</span>
     </div>
   );
 }
@@ -551,7 +589,7 @@ export function BottomTabs({ items, value, onChange }) {
         bottom: 12,
         left: 12,
         right: 12,
-        background: darkMode ? "rgba(13, 17, 23, 0.92)" : "rgba(255, 255, 255, 0.92)",
+        background: darkMode ? "rgba(13, 17, 23, 0.92)" : "rgba(255, 255, 255, 0.94)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
         border: `1px solid ${darkMode ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.08)"}`,
@@ -564,6 +602,7 @@ export function BottomTabs({ items, value, onChange }) {
         zIndex: 40,
         boxSizing: "border-box",
         transition: "all 0.25s ease",
+        animation: "clSlideUp .45s cubic-bezier(.22,1,.36,1)",
       }}
     >
       {items.map((it) => {
@@ -602,6 +641,7 @@ export function BottomTabs({ items, value, onChange }) {
                   height: 6,
                   borderRadius: 99,
                   background: darkMode ? "#81C784" : C.brand,
+                  animation: "clPulse 1.6s infinite",
                 }}
               />
             ) : null}
@@ -610,7 +650,7 @@ export function BottomTabs({ items, value, onChange }) {
               size={19}
               strokeWidth={active ? 2.3 : 1.8}
               color={active ? activeColor : inactiveColor}
-              style={{ flexShrink: 0, transition: "color 0.2s ease, transform 0.2s ease", transform: active ? "scale(1.05)" : "scale(1)" }}
+              style={{ flexShrink: 0, transition: "color 0.2s ease, transform 0.2s ease", transform: active ? "scale(1.05)" : "scale(1)", animation: active ? "clTabBounce .35s cubic-bezier(.34,1.56,.64,1)" : "none" }}
             />
 
             <span
@@ -658,9 +698,9 @@ export function Field({ label, placeholder, type = "text", icon: Icon, rightIcon
   return (
     <div>
       <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>{label}</div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
+      <div className="cl-input" style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: LAYOUT.inputRadius, padding: "11px 13px", background: C.white }}>
         {Icon && <Icon size={16} color={C.slateLight} />}
-        <input placeholder={placeholder} type={type} value={value} onChange={onChange} style={{ border: "none", outline: "none", flex: 1, fontSize: T.subtitle, ...fBody }} />
+        <input placeholder={placeholder} type={type} value={value} onChange={onChange} style={{ border: "none", outline: "none", flex: 1, fontSize: T.bodyLg, background: "transparent", color: C.jet, ...fBody }} />
         {RightIcon && <button onClick={onRight} style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}><RightIcon size={16} color={C.slateLight} /></button>}
       </div>
     </div>
@@ -674,15 +714,16 @@ export function BottomSheet({ open, onClose, title, children, heightPct = 70 }) 
     <div style={{ position: "absolute", inset: 0, zIndex: 95 }}>
       <div
         onClick={onClose}
-        style={{ position: "absolute", inset: 0, background: "rgba(22,24,29,.45)", animation: "clBackdropIn .18s ease" }}
+        style={{ position: "absolute", inset: 0, background: "rgba(22,24,29,.45)", backdropFilter: "blur(3px)", WebkitBackdropFilter: "blur(3px)", animation: "clBackdropIn .2s ease" }}
       />
       <div
         role="dialog"
         style={{
           position: "absolute", left: 0, right: 0, bottom: 0, maxHeight: `${heightPct}%`,
           background: C.white, borderTopLeftRadius: 26, borderTopRightRadius: 26,
+          borderTop: `1px solid ${C.border}`,
           display: "flex", flexDirection: "column", boxShadow: "0 -12px 30px rgba(0,0,0,.18)",
-          animation: "clSheetUp .22s cubic-bezier(.32,.72,0,1)",
+          animation: "clSheetUp .3s cubic-bezier(.32,.72,0,1)",
         }}
       >
         <button
@@ -690,12 +731,12 @@ export function BottomSheet({ open, onClose, title, children, heightPct = 70 }) 
           aria-label="Close"
           style={{ display: "flex", justifyContent: "center", padding: "10px 0 4px", background: "none", border: "none", cursor: "pointer" }}
         >
-          <div style={{ width: 36, height: 4, borderRadius: 99, background: C.border }} />
+          <div style={{ width: 40, height: 4.5, borderRadius: 99, background: C.border }} />
         </button>
         {title && (
-          <div style={{ padding: "6px 20px 10px", fontSize: T.title, fontWeight: 600, color: C.jet, ...fDisplay }}>{title}</div>
+          <div style={{ padding: "4px 20px 10px", fontSize: T.titleLg, fontWeight: 700, color: C.jet, letterSpacing: "-0.2px", ...fDisplay }}>{title}</div>
         )}
-        <div style={{ overflowY: "auto", padding: "4px 20px 24px", flex: 1 }}>{children}</div>
+        <div style={{ overflowY: "auto", padding: "4px 18px 28px", flex: 1 }} className="cl-hide-scrollbar">{children}</div>
       </div>
     </div>
   );

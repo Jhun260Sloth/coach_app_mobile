@@ -27,45 +27,51 @@ export function ScreenNotifications({ nav, clientNotifications: notifications = 
   };
 
   return (
-    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="Notifications" onBack={() => nav("client-home")} />
 
-      {unreadCount > 0 && (
-        <button
-          onClick={markAllRead}
-          style={{ display: "flex", alignItems: "center", gap: 5, alignSelf: "flex-start", background: "none", border: "none", color: C.brand, fontSize: T.labelLg, fontWeight: 600, cursor: "pointer", marginBottom: 12, padding: "2px 0", ...fBody }}
-        >
-          <Check size={13} /> Mark all as read
-        </button>
-      )}
+      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+        <div style={{ padding: unreadCount > 0 ? "10px 18px 0" : "0" }}>
+          {unreadCount > 0 && (
+            <button
+              onClick={markAllRead}
+              style={{ display: "flex", alignItems: "center", gap: 5, alignSelf: "flex-start", background: "none", border: "none", color: C.brand, fontSize: T.labelLg, fontWeight: 600, cursor: "pointer", margin: "2px 0 12px", padding: "2px 0", ...fBody }}
+            >
+              <Check size={13} /> Mark all as read
+            </button>
+          )}
+        </div>
 
-      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 24 }}>
-        {notifications.length === 0 ? (
-          <EmptyState icon={Bell} title="No notifications yet" body="Updates about your bookings, messages and offers will show up here." />
-        ) : (
-          notifications.map((n) => {
-            const Icon = NOTIF_ICON[n.type] || Bell;
-            return (
-              <button
-                key={n.id}
-                onClick={() => openNotification(n)}
-                style={{ width: "100%", display: "flex", gap: 12, alignItems: "flex-start", padding: "14px 4px", background: "none", border: "none", borderBottom: `1px solid ${C.border}`, cursor: "pointer", textAlign: "left" }}
-              >
-                <div style={{ width: 40, height: 40, borderRadius: 12, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <Icon size={18} color={C.brandIcon || C.brandColor} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-                    <span style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>{n.title}</span>
-                    <span style={{ fontSize: T.caption, color: C.slateLight, flexShrink: 0, ...fBody }}>{n.time}</span>
-                  </div>
-                  <div style={{ fontSize: T.body, color: C.slate, marginTop: 4, lineHeight: 1.5, ...fBody }}>{n.body}</div>
-                </div>
-                {n.unread && <span style={{ width: 8, height: 8, borderRadius: 99, background: C.brand, flexShrink: 0, marginTop: 6 }} />}
-              </button>
-            );
-          })
-        )}
+        <div style={{ flex: 1, overflowY: "auto", padding: unreadCount > 0 ? "0 18px 24px" : "16px 18px 24px" }} className="cl-hide-scrollbar">
+          {notifications.length === 0 ? (
+            <EmptyState icon={Bell} title="No notifications yet" body="Updates about your bookings, messages and offers will show up here." />
+          ) : (
+            <div className="cl-stagger">
+              {notifications.map((n, i) => {
+                const Icon = NOTIF_ICON[n.type] || Bell;
+                return (
+                  <button
+                    key={n.id}
+                    onClick={() => openNotification(n)}
+                    style={{ width: "100%", display: "flex", gap: 12, alignItems: "flex-start", padding: "14px 4px", background: "none", border: "none", borderBottom: `1px solid ${C.border}`, cursor: "pointer", textAlign: "left", animationDelay: `${Math.min(i, 8) * 45}ms` }}
+                  >
+                    <div style={{ width: 40, height: 40, borderRadius: 12, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Icon size={18} color={C.brandIcon || C.brandColor} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                        <span style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>{n.title}</span>
+                        <span style={{ fontSize: T.caption, color: C.slateLight, flexShrink: 0, ...fBody }}>{n.time}</span>
+                      </div>
+                      <div style={{ fontSize: T.body, color: C.slate, marginTop: 4, lineHeight: 1.5, ...fBody }}>{n.body}</div>
+                    </div>
+                    {n.unread && <span style={{ width: 8, height: 8, borderRadius: 99, background: C.brand, flexShrink: 0, marginTop: 6 }} />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -138,14 +138,14 @@ export function ServicePackageForm({ initial, onSave, onCancel, saveLabel = "Add
   const C = darkMode ? CD : CL;
 
   const inputStyle = {
-    width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "10px 13px",
-    fontSize: T.body, outline: "none", boxSizing: "border-box", ...fBody,
+    width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px",
+    fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", background: C.white, color: C.jet, ...fBody,
   };
   const fieldWrapStyle = {
     display: "flex", alignItems: "center", gap: 6, border: `1.5px solid ${C.border}`,
-    borderRadius: 13, padding: "11px 13px", boxSizing: "border-box",
+    borderRadius: 13, padding: "11px 13px", boxSizing: "border-box", background: C.white,
   };
-  const fieldInputStyle = { border: "none", outline: "none", flex: 1, fontSize: T.body, minWidth: 0, ...fBody };
+  const fieldInputStyle = { border: "none", outline: "none", flex: 1, fontSize: T.bodyLg, minWidth: 0, color: C.jet, ...fBody };
   const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
 
   const [pkg, setPkg] = useState(() => ({ ...emptyPackage(), ...(initial || {}) }));

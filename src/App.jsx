@@ -725,9 +725,11 @@ function AppShell() {
 
                 {/* Active Screen Component */}
                 <div ref={screenWrapRef} style={{ flex: 1, position: "relative", overflow: "hidden" }}>
-                  <ScreenErrorBoundary screen={screen} onReset={() => { setRole("client"); setScreen("client-home"); }}>
-                    <ScreenComponent {...screenProps} />
-                  </ScreenErrorBoundary>
+                  <div key={screen} style={{ height: "100%", animation: "clScreenIn .3s cubic-bezier(.22,1,.36,1)" }}>
+                    <ScreenErrorBoundary screen={screen} onReset={() => { setRole("client"); setScreen("client-home"); }}>
+                      <ScreenComponent {...screenProps} />
+                    </ScreenErrorBoundary>
+                  </div>
                   <Toast toast={toastMsg} />
                 </div>
 

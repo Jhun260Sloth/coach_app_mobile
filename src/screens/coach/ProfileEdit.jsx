@@ -240,7 +240,7 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <div style={{ padding: "18px 20px 0", flex: 1, overflowY: "auto", paddingBottom: 100 }}>
+      <div style={{ padding: "18px 18px 0" }}>
         <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, marginBottom: 18, ...fDisplay }}>My coaching profile</div>
 
         <div style={{ display: "flex", gap: 14, marginBottom: 22 }}>
@@ -279,7 +279,9 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
             onChange={setTab}
           />
         </div>
+      </div>
 
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: 116 }} className="cl-hide-scrollbar">
         {tab === "profile" && (
         <>
         <SectionLabel>Profile information</SectionLabel>
@@ -518,7 +520,7 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
                   onChange={(e) => setDraftField({ bio: e.target.value })}
                   rows={4}
                   placeholder="Tell athletes about your coaching background, philosophy and what to expect"
-                  style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: 12, fontSize: T.body, resize: "none", outline: "none", boxSizing: "border-box", ...fBody }}
+                  style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, resize: "none", outline: "none", boxSizing: "border-box", background: C.white, color: C.jet, ...fBody }}
                 />
               </div>
 

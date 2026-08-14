@@ -3,7 +3,7 @@ import { HelpCircle, ChevronLeft, Paperclip, MapPin, Send, MoreVertical, Flag, B
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { THREADS, COACH_THREADS, CHAT_MESSAGES, BOOKING_ENQUIRY_MESSAGES, COACHES } from "../../data/mockData";
-import { Avatar, BottomSheet, Btn, EmptyState } from "../../components/ui/Primitives";
+import { Avatar, BottomSheet, Btn, EmptyState, TopBar } from "../../components/ui/Primitives";
 import { StatusBanner } from "../../systems/StateSystem";
 
 /* ── Blocked Threads Store ─────────────────────────────────────────────── */
@@ -100,16 +100,16 @@ export function ScreenMessages({ nav, role, isFirstTimeClient }) {
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <div style={{ padding: "18px 20px 0" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, ...fDisplay }}>Messages</div>
+      <TopBar
+        title="Messages"
+        right={
           <button onClick={() => nav("support")} style={{ background: "none", border: "none", cursor: "pointer" }}>
             <HelpCircle size={22} color={C.jet} />
           </button>
-        </div>
-      </div>
+        }
+      />
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "14px 20px 100px" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: 116 }} className="cl-hide-scrollbar">
         {showEmptyChat ? (
           <div style={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: "center" }}>
             <EmptyState
@@ -126,7 +126,8 @@ export function ScreenMessages({ nav, role, isFirstTimeClient }) {
         {threads.length === 0 && (
           <div style={{ textAlign: "center", padding: "60px 20px", color: C.slate, fontSize: T.body, ...fBody }}>No conversations here.</div>
         )}
-        {threads.map(t => {
+        <div className="cl-stagger">
+        {threads.map((t, i) => {
           const blocked = isBlocked(t.id);
           const pinned = isPinned(t.id);
           return (
@@ -143,6 +144,7 @@ export function ScreenMessages({ nav, role, isFirstTimeClient }) {
                 padding: "12px 4px", background: pinned ? C.fog : "none", borderRadius: pinned ? 13 : 0,
                 border: "none", borderBottom: pinned ? "none" : `1px solid ${C.border}`, cursor: "pointer",
                 textAlign: "left", opacity: blocked ? 0.68 : 1, marginBottom: pinned ? 4 : 0,
+                animationDelay: `${Math.min(i, 8) * 45}ms`,
               }}
             >
               <div style={{ position: "relative", flexShrink: 0 }}>
@@ -208,6 +210,7 @@ export function ScreenMessages({ nav, role, isFirstTimeClient }) {
             </div>
           );
         })}
+        </div>
         </>
         )}
       </div>
@@ -371,9 +374,9 @@ function ConversationOptionsFlow({ otherName, onReportSubmit, onBlockConfirm, is
               <textarea value={customReason} onChange={e => setCustomReason(e.target.value)}
                 placeholder="Tell us what's going on..." rows={4} autoFocus
                 style={{
-                  width: "100%", boxSizing: "border-box", background: C.fog, marginTop: 14,
-                  border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "12px 14px",
-                  fontSize: T.body, color: C.jet, outline: "none", resize: "none", ...fBody,
+                  width: "100%", boxSizing: "border-box", background: C.white, marginTop: 14,
+                  border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px",
+                  fontSize: T.bodyLg, color: C.jet, outline: "none", resize: "none", ...fBody,
                 }} />
             )}
           </div>
@@ -530,7 +533,7 @@ export function ScreenChatThread({ nav, params, role, toast, offline, bookings, 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
       {/* Header */}
-      <div style={{ padding: "16px 16px 0" }}>
+      <div style={{ padding: "16px 18px 0" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <button onClick={() => nav(backTarget, params?.backParams || {})} style={{
             width: 34, height: 34, borderRadius: 11, background: C.fog,
@@ -561,9 +564,9 @@ export function ScreenChatThread({ nav, params, role, toast, offline, bookings, 
       </div>
 
       {/* Messages */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "16px 16px 10px", display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 10px", display: "flex", flexDirection: "column", gap: 10 }}>
         {messages.map(m => (
-          <div key={m.id} style={{ display: "flex", justifyContent: m.from === "me" ? "flex-end" : "flex-start" }}>
+          <div key={m.id} style={{ display: "flex", justifyContent: m.from === "me" ? "flex-end" : "flex-start", animation: "clSlideUp .3s ease" }}>
             {m.type === "attachment" ? (
               <div style={{
                 maxWidth: "75%", display: "flex", alignItems: "center", gap: 10, padding: "10px 13px", borderRadius: 16,
@@ -630,12 +633,12 @@ export function ScreenChatThread({ nav, params, role, toast, offline, bookings, 
       </div>
 
       {offline && (
-        <div style={{ padding: "0 16px 8px" }}>
+        <div style={{ padding: "0 18px 8px" }}>
           <StatusBanner state="offline" compact />
         </div>
       )}
       {blocked ? (
-        <div style={{ padding: "14px 16px 22px", borderTop: `1px solid ${C.border}` }}>
+        <div style={{ padding: "14px 18px 22px", borderTop: `1px solid ${C.border}`, background: C.white }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, background: C.fog, borderRadius: 12, padding: "12px 14px", fontSize: T.labelLg, color: C.slate, lineHeight: 1.5, ...fBody }}>
             <Ban size={15} color={C.danger} style={{ flexShrink: 0 }} />
             <span style={{ flex: 1 }}>You blocked {params.name}.</span>
@@ -645,7 +648,7 @@ export function ScreenChatThread({ nav, params, role, toast, offline, bookings, 
           </div>
         </div>
       ) : (
-        <div style={{ padding: "10px 16px 20px", display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${C.border}` }}>
+        <div style={{ padding: "10px 18px", paddingBottom: 24, display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${C.border}`, background: C.white }}>
           <input ref={fileInputRef} type="file" accept="image/*,application/pdf,video/*" onChange={handleAttachmentPick} style={{ display: "none" }} />
           <button onClick={() => fileInputRef.current?.click()} style={{ background: "none", border: "none", cursor: "pointer" }}><Paperclip size={19} color={C.slate} /></button>
           <button
@@ -655,8 +658,10 @@ export function ScreenChatThread({ nav, params, role, toast, offline, bookings, 
           >
             <MapPin size={19} color={C.slate} />
           </button>
-          <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && send()}
-            placeholder="Message..." style={{ flex: 1, border: `1.5px solid ${C.border}`, borderRadius: 20, padding: "9px 14px", fontSize: T.bodyLg, outline: "none", ...fBody }} />
+          <div className="cl-input" style={{ flex: 1, display: "flex", alignItems: "center", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", background: C.white }}>
+            <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && send()}
+              placeholder="Message..." style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "none", fontSize: T.bodyLg, color: C.jet, ...fBody }} />
+          </div>
           <button onClick={send} style={{ width: 36, height: 36, borderRadius: 99, background: C.brand, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
             <Send size={15} color={C.white} />
           </button>

@@ -31,8 +31,8 @@ export function ScreenCoachAvailabilitySetup({ nav, toast }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const timeInputStyle = {
-    border: `1.5px solid ${C.border}`, borderRadius: 11, padding: "8px 10px", fontSize: T.labelLg,
-    outline: "none", flex: 1, minWidth: 0, boxSizing: "border-box", ...fBody,
+    border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg,
+    outline: "none", flex: 1, minWidth: 0, boxSizing: "border-box", color: C.jet, background: C.white, ...fBody,
   };
   const [availability, setAvailability] = useState(defaultAvailability);
   const [googleSynced, setGoogleSynced] = useState(false);
@@ -101,8 +101,8 @@ export function ScreenCoachAvailabilitySetup({ nav, toast }) {
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <div style={{ padding: "18px 20px 0", flex: 1, overflowY: "auto", paddingBottom: 100 }}>
-        <TopBar title="Availability setup" onBack={() => nav("coach-services-setup")} />
+      <TopBar title="Availability setup" onBack={() => nav("coach-services-setup")} />
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
 
         <div style={{ fontSize: T.subtitleLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fDisplay }}>
           Availability Setup

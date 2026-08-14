@@ -124,7 +124,7 @@ export function ScreenClientDashboard({ nav, bookings = [], offline, toast, canc
     setCancelTarget(null);
   };
 
-  const renderCard = (b) => (
+  const renderCard = (b, i) => (
     <BookingCard
       key={b.id}
       b={b}
@@ -133,12 +133,13 @@ export function ScreenClientDashboard({ nav, bookings = [], offline, toast, canc
       onReschedule={() => setRescheduleTarget(b)}
       onCancel={() => setCancelTarget(b)}
       onPay={() => { payBooking(b.id); toast("Payment sent — your booking is fully confirmed."); }}
+      style={{ animationDelay: `${Math.min(i || 0, 8) * 45}ms` }}
     />
   );
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
-      <div style={{ padding: "18px 20px 0" }}>
+      <div style={{ padding: "18px 18px 0" }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
           <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, ...fDisplay }}>My sessions</div>
           {/* Compact icon toggle for List/Calendar — deliberately small, icon-only and
@@ -202,7 +203,7 @@ export function ScreenClientDashboard({ nav, bookings = [], offline, toast, canc
         )}
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: view === "calendar" ? "14px 20px 100px" : "16px 20px 100px" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: view === "calendar" ? "14px 18px" : "16px 18px", paddingBottom: 116 }} className="cl-hide-scrollbar">
         {showEmptyDashboard && (
           <div style={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: "center" }}>
             <EmptyState
@@ -218,9 +219,9 @@ export function ScreenClientDashboard({ nav, bookings = [], offline, toast, canc
 
         {!showEmptyDashboard && view === "list" && (
           <>
-            {tab === "pending" && (pending.length ? pending.map(renderCard) : <EmptyState icon={Hourglass} title="No pending requests" body="Requests waiting on a coach's response will show up here." />)}
-            {tab === "upcoming" && (upcoming.length ? upcoming.map(renderCard) : <EmptyState icon={Calendar} title="No upcoming sessions" body="Search for a coach to book your next session." />)}
-            {tab === "past" && (past.length ? past.map(renderCard) : <EmptyState icon={ClipboardList} title="No past sessions yet" body="Completed sessions will show up here." />)}
+            {tab === "pending" && (pending.length ? <div className="cl-stagger">{pending.map(renderCard)}</div> : <EmptyState icon={Hourglass} title="No pending requests" body="Requests waiting on a coach's response will show up here." />)}
+            {tab === "upcoming" && (upcoming.length ? <div className="cl-stagger">{upcoming.map(renderCard)}</div> : <EmptyState icon={Calendar} title="No upcoming sessions" body="Search for a coach to book your next session." />)}
+            {tab === "past" && (past.length ? <div className="cl-stagger">{past.map(renderCard)}</div> : <EmptyState icon={ClipboardList} title="No past sessions yet" body="Completed sessions will show up here." />)}
           </>
         )}
 
@@ -258,7 +259,9 @@ export function ScreenClientDashboard({ nav, bookings = [], offline, toast, canc
               {bookingsOnDate(selectedDate).length === 0 && (
                 <EmptyState icon={CalendarX2} title="No sessions" body="Nothing scheduled for this day." />
               )}
-              {bookingsOnDate(selectedDate).map(renderCard)}
+              <div className="cl-stagger">
+                {bookingsOnDate(selectedDate).map(renderCard)}
+              </div>
             </div>
           </>
         )}
@@ -507,7 +510,7 @@ export function ReceiptSheet({ booking, onClose }) {
   );
 }
 
-export function BookingCard({ b, nav, past, onReschedule, onCancel, onPay }) {
+export function BookingCard({ b, nav, past, onReschedule, onCancel, onPay, style }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const pending = b.status === "pending";
@@ -515,7 +518,7 @@ export function BookingCard({ b, nav, past, onReschedule, onCancel, onPay }) {
   return (
     <Card
       onClick={() => nav("client-booking-detail", { id: b.id })}
-      style={{ marginBottom: 14, border: `1px solid ${paymentDue ? C.brand : C.border}`, boxShadow: "0 1px 2px rgba(22,24,29,.04)" }}
+      style={{ marginBottom: 14, border: `1px solid ${paymentDue ? C.brand : C.border}`, boxShadow: "0 1px 2px rgba(22,24,29,.04)", ...style }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
         <div style={{ display: "flex", gap: 10, minWidth: 0 }}>
@@ -587,7 +590,7 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
 
   if (!booking) {
     return (
-      <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
+      <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
         <TopBar title="Booking details" onBack={() => nav("client-dashboard")} />
         <EmptyState icon={ClipboardList} title="Booking not found" body="This booking may have been removed." />
       </div>
@@ -629,9 +632,9 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
   });
 
   return (
-    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="Booking details" onBack={() => nav("client-dashboard")} />
-      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 20 }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
 
         <Card style={{ marginBottom: 14 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -769,27 +772,30 @@ export function ScreenLeaveReview({ nav, params, toast, bookings = [] }) {
   const options = ["Great communicator", "Punctual", "Well prepared", "Motivating", "Flexible"];
   const toggle = (t) => setTags((arr) => arr.includes(t) ? arr.filter((x) => x !== t) : [...arr, t]);
   return (
-    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="Leave a review" onBack={() => nav("client-dashboard")} />
-      <div style={{ textAlign: "center", marginTop: 6, marginBottom: 20 }}>
-        <Avatar name={name} size={54} />
-        <div style={{ fontSize: T.subtitleLg, fontWeight: 600, color: C.jet, marginTop: 10, ...fDisplay }}>{name}</div>
-        <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 12 }}>
-          {[1, 2, 3, 4, 5].map((i) => (
-            <button key={i} onClick={() => setRating(i)} style={{ background: "none", border: "none", cursor: "pointer" }}>
-              <Star size={30} fill={i <= rating ? C.brand : "none"} color={i <= rating ? C.brand : C.slateLight} />
-            </button>
-          ))}
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
+        <div style={{ textAlign: "center", marginTop: 6, marginBottom: 20 }}>
+          <Avatar name={name} size={54} />
+          <div style={{ fontSize: T.subtitleLg, fontWeight: 600, color: C.jet, marginTop: 10, ...fDisplay }}>{name}</div>
+          <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 12 }}>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <button key={i} onClick={() => setRating(i)} style={{ background: "none", border: "none", cursor: "pointer" }}>
+                <Star size={30} fill={i <= rating ? C.brand : "none"} color={i <= rating ? C.brand : C.slateLight} />
+              </button>
+            ))}
+          </div>
         </div>
+        <SectionLabel>What stood out?</SectionLabel>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
+          {options.map((t) => <Chip key={t} active={tags.includes(t)} onClick={() => toggle(t)}>{t}</Chip>)}
+        </div>
+        <textarea placeholder="Tell other clients about your session..." rows={4}
+          className="cl-input"
+          style={{ border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, resize: "none", outline: "none", color: C.jet, background: C.white, ...fBody }} />
+        <div style={{ fontSize: T.caption, color: C.slateLight, marginTop: 10, ...fBody }}>Only clients with a verified booking can leave a review. Your review is moderated before it appears publicly.</div>
       </div>
-      <SectionLabel>What stood out?</SectionLabel>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
-        {options.map((t) => <Chip key={t} active={tags.includes(t)} onClick={() => toggle(t)}>{t}</Chip>)}
-      </div>
-      <textarea placeholder="Tell other clients about your session..." rows={4}
-        style={{ border: `1.5px solid ${C.border}`, borderRadius: 14, padding: 13, fontSize: T.bodyLg, resize: "none", outline: "none", ...fBody }} />
-      <div style={{ fontSize: T.caption, color: C.slateLight, marginTop: 10, ...fBody }}>Only clients with a verified booking can leave a review. Your review is moderated before it appears publicly.</div>
-      <div style={{ marginTop: "auto", padding: "14px 0" }}>
+      <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
         <Btn full onClick={() => { toast("Review submitted for moderation"); nav("client-dashboard"); }}>Submit review</Btn>
       </div>
     </div>

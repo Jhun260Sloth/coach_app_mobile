@@ -187,10 +187,7 @@ export function ScreenCoachDashboard({
     >
       <div
         style={{
-          padding: "18px 20px 0",
-          flex: 1,
-          overflowY: "auto",
-          paddingBottom: 100,
+          padding: "18px 18px 0",
         }}
       >
         {/* Header */}
@@ -287,7 +284,9 @@ export function ScreenCoachDashboard({
             </button>
           </div>
         </div>
+      </div>
 
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: 116 }} className="cl-hide-scrollbar">
         {/* Offline Status */}
         {offline && (
           <div
@@ -448,11 +447,13 @@ export function ScreenCoachDashboard({
           </div>
         )}
 
-        {pending.map((b) => (
+        <div className="cl-stagger">
+        {pending.map((b, i) => (
           <Card
             key={b.id}
             style={{
               marginBottom: 10,
+              animationDelay: `${Math.min(i, 8) * 45}ms`,
             }}
             onClick={() =>
               nav("coach-booking-detail", {
@@ -551,6 +552,7 @@ export function ScreenCoachDashboard({
             </div>
           </Card>
         ))}
+        </div>
 
         {/* Upcoming Sessions */}
         <div
@@ -573,7 +575,8 @@ export function ScreenCoachDashboard({
             Nothing scheduled yet.
           </div>
         ) : (
-          upcoming.map((b) => (
+          <div className="cl-stagger">
+          {upcoming.map((b, i) => (
             <Card
               key={b.id}
               style={{
@@ -581,6 +584,7 @@ export function ScreenCoachDashboard({
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
+                animationDelay: `${Math.min(i, 8) * 45}ms`,
               }}
             >
               <div
@@ -618,7 +622,8 @@ export function ScreenCoachDashboard({
 
               <StatusPill status="confirmed" />
             </Card>
-          ))
+          ))}
+          </div>
         )}
 
         {/* Recent Reviews */}
@@ -724,8 +729,8 @@ export function ScreenCoachDashboard({
                 autoFocus
                 style={{
                   width: "100%", boxSizing: "border-box", background: C.white,
-                  border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "12px 14px",
-                  fontSize: T.body, color: C.jet, outline: "none", resize: "none", ...fBody,
+                  border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px",
+                  fontSize: T.bodyLg, color: C.jet, outline: "none", resize: "none", ...fBody,
                 }}
               />
             </div>
@@ -772,9 +777,9 @@ export function ScreenCoachDashboard({
                   rows={4}
                   autoFocus
                   style={{
-                    width: "100%", boxSizing: "border-box", background: C.fog, marginTop: 14,
-                    border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "12px 14px",
-                    fontSize: T.body, color: C.jet, outline: "none", resize: "none", ...fBody,
+                    width: "100%", boxSizing: "border-box", background: C.white, marginTop: 14,
+                    border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px",
+                    fontSize: T.bodyLg, color: C.jet, outline: "none", resize: "none", ...fBody,
                   }}
                 />
               )}

@@ -312,9 +312,9 @@ export function ScreenAuth({ nav, params, role, toast, biometric, updateCoachOnb
   const goCreateAccount = () => setMode("signup");
 
   return (
-    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="" onBack={() => nav(params?.backTo || "role-select")} />
-      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 12 }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
       <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>{mode === "signup" ? "Create your account" : "Welcome back"}</div>
       <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 6, marginBottom: 20, ...fBody }}>
         {mode === "signup"
@@ -430,9 +430,9 @@ export function ScreenForgotPassword({ nav, params, role, toast }) {
   };
 
   return (
-    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="" onBack={() => nav("auth", { mode: "login" })} />
-      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 12 }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
       <div style={{ width: 52, height: 52, borderRadius: 16, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
         <Lock size={22} color={C.brand} />
       </div>
@@ -474,9 +474,9 @@ export function ScreenResetCode({ nav, params, toast }) {
   };
 
   return (
-    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="" onBack={() => nav("forgot-password", { role })} />
-      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 12 }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
       <div style={{ width: 52, height: 52, borderRadius: 16, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
         <Smartphone size={22} color={C.brand} />
       </div>
@@ -533,9 +533,9 @@ export function ScreenResetPassword({ nav, params, toast }) {
   };
 
   return (
-    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="" onBack={() => nav("reset-code", { role })} />
-      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 12 }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
       <div style={{ width: 52, height: 52, borderRadius: 16, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
         <Check size={22} color={C.brand} />
       </div>
@@ -621,9 +621,9 @@ export function ScreenVerifyEmail({ nav, params, toast, role }) {
   const mmss = `${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, "0")}`;
 
   return (
-    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="" onBack={changeEmail} />
-      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 12 }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
         {phase === "success" ? (
           <>
             <div style={{ textAlign: "center", marginTop: 44 }}>
@@ -799,9 +799,9 @@ export function ScreenCoachInfo({ nav, toast, coachOnboarding, updateCoachOnboar
   };
 
   return (
-    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="" onBack={() => nav("auth", { mode: "signup" })} />
-      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 24 }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
 
         <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Coach information</div>
         <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 8, marginBottom: 20, lineHeight: 1.55, ...fBody }}>
@@ -931,9 +931,9 @@ export function ScreenCoachExpertise({ nav, coachOnboarding, updateCoachOnboardi
   };
 
   return (
-    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="" onBack={() => nav("coach-info")} />
-      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 24 }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
 
         <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Coaching expertise</div>
         <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 8, marginBottom: 20, lineHeight: 1.55, ...fBody }}>
@@ -1024,9 +1024,9 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
   const allDone = !!idType && idUploaded && selfieUploaded && wwccOk && qualsOk;
 
   return (
-    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="" onBack={() => nav("coach-expertise")} />
-      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 24 }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
 
         <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Get verified</div>
         <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 8, marginBottom: 18, lineHeight: 1.55, ...fBody }}>

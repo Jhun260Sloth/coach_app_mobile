@@ -48,10 +48,10 @@ export function ScreenPackageDetail({ nav, params }) {
   if (pkg.equipment) rows.push({ icon: Wrench, label: "Equipment", value: pkg.equipment });
 
   return (
-    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="Package details" onBack={() => nav("coach-profile", { id: coach.id })} />
 
-      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 100 }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 100px" }} className="cl-hide-scrollbar">
         <Card style={{ marginBottom: 16, display: "flex", gap: 12, alignItems: "center", border: `1px solid ${C.border}` }}>
           <Avatar name={coach.name} size={44} />
           <div style={{ minWidth: 0 }}>
@@ -100,7 +100,7 @@ export function ScreenPackageDetail({ nav, params }) {
         </div>
       </div>
 
-      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: C.white, borderTop: `1px solid ${C.border}`, padding: "12px 20px 20px" }}>
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: C.white, borderTop: `1px solid ${C.border}`, padding: "14px 18px", paddingBottom: 24 }}>
         <Btn
           full
           disabled={unavailable}

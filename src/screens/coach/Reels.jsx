@@ -81,10 +81,10 @@ export function ScreenCoachReels({ nav, toast, coachMedia = [], addMedia, remove
   };
 
   return (
-    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="Reels & photos" onBack={() => nav("coach-profile-edit")} />
 
-      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 30 }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
         <div style={{ fontSize: T.labelLg, color: C.slate, marginBottom: 16, lineHeight: 1.5, ...fBody }}>
           Show athletes what a session with you looks like. Reels and photos appear on your public profile in the order you add them.
         </div>

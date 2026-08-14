@@ -126,7 +126,7 @@ export function ScreenCoachProfile({ nav, params = {}, favorites = [], toggleFav
       {/* Banner + avatar now scroll away with the rest of the profile instead
           of staying pinned at the top — they live inside the same scroll
           container as everything below them. */}
-      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 100 }}>
+      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 100 }} className="cl-hide-scrollbar">
         <CoverBanner sport={coach.sport} height={150} />
         <div style={{ height: 150, position: "relative", marginTop: -150, pointerEvents: "none" }}>
           <div style={{ position: "absolute", top: 16, left: 16, pointerEvents: "auto" }}>
@@ -147,7 +147,7 @@ export function ScreenCoachProfile({ nav, params = {}, favorites = [], toggleFav
           </div>
         </div>
 
-        <div style={{ padding: "0 20px" }}>
+        <div style={{ padding: "0 18px" }}>
         <div style={{ height: 40 }} />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginTop: 10 }}>
           <div>
@@ -390,7 +390,8 @@ export function ScreenCoachProfile({ nav, params = {}, favorites = [], toggleFav
 
             <SectionLabel>Packages</SectionLabel>
 
-            {coach.packages.map((p) => {
+            <div className="cl-stagger">
+            {coach.packages.map((p, i) => {
               const selected = selectedPkgId === p.id;
               const isInactive = p.active === false;
               const isTimeIncompatible = Boolean(
@@ -419,6 +420,7 @@ export function ScreenCoachProfile({ nav, params = {}, favorites = [], toggleFav
                     position: "relative",
                     transition: "all 0.2s ease",
                     padding: 16,
+                    animationDelay: `${Math.min(i, 8) * 45}ms`,
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
@@ -470,15 +472,17 @@ export function ScreenCoachProfile({ nav, params = {}, favorites = [], toggleFav
                 </Card>
               );
             })}
+            </div>
           </div>
         )}
 
         {tab === "reviews" && (
           <div style={{ marginTop: 16 }}>
-            {pagedReviews.map((r) => {
+            <div className="cl-stagger">
+            {pagedReviews.map((r, i) => {
               const reply = getReply(r.id);
               return (
-                <Card key={r.id} style={{ marginBottom: 10 }}>
+                <Card key={r.id} style={{ marginBottom: 10, animationDelay: `${Math.min(i, 8) * 45}ms` }}>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <Avatar name={r.name} size={30} />
@@ -500,6 +504,7 @@ export function ScreenCoachProfile({ nav, params = {}, favorites = [], toggleFav
                 </Card>
               );
             })}
+            </div>
 
             {reviewPageCount > 1 && (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, marginTop: 8 }}>
@@ -527,7 +532,7 @@ export function ScreenCoachProfile({ nav, params = {}, favorites = [], toggleFav
         </div>
       </div>
 
-      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: C.white, borderTop: `1px solid ${C.border}`, padding: "12px 20px 20px", display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: C.white, borderTop: `1px solid ${C.border}`, padding: "14px 18px", paddingBottom: 24, display: "flex", alignItems: "center", gap: 12 }}>
         {unavailable ? (
           <div style={{ flex: 1 }}>
             <Btn full disabled variant="secondary">Unavailable for new bookings</Btn>

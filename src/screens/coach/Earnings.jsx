@@ -14,8 +14,11 @@ export function ScreenCoachEarnings({ nav, coachBookings }) {
   const net = gross - commission;
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <div style={{ padding: "18px 20px 0", flex: 1, overflowY: "auto", paddingBottom: 100 }}>
+      <div style={{ padding: "18px 18px 0" }}>
         <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, marginBottom: 16, ...fDisplay }}>Earnings</div>
+      </div>
+
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: 24 }} className="cl-hide-scrollbar">
 
         <div style={{ background: C.jet, borderRadius: 20, padding: 20, marginBottom: 16 }}>
           <div style={{ fontSize: T.captionLg, color: C.onDarkMuted, ...fBody }}>Available for payout</div>
@@ -50,8 +53,9 @@ export function ScreenCoachEarnings({ nav, coachBookings }) {
         {completed.length === 0 && (
           <div style={{ fontSize: T.labelLg, color: C.slate, padding: "6px 2px 2px", ...fBody }}>No completed sessions yet.</div>
         )}
-        {completed.slice(0, 3).map((b) => (
-          <Card key={b.id} onClick={() => nav("coach-history")} style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div className="cl-stagger">
+        {completed.slice(0, 3).map((b, i) => (
+          <Card key={b.id} onClick={() => nav("coach-history")} style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center", animationDelay: `${Math.min(i, 8) * 45}ms` }}>
             <div>
               <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{b.service}</div>
               <div style={{ fontSize: T.captionLg, color: C.slate, ...fBody }}>{b.date} · {b.clientName}</div>
@@ -62,6 +66,7 @@ export function ScreenCoachEarnings({ nav, coachBookings }) {
             </div>
           </Card>
         ))}
+        </div>
       </div>
     </div>
   );

@@ -1,0 +1,156 @@
+import React, { useState, useEffect, useRef } from "react";
+import { MapPin, Search, LocateFixed, CheckCircle2 } from "lucide-react";
+import { CL, CD, fBody, T, LAYOUT } from "../../theme/theme";
+import { useApp } from "../../context/AppContext";
+import { AU_SUBURBS } from "../../data/mockData";
+import { haversineKm, FALLBACK_USER_LOCATION } from "../../lib/mapUtils";
+import { Spinner } from "./Primitives";
+
+const FALLBACK_SUBURB = AU_SUBURBS.find((s) => s.suburb === "Sydney" && s.postcode === "2000");
+
+function nearestSuburb(lat, lng) {
+  let best = null;
+  let bestKm = Infinity;
+  for (const s of AU_SUBURBS) {
+    if (s.lat == null || s.lng == null) continue;
+    const km = haversineKm({ lat, lng }, { lat: s.lat, lng: s.lng });
+    if (km < bestKm) { bestKm = km; best = s; }
+  }
+  return best || FALLBACK_SUBURB;
+}
+
+/* Shared structured location picker — { suburb, state, postcode } — used by
+   coach onboarding, client setup, participant profiles and account editing.
+   Includes a "use my current location" detector with a locating state. */
+export function LocationField({ value, onChange, label = "Location", helper, placeholder = "Search suburb or postcode…" }) {
+  const { darkMode, toast } = useApp();
+  const C = darkMode ? CD : CL;
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const detectTimerRef = useRef(null);
+
+  useEffect(() => () => { if (detectTimerRef.current) clearTimeout(detectTimerRef.current); }, []);
+
+  const filtered = AU_SUBURBS.filter((s) =>
+    query.length > 0 && (s.suburb.toLowerCase().includes(query.toLowerCase()) || s.postcode.includes(query))
+  ).slice(0, 6);
+
+  const pick = (s) => { onChange?.(s); setQuery(""); setOpen(false); };
+
+  const detect = () => {
+    if (locating) return;
+    setLocating(true);
+    const done = (suburb, msg) => {
+      setLocating(false);
+      onChange?.(suburb);
+      setQuery("");
+      setOpen(false);
+      if (toast) toast(msg);
+    };
+    if (!navigator.geolocation) {
+      detectTimerRef.current = setTimeout(() => done(FALLBACK_SUBURB, `Set your area to ${FALLBACK_SUBURB.suburb}`), 500);
+      return;
+    }
+    const fallbackTimer = setTimeout(() => {
+      done(FALLBACK_SUBURB, `Set your area to ${FALLBACK_SUBURB.suburb}`);
+    }, 6000);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        clearTimeout(fallbackTimer);
+        const nearest = nearestSuburb(pos.coords.latitude, pos.coords.longitude);
+        done(nearest, `Location detected — ${nearest.suburb}`);
+      },
+      () => {
+        clearTimeout(fallbackTimer);
+        done(FALLBACK_SUBURB, `Set your area to ${FALLBACK_SUBURB.suburb}`);
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+    );
+  };
+
+  const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
+
+  return (
+    <div>
+      <div style={labelStyle}>{label}</div>
+
+      {value ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 12, border: `1.5px solid ${C.border}`, borderRadius: LAYOUT.inputRadius, padding: "11px 13px", background: C.white, animation: "clFadeUp .25s ease" }}>
+          <div style={{ width: 38, height: 38, borderRadius: 12, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <MapPin size={17} color={C.brand} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>{value.suburb}, {value.state}</span>
+              <span style={{ fontSize: T.caption, fontWeight: 700, color: C.slate, background: C.fog, borderRadius: 999, padding: "2px 8px", ...fBody }}>{value.postcode}</span>
+            </div>
+          </div>
+          <button
+            onClick={() => onChange?.(null)}
+            style={{ background: "none", border: "none", color: C.brand, fontSize: T.label, fontWeight: 600, cursor: "pointer", padding: 6, ...fBody }}
+          >
+            Change
+          </button>
+        </div>
+      ) : (
+        <div style={{ position: "relative" }}>
+          <div className="cl-input" style={{ display: "flex", alignItems: "center", gap: 10, border: `1.5px solid ${C.border}`, borderRadius: LAYOUT.inputRadius, padding: "0 13px", background: C.white, minHeight: 48 }}>
+            {locating ? <Spinner size={14} color={C.brand} /> : <Search size={16} color={C.slateLight} />}
+            <input
+              value={locating ? "" : query}
+              disabled={locating}
+              onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+              onFocus={() => setOpen(true)}
+              onBlur={() => setTimeout(() => setOpen(false), 150)}
+              placeholder={locating ? "Detecting your location…" : placeholder}
+              style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: T.bodyLg, color: C.jet, minWidth: 0, height: 46, ...fBody }}
+            />
+            <button
+              onClick={detect}
+              onMouseDown={(e) => e.preventDefault()}
+              disabled={locating}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 6, background: C.brandTint, border: "none",
+                borderRadius: 999, padding: "7px 12px", cursor: locating ? "default" : "pointer",
+                color: C.brandIcon || C.brandColor, fontSize: T.label, fontWeight: 600, whiteSpace: "nowrap",
+                opacity: locating ? 0.7 : 1, ...fBody,
+              }}
+            >
+              {locating ? <Spinner size={12} /> : <LocateFixed size={13} />}
+              {locating ? "Detecting" : "Detect"}
+            </button>
+          </div>
+
+          {open && !locating && filtered.length > 0 && (
+            <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.white, border: `1px solid ${C.border}`, borderRadius: 13, boxShadow: "0 10px 24px rgba(0,0,0,.10)", zIndex: 30, maxHeight: 200, overflowY: "auto", padding: 4, animation: "clFadeUp .18s ease" }}>
+              {filtered.map((s) => (
+                <button
+                  key={`${s.suburb}-${s.postcode}`}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => pick(s)}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, width: "100%", textAlign: "left", padding: "10px 12px", background: "none", border: "none", borderRadius: 11, cursor: "pointer", ...fBody }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = C.fog; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}
+                >
+                  <span style={{ display: "flex", alignItems: "center", gap: 9, fontSize: T.bodyLg, color: C.jet, fontWeight: 500, minWidth: 0 }}>
+                    <MapPin size={14} color={C.slateLight} style={{ flexShrink: 0 }} />
+                    <span>{s.suburb}, {s.state}</span>
+                  </span>
+                  <span style={{ fontSize: T.label, color: C.slateLight, flexShrink: 0 }}>{s.postcode}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {helper && (
+        <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: T.captionLg, color: C.slateLight, marginTop: 6, ...fBody }}>
+          <CheckCircle2 size={12} color={C.brand} />
+          {helper}
+        </div>
+      )}
+    </div>
+  );
+}

@@ -13,8 +13,8 @@ export function ScreenCoachSetupComplete({ nav, setReachedDashboardAfterVerifica
   };
 
   return (
-    <div style={{ padding: "28px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
-      <div style={{ textAlign: "center", marginTop: 48 }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      <div style={{ textAlign: "center", marginTop: 48, padding: "18px 18px 0" }}>
         <div style={{
           width: 72, height: 72, borderRadius: 22, background: C.brandTint,
           display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px",
@@ -27,7 +27,7 @@ export function ScreenCoachSetupComplete({ nav, setReachedDashboardAfterVerifica
         </div>
       </div>
 
-      <div style={{ marginTop: "auto", padding: "14px 0" }}>
+      <div style={{ marginTop: "auto", padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white }}>
         <Btn full onClick={goToDashboard}>Go to dashboard</Btn>
       </div>
     </div>

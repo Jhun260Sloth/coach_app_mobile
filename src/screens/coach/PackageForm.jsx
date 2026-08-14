@@ -29,7 +29,7 @@ export function ScreenCoachPackageForm({ nav, params, toast, coachPackages, save
   };
 
   return (
-    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar
         title={editing ? "Edit package" : "Create package"}
         onBack={() => nav("coach-profile-edit")}
@@ -39,7 +39,7 @@ export function ScreenCoachPackageForm({ nav, params, toast, coachPackages, save
           </button>
         ) : null}
       />
-      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 30 }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
         <div style={{ fontSize: T.label, color: C.slate, marginBottom: 16, lineHeight: 1.5, ...fBody }}>
           Package name, price, duration, location and description are all shown to clients when they browse and book.
         </div>

@@ -66,9 +66,9 @@ export function ScreenCoachHistory({ nav, coachBookings = [], coachNotifications
   }
 
   return (
-    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="History" onBack={() => nav("coach-profile-edit")} />
-      <div style={{ marginBottom: 16 }}>
+      <div style={{ padding: "16px 18px 0", marginBottom: 12 }}>
         <SegTabs
           items={[{ value: "payments", label: "Payments" }, { value: "activity", label: "Activity" }]}
           value={tab}
@@ -76,14 +76,15 @@ export function ScreenCoachHistory({ nav, coachBookings = [], coachNotifications
         />
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 20 }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: 24 }} className="cl-hide-scrollbar">
         {tab === "payments" && (
           <>
             {completed.length === 0 && (
               <EmptyState icon={Banknote} title="No payouts yet" body="Completed sessions and their payouts will show up here." />
             )}
-            {completed.map((b) => (
-              <Card key={b.id} onClick={() => setReceiptTarget(b)} style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div className="cl-stagger">
+            {completed.map((b, i) => (
+              <Card key={b.id} onClick={() => setReceiptTarget(b)} style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center", animationDelay: `${Math.min(i, 8) * 45}ms` }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <Avatar name={b.clientName} size={40} />
                   <div>
@@ -97,6 +98,7 @@ export function ScreenCoachHistory({ nav, coachBookings = [], coachNotifications
                 </div>
               </Card>
             ))}
+            </div>
           </>
         )}
 
@@ -105,10 +107,11 @@ export function ScreenCoachHistory({ nav, coachBookings = [], coachNotifications
             {activity.length === 0 && (
               <EmptyState icon={HistoryIcon} title="No activity yet" body="Booking updates, messages, verification and other activity will show up here." />
             )}
-            {activity.map((n) => {
+            <div className="cl-stagger">
+            {activity.map((n, i) => {
               const Icon = COACH_ACTIVITY_ICON[n.type] || HistoryIcon;
               return (
-                <Card key={n.id} style={{ marginBottom: 10, display: "flex", gap: 12, alignItems: "flex-start" }}>
+                <Card key={n.id} style={{ marginBottom: 10, display: "flex", gap: 12, alignItems: "flex-start", animationDelay: `${Math.min(i, 8) * 45}ms` }}>
                   <div style={{ width: 36, height: 36, borderRadius: 11, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <Icon size={16} color={C.brandIcon || C.brandColor} />
                   </div>
@@ -122,6 +125,7 @@ export function ScreenCoachHistory({ nav, coachBookings = [], coachNotifications
                 </Card>
               );
             })}
+            </div>
           </>
         )}
       </div>

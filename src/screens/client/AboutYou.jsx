@@ -1,42 +1,29 @@
 import React, { useState } from "react";
 import {
-  MapPin, Phone, Camera, ShieldCheck, Plus, Users, User, CalendarDays,
-  AlertTriangle, LocateFixed, Search, Stethoscope, UserCheck,
+  Phone, Camera, ShieldCheck, Plus, Users, User, CalendarDays,
+  AlertTriangle, Stethoscope, UserCheck,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
-import { AU_SUBURBS, GENDER_OPTIONS } from "../../data/mockData";
+import { GENDER_OPTIONS } from "../../data/mockData";
 import { Chip, SectionLabel, Btn, TopBar, Field, Card, Avatar, Badge } from "../../components/ui/Primitives";
+import { LocationField } from "../../components/ui/LocationField";
 
-const TOTAL_STEPS = 1;
-function StepDots({ step }) {
+function StepHeader({ title, subtitle, onBack }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   return (
-    <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
-      {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-        <div key={i} style={{ height: 4, borderRadius: 2, flex: 1, background: i <= step ? C.success : C.border, transition: "background .25s ease" }} />
-      ))}
-    </div>
-  );
-}
-
-function StepHeader({ step, title, subtitle, onBack }) {
-  const { darkMode } = useApp();
-  const C = darkMode ? CD : CL;
-  return (
-    <div style={{ padding: "20px 20px 0" }}>
+    <>
       {onBack && <TopBar title="" onBack={onBack} />}
-      <div style={{ marginTop: onBack ? 0 : 8 }}>
-        <StepDots step={step} />
+      <div style={{ padding: "0 18px" }}>
+        <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, ...fDisplay, marginBottom: 6, marginTop: onBack ? 0 : 4 }}>{title}</div>
+        <div style={{ fontSize: T.body, color: C.slate, ...fBody, marginBottom: 20, lineHeight: 1.5 }}>{subtitle}</div>
       </div>
-      <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, ...fDisplay, marginBottom: 6 }}>{title}</div>
-      <div style={{ fontSize: T.body, color: C.slate, ...fBody, marginBottom: 20, lineHeight: 1.5 }}>{subtitle}</div>
-    </div>
+    </>
   );
 }
 
-/* Step 1 of 3 — build your profile (mobile, age, postal code, profile pic) */
+/* Step 1 of 3 — build your profile (mobile, age, location, profile pic) */
 function calcAge(dobStr) {
   if (!dobStr) return null;
   const birth = new Date(dobStr);
@@ -52,7 +39,7 @@ export function ScreenAboutYouProfile({ nav }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const [mobile, setMobile] = useState("");
-  const [postalCode, setPostalCode] = useState("");
+  const [location, setLocation] = useState(null); // { suburb, state, postcode }
   const [dob, setDob] = useState("");
   const [hasPhoto, setHasPhoto] = useState(false);
 
@@ -62,16 +49,16 @@ export function ScreenAboutYouProfile({ nav }) {
 
   // Continue stays disabled — and the user can't advance — until the date of
   // birth entered confirms they're 18 or older.
-  const canContinue = mobile.trim().length > 0 && postalCode.trim().length > 0 && ageVerified;
+  const canContinue = mobile.trim().length > 0 && !!location && ageVerified;
   // The "who are you booking for?" step has been removed from the flow —
   // finishing this step takes the client straight to the setup success screen.
-  const goNext = () => { if (canContinue) nav("client-setup-complete", { mobile, postalCode, dob, age, hasPhoto }); };
+  const goNext = () => { if (canContinue) nav("client-setup-complete", { mobile, location, dob, age, hasPhoto }); };
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <StepHeader step={0} title="Let's learn about you" subtitle="Collecting a few essentials helps keep CoachLink safe for everyone." />
+      <StepHeader title="Let's learn about you" subtitle="A few quick details to set up your profile." />
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "0 20px" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: 24 }} className="cl-hide-scrollbar">
         <SectionLabel>Build your profile</SectionLabel>
 
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
@@ -90,10 +77,10 @@ export function ScreenAboutYouProfile({ nav }) {
           </button>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 16 }}>
           <div>
             <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Mobile number</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.fog, borderRadius: 14, padding: "12px 14px" }}>
+            <div className="cl-input" style={{ display: "flex", alignItems: "center", gap: 8, background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
               <Phone size={16} color={C.slateLight} />
               <input
                 value={mobile}
@@ -105,58 +92,51 @@ export function ScreenAboutYouProfile({ nav }) {
           </div>
 
           <div>
-            <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Postal code</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.fog, borderRadius: 14, padding: "12px 14px" }}>
-              <MapPin size={16} color={C.slateLight} />
+            <LocationField
+              value={location}
+              onChange={setLocation}
+              label="Location"
+              placeholder="Search suburb or postcode…"
+              helper="We only use this to find coaches nearby — it's never shown to coaches or other clients."
+            />
+          </div>
+
+          <div>
+            <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Date of birth</div>
+            <div className="cl-input" style={{ display: "flex", alignItems: "center", gap: 8, background: C.white, borderRadius: 13, padding: "11px 13px", border: isUnder18 ? `1.5px solid ${C.danger}` : `1.5px solid ${C.border}` }}>
+              <CalendarDays size={16} color={C.slateLight} />
               <input
-                value={postalCode}
-                onChange={(e) => setPostalCode(e.target.value)}
-                placeholder="e.g. 2026"
+                type="date"
+                value={dob}
+                max={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => setDob(e.target.value)}
                 style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: T.bodyLg, color: C.jet, ...fBody }}
               />
+            </div>
+            <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: 5, ...fBody }}>
+              Account holders must be 18 or older
             </div>
           </div>
         </div>
 
-        <div style={{ marginBottom: isUnder18 ? 14 : 20 }}>
-          <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Date of birth</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.fog, borderRadius: 14, padding: "12px 14px", border: isUnder18 ? `1.5px solid ${C.danger}` : "1.5px solid transparent" }}>
-            <CalendarDays size={16} color={C.slateLight} />
-            <input
-              type="date"
-              value={dob}
-              max={new Date().toISOString().slice(0, 10)}
-              onChange={(e) => setDob(e.target.value)}
-              style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: T.bodyLg, color: C.jet, ...fBody }}
-            />
-          </div>
-          <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: 6, ...fBody }}>
-            We verify your date of birth — a self-tick isn't enough. CoachLink accounts can only be held by someone 18 or older.
-          </div>
-        </div>
-
         {isUnder18 && (
-          <Card style={{ marginBottom: 20, background: C.dangerTint, border: `1px solid ${C.dangerBorder}` }}>
+          <Card style={{ marginBottom: 16, background: C.dangerTint, border: `1px solid ${C.dangerBorder}` }}>
             <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
               <AlertTriangle size={16} color={C.danger} style={{ flexShrink: 0, marginTop: 1 }} />
-              <div style={{ fontSize: T.label, color: C.jet, lineHeight: 1.6, ...fBody }}>
-                <strong>You need to be 18+ to hold a CoachLink account.</strong> If you're under 18, ask a parent or guardian to sign up — once they're set up, they can add you as a participant profile and manage your bookings for you.
+              <div style={{ fontSize: T.label, color: C.jet, lineHeight: 1.5, ...fBody }}>
+                <strong>Must be 18+ to create an account.</strong> A parent or guardian can sign up and book coaching on your behalf.
               </div>
             </div>
           </Card>
         )}
 
-        <Card style={{ marginBottom: 20, background: C.fog, border: "none" }}>
-          <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-            <ShieldCheck size={16} color={C.brand} style={{ flexShrink: 0, marginTop: 1 }} />
-            <div style={{ fontSize: T.label, color: C.slate, lineHeight: 1.6, ...fBody }}>
-              <strong style={{ color: C.jet }}>Why we ask:</strong> your postal code helps us match you with coaches nearby, your date of birth confirms you're old enough to hold your own account, and your photo helps coaches recognise you at sessions. None of this is shown publicly without your permission.
-            </div>
-          </div>
-        </Card>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, color: C.slateLight, fontSize: T.captionLg, padding: "8px 0 16px", ...fBody }}>
+          <ShieldCheck size={14} color={C.brand} />
+          <span>Your information is kept private and secure</span>
+        </div>
       </div>
 
-      <div style={{ padding: "14px 20px 20px" }}>
+      <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
         <Btn full disabled={!canContinue} onClick={goNext}>
           Continue
         </Btn>
@@ -199,9 +179,9 @@ export function ScreenAccountType({ nav, params }) {
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <StepHeader step={1} title="Who are you booking for?" subtitle="Parents and guardians can keep a separate profile for each child." onBack={() => nav("about-you-profile")} />
+      <StepHeader title="Who are you booking for?" subtitle="Parents and guardians can keep a separate profile for each child." onBack={() => nav("about-you-profile")} />
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "0 20px" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: 24 }} className="cl-hide-scrollbar">
         <SectionLabel>Participants</SectionLabel>
         <Option value="self" icon={User} title="Myself" body="I'll be the one attending coaching sessions." />
         <Option value="child" icon={Users} title="My Child / Children" body="I'm booking sessions on behalf of one or more children." />
@@ -216,7 +196,7 @@ export function ScreenAccountType({ nav, params }) {
         </Card>
       </div>
 
-      <div style={{ padding: "14px 20px 20px" }}>
+      <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
         <Btn full disabled={!accountType} onClick={goNext}>Continue</Btn>
       </div>
     </div>
@@ -228,7 +208,7 @@ export function ScreenAccountType({ nav, params }) {
 const PARTICIPANT_SPORT_EXAMPLES = ["Football", "Basketball", "Tennis", "Swimming", "Gymnastics"];
 export const SKILL_LEVELS = ["Beginner", "Intermediate", "Advanced", "Elite"];
 export const emptyParticipantDraft = {
-  name: "", dob: "", gender: "", postalCode: "",
+  name: "", dob: "", gender: "", location: null,
   sport: [], skillLevel: "", goals: "",
   medicalConditions: "", allergies: "", medicalNotes: "",
   emergencyName: "", emergencyRelationship: "", emergencyMobile: "",
@@ -243,13 +223,11 @@ export function ParticipantFields({ draft, setDraft, showGuardianInfo = false })
   const C = darkMode ? CD : CL;
   const inputStyle = {
     width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px",
-    fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", ...fBody,
+    fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", background: C.white, color: C.jet, ...fBody,
   };
   const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
   const [addingSport, setAddingSport] = useState(false);
   const [customSport, setCustomSport] = useState("");
-  const [locationQuery, setLocationQuery] = useState("");
-  const [locationOpen, setLocationOpen] = useState(false);
 
   const patch = (p) => setDraft((d) => ({ ...d, ...p }));
   const age = calcAge(draft.dob);
@@ -265,12 +243,6 @@ export function ParticipantFields({ draft, setDraft, showGuardianInfo = false })
     setCustomSport("");
   };
 
-  const filteredSuburbs = AU_SUBURBS.filter((s) =>
-    locationQuery.length > 0 && (s.suburb.toLowerCase().includes(locationQuery.toLowerCase()) || s.postcode.includes(locationQuery))
-  ).slice(0, 6);
-  const pickLocation = (s) => { patch({ postalCode: `${s.suburb}, ${s.state} ${s.postcode}` }); setLocationQuery(""); setLocationOpen(false); };
-  const useCurrentLocation = () => patch({ postalCode: "Sydney, NSW 2000" });
-
   return (
     <>
       <SectionLabel>Basic information</SectionLabel>
@@ -280,7 +252,7 @@ export function ParticipantFields({ draft, setDraft, showGuardianInfo = false })
 
         <div>
           <div style={labelStyle}>Date of birth</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
+          <div className="cl-input" style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
             <CalendarDays size={16} color={C.slateLight} />
             <input
               type="date"
@@ -313,42 +285,14 @@ export function ParticipantFields({ draft, setDraft, showGuardianInfo = false })
           </select>
         </div>
 
-        <div style={{ position: "relative" }}>
-          <div style={labelStyle}>Location / postcode</div>
-          {draft.postalCode ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 10, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
-              <MapPin size={16} color={C.brand} style={{ flexShrink: 0 }} />
-              <span style={{ flex: 1, fontSize: T.bodyLg, color: C.jet, fontWeight: 500, ...fBody }}>{draft.postalCode}</span>
-              <button onClick={() => patch({ postalCode: "" })} style={{ background: "none", border: "none", color: C.brand, fontSize: T.label, fontWeight: 600, cursor: "pointer", ...fBody }}>Change</button>
-            </div>
-          ) : (
-            <>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
-                <Search size={15} color={C.slateLight} />
-                <input
-                  value={locationQuery}
-                  onChange={(e) => { setLocationQuery(e.target.value); setLocationOpen(true); }}
-                  onFocus={() => setLocationOpen(true)}
-                  onBlur={() => setTimeout(() => setLocationOpen(false), 150)}
-                  placeholder="Search suburb or postcode…"
-                  style={{ border: "none", outline: "none", flex: 1, fontSize: T.bodyLg, minWidth: 0, ...fBody }}
-                />
-              </div>
-              {locationOpen && filteredSuburbs.length > 0 && (
-                <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.white, border: `1px solid ${C.border}`, borderRadius: 13, boxShadow: "0 10px 24px rgba(0,0,0,.10)", zIndex: 30, maxHeight: 190, overflowY: "auto" }}>
-                  {filteredSuburbs.map((s) => (
-                    <button key={`${s.suburb}-${s.postcode}`} onMouseDown={(e) => e.preventDefault()} onClick={() => pickLocation(s)} style={{ display: "flex", justifyContent: "space-between", width: "100%", textAlign: "left", padding: "10px 13px", background: "none", border: "none", cursor: "pointer", fontSize: T.body, color: C.jet, ...fBody }}>
-                      <span>{s.suburb}, {s.state}</span>
-                      <span style={{ color: C.slateLight }}>{s.postcode}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-              <button onClick={useCurrentLocation} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: C.brand, fontSize: T.labelLg, fontWeight: 600, marginTop: 8, padding: 0, ...fBody }}>
-                <LocateFixed size={14} /> Use current location
-              </button>
-            </>
-          )}
+        <div>
+          <LocationField
+            value={draft.location}
+            onChange={(loc) => patch({ location: loc })}
+            label="Location"
+            placeholder="Search suburb or postcode…"
+            helper="Used to find and match coaches near you."
+          />
         </div>
       </div>
 
@@ -475,12 +419,11 @@ export function ScreenAboutYouParticipants({ nav, params, addChild, toast }) {
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <StepHeader
-        step={2}
         title="Add a participant"
         subtitle="Create a profile for each child you would like to book coaching sessions for. You can add and manage multiple participant profiles at any time."
         onBack={() => nav("account-type", params)}
       />
-      <div style={{ flex: 1, overflowY: "auto", padding: "0 20px" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: 24 }} className="cl-hide-scrollbar">
         {savedCount > 0 && (
           <div style={{ marginBottom: 16 }}>
             <Badge tone="success">{savedCount} participant{savedCount === 1 ? "" : "s"} added so far</Badge>
@@ -488,7 +431,7 @@ export function ScreenAboutYouParticipants({ nav, params, addChild, toast }) {
         )}
         <ParticipantFields draft={draft} setDraft={setDraft} showGuardianInfo />
       </div>
-      <div style={{ padding: "14px 20px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, display: "flex", flexDirection: "column", gap: 10, flexShrink: 0 }}>
         <Btn full disabled={!canSave} onClick={saveAndFinish}>Save participant</Btn>
         <Btn full variant="outline" icon={Plus} disabled={!canSave} onClick={saveAndAddAnother}>Add another participant</Btn>
       </div>
@@ -515,15 +458,14 @@ export function ScreenAboutYouSelf({ nav, params, onComplete }) {
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <StepHeader
-        step={2}
         title="Tell us about yourself"
         subtitle="Help us recommend suitable coaches and personalise your coaching experience."
         onBack={() => nav("account-type", params)}
       />
-      <div style={{ flex: 1, overflowY: "auto", padding: "0 20px" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: 24 }} className="cl-hide-scrollbar">
         <ParticipantFields draft={draft} setDraft={setDraft} />
       </div>
-      <div style={{ padding: "14px 20px 20px" }}>
+      <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
         <Btn full disabled={!canContinue} onClick={finish}>Continue</Btn>
       </div>
     </div>

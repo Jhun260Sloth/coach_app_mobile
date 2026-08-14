@@ -43,8 +43,8 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const timeInputStyle = {
-    width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "10px 12px",
-    fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", ...fBody,
+    width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px",
+    fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", color: C.jet, background: C.white, ...fBody,
   };
   const [synced, setSynced] = useState(true);
   const [view, setView] = useState("list");
@@ -112,13 +112,15 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <div style={{ padding: "18px 20px 0", flex: 1, overflowY: "auto", paddingBottom: 100 }}>
+      <div style={{ padding: "18px 18px 0" }}>
         <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, marginBottom: 14, ...fDisplay }}>Availability</div>
 
         <div style={{ marginBottom: 16 }}>
           <SegTabs value={view} onChange={setView} items={[{ value: "list", label: "List" }, { value: "calendar", label: "Calendar" }]} />
         </div>
+      </div>
 
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: 116 }} className="cl-hide-scrollbar">
         {view === "calendar" ? (
           <>
             <Card style={{ marginBottom: 16 }}>
@@ -312,12 +314,12 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
               <div style={{ marginBottom: 10 }}>
                 <div style={{ fontSize: T.label, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Date</div>
                 <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)}
-                  style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "10px 12px", fontSize: T.bodyLg, outline: "none", ...fBody }} />
+                  style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, outline: "none", color: C.jet, background: C.white, boxSizing: "border-box", ...fBody }} />
               </div>
               <div style={{ marginBottom: 12 }}>
                 <div style={{ fontSize: T.label, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Reason (optional)</div>
                 <input value={newReason} onChange={(e) => setNewReason(e.target.value)} placeholder="e.g. Personal leave"
-                  style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "10px 12px", fontSize: T.bodyLg, outline: "none", ...fBody }} />
+                  style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, outline: "none", color: C.jet, background: C.white, boxSizing: "border-box", ...fBody }} />
               </div>
               <div style={{ display: "flex", gap: 8 }}>
                 <Btn variant="outline" size="sm" full onClick={() => { setShowExForm(false); setNewDate(""); setNewReason(""); }}>Cancel</Btn>

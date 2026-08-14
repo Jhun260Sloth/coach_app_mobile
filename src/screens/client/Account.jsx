@@ -12,9 +12,10 @@ import { SPORTS, CLIENT_NOTIFICATIONS } from "../../data/mockData";
 import { ReceiptSheet } from "./Dashboard";
 import { SKILL_LEVELS } from "./AboutYou";
 import { useLiveNotifications } from "../../systems/StateSystem";
+import { LocationField } from "../../components/ui/LocationField";
 
 const emptyChildDraft = {
-  name: "", age: "", sport: [], skillLevel: "", goals: "", postalCode: "", preferences: "", hasPhoto: false,
+  name: "", age: "", sport: [], skillLevel: "", goals: "", location: null, preferences: "", hasPhoto: false,
   medicalConditions: "", allergies: "", medicalNotes: "",
   emergencyName: "", emergencyRelationship: "", emergencyMobile: "",
   guardianName: "", guardianRelationship: "", guardianMobile: "",
@@ -84,7 +85,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
       email: profile.email,
       phone: clientPrefs?.mobile || "",
       address: clientPrefs?.address || "",
-      postalCode: clientPrefs?.postalCode || "",
+      location: clientPrefs?.location || null,
       sports: clientPrefs?.sports || [],
       skillLevel: clientPrefs?.skillLevel || "",
       goals: clientPrefs?.goals || "",
@@ -106,7 +107,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
         ...clientPrefs,
         mobile: editDraft.phone,
         address: editDraft.address,
-        postalCode: editDraft.postalCode,
+        location: editDraft.location,
         sports: editDraft.sports,
         skillLevel: editDraft.skillLevel,
         goals: editDraft.goals,
@@ -146,7 +147,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <div style={{ padding: "18px 20px 0", flex: 1, overflowY: "auto", paddingBottom: 100 }}>
+      <div style={{ padding: "18px 18px 0" }}>
         <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, marginBottom: 18, ...fDisplay }}>Account</div>
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 28 }}>
           <Avatar name={profile.name} size={58} />
@@ -158,13 +159,17 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
             <div style={{ fontSize: T.labelLg, color: C.slate, marginTop: 2, ...fBody }}>{profile.email}</div>
           </div>
         </div>
+      </div>
+
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: 116 }} className="cl-hide-scrollbar">
 
         <div style={{ marginTop: 32 }}>
           <SectionLabel>Family</SectionLabel>
           <div style={{ fontSize: T.label, color: C.slate, marginTop: -6, marginBottom: 12, lineHeight: 1.5, ...fBody }}>
             Separate profiles for each child.
           </div>
-          {children.map((child) => {
+          <div className="cl-stagger">
+          {children.map((child, i) => {
             const ageLabel = child.age ? `Age ${child.age}` : "Age not set";
             const sportLabel = child.sport?.length ? child.sport.join(", ") : "Sport not set";
             return (
@@ -176,6 +181,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
                   padding: "12px 16px 12px 12px", marginBottom: 10,
                   background: C.white, border: `1px solid ${C.border}`, borderRadius: 16,
                   boxShadow: "0 1px 2px rgba(22,24,29,.04)", cursor: "pointer", textAlign: "left",
+                  animationDelay: `${Math.min(i, 8) * 45}ms`,
                 }}
               >
                 <Avatar name={child.name || "Child"} size={40} />
@@ -189,6 +195,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
               </button>
             );
           })}
+          </div>
           <div style={{ marginTop: 12 }}>
             <Btn full variant="secondary" icon={UserPlus} onClick={openNewChild}>Add a child profile</Btn>
           </div>
@@ -248,7 +255,12 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <Field label="Child's name" placeholder="e.g. Ava" icon={User} value={childDraft.name} onChange={(e) => setChildDraft((d) => ({ ...d, name: e.target.value }))} />
           <Field label="Age" placeholder="e.g. 9" value={childDraft.age} onChange={(e) => setChildDraft((d) => ({ ...d, age: e.target.value }))} />
-          <Field label="Location / postcode" placeholder="e.g. 2026" icon={MapPin} value={childDraft.postalCode} onChange={(e) => setChildDraft((d) => ({ ...d, postalCode: e.target.value }))} />
+          <LocationField
+            value={childDraft.location}
+            onChange={(loc) => setChildDraft((d) => ({ ...d, location: loc }))}
+            label="Location"
+            placeholder="Search suburb or postcode…"
+          />
         </div>
 
         <div style={{ marginTop: 4 }}>
@@ -283,7 +295,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
 
         <div style={{ marginTop: 18 }}>
           <SectionLabel>Coaching goals</SectionLabel>
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 10, background: C.fog, borderRadius: 14, padding: "12px 14px" }}>
+          <div className="cl-input" style={{ display: "flex", alignItems: "flex-start", gap: 10, background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
             <Target size={16} color={C.slateLight} style={{ marginTop: 2, flexShrink: 0 }} />
             <textarea
               value={childDraft.goals}
@@ -297,7 +309,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
 
         <div style={{ marginTop: 18 }}>
           <SectionLabel>Coaching preferences</SectionLabel>
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 10, background: C.fog, borderRadius: 14, padding: "12px 14px" }}>
+          <div className="cl-input" style={{ display: "flex", alignItems: "flex-start", gap: 10, background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
             <Users size={16} color={C.slateLight} style={{ marginTop: 2, flexShrink: 0 }} />
             <textarea
               value={childDraft.preferences}
@@ -386,7 +398,12 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
             <SectionLabel>Location</SectionLabel>
             <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 20 }}>
               <Field label="Address" placeholder="Enter your address" icon={MapPin} value={editDraft.address} onChange={(e) => setEditDraft((d) => ({ ...d, address: e.target.value }))} />
-              <Field label="Postal code" placeholder="e.g. 2026" icon={MapPin} value={editDraft.postalCode} onChange={(e) => setEditDraft((d) => ({ ...d, postalCode: e.target.value }))} />
+              <LocationField
+                value={editDraft.location}
+                onChange={(loc) => setEditDraft((d) => ({ ...d, location: loc }))}
+                label="Suburb & postcode"
+                placeholder="Search suburb or postcode…"
+              />
             </div>
             <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: -10, marginBottom: 20, lineHeight: 1.5, ...fBody }}>
               We only use this to find coaches nearby — it's never shown to coaches or other clients.
@@ -407,7 +424,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
             </div>
 
             <SectionLabel>Coaching goals</SectionLabel>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 10, background: C.fog, borderRadius: 14, padding: "12px 14px", marginBottom: 20 }}>
+            <div className="cl-input" style={{ display: "flex", alignItems: "flex-start", gap: 10, background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", marginBottom: 20 }}>
               <Target size={16} color={C.slateLight} style={{ marginTop: 2, flexShrink: 0 }} />
               <textarea
                 value={editDraft.goals}
@@ -429,7 +446,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
                   onChange={(e) => setEditDraft((d) => ({ ...d, medicalNotes: e.target.value }))}
                   placeholder="Anything else a coach should know"
                   rows={2}
-                  style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", resize: "none", ...fBody }}
+                  style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", resize: "none", background: C.white, color: C.jet, ...fBody }}
                 />
               </div>
             </div>
@@ -461,8 +478,9 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
 
       {/* Payment methods */}
       <BottomSheet open={sheet === "payment"} onClose={closeSheet} title="Payment methods" heightPct={70}>
-        {cards.map((card) => (
-          <div key={card.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 4px", borderBottom: `1px solid ${C.border}` }}>
+        <div className="cl-stagger">
+        {cards.map((card, i) => (
+          <div key={card.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 4px", borderBottom: `1px solid ${C.border}`, animationDelay: `${Math.min(i, 8) * 45}ms` }}>
             <div style={{ width: 40, height: 28, borderRadius: 6, background: C.fog, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <CreditCard size={15} color={C.jet} />
             </div>
@@ -478,6 +496,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
             </button>
           </div>
         ))}
+        </div>
         <div style={{ marginTop: 18 }}>
           <Btn full variant="secondary" icon={Plus} onClick={openAddCard}>Add payment method</Btn>
         </div>
@@ -600,9 +619,9 @@ export function ScreenClientHistory({ nav, bookings = [], clientNotifications = 
   const paidBookings = bookings.filter((b) => b.status === "confirmed" || b.status === "completed" || b.status === "cancelled");
 
   return (
-    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="History" onBack={() => nav("client-profile")} />
-      <div style={{ marginBottom: 16 }}>
+      <div style={{ padding: "16px 18px 0", marginBottom: 16 }}>
         <SegTabs
           items={[{ value: "payments", label: "Payments" }, { value: "activity", label: "Activity" }]}
           value={tab}
@@ -610,14 +629,15 @@ export function ScreenClientHistory({ nav, bookings = [], clientNotifications = 
         />
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 20 }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: 24 }} className="cl-hide-scrollbar">
         {tab === "payments" && (
           <>
             {paidBookings.length === 0 && (
               <EmptyState icon={CreditCard} title="No payments yet" body="Your session receipts will show up here." />
             )}
-            {paidBookings.map((b) => (
-              <Card key={b.id} onClick={() => setReceiptTarget(b)} style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div className="cl-stagger">
+              {paidBookings.map((b, i) => (
+                <Card key={b.id} onClick={() => setReceiptTarget(b)} style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center", animationDelay: `${Math.min(i, 8) * 45}ms` }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <Avatar name={b.coachName} size={40} />
                   <div>
@@ -631,6 +651,7 @@ export function ScreenClientHistory({ nav, bookings = [], clientNotifications = 
                 </div>
               </Card>
             ))}
+            </div>
           </>
         )}
 
@@ -639,10 +660,11 @@ export function ScreenClientHistory({ nav, bookings = [], clientNotifications = 
             {activity.length === 0 && (
               <EmptyState icon={HistoryIcon} title="No activity yet" body="Booking updates, payments and other account activity will show up here." />
             )}
-            {activity.map((n) => {
+            <div className="cl-stagger">
+            {activity.map((n, i) => {
               const Icon = CLIENT_ACTIVITY_ICON[n.type] || HistoryIcon;
               return (
-                <Card key={n.id} style={{ marginBottom: 10, display: "flex", gap: 12, alignItems: "flex-start" }}>
+                <Card key={n.id} style={{ marginBottom: 10, display: "flex", gap: 12, alignItems: "flex-start", animationDelay: `${Math.min(i, 8) * 45}ms` }}>
                   <div style={{ width: 36, height: 36, borderRadius: 11, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <Icon size={16} color={C.brandIcon || C.brandColor} />
                   </div>
@@ -656,6 +678,7 @@ export function ScreenClientHistory({ nav, bookings = [], clientNotifications = 
                 </Card>
               );
             })}
+            </div>
           </>
         )}
       </div>

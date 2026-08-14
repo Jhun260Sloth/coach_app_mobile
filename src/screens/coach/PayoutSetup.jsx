@@ -10,9 +10,9 @@ export function ScreenCoachPayoutSetup({ nav, toast }) {
   const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
   const fieldWrapStyle = {
     display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`,
-    borderRadius: 13, padding: "11px 13px", marginBottom: 16, boxSizing: "border-box",
+    borderRadius: 13, padding: "11px 13px", marginBottom: 16, boxSizing: "border-box", background: C.white,
   };
-  const fieldInputStyle = { border: "none", outline: "none", flex: 1, fontSize: T.subtitle, minWidth: 0, ...fBody };
+  const fieldInputStyle = { border: "none", outline: "none", flex: 1, fontSize: T.bodyLg, minWidth: 0, color: C.jet, ...fBody };
   const [accountHolder, setAccountHolder] = useState("");
   const [bankName, setBankName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
@@ -24,8 +24,8 @@ export function ScreenCoachPayoutSetup({ nav, toast }) {
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <div style={{ padding: "18px 20px 0", flex: 1, overflowY: "auto", paddingBottom: 100 }}>
-        <TopBar title="Payout setup" onBack={() => nav("coach-availability-setup")} />
+      <TopBar title="Payout setup" onBack={() => nav("coach-availability-setup")} />
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
 
         <div style={{ fontSize: T.subtitleLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fDisplay }}>
           Payout Setup
@@ -35,31 +35,31 @@ export function ScreenCoachPayoutSetup({ nav, toast }) {
         </div>
 
         <div style={labelStyle}>Account holder name</div>
-        <div style={fieldWrapStyle}>
+        <div className="cl-input" style={fieldWrapStyle}>
           <User size={16} color={C.slateLight} />
           <input value={accountHolder} onChange={(e) => setAccountHolder(e.target.value)} placeholder="e.g. Josh Whitfield" style={fieldInputStyle} />
         </div>
 
         <div style={labelStyle}>Bank name</div>
-        <div style={fieldWrapStyle}>
+        <div className="cl-input" style={fieldWrapStyle}>
           <Landmark size={16} color={C.slateLight} />
           <input value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="e.g. Commonwealth Bank" style={fieldInputStyle} />
         </div>
 
         <div style={labelStyle}>Account number</div>
-        <div style={fieldWrapStyle}>
+        <div className="cl-input" style={fieldWrapStyle}>
           <Hash size={16} color={C.slateLight} />
           <input value={accountNumber} onChange={(e) => setAccountNumber(e.target.value.replace(/[^0-9]/g, ""))} placeholder="e.g. 12345678" inputMode="numeric" style={fieldInputStyle} />
         </div>
 
         <div style={labelStyle}>BSB / Routing number</div>
-        <div style={fieldWrapStyle}>
+        <div className="cl-input" style={fieldWrapStyle}>
           <Hash size={16} color={C.slateLight} />
           <input value={routingNumber} onChange={(e) => setRoutingNumber(e.target.value.replace(/[^0-9]/g, ""))} placeholder="e.g. 062-000" inputMode="numeric" style={fieldInputStyle} />
         </div>
 
         <div style={labelStyle}>Tax information (if required)</div>
-        <div style={{ ...fieldWrapStyle, marginBottom: 8 }}>
+        <div className="cl-input" style={{ ...fieldWrapStyle, marginBottom: 8 }}>
           <FileText size={16} color={C.slateLight} />
           <input value={taxInfo} onChange={(e) => setTaxInfo(e.target.value)} placeholder="e.g. ABN or Tax File Number" style={fieldInputStyle} />
         </div>

@@ -29,8 +29,8 @@ export function ScreenClientSetupComplete({ nav, params, setIsFirstTimeClient, s
   };
 
   return (
-    <div style={{ padding: "28px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
-      <div style={{ textAlign: "center", marginTop: 48 }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      <div style={{ padding: "18px 18px 0", textAlign: "center", marginTop: 48 }}>
         <div style={{
           width: 72, height: 72, borderRadius: 22, background: C.brandTint,
           display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px",
@@ -43,7 +43,7 @@ export function ScreenClientSetupComplete({ nav, params, setIsFirstTimeClient, s
         </div>
       </div>
 
-      <div style={{ marginTop: "auto", padding: "14px 0" }}>
+      <div style={{ marginTop: "auto", padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
         <Btn full onClick={startExploring}>Start exploring</Btn>
       </div>
     </div>

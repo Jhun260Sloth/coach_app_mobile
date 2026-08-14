@@ -29,8 +29,8 @@ export function ScreenCoachServicesSetup({ nav, toast, savePackage, removePackag
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <div style={{ padding: "18px 20px 0", flex: 1, overflowY: "auto", paddingBottom: 100 }}>
-        <TopBar title="Coaching services" onBack={() => nav("verification-pending")} />
+      <TopBar title="Coaching services" onBack={() => nav("verification-pending")} />
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
 
         <div style={{ fontSize: T.subtitleLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fDisplay }}>
           Add coaching services

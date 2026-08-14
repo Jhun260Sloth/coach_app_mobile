@@ -155,3 +155,68 @@ button, input, textarea {
   height: 0 !important;
   display: none;
 }
+
+/* =========================================================================
+   MOBILE-FEEL INTERACTIONS
+   -------------------------------------------------------------------------
+   Native-app touches: no tap highlight, subtle press feedback on every
+   button, brand-coloured selection, smooth momentum scrolling.
+   ========================================================================= */
+.cl-phone-screen {
+  -webkit-tap-highlight-color: transparent;
+  scroll-behavior: smooth;
+}
+
+.cl-phone-screen button {
+  -webkit-tap-highlight-color: transparent;
+  transition: transform .14s cubic-bezier(.2,.7,.3,1), opacity .18s ease;
+}
+
+.cl-phone-screen button:active:not(:disabled) {
+  transform: scale(.97);
+}
+
+.cl-phone-screen ::selection {
+  background: rgba(46, 125, 50, .22);
+}
+
+/* Inputs — border-only focus state: the border turns brand green, no glow
+   ring. Applies to bare inputs AND .cl-input wrapper divs via focus-within. */
+.cl-phone-screen input:focus,
+.cl-phone-screen textarea:focus,
+.cl-phone-screen select:focus {
+  outline: none;
+  border-color: var(--cl-secondary) !important;
+  box-shadow: none !important;
+}
+
+/* Shared field wrapper — used by Field, SearchSelect, SearchMultiSelect,
+   LocationField and other bordered input containers. */
+.cl-input {
+  transition: border-color .18s ease, background-color .18s ease;
+}
+.cl-input:focus-within {
+  border-color: var(--cl-secondary) !important;
+  box-shadow: none !important;
+}
+
+/* Cards lift subtly on hover — desktop prototyping feel, inert on touch. */
+.cl-card {
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+.cl-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px -8px rgba(22, 24, 29, .12);
+  border-color: var(--cl-secondary);
+}
+
+/* Native-app feel: text stays selectable only inside form fields. */
+.cl-phone-screen {
+  user-select: none;
+  -webkit-user-select: none;
+}
+.cl-phone-screen input,
+.cl-phone-screen textarea {
+  user-select: text;
+  -webkit-user-select: text;
+}

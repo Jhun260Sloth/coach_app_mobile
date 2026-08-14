@@ -230,13 +230,13 @@ export function AppProvider({ children }) {
         ...prefs.children
           .filter((nc) => nc.name && nc.name.trim().length > 0)
           .filter((nc) => !c.some((ec) => ec.id === nc.id))
-          .map((nc) => ({ sport: [], goals: "", postalCode: prefs.postalCode || "", preferences: "", hasPhoto: false, ...nc })),
+          .map((nc) => ({ sport: [], goals: "", location: prefs.location || null, preferences: "", hasPhoto: false, ...nc })),
       ]);
     }
   };
 
   const addChild = (child) =>
-    setChildren((c) => [...c, { id: Date.now(), name: "", age: "", sport: [], goals: "", postalCode: "", preferences: "", hasPhoto: false, ...child }]);
+    setChildren((c) => [...c, { id: Date.now(), name: "", age: "", sport: [], goals: "", location: null, preferences: "", hasPhoto: false, ...child }]);
   const updateChild = (id, patch) =>
     setChildren((c) => c.map((ch) => (ch.id === id ? { ...ch, ...patch } : ch)));
   const removeChild = (id) =>

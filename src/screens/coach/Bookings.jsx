@@ -60,8 +60,8 @@ export function ScreenCoachBookings({ nav, coachBookings }) {
   const goPrev = () => setCursor((c) => calMode === "month" ? new Date(c.getFullYear(), c.getMonth() - 1, 1) : addDays(c, -7));
   const goNext = () => setCursor((c) => calMode === "month" ? new Date(c.getFullYear(), c.getMonth() + 1, 1) : addDays(c, 7));
 
-  const renderBookingCard = (b) => (
-    <Card key={b.id} style={{ marginBottom: 10 }} onClick={() => nav("coach-booking-detail", { id: b.id })}>
+  const renderBookingCard = (b, i) => (
+    <Card key={b.id} style={{ marginBottom: 10, ...(i !== undefined ? { animationDelay: `${Math.min(i, 8) * 45}ms` } : {}) }} onClick={() => nav("coach-booking-detail", { id: b.id })}>
       <div style={{ display: "flex", justifyContent: "space-between" }}>
         <div style={{ display: "flex", gap: 10 }}>
           <Avatar name={b.clientName} size={40} />
@@ -86,7 +86,7 @@ export function ScreenCoachBookings({ nav, coachBookings }) {
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <div style={{ padding: "18px 20px 0" }}>
+      <div style={{ padding: "18px 18px 0" }}>
         <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, marginBottom: 14, ...fDisplay }}>Bookings</div>
         <div style={{ marginBottom: 10 }}>
           <SegTabs value={view} onChange={setView} items={[{ value: "list", label: "List" }, { value: "calendar", label: "Calendar" }]} />
@@ -109,11 +109,13 @@ export function ScreenCoachBookings({ nav, coachBookings }) {
           </>
         )}
       </div>
-      <div style={{ flex: 1, overflowY: "auto", padding: view === "calendar" ? "14px 20px 100px" : "16px 20px 100px" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: 116 }} className="cl-hide-scrollbar">
         {view === "list" && (
           <>
             {list.length === 0 && <EmptyState icon={ClipboardList} title="Nothing here" body="Bookings in this stage will appear here." />}
-            {list.map(renderBookingCard)}
+            <div className="cl-stagger">
+              {list.map((b, i) => renderBookingCard(b, i))}
+            </div>
           </>
         )}
 
@@ -192,9 +194,9 @@ export function ScreenCoachBookingDetail({ nav, params, coachBookings, respondBo
   const profile = CLIENT_PROFILES[booking.clientName] || { memberSince: "—", totalSessions: 0, homeSuburb: "—", notes: "", verifiedPayment: true };
   const hasThread = !!BOOKING_ENQUIRY_MESSAGES[booking.id];
   return (
-    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="Booking request" onBack={() => nav("coach-bookings")} />
-      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 20 }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
 
         <Card style={{ marginBottom: 14 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>

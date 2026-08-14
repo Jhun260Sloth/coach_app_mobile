@@ -3,7 +3,7 @@ import { COACHES, CONFIG } from "../../data/mockData";
 
 import {
   Fingerprint, CreditCard, CheckCircle2, Plus, Lock, Calendar, Navigation, MessageCircle,
-  Users, User, ShieldCheck, Phone, Stethoscope, AlertTriangle, UserPlus, MapPin, Send, Home,
+  Users, User, ShieldCheck, Phone, Stethoscope, AlertTriangle, UserPlus, Send, Home,
   Repeat as RepeatIcon, UserCheck, Camera,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
@@ -11,6 +11,7 @@ import { useApp } from "../../context/AppContext";
 import {
   Avatar, Card, Chip, SectionLabel, Btn, TopBar, Toggle, Field, Row, RadioRow, BottomSheet,
 } from "../../components/ui/Primitives";
+import { LocationField } from "../../components/ui/LocationField";
 import { StatusBanner, ResultOverlay } from "../../systems/StateSystem";
 import { SPORTS } from "../../data/mockData";
 import { SKILL_LEVELS } from "./AboutYou";
@@ -199,7 +200,7 @@ export function buildFallbackDraft(params, draft) {
 // same shape as the one on the Account screen, so a child created mid-booking
 // looks and behaves exactly like one added from the Account tab.
 const emptyChildDraft = {
-  name: "", age: "", sport: [], skillLevel: "", goals: "", postalCode: "", preferences: "", hasPhoto: false,
+  name: "", age: "", sport: [], skillLevel: "", goals: "", location: null, preferences: "", hasPhoto: false,
   medicalConditions: "", allergies: "",
   guardianName: "", guardianRelationship: "", guardianMobile: "",
 };
@@ -255,21 +256,23 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
   };
 
   return (
-    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="Who's attending?" onBack={() => nav("package-detail", { coachId: coach.id, packageId: pkg.id, presetDate: params.presetDate, presetTime: params.presetTime })} />
 
-      <Card style={{ marginBottom: 22, display: "flex", gap: 12, alignItems: "center", border: `1px solid ${C.border}`, boxShadow: "0 1px 2px rgba(22,24,29,.04)" }}>
-        <Avatar name={coach.name} size={44} />
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: T.subtitleLg, fontWeight: 700, color: C.jet, letterSpacing: "-0.1px", ...fDisplay }}>{pkg.name}</div>
-          <div style={{ fontSize: T.labelLg, color: C.slate, marginTop: 2, ...fBody }}>with {coach.name}</div>
-        </div>
-        <div style={{ marginLeft: "auto", fontSize: T.title, fontWeight: 800, color: C.jet, whiteSpace: "nowrap", ...fDisplay }}>
-          ${pkg.price}
-        </div>
-      </Card>
+      <div style={{ padding: "16px 18px 0" }}>
+        <Card style={{ marginBottom: 22, display: "flex", gap: 12, alignItems: "center", border: `1px solid ${C.border}`, boxShadow: "0 1px 2px rgba(22,24,29,.04)" }}>
+          <Avatar name={coach.name} size={44} />
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: T.subtitleLg, fontWeight: 700, color: C.jet, letterSpacing: "-0.1px", ...fDisplay }}>{pkg.name}</div>
+            <div style={{ fontSize: T.labelLg, color: C.slate, marginTop: 2, ...fBody }}>with {coach.name}</div>
+          </div>
+          <div style={{ marginLeft: "auto", fontSize: T.title, fontWeight: 800, color: C.jet, whiteSpace: "nowrap", ...fDisplay }}>
+            ${pkg.price}
+          </div>
+        </Card>
+      </div>
 
-      <div style={{ flex: 1, overflowY: "auto" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: 24 }} className="cl-hide-scrollbar">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
           <SectionLabel>Select who's coming</SectionLabel>
           <span style={{ fontSize: T.caption, fontWeight: 600, color: C.slateLight, ...fBody }}>
@@ -319,7 +322,7 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
         )}
       </div>
 
-      <div style={{ marginTop: "auto", padding: "14px 0" }}>
+      <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
         <Btn full disabled={!canContinue} onClick={() => nav("booking-datetime", { coachId: coach.id, packageId: pkg.id, participants, presetDate: params.presetDate, presetTime: params.presetTime })}>Continue</Btn>
       </div>
 
@@ -346,7 +349,12 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <Field label="Child's name" placeholder="e.g. Ava" icon={User} value={childDraft.name} onChange={(e) => setChildDraft((d) => ({ ...d, name: e.target.value }))} />
           <Field label="Age" placeholder="e.g. 9" value={childDraft.age} onChange={(e) => setChildDraft((d) => ({ ...d, age: e.target.value }))} />
-          <Field label="Location / postcode" placeholder="e.g. 2026" icon={MapPin} value={childDraft.postalCode} onChange={(e) => setChildDraft((d) => ({ ...d, postalCode: e.target.value }))} />
+          <LocationField
+            value={childDraft.location}
+            onChange={(loc) => setChildDraft((d) => ({ ...d, location: loc }))}
+            label="Location"
+            placeholder="Search suburb or postcode…"
+          />
         </div>
 
         <div style={{ marginTop: 4 }}>
@@ -445,10 +453,10 @@ export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings =
   const canContinue = hasDateTime && !conflictBooking && !needsEndDate;
 
   return (
-    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="Confirm Session" onBack={() => nav("booking-participants", { coachId: coach.id, packageId: pkg.id, participants: params.participants })} />
 
-      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 8 }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
         <div style={{ fontSize: T.labelLg, color: C.slate, lineHeight: 1.5, marginBottom: 18, ...fBody }}>
           Review your session below, and set it up to repeat if you'd like.
         </div>
@@ -518,12 +526,12 @@ export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings =
                   {repeatFreq === "weekly" && (
                     <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
                       <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Repeat every</div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "9px 13px" }}>
+                      <div className="cl-input" style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", background: C.white }}>
                         <RepeatIcon size={14} color={C.slateLight} />
                         <input
                           type="number" min={1} value={repeatEvery}
                           onChange={(e) => setRepeatEvery(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                          style={{ border: "none", outline: "none", width: 40, fontSize: T.body, ...fBody }}
+                          style={{ border: "none", outline: "none", width: 40, fontSize: T.body, color: C.jet, ...fBody }}
                         />
                         <span style={{ fontSize: T.labelLg, color: C.slate, ...fBody }}>week{repeatEvery > 1 ? "s" : ""}</span>
                       </div>
@@ -538,7 +546,7 @@ export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings =
                     {endAfterType === "date" && (
                       <input
                         type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
-                        style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "10px 13px", fontSize: T.body, outline: "none", boxSizing: "border-box", marginTop: 6, ...fBody }}
+                        style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", marginTop: 6, color: C.jet, background: C.white, ...fBody }}
                       />
                     )}
                     {needsEndDate && (
@@ -565,7 +573,7 @@ export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings =
         )}
       </div>
 
-      <div style={{ padding: "14px 0" }}>
+      <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
         <Btn
           full
           disabled={!canContinue}
@@ -645,9 +653,9 @@ export function ScreenBookingReview({ nav, params, draft, setDraft, toast, child
   const canContinue = participants.length > 0 && (!includesMinor || (consent && guardianDetailsComplete));
 
   return (
-    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="Review booking" onBack={() => nav("booking-datetime", { coachId: d.coach.id, packageId: d.pkg.id, participants })} />
-      <div style={{ flex: 1, overflowY: "auto" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
         <Card style={{ marginBottom: 14}}>
           <Row label="Coach" value={d.coach.name} />
           <Row label="Service" value={d.pkg.name} />
@@ -730,7 +738,7 @@ export function ScreenBookingReview({ nav, params, draft, setDraft, toast, child
 
                 <div style={{ marginTop: 14 }}>
                   <SectionLabel>Relevant medical conditions or allergies</SectionLabel>
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10, background: C.fog, borderRadius: 14, padding: "12px 14px" }}>
+                  <div className="cl-input" style={{ display: "flex", alignItems: "flex-start", gap: 10, background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
                     <Stethoscope size={16} color={C.slateLight} style={{ marginTop: 2, flexShrink: 0 }} />
                     <textarea
                       value={conditions}
@@ -765,7 +773,7 @@ export function ScreenBookingReview({ nav, params, draft, setDraft, toast, child
           <Row label="Total" value={`$${total.toFixed(2)}`} bold last />
         </Card>
       </div>
-      <div style={{ padding: "14px 0" }}>
+      <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
         <Btn full disabled={!canContinue} onClick={() => {
           // Fold any safety details already saved on a child's profile into the notes
           // that travel with the booking, alongside anything freshly typed above.
@@ -838,9 +846,9 @@ export function ScreenPayment({ nav, params, draft, toast, addBooking, markBooki
   };
 
   return (
-    <div style={{ padding: "20px 20px 0", height: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
       <TopBar title="Payment" onBack={() => nav("booking-review")} />
-      <div style={{ flex: 1, overflowY: "auto" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
         {offline && (
           <div style={{ marginBottom: 16 }}>
             <StatusBanner state="actionBlockedOffline" compact />
@@ -896,7 +904,7 @@ export function ScreenPayment({ nav, params, draft, toast, addBooking, markBooki
           Use a test card that declines (simulate failure)
         </button>
       </div>
-      <div style={{ padding: "14px 0", display: "flex", gap: 10 }}>
+      <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, display: "flex", gap: 10, flexShrink: 0 }}>
         {result !== "failed" && result !== "cancelled" && (
           <button onClick={cancelPayment} disabled={busy} style={{ background: "none", border: "none", cursor: busy ? "default" : "pointer", fontSize: T.labelLg, color: C.slate, fontWeight: 600, padding: "0 4px", ...fBody }}>
             Cancel
@@ -928,8 +936,8 @@ export function ScreenBookingConfirmation({ nav, params, draft, toast }) {
   const [synced, setSynced] = useState(false);
   const [locShare, setLocShare] = useState(false);
   return (
-    <div style={{ padding: "28px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
-      <div style={{ textAlign: "center", marginBottom: 20 }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      <div style={{ padding: "18px 18px 0", textAlign: "center", marginBottom: 20 }}>
         <div style={{ width: 60, height: 60, borderRadius: 20, background: C.successTint, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
           <CheckCircle2 size={28} color={C.success} />
         </div>
@@ -941,33 +949,35 @@ export function ScreenBookingConfirmation({ nav, params, draft, toast }) {
         </div>
       </div>
 
-      <Card style={{ marginBottom: 14 }}>
-        <Row label="Service" value={d.pkg.name} />
-        <Row label="When" value={`${d.day} at ${d.time}`} />
-        <Row label="Location" value={d.mode} />
-        {d.participants && <Row label="For" value={d.participants} last />}
-      </Card>
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
+        <Card style={{ marginBottom: 14 }}>
+          <Row label="Service" value={d.pkg.name} />
+          <Row label="When" value={`${d.day} at ${d.time}`} />
+          <Row label="Location" value={d.mode} />
+          {d.participants && <Row label="For" value={d.participants} last />}
+        </Card>
 
-      <Card style={{ marginBottom: 10 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Calendar size={16} color={C.jet} />
-            <span style={{ fontSize: T.body, color: C.jet, fontWeight: 500, ...fBody }}>Sync to device calendar</span>
+        <Card style={{ marginBottom: 10 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Calendar size={16} color={C.jet} />
+              <span style={{ fontSize: T.body, color: C.jet, fontWeight: 500, ...fBody }}>Sync to device calendar</span>
+            </div>
+            <Toggle on={synced} onClick={() => { setSynced((v) => !v); toast(!synced ? "Added to your calendar" : "Removed from calendar"); }} />
           </div>
-          <Toggle on={synced} onClick={() => { setSynced((v) => !v); toast(!synced ? "Added to your calendar" : "Removed from calendar"); }} />
-        </div>
-      </Card>
-      <Card style={{ marginBottom: 20 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Navigation size={16} color={C.jet} />
-            <span style={{ fontSize: T.body, color: C.jet, fontWeight: 500, ...fBody }}>Share live location during session</span>
+        </Card>
+        <Card style={{ marginBottom: 20 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Navigation size={16} color={C.jet} />
+              <span style={{ fontSize: T.body, color: C.jet, fontWeight: 500, ...fBody }}>Share live location during session</span>
+            </div>
+            <Toggle on={locShare} onClick={() => setLocShare((v) => !v)} />
           </div>
-          <Toggle on={locShare} onClick={() => setLocShare((v) => !v)} />
-        </div>
-      </Card>
+        </Card>
+      </div>
 
-      <div style={{ marginTop: "auto", padding: "14px 0", display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, display: "flex", flexDirection: "column", gap: 10, flexShrink: 0 }}>
         <Btn full variant="secondary" icon={MessageCircle} onClick={() => nav("chat-thread", { name: d.coach.name })}>Message {d.coach.name.split(" ")[0]}</Btn>
         <Btn full onClick={() => nav("client-dashboard")}>Go to dashboard</Btn>
       </div>
@@ -986,8 +996,8 @@ export function ScreenBookingRequestSent({ nav, params }) {
   const C = darkMode ? CD : CL;
   const coachName = params?.coachName || COACHES[0].name;
   return (
-    <div style={{ padding: "28px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
-      <div style={{ textAlign: "center", marginBottom: 24 }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      <div style={{ padding: "18px 18px 0", textAlign: "center", marginBottom: 24 }}>
         <div style={{ width: 60, height: 60, borderRadius: 20, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
           <Send size={26} color={C.brand} />
         </div>
@@ -997,7 +1007,7 @@ export function ScreenBookingRequestSent({ nav, params }) {
         </div>
       </div>
 
-      <div style={{ marginTop: "auto", padding: "14px 0", display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, display: "flex", flexDirection: "column", gap: 10, marginTop: "auto", flexShrink: 0 }}>
         <Btn full icon={Home} onClick={() => nav("client-home")}>Return to home</Btn>
         <Btn full variant="secondary" icon={MessageCircle} onClick={() => nav("chat-thread", { name: coachName })}>Message Coach</Btn>
       </div>
