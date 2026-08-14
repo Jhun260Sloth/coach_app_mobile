@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { Search, Filter, Navigation, Star, MapPin, Heart, X, LocateFixed, Calendar, MessageCircle, Sparkles, Check, Bell, Percent, CreditCard } from "lucide-react";
+import { Search, Filter, Navigation, Star, MapPin, Heart, X, LocateFixed, Calendar, MessageCircle, Sparkles, Check, Bell, Percent, CreditCard, LayoutList, Map as MapIcon } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 
@@ -8,6 +8,7 @@ import { Card, Chip, Badge, SegTabs, SectionLabel, Avatar, Btn, TopBar, BottomSh
 
 
 import { useLiveNotifications, NotificationBellButton, StatusBanner, useUserLocation } from "../../systems/StateSystem";
+import { LocationField } from "../../components/ui/LocationField";
 import { CoachMapView } from "../../components/map/CoachMapView";
 import { haversineKm, FALLBACK_USER_LOCATION, injectMapStyles, CUSTOM_RADIUS_MIN_KM, CUSTOM_RADIUS_MAX_KM } from "../../lib/mapUtils";
 
@@ -210,47 +211,46 @@ export function PostSignupGuideModal({ open, onClose, onFindCoaches }) {
    search radius, sport interests and (optional) goals, then hands the
    preferences back so the caller can populate the Coach Listings section.
    ------------------------------------------------------------------------- */
-export function PersonalisedRecommendationModal({ open, onClose, onSubmit, userLocation, locating, requestLocation }) {
-  const { darkMode } = useApp();
+export function PersonalisedRecommendationModal({ open, onClose, onSubmit }) {
+  const { darkMode, clientPrefs } = useApp();
   const C = darkMode ? CD : CL;
-  const [useCurrentLocation, setUseCurrentLocation] = useState(true);
-  const [locationText, setLocationText] = useState("");
+  const [location, setLocation] = useState(null);
   const [radiusKm, setRadiusKm] = useState(10);
   const isPresetRadius = NEARBY_RADIUS_PRESETS.includes(radiusKm);
   const [showCustomRadius, setShowCustomRadius] = useState(false);
   const [customRadius, setCustomRadius] = useState("");
   const [sports, setSports] = useState([]);
-  const [goals, setGoals] = useState("");
   // Brief "processing" delay after submit so the platform visibly appears to
   // crunch the client's preferences before handing back curated matches,
   // rather than snapping straight to results.
   const [submitting, setSubmitting] = useState(false);
 
+  // The location saved during account creation is reused here so the client
+  // isn't asked for it twice; the same structured suburb picker as account
+  // setup lets them detect their position or search for a different suburb.
+  const savedLocation = clientPrefs?.location || null;
+
   // Reset the form every time the sheet is (re)opened so a previous session's
   // input doesn't linger if the client closes it and comes back later.
   useEffect(() => {
     if (open) {
-      setUseCurrentLocation(true);
-      setLocationText("");
+      setLocation(savedLocation);
       setRadiusKm(10);
       setShowCustomRadius(false);
       setCustomRadius("");
       setSports([]);
-      setGoals("");
       setSubmitting(false);
     }
   }, [open]);
 
   const toggleSport = (s) => setSports((arr) => (arr.includes(s) ? arr.filter((x) => x !== s) : [...arr, s]));
 
-  const handleUseLocation = () => { setUseCurrentLocation(true); setLocationText(""); requestLocation?.(); };
-
   const applyCustomRadius = () => {
     const val = Number(customRadius);
     if (val >= CUSTOM_RADIUS_MIN_KM && val <= CUSTOM_RADIUS_MAX_KM) { setRadiusKm(val); setShowCustomRadius(false); }
   };
 
-  const canSubmit = useCurrentLocation || locationText.trim().length > 0;
+  const canSubmit = !!location;
 
   const handleSubmit = () => {
     setSubmitting(true);
@@ -258,36 +258,25 @@ export function PersonalisedRecommendationModal({ open, onClose, onSubmit, userL
     // state a moment to register before the sheet closes into results.
     setTimeout(() => {
       onSubmit({
-        useCurrentLocation,
-        locationText: useCurrentLocation ? "" : locationText.trim(),
+        locationText: location.suburb,
         radiusKm,
         sports,
-        goals: goals.trim(),
       });
     }, 1400);
   };
 
   return (
     <BottomSheet open={open} onClose={submitting ? () => {} : onClose} title="Personalise Your Recommendations" heightPct={92}>
-      <SectionLabel>Current Location</SectionLabel>
-      <button onClick={handleUseLocation} style={{
-        display: "flex", width: "100%", boxSizing: "border-box", alignItems: "center", gap: 8,
-        padding: "11px 14px", borderRadius: 12, border: `1px solid ${useCurrentLocation ? C.brand : C.border}`,
-        background: useCurrentLocation ? C.brandTint : C.white, color: useCurrentLocation ? C.brand : C.jet,
-        fontWeight: 600, fontSize: T.bodyLg, cursor: "pointer", marginBottom: 10, ...fBody,
-      }}>
-        {locating && useCurrentLocation ? <Spinner size={13} color={C.brand} /> : <LocateFixed size={14} />}
-        {useCurrentLocation ? (locating ? "Locating you…" : "Using your current location") : "Use my current location"}
-      </button>
-      <div style={{ textAlign: "center", fontSize: T.captionLg, color: C.slateLight, margin: "4px 0 10px", ...fBody }}>or enter it manually</div>
-      <input
-        value={locationText}
-        onChange={(e) => { setLocationText(e.target.value); setUseCurrentLocation(false); }}
-        placeholder="Suburb, city or postcode"
-        style={{ width: "100%", boxSizing: "border-box", background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, color: C.jet, outline: "none", marginBottom: 22, ...fBody }}
-      />
-
-      <SectionLabel>Search Radius</SectionLabel>
+      <SectionLabel>Your Location</SectionLabel>
+      <div style={{ marginBottom: 22 }}>
+        <LocationField
+          value={location}
+          onChange={setLocation}
+          label=""
+          placeholder="Search suburb or postcode…"
+          helper="We'll use this to find coaches near you."
+        />
+      </div>
       <div style={{ marginBottom: 22 }}>
         {showCustomRadius ? (
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -316,15 +305,6 @@ export function PersonalisedRecommendationModal({ open, onClose, onSubmit, userL
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 22 }}>
         {SPORTS.map((s) => <Chip key={s} active={sports.includes(s)} onClick={() => toggleSport(s)}>{s}</Chip>)}
       </div>
-
-      <SectionLabel>Coaching Goals <span style={{ fontWeight: 400, color: C.slateLight }}>(optional)</span></SectionLabel>
-      <textarea
-        value={goals}
-        onChange={(e) => setGoals(e.target.value)}
-        placeholder="e.g. Improve my technique, train for a competition, build confidence…"
-        rows={3}
-        style={{ width: "100%", boxSizing: "border-box", background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, color: C.jet, outline: "none", resize: "none", marginBottom: 24, ...fBody }}
-      />
 
       <Btn full disabled={!canSubmit} loading={submitting} loadingText="Finding your matches…" onClick={handleSubmit}>Find My Coaches</Btn>
     </BottomSheet>
@@ -484,9 +464,6 @@ export function ScreenClientHome({ nav, favorites = [], toggleFav, filters, onFi
       open={prefsModalOpen}
       onClose={() => setPrefsModalOpen(false)}
       onSubmit={handlePrefsSubmit}
-      userLocation={userLocation}
-      locating={locating}
-      requestLocation={requestLocation}
     />
   );
 
@@ -617,7 +594,16 @@ export function ScreenClientHome({ nav, favorites = [], toggleFav, filters, onFi
           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: T.body, fontWeight: 600, color: C.jet, ...fDisplay }}>
             {view === "favorites" ? <><Heart size={13} color={C.brand} /> Your favorites</> : <><Navigation size={13} color={C.brand} /> Coaches near you</>}
           </div>
-          <SegTabs strong value={view} onChange={setView} items={[{ value: "list", label: "List" }, { value: "map", label: "Map" }, { value: "favorites", label: "Favorites" }]} />
+          <SegTabs
+            strong
+            value={view}
+            onChange={setView}
+            items={[
+              { value: "list", icon: LayoutList, ariaLabel: "List view" },
+              { value: "map", icon: MapIcon, ariaLabel: "Map view" },
+              { value: "favorites", icon: Heart, ariaLabel: "Favorites", fillActive: true },
+            ]}
+          />
         </div>
       </div>
 

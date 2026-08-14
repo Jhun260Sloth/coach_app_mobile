@@ -451,17 +451,42 @@ export function SegTabs({ items, value, onChange, strong }) {
     <div style={{ display: "flex", background: C.fog, borderRadius: 13, padding: 3, gap: 2 }}>
       {items.map((it) => {
         const active = value === it.value;
+        const Icon = it.icon;
+        const label = it.label;
+        const ariaLabel = it.ariaLabel || (typeof label === "string" ? label : it.value);
         return (
-          <button key={it.value} onClick={() => onChange(it.value)}
+          <button
+            key={it.value}
+            onClick={() => onChange(it.value)}
+            aria-label={ariaLabel}
+            title={ariaLabel}
             style={{
-              flex: 1, padding: "8px 6px", borderRadius: 10, border: "none", cursor: "pointer",
+              flex: 1,
+              padding: label ? "8px 8px" : "8px 12px",
+              borderRadius: 10,
+              border: "none",
+              cursor: "pointer",
               background: active ? (strong ? C.jet : C.white) : "transparent",
               color: active ? (strong ? C.white : C.jet) : C.slate,
-              fontWeight: active ? 700 : 600, fontSize: T.labelLg,
+              fontWeight: active ? 700 : 600,
+              fontSize: T.labelLg,
               boxShadow: active && !strong ? "0 1px 3px rgba(0,0,0,.08)" : "none",
-              transition: "background .15s ease, color .15s ease", ...fBody,
-            }}>
-            {it.label}
+              transition: "background .15s ease, color .15s ease",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+              ...fBody,
+            }}
+          >
+            {Icon && (
+              <Icon
+                size={16}
+                color={active ? (strong ? C.white : C.jet) : C.slate}
+                fill={it.fillActive && active ? (strong ? C.white : C.jet) : "none"}
+              />
+            )}
+            {label}
           </button>
         );
       })}

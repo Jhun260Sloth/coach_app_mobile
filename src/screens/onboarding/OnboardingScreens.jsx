@@ -29,7 +29,7 @@ function AppleIcon({ size = 16, color = "currentColor" }) {
 function SelectField({ label, value, onChange, options, placeholder = "Select…" }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
-  const inputStyle = { width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", ...fBody };
+  const inputStyle = { width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", background: C.white, color: C.jet, ...fBody };
   const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
   return (
     <div>
@@ -257,13 +257,15 @@ export function ScreenRoleSelect({ nav, setRole }) {
     </button>
   );
   return (
-    <div style={{ padding: "24px 20px", height: "100%", display: "flex", flexDirection: "column" }}>
-      <LogoMark size={34} />
-      <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, marginTop: 22, ...fDisplay }}>What brings you<br />to CoachLink?</div>
-      <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 6, marginBottom: 22, ...fBody }}>You can add a coaching profile later from the same account.</div>
-      <Option role="client" icon={Search} title="Find a coach" body="Search, book and pay for sessions with verified coaches near you." />
-      <Option role="coach" icon={Users} title="Coach others" body="List your services, manage bookings and get paid automatically." />
-      <div style={{ marginTop: "auto", textAlign: "center", paddingTop: 16 }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "24px 20px 24px" }} className="cl-hide-scrollbar">
+        <LogoMark size={34} />
+        <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, marginTop: 22, ...fDisplay }}>What brings you<br />to CoachLink?</div>
+        <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 6, marginBottom: 22, ...fBody }}>You can add a coaching profile later from the same account.</div>
+        <Option role="client" icon={Search} title="Find a coach" body="Search, book and pay for sessions with verified coaches near you." />
+        <Option role="coach" icon={Users} title="Coach others" body="List your services, manage bookings and get paid automatically." />
+      </div>
+      <div style={{ padding: "12px 20px", paddingBottom: 22, textAlign: "center" }}>
         <button onClick={() => nav("auth", { mode: "login" })} style={{ background: "none", border: "none", color: C.slate, fontSize: T.bodyLg, cursor: "pointer", ...fBody }}>
           Have an existing account? <span style={{ color: C.brand, fontWeight: 600 }}>Sign In</span>
         </button>
@@ -275,7 +277,7 @@ export function ScreenRoleSelect({ nav, setRole }) {
 export function ScreenAuth({ nav, params, role, toast, biometric, updateCoachOnboarding }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
-  const inputStyle = { width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", ...fBody };
+  const inputStyle = { width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", background: C.white, color: C.jet, ...fBody };
   const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
   const [mode, setMode] = useState(params?.mode || "login");
   const [firstName, setFirstName] = useState("");
@@ -294,13 +296,20 @@ export function ScreenAuth({ nav, params, role, toast, biometric, updateCoachOnb
     : firstName.trim() && lastName.trim() && email.trim() && password.length >= 6 && passwordsMatch && agree;
   const homeScreen = role === "coach" ? "coach-dashboard" : "client-home";
 
-  const proceedAfterAuth = () => {
+  const proceedAfterAuth = (method) => {
+    const isSocial = method === "apple" || method === "google";
     if (mode === "login") { nav(homeScreen); return; }
     if (role === "coach") {
+      const fn = firstName.trim() || (isSocial ? (method === "apple" ? "Apple" : "Google") : "");
+      const ln = lastName.trim() || (isSocial ? "User" : "");
       updateCoachOnboarding?.({
-        firstName: firstName.trim(), lastName: lastName.trim(), email: email.trim(),
-        displayName: `${firstName} ${lastName}`.trim(),
+        firstName: fn, lastName: ln, email: email.trim(),
+        displayName: `${fn} ${ln}`.trim(),
       });
+    }
+    if (isSocial) {
+      nav("enable-biometric", { next: role === "coach" ? "coach-info" : "about-you-profile" });
+      return;
     }
     nav("verify-email", {
       email: email.trim(),
@@ -309,7 +318,7 @@ export function ScreenAuth({ nav, params, role, toast, biometric, updateCoachOnb
     });
   };
 
-  const goCreateAccount = () => setMode("signup");
+  const goCreateAccount = () => nav("role-select");
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
@@ -319,8 +328,7 @@ export function ScreenAuth({ nav, params, role, toast, biometric, updateCoachOnb
       <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 6, marginBottom: 20, ...fBody }}>
         {mode === "signup"
           ? (role === "coach" ? "Signing up as a Coach." : "Signing up as a Client.")
-          : (role === "coach" ? "Signing in as a Coach." : "Signing in as a Client.")}{" "}
-        <button onClick={() => nav("role-select")} style={{ background: "none", border: "none", color: C.brand, fontWeight: 600, cursor: "pointer", fontSize: T.bodyLg}}>Change</button>
+          : "Welcome back — sign in to your CoachLink account."}
       </div>
 
        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -351,7 +359,7 @@ export function ScreenAuth({ nav, params, role, toast, biometric, updateCoachOnb
 
       {mode === "login" && (
         <div style={{ textAlign: "right", marginTop: 10 }}>
-          <button onClick={() => nav("forgot-password", { role })} style={{ background: "none", border: "none", color: C.brand, fontWeight: 600, fontSize: T.labelLg, cursor: "pointer", ...fBody }}>
+          <button onClick={() => nav("forgot-password", { role, backTo: params?.backTo })} style={{ background: "none", border: "none", color: C.brand, fontWeight: 600, fontSize: T.labelLg, cursor: "pointer", ...fBody }}>
             Forgot password?
           </button>
         </div>
@@ -386,11 +394,11 @@ export function ScreenAuth({ nav, params, role, toast, biometric, updateCoachOnb
           </Btn>
         </div>
       )}
-      <Btn full variant="dark" icon={AppleIcon}  onClick={() => { toast(mode === "signup" ? "Signed up with Apple" : "Signed in with Apple"); proceedAfterAuth(); }}>
+      <Btn full variant="dark" icon={AppleIcon}  onClick={() => { toast(mode === "signup" ? "Signed up with Apple" : "Signed in with Apple"); proceedAfterAuth("apple"); }}>
         Continue with Apple
       </Btn>
       <div style={{ marginTop: 10 }}>
-        <Btn full variant="outline"  onClick={() => { toast(mode === "signup" ? "Signed up with Google" : "Signed in with Google"); proceedAfterAuth(); }}>Continue with Google</Btn>
+        <Btn full variant="outline"  onClick={() => { toast(mode === "signup" ? "Signed up with Google" : "Signed in with Google"); proceedAfterAuth("google"); }}>Continue with Google</Btn>
       </div>
       </div>
 
@@ -425,13 +433,13 @@ export function ScreenForgotPassword({ nav, params, role, toast }) {
     setTimeout(() => {
       setSending(false);
       toast(`Reset code sent to ${email}`);
-      nav("reset-code", { email, role: effectiveRole });
+      nav("reset-code", { email, role: effectiveRole, backTo: params?.backTo });
     }, 900);
   };
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title="" onBack={() => nav("auth", { mode: "login" })} />
+      <TopBar title="" onBack={() => nav("auth", { mode: "login", backTo: params?.backTo })} />
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
       <div style={{ width: 52, height: 52, borderRadius: 16, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
         <Lock size={22} color={C.brand} />
@@ -446,7 +454,7 @@ export function ScreenForgotPassword({ nav, params, role, toast }) {
       </div>
       </div>
       <div style={{ marginTop: "auto", textAlign: "center", paddingBottom: 22 }}>
-        <button onClick={() => nav("auth", { mode: "login" })} style={{ background: "none", border: "none", color: C.slate, fontSize: T.body, cursor: "pointer", ...fBody }}>
+        <button onClick={() => nav("auth", { mode: "login", backTo: params?.backTo })} style={{ background: "none", border: "none", color: C.slate, fontSize: T.body, cursor: "pointer", ...fBody }}>
           Remembered it? <span style={{ color: C.brand, fontWeight: 600 }}>Back to sign in</span>
         </button>
       </div>
@@ -475,7 +483,7 @@ export function ScreenResetCode({ nav, params, toast }) {
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title="" onBack={() => nav("forgot-password", { role })} />
+      <TopBar title="" onBack={() => nav("forgot-password", { role: params?.role, backTo: params?.backTo })} />
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
       <div style={{ width: 52, height: 52, borderRadius: 16, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
         <Smartphone size={22} color={C.brand} />
@@ -503,7 +511,7 @@ export function ScreenResetCode({ nav, params, toast }) {
         ))}
       </div>
       <div style={{ marginTop: 24 }}>
-        <Btn full disabled={!canSubmit} onClick={() => nav("reset-password", { email, role })}>Verify code</Btn>
+        <Btn full disabled={!canSubmit} onClick={() => nav("reset-password", { email, role, backTo: params?.backTo })}>Verify code</Btn>
       </div>
       <div style={{ marginTop: 16, textAlign: "center" }}>
         <button onClick={() => toast(`Code resent to ${email || "your email"}`)} style={{ background: "none", border: "none", color: C.slate, fontSize: T.body, cursor: "pointer", ...fBody }}>
@@ -529,12 +537,12 @@ export function ScreenResetPassword({ nav, params, toast }) {
   const submit = () => {
     if (!canSubmit) return;
     toast("Password reset — sign in with your new password");
-    nav("auth", { mode: "login" });
+    nav("auth", { mode: "login", backTo: params?.backTo });
   };
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title="" onBack={() => nav("reset-code", { role })} />
+      <TopBar title="" onBack={() => nav("reset-code", { email: params?.email, role, backTo: params?.backTo })} />
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
       <div style={{ width: 52, height: 52, borderRadius: 16, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
         <Check size={22} color={C.brand} />
@@ -757,7 +765,7 @@ export function ScreenEnableBiometric({ nav, params, toast, biometric, setBiomet
 export function ScreenCoachInfo({ nav, toast, coachOnboarding, updateCoachOnboarding }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
-  const inputStyle = { width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", ...fBody };
+  const inputStyle = { width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", background: C.white, color: C.jet, ...fBody };
   const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
   const [photo, setPhoto] = useState(coachOnboarding.photo || null);
   const [displayName, setDisplayName] = useState(coachOnboarding.displayName || "");
@@ -809,16 +817,16 @@ export function ScreenCoachInfo({ nav, toast, coachOnboarding, updateCoachOnboar
         </div>
 
         <div style={{ textAlign: "center", marginBottom: 20 }}>
-          <div style={{ position: "relative", display: "inline-block" }}>
+          <button type="button" onClick={() => photoInputRef.current?.click()} style={{ position: "relative", background: "none", border: "none", cursor: "pointer", padding: 0, display: "inline-block" }}>
             {photo ? (
               <img src={photo} alt="Profile" style={{ width: 84, height: 84, borderRadius: 84, objectFit: "cover", display: "block" }} />
             ) : (
               <Avatar name={displayName || "New Coach"} size={84} />
             )}
-            <button onClick={() => photoInputRef.current?.click()} style={{ position: "absolute", bottom: -2, right: -2, width: 28, height: 28, borderRadius: 99, background: C.brand, border: `2px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+            <div style={{ position: "absolute", bottom: -2, right: -2, width: 28, height: 28, borderRadius: 99, background: C.brand, border: `2px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
               <Camera size={13} color={C.white} />
-            </button>
-          </div>
+            </div>
+          </button>
           <input ref={photoInputRef} type="file" accept="image/*" onChange={onPhotoChange} style={{ display: "none" }} />
           <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: 8, ...fBody }}>Tap to upload a profile photo</div>
         </div>
@@ -1004,7 +1012,7 @@ function emptyQualification() {
 export function ScreenVerification({ nav, toast, submitVerification, coachOnboarding }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
-  const inputStyle = { width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", ...fBody };
+  const inputStyle = { width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", background: C.white, color: C.jet, ...fBody };
   const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
   const [idType, setIdType] = useState("");
   const [idUploaded, setIdUploaded] = useState(false);

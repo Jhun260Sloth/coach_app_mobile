@@ -139,6 +139,11 @@ button, input, textarea {
   font-family: inherit;
 }
 
+input::placeholder, textarea::placeholder {
+  color: var(--cl-slate-light);
+  opacity: 1;
+}
+
 /* =========================================================================
    MOBILE-LIKE SCROLLING INSIDE THE PHONE PROTOTYPE
    -------------------------------------------------------------------------

@@ -35,13 +35,20 @@ function calcAge(dobStr) {
   return age;
 }
 
-export function ScreenAboutYouProfile({ nav }) {
+export function ScreenAboutYouProfile({ nav, onComplete }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const [mobile, setMobile] = useState("");
   const [location, setLocation] = useState(null); // { suburb, state, postcode }
   const [dob, setDob] = useState("");
-  const [hasPhoto, setHasPhoto] = useState(false);
+  const [photo, setPhoto] = useState(null);
+
+  const photoInputRef = React.useRef(null);
+  const onPhotoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) setPhoto(URL.createObjectURL(file));
+    e.target.value = "";
+  };
 
   const age = calcAge(dob);
   const isUnder18 = age !== null && age < 18;
@@ -52,7 +59,14 @@ export function ScreenAboutYouProfile({ nav }) {
   const canContinue = mobile.trim().length > 0 && !!location && ageVerified;
   // The "who are you booking for?" step has been removed from the flow —
   // finishing this step takes the client straight to the setup success screen.
-  const goNext = () => { if (canContinue) nav("client-setup-complete", { mobile, location, dob, age, hasPhoto }); };
+  const goNext = () => {
+    if (!canContinue) return;
+    // Persist the location chosen here so the rest of the app (search,
+    // personalise-your-recommendations, profile) reuses the same location
+    // state rather than asking for it again.
+    onComplete?.({ location, mobile });
+    nav("client-setup-complete", { mobile, location, dob, age, hasPhoto: !!photo });
+  };
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
@@ -61,20 +75,23 @@ export function ScreenAboutYouProfile({ nav }) {
       <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: 24 }} className="cl-hide-scrollbar">
         <SectionLabel>Build your profile</SectionLabel>
 
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 20 }}>
           <button
-            onClick={() => setHasPhoto((v) => !v)}
-            style={{ position: "relative", background: "none", border: "none", cursor: "pointer" }}
+            type="button"
+            onClick={() => photoInputRef.current?.click()}
+            style={{ position: "relative", background: "none", border: "none", cursor: "pointer", padding: 0 }}
           >
-            {hasPhoto ? <Avatar name="Sarah Lin" size={84} /> : (
-              <div style={{ width: 84, height: 84, borderRadius: 84, background: C.fog, border: `1.5px dashed ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Camera size={22} color={C.slateLight} />
-              </div>
+            {photo ? (
+              <img src={photo} alt="Profile" style={{ width: 84, height: 84, borderRadius: 84, objectFit: "cover", display: "block" }} />
+            ) : (
+              <Avatar name="Sarah Lin" size={84} />
             )}
-            <div style={{ position: "absolute", bottom: -2, right: -2, width: 28, height: 28, borderRadius: 28, background: C.brand, border: `2px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ position: "absolute", bottom: -2, right: -2, width: 28, height: 28, borderRadius: 28, background: C.brand, border: `2px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
               <Camera size={13} color={C.white} />
             </div>
           </button>
+          <input ref={photoInputRef} type="file" accept="image/*" onChange={onPhotoChange} style={{ display: "none" }} />
+          <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: 8, ...fBody }}>Tap to upload a profile photo</div>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 16 }}>

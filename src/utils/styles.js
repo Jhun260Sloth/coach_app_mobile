@@ -21,6 +21,8 @@ export function inputStyle(C) {
     fontSize: T.bodyLg,
     outline: "none",
     boxSizing: "border-box",
+    background: C.white,
+    color: C.jet,
     ...fBody,
   };
 }
