@@ -31,6 +31,7 @@ import { useReviewActions, DISPUTE_REASONS } from "../../systems/ReviewsSystem";
 import { useApp } from "../../context/AppContext";
 import { getBookingClientName } from "../../utils/name";
 import { withClientMeta } from "../../data/users";
+import { BOOKING_STATUS } from "../../data/bookings";
 
 /** Name the coach should see for a booking's client — privacy-safe until the
     booking is confirmed, full name afterwards (partner reveal). */
@@ -54,7 +55,6 @@ export function ScreenCoachDashboard({
   verified,
   toast,
   offline,
-  pushNotification,
 }) {
   const { darkMode, coachIdentity } = useApp();
   const C = darkMode ? CD : CL;
@@ -89,9 +89,9 @@ export function ScreenCoachDashboard({
   // notice — so expiry warnings surface here instead of as a dashboard banner.
   const [notifications, setNotifications] = useLiveNotifications(coachNotifications, COACH_NOTIFICATIONS);
 
-  const pending = coachBookings.filter((b) => b.status === "pending");
-  const upcoming = coachBookings.filter((b) => b.status === "confirmed");
-  const completed = coachBookings.filter((b) => b.status === "completed");
+  const pending = coachBookings.filter((b) => [BOOKING_STATUS.PENDING, BOOKING_STATUS.AWAITING_PAYMENT].includes(b.status));
+  const upcoming = coachBookings.filter((b) => b.status === BOOKING_STATUS.CONFIRMED);
+  const completed = coachBookings.filter((b) => b.status === BOOKING_STATUS.COMPLETED);
 
   const earningsThisWeek = upcoming.reduce((s, b) => s + b.price, 0);
   const grossPaid = completed.reduce((s, b) => s + b.price, 0);
@@ -103,7 +103,7 @@ export function ScreenCoachDashboard({
     // Guard against acting on a request that's no longer pending (already
     // handled from the full Bookings screen, for instance).
     const target = coachBookings.find((b) => b.id === id);
-    if (!target || target.status !== "pending") {
+    if (!target || target.status !== BOOKING_STATUS.PENDING) {
       toast("This request has already been handled");
       return;
     }
@@ -113,13 +113,6 @@ export function ScreenCoachDashboard({
       respondBooking(id, status);
       setRespondingId(null);
       toast(message);
-      pushNotification?.({
-        audience: "client", type: "booking",
-        title: status === "confirmed" ? "Booking confirmed" : "Booking declined",
-        body: status === "confirmed"
-          ? `Your session with ${target.coachName || "your coach"} is confirmed for ${target.date}, ${target.time}.`
-          : `Your request for ${target.service} on ${target.date} was declined.`,
-      });
     }, 600);
   };
 
@@ -453,7 +446,7 @@ export function ScreenCoachDashboard({
               ...fBody,
             }}
           >
-            No pending requests right now.
+            No active booking requests right now.
           </div>
         )}
 
@@ -521,7 +514,7 @@ export function ScreenCoachDashboard({
               </div>
             </div>
 
-            <div
+            {b.status === BOOKING_STATUS.PENDING ? <div
               style={{
                 display: "flex",
                 gap: 8,
@@ -539,7 +532,7 @@ export function ScreenCoachDashboard({
                   e.stopPropagation();
                   respondWithFeedback(
                     b.id,
-                    "confirmed",
+                    BOOKING_STATUS.AWAITING_PAYMENT,
                     "Booking accepted"
                   );
                 }}
@@ -555,14 +548,20 @@ export function ScreenCoachDashboard({
                   e.stopPropagation();
                   respondWithFeedback(
                     b.id,
-                    "declined",
+                    BOOKING_STATUS.DECLINED,
                     "Booking declined"
                   );
                 }}
               >
                 Decline
               </Btn>
-            </div>
+            </div> : (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, padding: "9px 10px", borderRadius: 12, background: C.brandTint }}>
+                <Clock size={14} color={C.brand} />
+                <span style={{ flex: 1, fontSize: T.label, color: C.slate, ...fBody }}>Accepted — waiting for the client to pay.</span>
+                <StatusPill status={b.status} />
+              </div>
+            )}
           </Card>
           );
         })}

@@ -2,10 +2,79 @@
    BOOKING, MESSAGING, NOTIFICATION & ADMIN SEED DATA
    ========================================================================= */
 
+/**
+ * Authoritative prototype lifecycle.
+ *
+ * A coach accepting a request does not confirm the session. It moves the
+ * booking to `awaiting_payment`; only a successful payment can move it to
+ * `confirmed`. Terminal outcomes stay available for history and support.
+ */
+export const BOOKING_STATUS = Object.freeze({
+  PENDING: "pending",
+  AWAITING_PAYMENT: "awaiting_payment",
+  CONFIRMED: "confirmed",
+  COMPLETED: "completed",
+  DECLINED: "declined",
+  EXPIRED: "expired",
+  CANCELLED: "cancelled",
+});
+
+export const PAYMENT_STATUS = Object.freeze({
+  NOT_REQUESTED: "not_requested",
+  DUE: "due",
+  HELD: "held",
+  REFUND_PROCESSING: "refund_processing",
+  REFUNDED: "refunded",
+  RELEASED: "released",
+});
+
+export const BOOKING_LIFECYCLE = Object.freeze({
+  [BOOKING_STATUS.PENDING]: {
+    label: "Awaiting coach",
+    paymentStatus: PAYMENT_STATUS.NOT_REQUESTED,
+    next: [BOOKING_STATUS.AWAITING_PAYMENT, BOOKING_STATUS.DECLINED, BOOKING_STATUS.CANCELLED, BOOKING_STATUS.EXPIRED],
+  },
+  [BOOKING_STATUS.AWAITING_PAYMENT]: {
+    label: "Payment due",
+    paymentStatus: PAYMENT_STATUS.DUE,
+    next: [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.CANCELLED, BOOKING_STATUS.EXPIRED],
+  },
+  [BOOKING_STATUS.CONFIRMED]: {
+    label: "Confirmed",
+    paymentStatus: PAYMENT_STATUS.HELD,
+    next: [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.CANCELLED],
+  },
+  [BOOKING_STATUS.COMPLETED]: {
+    label: "Completed",
+    paymentStatus: PAYMENT_STATUS.RELEASED,
+    next: [],
+  },
+  [BOOKING_STATUS.DECLINED]: {
+    label: "Declined",
+    paymentStatus: PAYMENT_STATUS.NOT_REQUESTED,
+    next: [],
+  },
+  [BOOKING_STATUS.EXPIRED]: {
+    label: "Expired",
+    paymentStatus: PAYMENT_STATUS.NOT_REQUESTED,
+    next: [],
+  },
+  [BOOKING_STATUS.CANCELLED]: {
+    label: "Cancelled",
+    paymentStatus: PAYMENT_STATUS.NOT_REQUESTED,
+    next: [],
+  },
+});
+
+export function withBookingLifecycle(booking) {
+  const lifecycle = BOOKING_LIFECYCLE[booking.status] || BOOKING_LIFECYCLE[BOOKING_STATUS.PENDING];
+  return { ...booking, paymentStatus: booking.paymentStatus || lifecycle.paymentStatus };
+}
+
 export const INITIAL_BOOKINGS = [
   // Pending — awaiting the coach's response
   { id: "b2", coachId: "c2", coachName: "Noah Kelly", clientName: "Sarah Lin", service: "1:1 Programming Session", date: "Fri, 25 Jul", time: "6:00am", mode: "In-person", status: "pending", price: 65, reviewed: false, participants: "You", notes: "Coming back from a shoulder injury — cleared for light training, will bring physio notes." },
-  { id: "b5", coachId: "c1", coachName: "Isla Ferguson", clientName: "Sarah Lin", service: "Group Clinic", date: "Fri, 8 Aug", time: "3:00pm", mode: "In-person", status: "pending", price: 42, reviewed: false, participants: "You", notes: "" },
+  { id: "b5", coachId: "c1", coachName: "Isla Ferguson", clientName: "Sarah Lin", service: "Group Clinic", date: "Fri, 8 Aug", time: "3:00pm", mode: "In-person", status: "awaiting_payment", price: 42, reviewed: false, participants: "You", notes: "" },
   { id: "b6", coachId: "c5", coachName: "Chloe Dawson", clientName: "Sarah Lin", service: "Virtual Swing Review", date: "Sun, 10 Aug", time: "9:00am", mode: "Virtual", status: "pending", price: 40, reviewed: false, participants: "You", notes: "" },
   { id: "b7", coachId: "c6", coachName: "Liam O'Connor", clientName: "Sarah Lin", service: "Small Group Ride", date: "Thu, 14 Aug", time: "5:30pm", mode: "In-person", status: "pending", price: 42, reviewed: false, participants: "You", notes: "" },
 
@@ -22,7 +91,12 @@ export const INITIAL_BOOKINGS = [
   { id: "b12", coachId: "c2", coachName: "Noah Kelly", clientName: "Sarah Lin", service: "1:1 Programming Session", date: "Tue, 21 Jul", time: "6:00am", mode: "In-person", status: "completed", price: 65, reviewed: false, participants: "You", notes: "" },
   { id: "b13", coachId: "c4", coachName: "Marcus Ude", clientName: "Sarah Lin", service: "1:1 Pad Session", date: "Fri, 24 Jul", time: "5:00pm", mode: "In-person", status: "completed", price: 68, reviewed: false, participants: "You", notes: "" },
   { id: "b14", coachId: "c6", coachName: "Liam O'Connor", clientName: "Sarah Lin", service: "Small Group Ride", date: "Sat, 25 Jul", time: "11:00am", mode: "In-person", status: "completed", price: 42, reviewed: true, participants: "You", notes: "" },
-];
+
+  // Closed outcomes remain visible in history
+  { id: "b15", coachId: "c2", coachName: "Noah Kelly", clientName: "Sarah Lin", service: "1:1 Programming Session", date: "Mon, 27 Jul", time: "6:00am", mode: "In-person", status: "declined", price: 65, reviewed: false, participants: "You", notes: "" },
+  { id: "b16", coachId: "c6", coachName: "Liam O'Connor", clientName: "Sarah Lin", service: "Small Group Ride", date: "Tue, 28 Jul", time: "4:00pm", mode: "In-person", status: "expired", price: 42, reviewed: false, participants: "You", notes: "" },
+  { id: "b17", coachId: "c3", coachName: "Ruby Hendricks", clientName: "Sarah Lin", service: "1:1 Beach Session", date: "Wed, 29 Jul", time: "6:45am", mode: "In-person", status: "cancelled", paymentStatus: "refunded", refundStatus: "refunded", price: 65, reviewed: false, participants: "You", notes: "" },
+].map(withBookingLifecycle);
 
 /** Recurring weekly availability blocks for the current coach (Noah Kelly). */
 export const INITIAL_AVAILABILITY_BLOCKS = [
@@ -35,7 +109,7 @@ export const COACH_BOOKINGS = [
   // Pending — awaiting the coach's accept/decline
   { id: "cb2", clientName: "Marcus Webb", service: "Junior Group (max 4)", date: "Wed, 23 Jul", time: "5:00pm", mode: "In-person", status: "pending", price: 30, notes: "First session for his son, age 9." },
   { id: "cb3", clientName: "The Chen Family (u18)", service: "1:1 Court Session", date: "Sat, 26 Jul", time: "9:00am", mode: "In-person", status: "pending", price: 72, notes: "Booking for two children, guardian consent provided at checkout." },
-  { id: "cb5", clientName: "Aiden Cross", service: "1:1 Court Session", date: "Mon, 28 Jul", time: "6:30am", mode: "In-person", status: "pending", price: 72, notes: "" },
+  { id: "cb5", clientName: "Aiden Cross", service: "1:1 Court Session", date: "Mon, 28 Jul", time: "6:30am", mode: "In-person", status: "awaiting_payment", price: 72, notes: "" },
   { id: "cb6", clientName: "Grace Liu", service: "Junior Group (max 4)", date: "Thu, 30 Jul", time: "4:30pm", mode: "In-person", status: "pending", price: 30, notes: "Wants to try group coaching for the first time." },
 
   // Upcoming — confirmed and on the calendar
@@ -50,7 +124,12 @@ export const COACH_BOOKINGS = [
   { id: "cb11", clientName: "Marcus Webb", service: "Junior Group (max 4)", date: "Thu, 17 Jul", time: "5:00pm", mode: "In-person", status: "completed", price: 30, notes: "" },
   { id: "cb12", clientName: "The Chen Family (u18)", service: "1:1 Court Session", date: "Sun, 20 Jul", time: "9:00am", mode: "In-person", status: "completed", price: 72, notes: "" },
   { id: "cb13", clientName: "Owen King", service: "1:1 Court Session", date: "Mon, 21 Jul", time: "6:00am", mode: "In-person", status: "completed", price: 72, notes: "" },
-];
+
+  // Closed outcomes remain visible in booking history
+  { id: "cb14", clientName: "Priya Desai", service: "Junior Group (max 4)", date: "Tue, 22 Jul", time: "5:00pm", mode: "In-person", status: "declined", price: 30, notes: "Schedule conflict" },
+  { id: "cb15", clientName: "Alex Morgan", service: "1:1 Court Session", date: "Fri, 24 Jul", time: "7:00am", mode: "In-person", status: "expired", price: 72, notes: "Payment window expired" },
+  { id: "cb16", clientName: "Jordan Lee", service: "1:1 Court Session", date: "Sat, 25 Jul", time: "8:00am", mode: "In-person", status: "cancelled", paymentStatus: "refunded", refundStatus: "refunded", price: 72, notes: "Cancelled by client" },
+].map(withBookingLifecycle);
 
 export const REVIEWS = [
   { id: "r1", name: "Sarah L.", handle: "sarahlin", rating: 5, text: "Isla spotted a positioning issue in my first session that nobody else had picked up on. Genuinely improved my game.", verified: true, date: "3 weeks ago" },
@@ -101,7 +180,7 @@ export const CLIENT_PROFILES = {
 export const FAQS = {
   client: [
     { q: "How do I book a session?", a: "Search for a coach, open their profile, choose a package, then pick a time. Coaches with Instant Book confirm automatically — others review your request first." },
-    { q: "When am I charged?", a: "Your card is charged at the time of booking. Funds are held securely and released to the coach once the session is marked complete." },
+    { q: "When am I charged?", a: "Payment is requested after the coach accepts your booking request. Once you pay, funds are held securely and released to the coach after the session is confirmed complete." },
     { q: "What if I need to cancel?", a: "Open the booking from your dashboard and select Cancel or Reschedule. Refunds follow the individual coach's cancellation policy, shown at checkout." },
     { q: "How do refunds work?", a: "Approved refunds are returned to your original payment method within 5–10 business days." },
     { q: "Is my payment information secure?", a: "Yes — CoachLink never stores full card details. Payments are processed through an encrypted, PCI-compliant provider." },

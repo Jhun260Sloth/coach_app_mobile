@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { COACHES, CONFIG } from "../../data/mockData";
+import { BOOKING_STATUS } from "../../data/bookings";
 
 import {
   Fingerprint, CreditCard, CheckCircle2, Check, Plus, Lock, Calendar, Navigation, MessageCircle,
@@ -860,10 +861,24 @@ export function ScreenBookingReview({ nav, params, draft, setDraft, toast, child
   );
 }
 
-export function ScreenPayment({ nav, params, draft, toast, addBooking, markBookingPaid, pushNotification, biometric, offline }) {
+export function ScreenPayment({ nav, params, draft, bookings = [], toast, markBookingPaid, biometric, offline }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
-  const d = buildFallbackDraft(params, draft);
+  const booking = params?.bookingId ? bookings.find((item) => item.id === params.bookingId) : null;
+  const bookingCoach = booking ? COACHES.find((coach) => coach.id === booking.coachId) : null;
+  const bookingPackage = bookingCoach?.packages.find((pkg) => pkg.name === booking.service) || bookingCoach?.packages[0];
+  const bookingDraft = booking && bookingCoach && bookingPackage ? {
+    coach: bookingCoach,
+    pkg: bookingPackage,
+    day: booking.date,
+    time: booking.time,
+    mode: booking.mode,
+    participants: booking.participants || "You",
+    repeat: { freq: "once" },
+    sessionCount: 1,
+    total: Number(booking.price),
+  } : null;
+  const d = buildFallbackDraft(params, bookingDraft || draft);
   const pub = getPublicName(d.coach, "public");
   const [confirming, setConfirming] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -873,6 +888,10 @@ export function ScreenPayment({ nav, params, draft, toast, addBooking, markBooki
   const pay = (forceFail = false) => {
     if (busy) return;
     if (offline) { toast("You're offline — reconnect to pay"); return; }
+    if (!booking || booking.status !== BOOKING_STATUS.AWAITING_PAYMENT) {
+      toast("This booking does not have a payment due");
+      return;
+    }
     setResult(null);
     if (biometric) { setConfirming(true); setTimeout(() => { setConfirming(false); processAndFinish(forceFail); }, 1100); }
     else processAndFinish(forceFail);
@@ -887,15 +906,10 @@ export function ScreenPayment({ nav, params, draft, toast, addBooking, markBooki
         setResult("failed");
         return;
       }
-      if (params?.bookingId) {
-        markBookingPaid?.(params.bookingId);
-      } else {
-        addBooking(d);
-        pushNotification?.({ audience: "coach", type: "booking", title: "Payment received", body: `Payment of $${d.total.toFixed(2)} received for ${d.pkg.name}.` });
-      }
+      markBookingPaid?.(params.bookingId);
       toast("Payment confirmed");
       setResult("success");
-      setTimeout(() => nav(params?.bookingId ? "client-booking-detail" : "booking-confirmation", params?.bookingId ? { id: params.bookingId } : {}), 700);
+      setTimeout(() => nav("client-booking-detail", { id: params.bookingId }), 700);
     }, 900);
   };
 
@@ -906,7 +920,7 @@ export function ScreenPayment({ nav, params, draft, toast, addBooking, markBooki
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
-      <TopBar title="Payment" onBack={() => nav("booking-review")} />
+      <TopBar title="Payment" onBack={() => nav("client-booking-detail", { id: params?.bookingId })} />
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
         {offline && (
           <div style={{ marginBottom: 16 }}>

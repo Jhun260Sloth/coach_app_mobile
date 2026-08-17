@@ -7,6 +7,7 @@ import {
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { COACHES } from "../../data/mockData";
+import { BOOKING_STATUS, PAYMENT_STATUS } from "../../data/bookings";
 import {
   Avatar, Card, Badge, SegTabs, SectionLabel, Btn, TopBar, EmptyState, StatusPill, Chip, BottomSheet, Row, ScrollFadeRow, HandleTag,
 } from "../../components/ui/Primitives";
@@ -89,7 +90,7 @@ function getCancellationOutcome(booking, coach) {
   return { refundPct, ruleLabel, hoursUntil, tier };
 }
 
-export function ScreenClientDashboard({ nav, bookings = [], offline, toast, cancelBooking, rescheduleBooking, payBooking, isFirstTimeClient }) {
+export function ScreenClientDashboard({ nav, bookings = [], offline, toast, cancelBooking, rescheduleBooking, isFirstTimeClient }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const [tab, setTab] = useState("pending");
@@ -102,9 +103,14 @@ export function ScreenClientDashboard({ nav, bookings = [], offline, toast, canc
   const [rescheduleTarget, setRescheduleTarget] = useState(null);
   const [cancelTarget, setCancelTarget] = useState(null);
 
-  const upcoming = safeBookings.filter((b) => b?.status === "confirmed");
-  const pending = safeBookings.filter((b) => b?.status === "pending");
-  const past = safeBookings.filter((b) => b?.status === "completed" || b?.status === "cancelled");
+  const upcoming = safeBookings.filter((b) => b?.status === BOOKING_STATUS.CONFIRMED);
+  const pending = safeBookings.filter((b) => [BOOKING_STATUS.PENDING, BOOKING_STATUS.AWAITING_PAYMENT].includes(b?.status));
+  const past = safeBookings.filter((b) => [
+    BOOKING_STATUS.COMPLETED,
+    BOOKING_STATUS.CANCELLED,
+    BOOKING_STATUS.DECLINED,
+    BOOKING_STATUS.EXPIRED,
+  ].includes(b?.status));
 
   const dated = useMemo(() => safeBookings.map((b) => ({ ...b, _date: parseBookingDate(b.date) })), [safeBookings]);
   const initialDate = useMemo(() => (dated.find((b) => b._date)?._date) || new Date(), [dated]);
@@ -137,10 +143,10 @@ export function ScreenClientDashboard({ nav, bookings = [], offline, toast, canc
       key={b.id}
       b={b}
       nav={nav}
-      past={b.status === "completed" || b.status === "cancelled"}
+      past={[BOOKING_STATUS.COMPLETED, BOOKING_STATUS.CANCELLED, BOOKING_STATUS.DECLINED, BOOKING_STATUS.EXPIRED].includes(b.status)}
       onReschedule={() => setRescheduleTarget(b)}
       onCancel={() => setCancelTarget(b)}
-      onPay={() => { payBooking(b.id); toast("Payment sent — your booking is fully confirmed."); }}
+      onPay={() => nav("payment", { bookingId: b.id })}
       style={{ animationDelay: `${Math.min(i || 0, 8) * 45}ms` }}
     />
   );
@@ -191,7 +197,7 @@ export function ScreenClientDashboard({ nav, bookings = [], offline, toast, canc
         {!showEmptyDashboard && view === "list" && (
           <div style={{ marginTop: 16 }}>
             <SegTabs strong value={tab} onChange={setTab} items={[
-              { value: "pending", label: "Pending" }, { value: "upcoming", label: "Upcoming" }, { value: "past", label: "Completed" },
+              { value: "pending", label: "Requests" }, { value: "upcoming", label: "Upcoming" }, { value: "past", label: "History" },
             ]} />
           </div>
         )}
@@ -227,9 +233,9 @@ export function ScreenClientDashboard({ nav, bookings = [], offline, toast, canc
 
         {!showEmptyDashboard && view === "list" && (
           <>
-            {tab === "pending" && (pending.length ? <div className="cl-stagger">{pending.map(renderCard)}</div> : <EmptyState icon={Hourglass} title="No pending requests" body="Requests waiting on a coach's response will show up here." />)}
+            {tab === "pending" && (pending.length ? <div className="cl-stagger">{pending.map(renderCard)}</div> : <EmptyState icon={Hourglass} title="No active requests" body="Requests awaiting a coach or your payment will show up here." />)}
             {tab === "upcoming" && (upcoming.length ? <div className="cl-stagger">{upcoming.map(renderCard)}</div> : <EmptyState icon={Calendar} title="No upcoming sessions" body="Search for a coach to book your next session." />)}
-            {tab === "past" && (past.length ? <div className="cl-stagger">{past.map(renderCard)}</div> : <EmptyState icon={ClipboardList} title="No past sessions yet" body="Completed sessions will show up here." />)}
+            {tab === "past" && (past.length ? <div className="cl-stagger">{past.map(renderCard)}</div> : <EmptyState icon={ClipboardList} title="No booking history yet" body="Completed, cancelled, declined and expired bookings will show up here." />)}
           </>
         )}
 
@@ -404,7 +410,9 @@ function CancelSheet({ booking, onClose, onConfirm, pending }) {
   const price = booking?.price || 0;
   const fee = Math.round(price * 0.06 * 100) / 100;
   const subtotal = Math.round((price - fee) * 100) / 100;
-  const alreadyPaid = booking ? !booking.paymentDue : false;
+  const alreadyPaid = booking
+    ? [PAYMENT_STATUS.HELD, PAYMENT_STATUS.RELEASED, PAYMENT_STATUS.REFUND_PROCESSING, PAYMENT_STATUS.REFUNDED].includes(booking.paymentStatus)
+    : false;
   const refundAmount = alreadyPaid && outcome ? Math.round(subtotal * outcome.refundPct * 100) / 100 : 0;
 
   return (
@@ -521,8 +529,10 @@ export function ReceiptSheet({ booking, onClose }) {
 export function BookingCard({ b, nav, past, onReschedule, onCancel, onPay, style }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
-  const pending = b.status === "pending";
-  const paymentDue = !past && b.status === "confirmed" && b.paymentDue;
+  const pending = b.status === BOOKING_STATUS.PENDING;
+  const paymentDue = !past
+    && b.status === BOOKING_STATUS.AWAITING_PAYMENT
+    && b.paymentStatus === PAYMENT_STATUS.DUE;
   const cn = coachNameFor(b);
   const coach = COACHES.find((c) => c.id === b.coachId);
   return (
@@ -568,19 +578,22 @@ export function BookingCard({ b, nav, past, onReschedule, onCancel, onPay, style
           </>
         )}
         {/* Completed / cancelled: always offer a fast rebook path alongside whatever review state applies. */}
-        {past && b.status === "completed" && !b.reviewed && (
+        {past && b.status === BOOKING_STATUS.COMPLETED && !b.reviewed && (
           <>
             <Btn size="sm" full onClick={() => nav("leave-review", { bookingId: b.id, name: cn.name || b.coachName })}>Leave a review</Btn>
             <Btn size="sm" variant="outline" full icon={RefreshCcw} onClick={() => nav("coach-profile", { id: b.coachId })}>Book again</Btn>
           </>
         )}
-        {past && b.status === "completed" && b.reviewed && (
+        {past && b.status === BOOKING_STATUS.COMPLETED && b.reviewed && (
           <>
             <Badge tone="success" icon={CheckCircle2}>Review submitted</Badge>
             <Btn size="sm" variant="outline" full icon={RefreshCcw} onClick={() => nav("coach-profile", { id: b.coachId })}>Book again</Btn>
           </>
         )}
-        {past && b.status === "cancelled" && (
+        {past && [BOOKING_STATUS.DECLINED, BOOKING_STATUS.EXPIRED].includes(b.status) && (
+          <Btn size="sm" variant="outline" full icon={RefreshCcw} onClick={() => nav("coach-profile", { id: b.coachId })}>Find another time</Btn>
+        )}
+        {past && b.status === BOOKING_STATUS.CANCELLED && (
           <Btn size="sm" variant="outline" full icon={RefreshCcw} onClick={() => nav("coach-profile", { id: b.coachId })}>Book again</Btn>
         )}
       </div>
@@ -591,7 +604,7 @@ export function BookingCard({ b, nav, past, onReschedule, onCancel, onPay, style
 /* Booking details — the client-side counterpart to the coach's booking detail page.
    Surfaces the same categories of information (party info, session details, notes,
    booking policy) but never exposes the Accept/Decline workflow, which is coach-only. */
-export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancelBooking, rescheduleBooking, setDraft, payBooking }) {
+export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancelBooking, rescheduleBooking }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const booking = bookings.find((b) => b.id === params.id);
@@ -609,9 +622,11 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
 
   const coach = COACHES.find((c) => c.id === booking.coachId);
   const cn = coachNameFor(booking);
-  const isPending = booking.status === "pending";
-  const isUpcoming = booking.status === "confirmed";
-  const isPast = booking.status === "completed" || booking.status === "cancelled";
+  const isPending = booking.status === BOOKING_STATUS.PENDING;
+  const isAwaitingPayment = booking.status === BOOKING_STATUS.AWAITING_PAYMENT;
+  const isUpcoming = booking.status === BOOKING_STATUS.CONFIRMED;
+  const isActive = isAwaitingPayment || isUpcoming;
+  const isPast = [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.CANCELLED, BOOKING_STATUS.DECLINED, BOOKING_STATUS.EXPIRED].includes(booking.status);
   const priceLabel = typeof booking.price === "number" ? `$${booking.price.toFixed(2)}` : `$${booking.price}`;
 
   const handleReschedule = (id, when) => {
@@ -665,6 +680,17 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
             </div>
           )}
         </Card>
+
+        {booking.status === BOOKING_STATUS.DECLINED && (
+          <div style={{ marginBottom: 14 }}>
+            <StatusBanner state="bookingDeclined" compact />
+          </div>
+        )}
+        {booking.status === BOOKING_STATUS.EXPIRED && (
+          <div style={{ marginBottom: 14 }}>
+            <StatusBanner state="bookingExpired" compact />
+          </div>
+        )}
 
         <SectionLabel>Booking details</SectionLabel>
         <Card style={{ marginBottom: 14 }}>
@@ -723,7 +749,7 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
           </div>
         )}
 
-        {isPast && booking.status === "cancelled" && booking.refundStatus && (
+        {isPast && booking.status === BOOKING_STATUS.CANCELLED && booking.refundStatus && (
           <div style={{ marginBottom: 14 }}>
             <button
               onClick={() => nav("refund-status", { booking })}
@@ -752,7 +778,7 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
           </div>
         )}
 
-        {isUpcoming && booking.paymentDue && (
+        {isAwaitingPayment && booking.paymentStatus === PAYMENT_STATUS.DUE && (
           <Card style={{ marginBottom: 14, background: C.brandTint, border: "none" }}>
             <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
               <CreditCard size={16} color={C.brand} style={{ flexShrink: 0, marginTop: 1 }} />
@@ -762,12 +788,12 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
               </div>
             </div>
             <div style={{ marginTop: 10 }}>
-              <Btn full size="sm" variant="dark" onClick={() => { payBooking(booking.id); toast("Payment sent — your booking is fully confirmed."); }}>Pay ${typeof booking.price === "number" ? booking.price.toFixed(2) : booking.price} now</Btn>
+              <Btn full size="sm" variant="dark" onClick={() => nav("payment", { bookingId: booking.id })}>Review and pay ${typeof booking.price === "number" ? booking.price.toFixed(2) : booking.price}</Btn>
             </div>
           </Card>
         )}
 
-        {isUpcoming && (
+        {isActive && (
           <div style={{ display: "flex", gap: 8, marginTop: 4, marginBottom: 14 }}>
             <Btn size="sm" variant="secondary" full onClick={() => setRescheduleOpen(true)}>Reschedule</Btn>
             <Btn size="sm" variant="outline" full onClick={() => setCancelOpen(true)}>Cancel</Btn>
@@ -775,23 +801,29 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
           </div>
         )}
 
-        {isPast && booking.status === "completed" && !booking.reviewed && (
+        {isPast && booking.status === BOOKING_STATUS.COMPLETED && !booking.reviewed && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
             <Btn full onClick={() => nav("leave-review", { bookingId: booking.id, name: cn.name || booking.coachName })}>Leave a review</Btn>
             <Btn full variant="secondary" icon={RefreshCcw} onClick={() => nav("coach-profile", { id: booking.coachId })}>Book again</Btn>
           </div>
         )}
-        {isPast && booking.reviewed && (
+        {isPast && booking.status === BOOKING_STATUS.COMPLETED && booking.reviewed && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
             <Badge tone="success" icon={CheckCircle2} style={{ alignSelf: "flex-start" }}>Review submitted</Badge>
             <Btn full variant="secondary" icon={RefreshCcw} onClick={() => nav("coach-profile", { id: booking.coachId })}>Book again</Btn>
           </div>
         )}
-        {isPast && booking.status === "cancelled" && (
+        {isPast && booking.status === BOOKING_STATUS.CANCELLED && (
           <div style={{ marginBottom: 14 }}>
             {booking.refundStatus === "processing" && <div style={{ marginBottom: 10 }}><StatusBanner state="refundProcessing" compact /></div>}
             {booking.refundStatus === "refunded" && <div style={{ marginBottom: 10 }}><StatusBanner state="paymentRefunded" message={`$${Number(booking.price).toFixed(2)} was refunded to your original payment method.`} compact /></div>}
             <Btn full variant="secondary" icon={RefreshCcw} onClick={() => nav("coach-profile", { id: booking.coachId })}>Book again</Btn>
+          </div>
+        )}
+
+        {isPast && [BOOKING_STATUS.DECLINED, BOOKING_STATUS.EXPIRED].includes(booking.status) && (
+          <div style={{ marginBottom: 14 }}>
+            <Btn full variant="secondary" icon={RefreshCcw} onClick={() => nav("coach-profile", { id: booking.coachId })}>Find another time</Btn>
           </div>
         )}
 

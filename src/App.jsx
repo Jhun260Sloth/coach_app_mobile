@@ -84,7 +84,7 @@ function AppShell() {
   useFonts();
   const app = useApp();
   const {
-    screen, role, setRole, setScreen, history, setHistory, goBack, toastMsg, offline, setOffline,
+    screen, role, setRole, setScreen, setParams, history, setHistory, goBack, toastMsg, offline, setOffline,
     darkMode, toggleDarkMode,
     isFirstTimeClient, setIsFirstTimeClient, setDiscoveryPrefs, setBookings,
     setShowPostSignupGuide, verificationStatus, reachedDashboardAfterVerification,
@@ -460,6 +460,8 @@ function AppShell() {
                     ref={isSelected ? activeItemRef : null}
                     onClick={() => {
                       setScreen(key);
+                      setParams(meta.demoParams || {});
+                      setHistory([]);
                       if (meta.role && meta.role !== role) setRole(meta.role);
                     }}
                     style={{

@@ -370,7 +370,8 @@ export function SearchSelect({ options, value, onChange, placeholder = "Searchâ€
 export function StatusPill({ status }) {
   const C = useColors();
   const map = {
-    pending: { label: "Pending", tone: "orange", pulse: true },
+    pending: { label: "Awaiting coach", tone: "orange", pulse: true },
+    awaiting_payment: { label: "Payment due", tone: "orange", pulse: true },
     confirmed: { label: "Confirmed", tone: "success" },
     completed: { label: "Completed", tone: "neutral" },
     cancelled: { label: "Cancelled", tone: "neutral" },

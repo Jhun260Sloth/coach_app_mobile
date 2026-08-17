@@ -12,6 +12,7 @@ import { HandleField } from "../../components/ui/PublicIdentityFields";
 import { isValidHandle } from "../../utils/name";
 import { getBookingCoachName } from "../../utils/name";
 import { SPORTS, CLIENT_NOTIFICATIONS, COACHES } from "../../data/mockData";
+import { PAYMENT_STATUS } from "../../data/bookings";
 import { ReceiptSheet } from "./Dashboard";
 import { SKILL_LEVELS } from "./AboutYou";
 import { useLiveNotifications } from "../../systems/StateSystem";
@@ -640,7 +641,12 @@ export function ScreenClientHistory({ nav, bookings = [], clientNotifications = 
   const [tab, setTab] = useState("payments");
   const [receiptTarget, setReceiptTarget] = useState(null);
   const [activity] = useLiveNotifications(clientNotifications, CLIENT_NOTIFICATIONS);
-  const paidBookings = bookings.filter((b) => b.status === "confirmed" || b.status === "completed" || b.status === "cancelled");
+  const paidBookings = bookings.filter((b) => [
+    PAYMENT_STATUS.HELD,
+    PAYMENT_STATUS.RELEASED,
+    PAYMENT_STATUS.REFUND_PROCESSING,
+    PAYMENT_STATUS.REFUNDED,
+  ].includes(b.paymentStatus));
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>

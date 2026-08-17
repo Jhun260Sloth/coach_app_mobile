@@ -11,6 +11,7 @@ import {
 import { useApp } from "../../context/AppContext";
 import { getBookingClientName } from "../../utils/name";
 import { withClientMeta } from "../../data/users";
+import { BOOKING_STATUS } from "../../data/bookings";
 
 /** Name the coach should see for a booking's client — privacy-safe until the
     booking is confirmed, full name afterwards (partner reveal). */
@@ -57,7 +58,11 @@ export function ScreenCoachBookings({ nav, coachBookings }) {
   const [cursor, setCursor] = useState(initialDate);
   const [selectedDate, setSelectedDate] = useState(initialDate);
 
-  const list = coachBookings.filter((b) => tab === "pending" ? b.status === "pending" : tab === "upcoming" ? b.status === "confirmed" : ["completed", "declined", "expired"].includes(b.status));
+  const list = coachBookings.filter((b) => tab === "pending"
+    ? [BOOKING_STATUS.PENDING, BOOKING_STATUS.AWAITING_PAYMENT].includes(b.status)
+    : tab === "upcoming"
+      ? b.status === BOOKING_STATUS.CONFIRMED
+      : [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.DECLINED, BOOKING_STATUS.EXPIRED, BOOKING_STATUS.CANCELLED].includes(b.status));
   const bookingsOnDate = (d) => dated.filter((b) => b._date && sameDay(b._date, d));
 
   const weeks = calMode === "month" ? buildMonthGrid(cursor) : [Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(cursor), i))];
@@ -89,7 +94,7 @@ export function ScreenCoachBookings({ nav, coachBookings }) {
       <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
         <Btn size="sm" variant="primary" full icon={User} onClick={(e) => { e.stopPropagation(); nav("coach-booking-detail", { id: b.id }); }}>View details</Btn>
       </div>
-      {b.status === "completed" && (
+      {b.status === BOOKING_STATUS.COMPLETED && (
         <div style={{ marginTop: 8, fontSize: T.label, color: C.success, fontWeight: 600, ...fBody }}>
           Payout released: ${Math.round(b.price * (1 - CONFIG.commissionRate))}
         </div>
@@ -106,7 +111,7 @@ export function ScreenCoachBookings({ nav, coachBookings }) {
           <SegTabs value={view} onChange={setView} items={[{ value: "list", label: "List" }, { value: "calendar", label: "Calendar" }]} />
         </div>
         {view === "list" && (
-          <SegTabs value={tab} onChange={setTab} items={[{ value: "pending", label: "Pending" }, { value: "upcoming", label: "Upcoming" }, { value: "completed", label: "Completed" }]} />
+          <SegTabs value={tab} onChange={setTab} items={[{ value: "pending", label: "Requests" }, { value: "upcoming", label: "Upcoming" }, { value: "completed", label: "History" }]} />
         )}
         {view === "calendar" && (
           <>
@@ -185,7 +190,7 @@ export function ScreenCoachBookingDetail({ nav, params, coachBookings, respondBo
     // Guard against double-submits (e.g. a stale screen re-fired after the
     // request was already handled elsewhere) — surface it as an invalid-action
     // state instead of silently overwriting a decision that already happened.
-    if (!booking || booking.status !== "pending") {
+    if (!booking || booking.status !== BOOKING_STATUS.PENDING) {
       toast("This request has already been handled");
       nav("coach-bookings");
       return;
@@ -193,14 +198,7 @@ export function ScreenCoachBookingDetail({ nav, params, coachBookings, respondBo
     setResponding(status);
     setTimeout(() => {
       respondBooking(booking.id, status);
-      toast(status === "confirmed" ? "Booking accepted" : "Booking declined");
-      pushNotification?.({
-        audience: "client", type: "booking",
-        title: status === "confirmed" ? "Booking confirmed" : "Booking declined",
-        body: status === "confirmed"
-          ? `Your session with ${booking.coachName || "your coach"} is confirmed for ${booking.date}, ${booking.time}.`
-          : `Your request for ${booking.service} on ${booking.date} was declined.`,
-      });
+      toast(status === BOOKING_STATUS.AWAITING_PAYMENT ? "Booking accepted — payment requested" : "Booking declined");
       nav("coach-bookings");
     }, 600);
   };
@@ -272,15 +270,15 @@ export function ScreenCoachBookingDetail({ nav, params, coachBookings, respondBo
           <Btn size="sm" variant="secondary" icon={MessageCircle} onClick={() => nav("chat-thread", { name: booking.clientName, context: `${booking.service} · ${booking.date}`, bookingId: booking.id, backTo: "coach-booking-detail", backParams: { id: booking.id } })}>Chat</Btn>
         </Card>
 
-        {booking.status === "pending" && (
+        {booking.status === BOOKING_STATUS.PENDING && (
           <div style={{ display: "flex", gap: 8, marginTop: 4, alignItems: "center" }}>
-            <Btn variant="ghost" loading={responding === "declined"} loadingText="Declining…" disabled={responding === "confirmed"} onClick={() => respond("declined")}>Decline</Btn>
+            <Btn variant="ghost" loading={responding === BOOKING_STATUS.DECLINED} loadingText="Declining…" disabled={responding === BOOKING_STATUS.AWAITING_PAYMENT} onClick={() => respond(BOOKING_STATUS.DECLINED)}>Decline</Btn>
             <div style={{ flex: 1 }}>
-              <Btn full loading={responding === "confirmed"} loadingText="Accepting…" disabled={responding === "declined"} onClick={() => respond("confirmed")}>Accept</Btn>
+              <Btn full loading={responding === BOOKING_STATUS.AWAITING_PAYMENT} loadingText="Accepting…" disabled={responding === BOOKING_STATUS.DECLINED} onClick={() => respond(BOOKING_STATUS.AWAITING_PAYMENT)}>Accept</Btn>
             </div>
           </div>
         )}
-        {booking.status !== "pending" && <StatusPill status={booking.status} />}
+        {booking.status !== BOOKING_STATUS.PENDING && <StatusPill status={booking.status} />}
       </div>
     </div>
   );

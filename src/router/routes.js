@@ -125,8 +125,8 @@ export const ROUTES = {
   "support": ScreenSupport,
 };
 
-/** Metadata for developer inspect / quick directory jump */
-export const ROUTE_METADATA = {
+/** Base metadata for developer inspect / quick directory jump. */
+const ROUTE_METADATA_BASE = {
   // Onboarding
   "splash": { title: "Splash Screen", category: "Onboarding", role: "client" },
   "get-started": { title: "Get Started", category: "Onboarding", role: "client" },
@@ -194,3 +194,66 @@ export const ROUTE_METADATA = {
   "chat-thread": { title: "Interactive Chat Thread", category: "Shared", role: "client" },
   "support": { title: "Help & Support Center", category: "Shared", role: "client" },
 };
+
+/**
+ * Stable preview inputs for routes that normally receive navigation state.
+ * The exported metadata adds an empty object to every other route so opening
+ * any item from the screen directory also clears stale parameters.
+ */
+const ROUTE_DEMO_PARAMS = {
+  "auth": { mode: "login", backTo: "role-select" },
+  "forgot-password": { role: "client", backTo: "role-select" },
+  "reset-code": { email: "sarah@example.com", role: "client", backTo: "role-select" },
+  "reset-password": { email: "sarah@example.com", role: "client", backTo: "role-select" },
+  "verify-email": { email: "sarah@example.com", next: "about-you-profile" },
+  "enable-biometric": { next: "about-you-profile" },
+  "client-setup-complete": { name: "Sarah Lin" },
+  "coach-profile": { id: "c1" },
+  "package-detail": { coachId: "c1", packageId: "p1", presetDate: "2026-08-19", presetTime: "16:00" },
+  "booking-participants": { coachId: "c1", packageId: "p1", presetDate: "2026-08-19", presetTime: "16:00" },
+  "booking-select-datetime": { coachId: "c1", packageId: "p1" },
+  "booking-participant-details": { coachId: "c1", packageId: "p1", participants: ["self"] },
+  "booking-datetime": { coachId: "c1", packageId: "p1", participants: ["self"], presetDate: "2026-08-19", presetTime: "16:00" },
+  "booking-review": { coachId: "c1", packageId: "p1", participants: ["self"], presetDate: "2026-08-19", presetTime: "16:00" },
+  "payment": { bookingId: "b5" },
+  "payment-add-card": { bookingId: "b5" },
+  "booking-confirmation": { coachId: "c1", packageId: "p1", participants: ["self"], presetDate: "2026-08-19", presetTime: "16:00" },
+  "booking-request-sent": { id: "b2", coachName: "Noah Kelly" },
+  "package-listing": { sport: "Netball" },
+  "package-inquiry": { coachId: "c1", packageId: "p1" },
+  "package-waitlist": { coachId: "c1", packageId: "p1" },
+  "session-prep": { coachId: "c1", packageId: "p1", date: "Wed, 19 Aug" },
+  "refund-status": {
+    booking: {
+      id: "b17",
+      coachId: "c3",
+      coachName: "Ruby Hendricks",
+      service: "1:1 Beach Session",
+      date: "Wed, 29 Jul",
+      time: "6:45am",
+      price: 65,
+      status: "cancelled",
+      paymentStatus: "refunded",
+      refundStatus: "refunded",
+    },
+  },
+  "booking-message": {
+    coachId: "c2",
+    type: "decline",
+    booking: { id: "b15", service: "1:1 Programming Session", date: "Mon, 27 Jul", time: "6:00am" },
+  },
+  "availability-calendar": { coachId: "c1", packageId: "p1" },
+  "client-booking-detail": { id: "b5" },
+  "leave-review": { bookingId: "b3", name: "Ruby Hendricks" },
+  "coach-booking-detail": { id: "cb2" },
+  "coach-edit-package": { id: "p1" },
+  "chat-thread": { threadId: "t1", name: "Isla Ferguson", handle: "isla.netball", context: "Booking · Wed, 19 Aug", bookingId: "b1" },
+  "support": { presetTab: "faq", faqTopic: "client", backTo: "client-home" },
+};
+
+export const ROUTE_METADATA = Object.fromEntries(
+  Object.entries(ROUTE_METADATA_BASE).map(([key, metadata]) => [
+    key,
+    { ...metadata, demoParams: ROUTE_DEMO_PARAMS[key] || {} },
+  ])
+);

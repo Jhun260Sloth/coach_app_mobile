@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import {
   INITIAL_BOOKINGS, COACH_BOOKINGS, ADMIN_VERIFICATION_QUEUE, ADMIN_DISPUTES,
-  INITIAL_AVAILABILITY_BLOCKS,
+  INITIAL_AVAILABILITY_BLOCKS, BOOKING_STATUS, PAYMENT_STATUS,
 } from "../data/bookings";
 import { COACHES } from "../data/coaches";
 import { CURRENT_CLIENT, isHandleTaken as isHandleTakenBase } from "../data/users";
@@ -132,11 +132,11 @@ export function AppProvider({ children }) {
   const toggleFav = (id) =>
     setFavorites((f) => (f.includes(id) ? f.filter((x) => x !== id) : [...f, id]));
 
-  const pushNotification = ({ audience, type = "booking", title, body }) => {
+  const pushNotification = ({ audience, type = "booking", title, body, bookingId }) => {
     setNotifications((n) => [
       {
         id: `rt${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
-        audience, type, title, body, time: "Just now", unread: true,
+        audience, type, title, body, bookingId, time: "Just now", unread: true,
       },
       ...n,
     ]);
@@ -160,7 +160,8 @@ export function AppProvider({ children }) {
         id, coachId, coachName: d.coach.name, clientName: clientFull,
         clientHandle: clientIdentity.handle, clientPrivacy: clientIdentity.namePrivacy,
         service: d.pkg.name, date: d.day, time: d.time, mode: d.mode,
-        status: "pending", price: d.total, paid: false, reviewed: false,
+        status: BOOKING_STATUS.PENDING, paymentStatus: PAYMENT_STATUS.NOT_REQUESTED,
+        price: d.total, reviewed: false,
         participants: d.participants || "You", notes: d.conditions || "",
       },
       ...b,
@@ -171,7 +172,8 @@ export function AppProvider({ children }) {
           id, clientName: clientFull,
           clientHandle: clientIdentity.handle, clientPrivacy: clientIdentity.namePrivacy,
           service: d.pkg.name, date: d.day,
-          time: d.time, mode: d.mode, status: "pending", price: d.total,
+          time: d.time, mode: d.mode, status: BOOKING_STATUS.PENDING,
+          paymentStatus: PAYMENT_STATUS.NOT_REQUESTED, price: d.total,
           notes: d.conditions || "",
         },
         ...cb,
@@ -180,66 +182,125 @@ export function AppProvider({ children }) {
     pushNotification({
       audience: "coach", type: "booking", title: "New booking request",
       body: `${who} requested a ${d.pkg.name} for ${d.day}, ${d.time}.`,
+      bookingId: id,
     });
   };
 
   const cancelBooking = (id) => {
-    setBookings((bs) => {
-      const target = bs.find((b) => b.id === id);
-      if (target) {
+    const target = bookings.find((booking) => booking.id === id)
+      || coachBookings.find((booking) => booking.id === id);
+    if (!target || [BOOKING_STATUS.CANCELLED, BOOKING_STATUS.DECLINED, BOOKING_STATUS.EXPIRED].includes(target.status)) return;
+
+    const wasPaid = [PAYMENT_STATUS.HELD, PAYMENT_STATUS.RELEASED].includes(target.paymentStatus);
+    const cancellationPatch = {
+      status: BOOKING_STATUS.CANCELLED,
+      ...(wasPaid
+        ? { paymentStatus: PAYMENT_STATUS.REFUND_PROCESSING, refundStatus: "processing" }
+        : { paymentStatus: PAYMENT_STATUS.NOT_REQUESTED }),
+    };
+
+    setBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...cancellationPatch } : booking)));
+    setCoachBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...cancellationPatch } : booking)));
+
+    const wasPending = target.status === BOOKING_STATUS.PENDING;
+    pushNotification({
+      audience: "coach",
+      type: "booking",
+      title: wasPending ? "Request withdrawn" : "Booking cancelled",
+      body: `${target.clientName || "A client"} ${wasPending ? "withdrew their request for" : "cancelled"} ${target.service}${target.date ? ` on ${target.date}` : ""}.`,
+      bookingId: id,
+    });
+
+    if (wasPaid) {
+      pushNotification({
+        audience: "client",
+        type: "payment",
+        title: "Refund started",
+        body: `Your refund for ${target.service} is being returned to your original payment method.`,
+        bookingId: id,
+      });
+      setTimeout(() => {
+        const refundPatch = { paymentStatus: PAYMENT_STATUS.REFUNDED, refundStatus: "refunded" };
+        setBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...refundPatch } : booking)));
+        setCoachBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...refundPatch } : booking)));
         pushNotification({
-          audience: "coach", type: "booking",
-          title: target.status === "pending" ? "Request withdrawn" : "Booking cancelled",
-          body: `${target.clientName || "A client"} ${target.status === "pending" ? "withdrew their request for" : "cancelled"} ${target.service}${target.date ? ` on ${target.date}` : ""}.`,
+          audience: "client",
+          type: "payment",
+          title: "Refund complete",
+          body: `$${Number(target.price).toFixed(2)} was returned to your original payment method.`,
+          bookingId: id,
         });
-        setCoachBookings((cb) => cb.map((b) => (b.id === id ? { ...b, status: "cancelled" } : b)));
-        if (target.status === "confirmed" && target.paid) {
-          setTimeout(() => {
-            setBookings((later) => later.map((b) => (b.id === id ? { ...b, refundStatus: "refunded" } : b)));
-            toast(`$${Number(target.price).toFixed(2)} refunded`);
-          }, 1400);
-          return bs.map((b) => (b.id === id ? { ...b, status: "cancelled", refundStatus: "processing" } : b));
-        }
-      }
-      return bs.map((b) => (b.id === id ? { ...b, status: "cancelled" } : b));
+        toast(`$${Number(target.price).toFixed(2)} refunded`);
+      }, 1400);
+    }
+  };
+
+  const rescheduleBooking = (id, { date, time }) => {
+    const target = bookings.find((booking) => booking.id === id)
+      || coachBookings.find((booking) => booking.id === id);
+    if (!target) return;
+
+    const schedulePatch = { date, time };
+    setBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...schedulePatch } : booking)));
+    setCoachBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...schedulePatch } : booking)));
+    pushNotification({
+      audience: "coach",
+      type: "booking",
+      title: "Session rescheduled",
+      body: `${target.clientName || "Your client"} moved ${target.service} to ${date}, ${time}.`,
+      bookingId: id,
     });
   };
 
-  const rescheduleBooking = (id, { date, time }) =>
-    setBookings((bs) => bs.map((b) => (b.id === id ? { ...b, date, time } : b)));
+  const markBookingPaid = (id) => {
+    const target = bookings.find((booking) => booking.id === id)
+      || coachBookings.find((booking) => booking.id === id);
+    if (!target || target.status !== BOOKING_STATUS.AWAITING_PAYMENT) return false;
 
-  const markBookingPaid = (id) =>
-    setBookings((bs) => {
-      const target = bs.find((b) => b.id === id);
-      if (target) {
-        pushNotification({
-          audience: "coach", type: "booking", title: "Payment received",
-          body: `Payment of $${Number(target.price).toFixed(2)} received for ${target.service}.`,
-        });
-      }
-      return bs.map((b) => (b.id === id ? { ...b, paid: true, paymentDue: false } : b));
+    const paymentPatch = { status: BOOKING_STATUS.CONFIRMED, paymentStatus: PAYMENT_STATUS.HELD };
+    setBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...paymentPatch } : booking)));
+    setCoachBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...paymentPatch } : booking)));
+    pushNotification({
+      audience: "coach",
+      type: "payment",
+      title: "Payment received",
+      body: `Payment of $${Number(target.price).toFixed(2)} received for ${target.service}. The session is now confirmed.`,
+      bookingId: id,
     });
+    return true;
+  };
 
   const respondBooking = (id, status) => {
-    setCoachBookings((arr) => arr.map((b) => (b.id === id ? { ...b, status } : b)));
-    const cb = coachBookings.find((b) => b.id === id);
-    setBookings((arr) => arr.map((b) => (b.id === id ? { ...b, status, paymentDue: status === "confirmed" ? true : b.paymentDue } : b)));
-    if (cb) {
-      const coachPub = getPublicName(coachIdentity, "public");
-      if (status === "confirmed") {
-        pushNotification({
-          audience: "client", type: "payment", title: "Send your payment",
-          body: `${coachPub.name} accepted your ${cb.service} request — send payment to confirm your session on ${cb.date}.`,
-          bookingId: id,
-        });
-      } else if (status === "cancelled") {
-        pushNotification({
-          audience: "client", type: "booking", title: "Booking declined",
-          body: `${coachPub.name} declined your ${cb.service} request for ${cb.date}.`,
-          bookingId: id,
-        });
-      }
+    const target = coachBookings.find((booking) => booking.id === id)
+      || bookings.find((booking) => booking.id === id);
+    if (!target || target.status !== BOOKING_STATUS.PENDING) return false;
+
+    const nextStatus = status === BOOKING_STATUS.CONFIRMED ? BOOKING_STATUS.AWAITING_PAYMENT : status;
+    if (![BOOKING_STATUS.AWAITING_PAYMENT, BOOKING_STATUS.DECLINED].includes(nextStatus)) return false;
+
+    const responsePatch = {
+      status: nextStatus,
+      paymentStatus: nextStatus === BOOKING_STATUS.AWAITING_PAYMENT
+        ? PAYMENT_STATUS.DUE
+        : PAYMENT_STATUS.NOT_REQUESTED,
+    };
+    setCoachBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...responsePatch } : booking)));
+    setBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...responsePatch } : booking)));
+    const coachPub = getPublicName(coachIdentity, "public");
+    if (nextStatus === BOOKING_STATUS.AWAITING_PAYMENT) {
+      pushNotification({
+        audience: "client", type: "payment", title: "Send your payment",
+        body: `${coachPub.name} accepted your ${target.service} request — send payment to confirm your session on ${target.date}.`,
+        bookingId: id,
+      });
+    } else if (nextStatus === BOOKING_STATUS.DECLINED) {
+      pushNotification({
+        audience: "client", type: "booking", title: "Booking declined",
+        body: `${coachPub.name} declined your ${target.service} request for ${target.date}.`,
+        bookingId: id,
+      });
     }
+    return true;
   };
 
   // ---- Client prefs / children ----
