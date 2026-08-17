@@ -4,7 +4,8 @@ import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 
 import { COACHES, SPORTS, ALL_SUBURBS, SUBURB_COORDS } from "../../data/mockData";
-import { Card, Chip, Badge, SegTabs, SectionLabel, Avatar, Btn, TopBar, BottomSheet, EmptyState, Spinner, ScrollFadeRow } from "../../components/ui/Primitives";
+import { Card, Chip, Badge, SegTabs, SectionLabel, Avatar, Btn, TopBar, BottomSheet, EmptyState, Spinner, ScrollFadeRow, HandleTag } from "../../components/ui/Primitives";
+import { getPublicName } from "../../utils/name";
 
 
 import { useLiveNotifications, NotificationBellButton, StatusBanner, useUserLocation } from "../../systems/StateSystem";
@@ -32,6 +33,7 @@ const oneLine = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellip
 export function CoachListCard({ coach, onOpen, unavailable, style }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
+  const pub = getPublicName(coach, "public");
   return (
     <Card
       onClick={onOpen}
@@ -39,7 +41,7 @@ export function CoachListCard({ coach, onOpen, unavailable, style }) {
     >
       <div style={{ display: "flex", gap: 12 }}>
         <div style={{ position: "relative", flexShrink: 0 }}>
-          <Avatar name={coach.name} size={54} />
+          <Avatar name={pub.name} size={54} />
           {unavailable && (
             <span style={{ position: "absolute", right: -2, bottom: -2, width: 16, height: 16, borderRadius: 99, background: C.slateLight, border: `2px solid ${C.white}` }} />
           )}
@@ -49,7 +51,8 @@ export function CoachListCard({ coach, onOpen, unavailable, style }) {
               one of the first two things scanned — not something buried at the bottom of the card. */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
             <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ fontWeight: 700, fontSize: T.title, color: C.jet, letterSpacing: "-0.1px", ...oneLine, ...fDisplay }}>{coach.name}</div>
+              <div style={{ fontWeight: 700, fontSize: T.title, color: C.jet, letterSpacing: "-0.1px", ...oneLine, ...fDisplay }}>{pub.name}</div>
+              {pub.handle && <HandleTag handle={pub.handle} size={11.5} color={C.slateLight} />}
               {/* Sport category — bumped up in size/weight and given the brand colour so a
                   client's eye lands on "what this coach does" as fast as on their name. */}
               <div style={{ fontSize: T.subtitle, fontWeight: 700, color: C.brand, marginTop: 2, ...oneLine, ...fDisplay }}>{coach.sport}</div>
@@ -357,7 +360,7 @@ export function ScreenClientHome({ nav, favorites = [], toggleFav, filters, onFi
   };
 
   const suggestions = searchText.trim().length > 0
-    ? [...new Set([...ALL_SUBURBS, ...COACHES.map(c => c.name)])].filter(s => s.toLowerCase().includes(searchText.trim().toLowerCase())).slice(0, 5)
+    ? [...new Set([...ALL_SUBURBS, ...COACHES.flatMap(c => [c.name, c.handle ? `@${c.handle}` : null].filter(Boolean))])].filter(s => s.toLowerCase().includes(searchText.trim().toLowerCase())).slice(0, 5)
     : [];
 
   // Live distance from wherever the user actually is right now, falling back
@@ -374,7 +377,7 @@ export function ScreenClientHome({ nav, favorites = [], toggleFav, filters, onFi
   // the ones that happened to be wired up before.
   const searchAndAreaFiltered = withDistance.filter(c => {
     const q = searchText.trim().toLowerCase();
-    const matchesQuery = !q || c.suburb.toLowerCase().includes(q) || c.name.toLowerCase().includes(q) || c.sport.toLowerCase().includes(q);
+    const matchesQuery = !q || c.suburb.toLowerCase().includes(q) || c.name.toLowerCase().includes(q) || c.sport.toLowerCase().includes(q) || (c.handle && c.handle.toLowerCase().includes(q.replace(/^@/, "")));
     const matchesAreas = !appliedFilters.areas.length || appliedFilters.areas.some(a => c.suburb.toLowerCase().includes(a.toLowerCase()));
     const matchesSport = !appliedFilters.sports?.length || appliedFilters.sports.includes(c.sport);
     const matchesPrice = c.packages && c.packages[0] ? c.packages[0].price <= (appliedFilters.maxPrice ?? DEFAULT_FILTERS.maxPrice) : true;
@@ -426,7 +429,7 @@ export function ScreenClientHome({ nav, favorites = [], toggleFav, filters, onFi
   const openNotification = (n) => {
     setNotifications?.(arr => arr.map(x => (x.id === n.id ? { ...x, unread: false } : x)));
     setNotifOpen(false);
-    if (n.type === "message") nav("chat-thread", { name: n.coachName });
+    if (n.type === "message") nav("chat-thread", { name: n.coachName, handle: COACHES.find((c) => c.name === n.coachName)?.handle });
     else if (n.type === "availability" && n.coachId) nav("coach-profile", { id: n.coachId });
     else if (["booking", "review", "payment"].includes(n.type)) {
       nav(n.bookingId ? "client-booking-detail" : "client-dashboard", n.bookingId ? { id: n.bookingId } : {});
@@ -589,6 +592,20 @@ export function ScreenClientHome({ nav, favorites = [], toggleFav, filters, onFi
             )}
           </div>
         )}
+
+        <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+          <button
+            onClick={() => nav("package-listing")}
+            style={{
+              flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              padding: "10px 12px", borderRadius: 12, border: `1px solid ${C.border}`, background: C.white,
+              cursor: "pointer", ...fBody,
+            }}
+          >
+            <LayoutList size={14} color={C.brand} />
+            <span style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet }}>Browse all packages</span>
+          </button>
+        </div>
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 20, marginBottom: 14 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: T.body, fontWeight: 600, color: C.jet, ...fDisplay }}>

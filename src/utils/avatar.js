@@ -7,10 +7,11 @@
 
 const AVATAR_PALETTE = ["#4d7c0e"];
 
-/** Extract up to two-letter initials from a display name. */
+/** Extract up to two-letter initials from a display name (or @handle). */
 export function initials(name) {
   const s = String(name || "").trim();
   if (!s) return "?";
+  if (s.startsWith("@")) return s.slice(1, 3).toUpperCase();
   return s
     .split(" ")
     .map((n) => n[0])

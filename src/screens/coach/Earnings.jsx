@@ -4,6 +4,8 @@ import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { CONFIG } from "../../data/mockData";
 import { Card, Badge, SectionLabel, Row } from "../../components/ui/Primitives";
+import { getBookingClientName } from "../../utils/name";
+import { withClientMeta } from "../../data/users";
 
 export function ScreenCoachEarnings({ nav, coachBookings }) {
   const { darkMode } = useApp();
@@ -58,7 +60,7 @@ export function ScreenCoachEarnings({ nav, coachBookings }) {
           <Card key={b.id} onClick={() => nav("coach-history")} style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center", animationDelay: `${Math.min(i, 8) * 45}ms` }}>
             <div>
               <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{b.service}</div>
-              <div style={{ fontSize: T.captionLg, color: C.slate, ...fBody }}>{b.date} · {b.clientName}</div>
+              <div style={{ fontSize: T.captionLg, color: C.slate, ...fBody }}>{b.date} · {getBookingClientName(withClientMeta(b)).name}</div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.success, ...fDisplay }}>+${Math.round(b.price * (1 - CONFIG.commissionRate))}</span>

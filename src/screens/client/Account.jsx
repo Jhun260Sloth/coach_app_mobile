@@ -7,8 +7,11 @@ import {
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
-import { Avatar, Btn, SectionLabel, Toggle, BottomSheet, Field, Chip, Card, Badge, EmptyState, TopBar, SegTabs } from "../../components/ui/Primitives";
-import { SPORTS, CLIENT_NOTIFICATIONS } from "../../data/mockData";
+import { Avatar, Btn, SectionLabel, Toggle, BottomSheet, Field, Chip, Card, Badge, EmptyState, TopBar, SegTabs, HandleTag } from "../../components/ui/Primitives";
+import { HandleField } from "../../components/ui/PublicIdentityFields";
+import { isValidHandle } from "../../utils/name";
+import { getBookingCoachName } from "../../utils/name";
+import { SPORTS, CLIENT_NOTIFICATIONS, COACHES } from "../../data/mockData";
 import { ReceiptSheet } from "./Dashboard";
 import { SKILL_LEVELS } from "./AboutYou";
 import { useLiveNotifications } from "../../systems/StateSystem";
@@ -23,15 +26,18 @@ const emptyChildDraft = {
 const emptyCardDraft = { number: "", name: "", expiry: "", cvc: "" };
 
 export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCoachRole, children = [], addChild, updateChild, removeChild, bookings = [], clientPrefs, onComplete }) {
-  const { darkMode } = useApp();
+  const { darkMode, clientIdentity, updateClientIdentity, isHandleTaken } = useApp();
   const C = darkMode ? CD : CL;
   const [sheet, setSheet] = useState(null); // which bottom sheet is open
   const [editingChildId, setEditingChildId] = useState(null); // null = creating new
   const [childDraft, setChildDraft] = useState(emptyChildDraft);
 
-  // Name & email aren't part of the onboarding "about you" data (they're collected at
-  // sign-up instead), so they live here as their own bit of editable profile state.
-  const [profile, setProfile] = useState({ name: "Sarah Lin", email: "sarah.lin@email.com" });
+  // Name & email live in app identity state (collected at sign-up), not in
+  // the "about you" onboarding data — so they're editable here too.
+  const profile = {
+    name: `${clientIdentity.firstName || ""} ${clientIdentity.lastName || ""}`.trim() || "You",
+    email: clientIdentity.email || "",
+  };
   const [editDraft, setEditDraft] = useState(null);
 
   const openNewChild = () => { setEditingChildId(null); setChildDraft(emptyChildDraft); setSheet("child"); };
@@ -83,6 +89,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
     setEditDraft({
       name: profile.name,
       email: profile.email,
+      handle: clientIdentity.handle || "",
       phone: clientPrefs?.mobile || "",
       address: clientPrefs?.address || "",
       location: clientPrefs?.location || null,
@@ -101,7 +108,15 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
   const toggleEditSport = (s) => setEditDraft((d) => ({ ...d, sports: d.sports.includes(s) ? d.sports.filter((x) => x !== s) : [...d.sports, s] }));
   const saveProfile = () => {
     if (!editDraft.name.trim()) { toast("Add your name first"); return; }
-    setProfile({ name: editDraft.name, email: editDraft.email });
+    if (!isValidHandle(editDraft.handle)) { toast("Pick a valid username — 3–24 characters"); return; }
+    if (isHandleTaken(editDraft.handle)) { toast("That username's taken — try another"); return; }
+    const parts = editDraft.name.trim().split(/\s+/);
+    updateClientIdentity({
+      firstName: parts[0] || "",
+      lastName: parts.slice(1).join(" ") || "",
+      email: editDraft.email,
+      handle: editDraft.handle.trim(),
+    });
     if (onComplete) {
       onComplete({
         ...clientPrefs,
@@ -157,6 +172,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
               <Badge tone="neutral">Client account</Badge>
             </div>
             <div style={{ fontSize: T.labelLg, color: C.slate, marginTop: 2, ...fBody }}>{profile.email}</div>
+            <div style={{ marginTop: 3 }}><HandleTag handle={clientIdentity.handle} size={12} color={C.brand} /></div>
           </div>
         </div>
       </div>
@@ -361,7 +377,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
                       <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{b.service}</div>
-                      <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{b.coachName} · {b.date}</div>
+                      <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{(() => { const cn = getBookingCoachName(b, COACHES.find((c) => c.id === b.coachId)); return cn.name; })()} · {b.date}</div>
                     </div>
                     <Badge tone={b.status === "completed" ? "success" : "orange"}>{b.status}</Badge>
                   </div>
@@ -391,6 +407,14 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
             <SectionLabel>Account</SectionLabel>
             <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 20 }}>
               <Field label="Full name" placeholder="Sarah Lin" icon={User} value={editDraft.name} onChange={(e) => setEditDraft((d) => ({ ...d, name: e.target.value }))} />
+              <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: -8, marginBottom: 2, lineHeight: 1.5, ...fBody }}>
+                Your legal name is private — coaches only see it after a confirmed booking.
+              </div>
+              <HandleField
+                value={editDraft.handle}
+                onChange={(v) => setEditDraft((d) => ({ ...d, handle: v }))}
+                isTaken={isHandleTaken(editDraft.handle)}
+              />
               <Field label="Email" placeholder="you@email.com" icon={Mail} type="email" value={editDraft.email} onChange={(e) => setEditDraft((d) => ({ ...d, email: e.target.value }))} />
               <Field label="Mobile number" placeholder="04XX XXX XXX" icon={Phone} type="tel" value={editDraft.phone} onChange={(e) => setEditDraft((d) => ({ ...d, phone: e.target.value }))} />
             </div>
@@ -639,10 +663,10 @@ export function ScreenClientHistory({ nav, bookings = [], clientNotifications = 
               {paidBookings.map((b, i) => (
                 <Card key={b.id} onClick={() => setReceiptTarget(b)} style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center", animationDelay: `${Math.min(i, 8) * 45}ms` }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <Avatar name={b.coachName} size={40} />
+                  <Avatar name={(() => { const cn = getBookingCoachName(b, COACHES.find((c) => c.id === b.coachId)); return cn.name; })()} size={40} />
                   <div>
                     <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>{b.service}</div>
-                    <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{b.date} · {b.coachName}</div>
+                    <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{b.date} · {(() => { const cn = getBookingCoachName(b, COACHES.find((c) => c.id === b.coachId)); return cn.name; })()}</div>
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>

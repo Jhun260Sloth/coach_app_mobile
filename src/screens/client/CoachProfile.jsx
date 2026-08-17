@@ -6,7 +6,8 @@ import {
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { COACHES, REVIEWS, SPORT_ICON } from "../../data/mockData";
-import { Avatar, Badge, SegTabs, SectionLabel, Card, Btn, StarRow } from "../../components/ui/Primitives";
+import { Avatar, Badge, SegTabs, SectionLabel, Card, Btn, StarRow, HandleTag } from "../../components/ui/Primitives";
+import { getPublicName } from "../../utils/name";
 import { StatusBanner } from "../../systems/StateSystem";
 import { useReviewActions } from "../../systems/ReviewsSystem";
 import {
@@ -56,6 +57,7 @@ export function ScreenCoachProfile({ nav, params = {}, favorites = [], toggleFav
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const coach = COACHES.find((c) => c.id === (params?.id)) || COACHES[0];
+  const pub = getPublicName(coach, "public");
   const { getReply } = useReviewActions();
   const [tab, setTab] = useState("about");
   const [selectedPkgId, setSelectedPkgId] = useState(null);
@@ -143,7 +145,7 @@ export function ScreenCoachProfile({ nav, params = {}, favorites = [], toggleFav
             </button>
           </div>
           <div style={{ position: "absolute", bottom: -34, left: 20, zIndex: 5, pointerEvents: "auto" }}>
-            <Avatar name={coach.name} size={68} ring />
+            <Avatar name={pub.name} size={68} ring />
           </div>
         </div>
 
@@ -151,7 +153,8 @@ export function ScreenCoachProfile({ nav, params = {}, favorites = [], toggleFav
         <div style={{ height: 40 }} />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginTop: 10 }}>
           <div>
-            <div style={{ fontSize: T.headingLg, fontWeight: 600, color: C.jet, ...fDisplay }}>{coach.name}</div>
+            <div style={{ fontSize: T.headingLg, fontWeight: 600, color: C.jet, ...fDisplay }}>{pub.name}</div>
+            <HandleTag handle={pub.handle} size={12.5} color={C.slateLight} />
             <div style={{ fontSize: T.body, color: C.slate, ...fBody }}>{coach.sport} · {coach.suburb}</div>
           </div>
           <div style={{ textAlign: "right" }}>
@@ -172,9 +175,9 @@ export function ScreenCoachProfile({ nav, params = {}, favorites = [], toggleFav
           <div style={{ marginTop: 14 }}>
             <StatusBanner
               state="coachUnavailable"
-              onPrimary={() => nav("chat-thread", { name: coach.name })}
+              onPrimary={() => nav("chat-thread", { name: coach.name, handle: coach.handle })}
               primaryLabel="Notify me when available"
-              onSecondary={() => nav("chat-thread", { name: coach.name })}
+              onSecondary={() => nav("chat-thread", { name: coach.name, handle: coach.handle })}
               secondaryLabel="Message coach"
             />
           </div>
@@ -487,7 +490,10 @@ export function ScreenCoachProfile({ nav, params = {}, favorites = [], toggleFav
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <Avatar name={r.name} size={30} />
                       <div>
-                        <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{r.name}</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <span style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{r.name}</span>
+                          {r.handle && <HandleTag handle={r.handle} size={10.5} color={C.slateLight} />}
+                        </div>
                         <div style={{ fontSize: T.caption, color: C.slateLight, ...fBody }}>{r.date}</div>
                       </div>
                     </div>
@@ -497,7 +503,7 @@ export function ScreenCoachProfile({ nav, params = {}, favorites = [], toggleFav
                   {r.verified && <Badge tone="neutral" icon={CheckCircle2}>Verified booking</Badge>}
                   {reply && (
                     <div style={{ marginTop: 10, background: C.fog, borderRadius: 10, padding: "10px 12px" }}>
-                      <div style={{ fontSize: T.caption, fontWeight: 700, color: C.brand, ...fBody }}>Reply from {coach.name}</div>
+                      <div style={{ fontSize: T.caption, fontWeight: 700, color: C.brand, ...fBody }}>Reply from {pub.name}</div>
                       <p style={{ fontSize: T.labelLg, color: C.jet, marginTop: 3, lineHeight: 1.5, ...fBody }}>{reply.text}</p>
                     </div>
                   )}
@@ -566,7 +572,7 @@ export function ScreenCoachProfile({ nav, params = {}, favorites = [], toggleFav
             <Btn full onClick={() => setTab("packages")}>Select a service</Btn>
           </div>
         )}
-        <button onClick={() => nav("chat-thread", { name: coach.name })} style={{ width: 46, height: 46, borderRadius: 14, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+        <button onClick={() => nav("chat-thread", { name: coach.name, handle: coach.handle })} style={{ width: 46, height: 46, borderRadius: 14, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
           <MessageCircle size={18} color={C.jet} />
         </button>
       </div>

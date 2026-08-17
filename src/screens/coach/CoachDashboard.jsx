@@ -24,10 +24,19 @@ import {
   StarRow,
   BottomSheet,
   Badge,
+  HandleTag,
 } from "../../components/ui/Primitives";
 import { useLiveNotifications } from "../../systems/StateSystem";
 import { useReviewActions, DISPUTE_REASONS } from "../../systems/ReviewsSystem";
 import { useApp } from "../../context/AppContext";
+import { getBookingClientName } from "../../utils/name";
+import { withClientMeta } from "../../data/users";
+
+/** Name the coach should see for a booking's client — privacy-safe until the
+    booking is confirmed, full name afterwards (partner reveal). */
+function clientNameFor(booking) {
+  return getBookingClientName(withClientMeta(booking));
+}
 
 const NOTIF_ICON = {
   message: MessageCircle,
@@ -47,7 +56,7 @@ export function ScreenCoachDashboard({
   offline,
   pushNotification,
 }) {
-  const { darkMode } = useApp();
+  const { darkMode, coachIdentity } = useApp();
   const C = darkMode ? CD : CL;
   const [notifOpen, setNotifOpen] = useState(false);
   const [respondingId, setRespondingId] = useState(null);
@@ -166,6 +175,7 @@ export function ScreenCoachDashboard({
     if (n.type === "message") {
       nav("chat-thread", {
         name: n.clientName,
+        handle: withClientMeta({ clientName: n.clientName }).clientHandle,
         threadId: n.threadId,
       });
     } else if (n.type === "verification") {
@@ -217,7 +227,7 @@ export function ScreenCoachDashboard({
                 ...fDisplay,
               }}
             >
-              Josh's dashboard
+              {(coachIdentity.name || "Coach").split(" ")[0]}'s dashboard
             </div>
           </div>
 
@@ -280,7 +290,7 @@ export function ScreenCoachDashboard({
                 cursor: "pointer",
               }}
             >
-              <Avatar name="Josh Whitfield" size={40} />
+              <Avatar name={coachIdentity.name} size={40} />
             </button>
           </div>
         </div>
@@ -448,7 +458,9 @@ export function ScreenCoachDashboard({
         )}
 
         <div className="cl-stagger">
-        {pending.map((b, i) => (
+        {pending.map((b, i) => {
+          const cn = clientNameFor(b);
+          return (
           <Card
             key={b.id}
             style={{
@@ -467,7 +479,7 @@ export function ScreenCoachDashboard({
                 gap: 10,
               }}
             >
-              <Avatar name={b.clientName} size={40} />
+              <Avatar name={cn.name} size={40} />
 
               <div
                 style={{
@@ -482,7 +494,8 @@ export function ScreenCoachDashboard({
                     ...fDisplay,
                   }}
                 >
-                  {b.clientName}
+                  {cn.name}
+                  {cn.handle && <HandleTag handle={cn.handle} size={11} color={C.slateLight} />}
                 </div>
 
                 <div
@@ -551,7 +564,8 @@ export function ScreenCoachDashboard({
               </Btn>
             </div>
           </Card>
-        ))}
+          );
+        })}
         </div>
 
         {/* Upcoming Sessions */}
@@ -576,7 +590,9 @@ export function ScreenCoachDashboard({
           </div>
         ) : (
           <div className="cl-stagger">
-          {upcoming.map((b, i) => (
+          {upcoming.map((b, i) => {
+            const cn = clientNameFor(b);
+            return (
             <Card
               key={b.id}
               style={{
@@ -594,7 +610,7 @@ export function ScreenCoachDashboard({
                   alignItems: "center",
                 }}
               >
-                <Avatar name={b.clientName} size={38} />
+                <Avatar name={cn.name} size={38} />
 
                 <div>
                   <div
@@ -605,7 +621,8 @@ export function ScreenCoachDashboard({
                       ...fBody,
                     }}
                   >
-                    {b.clientName}
+                    {cn.name}
+                    {cn.handle && <HandleTag handle={cn.handle} size={10.5} color={C.slateLight} />}
                   </div>
 
                   <div
@@ -622,7 +639,8 @@ export function ScreenCoachDashboard({
 
               <StatusPill status="confirmed" />
             </Card>
-          ))}
+            );
+          })}
           </div>
         )}
 
@@ -661,6 +679,7 @@ export function ScreenCoachDashboard({
                   }}
                 >
                   {r.name}
+                  {r.handle && <HandleTag handle={r.handle} size={10.5} color={C.slateLight} />}
                 </div>
 
                 <StarRow value={r.rating} size={11} />

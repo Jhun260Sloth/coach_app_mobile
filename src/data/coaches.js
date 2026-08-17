@@ -14,7 +14,7 @@ export const SPORT_ICON = {
 
 export const COACHES = [
   {
-    id: "c1", name: "Isla Ferguson", sport: "Netball", tags: ["Shooting circle", "Game sense"],
+    id: "c1", name: "Isla Ferguson", handle: "isla.netball", namePrivacy: "full", sport: "Netball", tags: ["Shooting circle", "Game sense"],
     suburb: "Surry Hills, Sydney", lat: -33.8846, lng: 151.2109, distanceKm: 2.1, rating: 4.9, reviews: 132,
     verified: { identity: true, wwcc: true, quals: true }, instantBook: true,
     experience: "8 yrs coaching", style: "High-energy, drill-based sessions focused on positioning and decision-making.",
@@ -34,7 +34,7 @@ export const COACHES = [
     availability: { Mon: ["07:00", "16:00", "17:00"], Wed: ["16:00", "17:00", "18:00"], Fri: ["07:00", "08:00"], Sat: ["09:00", "10:00", "11:00"] },
   },
   {
-    id: "c2", name: "Noah Kelly", sport: "CrossFit", tags: ["Metcon programming", "Injury return"],
+    id: "c2", name: "Noah Kelly", handle: "noah.kelly", namePrivacy: "initial", sport: "CrossFit", tags: ["Metcon programming", "Injury return"],
     suburb: "Chatswood, Sydney", lat: -33.7969, lng: 151.1830, distanceKm: 8.4, rating: 4.8, reviews: 96,
     verified: { identity: true, wwcc: false, quals: true }, instantBook: false,
     experience: "6 yrs coaching", style: "Programming-first — every block is periodised and tracked.",
@@ -64,7 +64,7 @@ export const COACHES = [
     availability: { Tue: ["06:00", "07:00", "18:00"], Thu: ["06:00", "07:00"], Sat: ["08:00", "09:00"] },
   },
   {
-    id: "c3", name: "Ruby Hendricks", sport: "Surfing", tags: ["Beginner coaching", "Wave reading"],
+    id: "c3", name: "Ruby Hendricks", handle: "ruby.waves", namePrivacy: "initial", sport: "Surfing", tags: ["Beginner coaching", "Wave reading"],
     suburb: "Manly, Sydney", lat: -33.7969, lng: 151.2870, distanceKm: 9.4, rating: 5.0, reviews: 58,
     verified: { identity: true, wwcc: true, quals: true }, instantBook: true,
     experience: "10 yrs coaching", style: "Patient, safety-first, big on ocean awareness before technique.",
@@ -82,7 +82,7 @@ export const COACHES = [
     availability: { Mon: ["06:00", "06:45"], Wed: ["06:00", "06:45"], Fri: ["06:00", "06:45"], Sun: ["08:00", "08:45"] },
   },
   {
-    id: "c4", name: "Marcus Ude", sport: "Boxing", tags: ["Pad work", "Fitness boxing"],
+    id: "c4", name: "Marcus Ude", handle: "marcus.boxes", namePrivacy: "handle", sport: "Boxing", tags: ["Pad work", "Fitness boxing"],
     suburb: "Glebe, Sydney", lat: -33.8795, lng: 151.1852, distanceKm: 3.4, rating: 4.7, reviews: 74,
     verified: { identity: true, wwcc: true, quals: false }, instantBook: true,
     experience: "5 yrs coaching", style: "Technique-first sessions built around footwork and combinations.",
@@ -100,7 +100,7 @@ export const COACHES = [
     availability: { Tue: ["17:00", "18:00"], Thu: ["17:00", "18:00"], Sun: ["10:00", "11:00", "12:00"] },
   },
   {
-    id: "c5", name: "Chloe Dawson", sport: "Golf", tags: ["Short game", "Swing mechanics"],
+    id: "c5", name: "Chloe Dawson", handle: "chloe.swing", namePrivacy: "full", sport: "Golf", tags: ["Short game", "Swing mechanics"],
     suburb: "Redfern, Sydney", lat: -33.8930, lng: 151.2044, distanceKm: 3.1, rating: 4.9, reviews: 210,
     verified: { identity: true, wwcc: false, quals: true }, instantBook: true,
     experience: "9 yrs coaching", style: "Video-led lessons, adaptable to every level from first-timers to club players.",
@@ -119,7 +119,7 @@ export const COACHES = [
     availability: { Mon: ["07:00", "18:00"], Wed: ["07:00", "18:00"], Fri: ["07:00"], Sat: ["09:00", "10:00"] },
   },
   {
-    id: "c6", name: "Liam O'Connor", sport: "Cycling", tags: ["Road racing", "Power training"],
+    id: "c6", name: "Liam O'Connor", handle: "liam.rides", namePrivacy: "initial", sport: "Cycling", tags: ["Road racing", "Power training"],
     suburb: "Parramatta, Sydney", lat: -33.8150, lng: 151.0011, distanceKm: 23.9, rating: 4.6, reviews: 41,
     verified: { identity: true, wwcc: true, quals: true }, instantBook: false,
     experience: "4 yrs coaching", style: "Data-driven coaching — training built around power zones and race goals.",

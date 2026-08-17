@@ -2,7 +2,8 @@ import React from "react";
 import { Navigation, ChevronRight, X } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
-import { Avatar } from "../ui/Primitives";
+import { Avatar, HandleTag } from "../ui/Primitives";
+import { getPublicName } from "../../utils/name";
 
 // Isolated so route-fetch progress (`routing`/`routeInfo`) only re-renders this
 // card, not the search bar or radius filter above it.
@@ -10,15 +11,17 @@ function SelectedCoachCardBase({ coach, routing, routeInfo, onOpen, onClose }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   if (!coach) return null;
+  const pub = getPublicName(coach, "public");
   return (
     <div style={{
       position: "absolute", left: 16, right: 16, bottom: 20, zIndex: 401, background: C.white,
       borderRadius: 16, padding: 14, display: "flex", gap: 12, alignItems: "center",
       boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
     }}>
-      <Avatar name={coach.name} size={46} />
+      <Avatar name={pub.name} size={46} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 700, fontSize: T.subtitle, color: C.jet, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", ...fDisplay }}>{coach.name}</div>
+        <div style={{ fontWeight: 700, fontSize: T.subtitle, color: C.jet, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", ...fDisplay }}>{pub.name}</div>
+        {pub.handle && <HandleTag handle={pub.handle} size={11} color={C.slateLight} />}
         <div style={{ fontSize: T.label, color: C.brand, fontWeight: 700, marginTop: 1, ...fDisplay }}>{coach.sport} · ${coach.packages[0].price}/session</div>
         <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 3, display: "flex", alignItems: "center", gap: 4, ...fBody }}>
           <Navigation size={11} color={C.slateLight} />

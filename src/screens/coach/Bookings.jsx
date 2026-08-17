@@ -6,9 +6,17 @@ import {
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { CLIENT_PROFILES, BOOKING_ENQUIRY_MESSAGES, CONFIG } from "../../data/mockData";
 import {
-  Avatar, Card, SegTabs, EmptyState, StatusPill, Btn, TopBar, Row, SectionLabel, Badge,
+  Avatar, Card, SegTabs, EmptyState, StatusPill, Btn, TopBar, Row, SectionLabel, Badge, HandleTag,
 } from "../../components/ui/Primitives";
 import { useApp } from "../../context/AppContext";
+import { getBookingClientName } from "../../utils/name";
+import { withClientMeta } from "../../data/users";
+
+/** Name the coach should see for a booking's client — privacy-safe until the
+    booking is confirmed, full name afterwards (partner reveal). */
+function clientNameFor(booking) {
+  return getBookingClientName(withClientMeta(booking));
+}
 
 /* ---- date helpers for the calendar view (booking dates look like "Tue, 22 Jul") ---- */
 const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -60,13 +68,18 @@ export function ScreenCoachBookings({ nav, coachBookings }) {
   const goPrev = () => setCursor((c) => calMode === "month" ? new Date(c.getFullYear(), c.getMonth() - 1, 1) : addDays(c, -7));
   const goNext = () => setCursor((c) => calMode === "month" ? new Date(c.getFullYear(), c.getMonth() + 1, 1) : addDays(c, 7));
 
-  const renderBookingCard = (b, i) => (
+  const renderBookingCard = (b, i) => {
+    const cn = clientNameFor(b);
+    return (
     <Card key={b.id} style={{ marginBottom: 10, ...(i !== undefined ? { animationDelay: `${Math.min(i, 8) * 45}ms` } : {}) }} onClick={() => nav("coach-booking-detail", { id: b.id })}>
       <div style={{ display: "flex", justifyContent: "space-between" }}>
         <div style={{ display: "flex", gap: 10 }}>
-          <Avatar name={b.clientName} size={40} />
+          <Avatar name={cn.name} size={40} />
           <div>
-            <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fDisplay }}>{b.clientName}</div>
+            <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fDisplay }}>
+              {cn.name}
+              {cn.handle && <span style={{ fontWeight: 500, color: C.slateLight, marginLeft: 6, fontSize: T.label, ...fBody }}>{cn.handle}</span>}
+            </div>
             <div style={{ fontSize: T.label, color: C.slate, ...fBody }}>{b.service}</div>
             <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{b.date} · {b.time} · {b.mode}</div>
           </div>
@@ -82,7 +95,8 @@ export function ScreenCoachBookings({ nav, coachBookings }) {
         </div>
       )}
     </Card>
-  );
+    );
+  };
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
@@ -192,6 +206,7 @@ export function ScreenCoachBookingDetail({ nav, params, coachBookings, respondBo
   };
   if (!booking) return <EmptyState icon={ClipboardList} title="Booking not found" body="This booking may have been removed." />;
   const profile = CLIENT_PROFILES[booking.clientName] || { memberSince: "—", totalSessions: 0, homeSuburb: "—", notes: "", verifiedPayment: true };
+  const cn = clientNameFor(booking);
   const hasThread = !!BOOKING_ENQUIRY_MESSAGES[booking.id];
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
@@ -200,9 +215,11 @@ export function ScreenCoachBookingDetail({ nav, params, coachBookings, respondBo
 
         <Card style={{ marginBottom: 14 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <Avatar name={booking.clientName} size={50} />
+            <Avatar name={cn.name} size={50} />
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: T.subtitleLg, fontWeight: 600, color: C.jet, ...fDisplay }}>{booking.clientName}</div>
+              <div style={{ fontSize: T.subtitleLg, fontWeight: 600, color: C.jet, ...fDisplay }}>{cn.name}</div>
+              {cn.handle && <HandleTag handle={cn.handle} size={11.5} color={C.slateLight} />}
+              {cn.revealed && <div style={{ fontSize: T.captionLg, color: C.slate, ...fBody }}>Full name shared — booking confirmed</div>}
               <div style={{ fontSize: T.label, color: C.slate, ...fBody }}>{profile.homeSuburb}</div>
             </div>
             {profile.verifiedPayment && <Badge tone="success" icon={ShieldCheck}>Payment verified</Badge>}
@@ -249,7 +266,7 @@ export function ScreenCoachBookingDetail({ nav, params, coachBookings, respondBo
             <MessagesSquare size={17} color={C.brandIcon || C.brandColor} />
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>Message {booking.clientName.split(" ")[0]}</div>
+            <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>Message {cn.name.split(" ")[0]}</div>
             <div style={{ fontSize: T.captionLg, color: C.slate, ...fBody }}>{hasThread ? "You have an existing conversation" : "Clarify details before responding"}</div>
           </div>
           <Btn size="sm" variant="secondary" icon={MessageCircle} onClick={() => nav("chat-thread", { name: booking.clientName, context: `${booking.service} · ${booking.date}`, bookingId: booking.id, backTo: "coach-booking-detail", backParams: { id: booking.id } })}>Chat</Btn>

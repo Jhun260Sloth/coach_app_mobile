@@ -7,6 +7,8 @@ import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { GENDER_OPTIONS } from "../../data/mockData";
 import { Chip, SectionLabel, Btn, TopBar, Field, Card, Avatar, Badge } from "../../components/ui/Primitives";
+import { HandleField } from "../../components/ui/PublicIdentityFields";
+import { isValidHandle } from "../../utils/name";
 import { LocationField } from "../../components/ui/LocationField";
 
 function StepHeader({ title, subtitle, onBack }) {
@@ -24,7 +26,7 @@ function StepHeader({ title, subtitle, onBack }) {
 }
 
 /* Step 1 of 3 — build your profile (mobile, age, location, profile pic) */
-function calcAge(dobStr) {
+export function calcAge(dobStr) {
   if (!dobStr) return null;
   const birth = new Date(dobStr);
   if (isNaN(birth.getTime())) return null;
@@ -36,12 +38,15 @@ function calcAge(dobStr) {
 }
 
 export function ScreenAboutYouProfile({ nav, onComplete }) {
-  const { darkMode } = useApp();
+  const { darkMode, clientIdentity, updateClientIdentity, isHandleTaken } = useApp();
   const C = darkMode ? CD : CL;
   const [mobile, setMobile] = useState("");
   const [location, setLocation] = useState(null); // { suburb, state, postcode }
   const [dob, setDob] = useState("");
   const [photo, setPhoto] = useState(null);
+  const [handle, setHandle] = useState(clientIdentity.handle || "");
+
+  const fullName = `${clientIdentity.firstName || ""} ${clientIdentity.lastName || ""}`.trim() || "";
 
   const photoInputRef = React.useRef(null);
   const onPhotoChange = (e) => {
@@ -55,8 +60,9 @@ export function ScreenAboutYouProfile({ nav, onComplete }) {
   const ageVerified = age !== null && age >= 18;
 
   // Continue stays disabled — and the user can't advance — until the date of
-  // birth entered confirms they're 18 or older.
-  const canContinue = mobile.trim().length > 0 && !!location && ageVerified;
+  // birth entered confirms they're 18 or older, and a valid, available
+  // username has been chosen.
+  const canContinue = mobile.trim().length > 0 && !!location && ageVerified && isValidHandle(handle) && !isHandleTaken(handle);
   // The "who are you booking for?" step has been removed from the flow —
   // finishing this step takes the client straight to the setup success screen.
   const goNext = () => {
@@ -65,7 +71,8 @@ export function ScreenAboutYouProfile({ nav, onComplete }) {
     // personalise-your-recommendations, profile) reuses the same location
     // state rather than asking for it again.
     onComplete?.({ location, mobile });
-    nav("client-setup-complete", { mobile, location, dob, age, hasPhoto: !!photo });
+    updateClientIdentity?.({ handle });
+    nav("client-setup-complete", { mobile, location, dob, age, hasPhoto: !!photo, name: fullName });
   };
 
   return (
@@ -84,7 +91,7 @@ export function ScreenAboutYouProfile({ nav, onComplete }) {
             {photo ? (
               <img src={photo} alt="Profile" style={{ width: 84, height: 84, borderRadius: 84, objectFit: "cover", display: "block" }} />
             ) : (
-              <Avatar name="Sarah Lin" size={84} />
+              <Avatar name={fullName || "You"} size={84} />
             )}
             <div style={{ position: "absolute", bottom: -2, right: -2, width: 28, height: 28, borderRadius: 28, background: C.brand, border: `2px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
               <Camera size={13} color={C.white} />
@@ -114,7 +121,7 @@ export function ScreenAboutYouProfile({ nav, onComplete }) {
               onChange={setLocation}
               label="Location"
               placeholder="Search suburb or postcode…"
-              helper="We only use this to find coaches nearby — it's never shown to coaches or other clients."
+              helper="We only use this to find coaches nearby (never shared with other users)."
             />
           </div>
 
@@ -134,6 +141,8 @@ export function ScreenAboutYouProfile({ nav, onComplete }) {
               Account holders must be 18 or older
             </div>
           </div>
+
+          <HandleField value={handle} onChange={setHandle} isTaken={isHandleTaken(handle)} />
         </div>
 
         {isUnder18 && (

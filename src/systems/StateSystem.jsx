@@ -9,8 +9,18 @@ import { CL, CD, fDisplay, fBody, T } from "../theme/theme";
 import { useApp } from "../context/AppContext";
 import { FALLBACK_USER_LOCATION } from "../lib/mapUtils";
 import { useUserLocation } from "../utils/useUserLocation";
+import { getPublicName } from "../utils/name";
 
 export { useUserLocation };
+
+/** Privacy-safe name for a booking's client in coach-facing notifications. */
+function bookingClientPubName(b) {
+  return getPublicName({
+    name: b?.clientName,
+    handle: b?.clientHandle,
+    namePrivacy: b?.clientPrivacy || "initial",
+  }, "public").name;
+}
 
 /* =========================================================================
    COLOR HELPER — returns C (current palette) for use in components
@@ -64,7 +74,7 @@ export const STATE_CATALOG = {
     tone: "warning", icon: Hourglass, title: "Request sent",
     message: "Waiting on the coach to accept or decline.",
     next: "You'll be notified as soon as they respond — usually within a few hours.",
-    notify: (b) => ({ title: "New booking request", body: `${b?.clientName || "A client"} requested ${b?.service || "a session"}${b?.date ? ` for ${b.date}` : ""}.` }),
+    notify: (b) => ({ title: "New booking request", body: `${bookingClientPubName(b) || "A client"} requested ${b?.service || "a session"}${b?.date ? ` for ${b.date}` : ""}.` }),
   },
   bookingConfirmed: {
     tone: "success", icon: CheckCircle2, title: "Booking confirmed",
@@ -91,7 +101,7 @@ export const STATE_CATALOG = {
     tone: "neutral", icon: Ban, title: "Session cancelled",
     message: "This booking has been called off.",
     primary: "Book again", secondary: "View policy",
-    notify: (b) => ({ title: "Booking cancelled", body: `${b?.clientName || "A client"} cancelled ${b?.service || "a session"}${b?.date ? ` on ${b.date}` : ""}.` }),
+    notify: (b) => ({ title: "Booking cancelled", body: `${bookingClientPubName(b) || "A client"} cancelled ${b?.service || "a session"}${b?.date ? ` on ${b.date}` : ""}.` }),
   },
 
   // ---- Payment ----

@@ -1,16 +1,24 @@
 import React, { useState, useMemo, useEffect } from "react";
 import {
   WifiOff, Calendar, ClipboardList, Heart, Download, Clock, MessageCircle, Star, CheckCircle2,
-  AlertTriangle, CreditCard, ShieldCheck, LifeBuoy, Hourglass, RefreshCcw, ChevronLeft, ChevronRight, CalendarX2,
+  AlertTriangle, CreditCard, ShieldCheck, LifeBuoy, Hourglass, RefreshCcw, ChevronLeft, ChevronRight, CalendarX2, CalendarDays,
   List as ListIcon,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { COACHES } from "../../data/mockData";
 import {
-  Avatar, Card, Badge, SegTabs, SectionLabel, Btn, TopBar, EmptyState, StatusPill, Chip, BottomSheet, Row, ScrollFadeRow,
+  Avatar, Card, Badge, SegTabs, SectionLabel, Btn, TopBar, EmptyState, StatusPill, Chip, BottomSheet, Row, ScrollFadeRow, HandleTag,
 } from "../../components/ui/Primitives";
 import { StatusBanner } from "../../systems/StateSystem";
+import { getBookingCoachName } from "../../utils/name";
+
+/** Resolved name for a booking's coach — public name until the booking is
+    confirmed, full name afterwards (partner reveal). */
+function coachNameFor(booking) {
+  const coach = booking ? COACHES.find((c) => c.id === booking.coachId) : null;
+  return getBookingCoachName(booking, coach);
+}
 
 /* ---- date helpers for the calendar view (booking dates look like "Tue, 22 Jul") ---- */
 const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -309,7 +317,7 @@ function RescheduleSheet({ booking, onClose, onConfirm }) {
       {booking && (
         <>
           <Card style={{ marginBottom: 16, display: "flex", gap: 12, alignItems: "center" }}>
-            <Avatar name={booking.coachName} size={40} />
+            <Avatar name={coachNameFor(booking).name} size={40} />
             <div>
               <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fDisplay }}>{booking.service}</div>
               <div style={{ fontSize: T.label, color: C.slate, ...fBody }}>Currently {booking.date} · {booking.time}</div>
@@ -368,17 +376,17 @@ function CancelSheet({ booking, onClose, onConfirm, pending }) {
         {booking && (
           <>
             <Card style={{ marginBottom: 14, display: "flex", gap: 12, alignItems: "center" }}>
-              <Avatar name={booking.coachName} size={40} />
+              <Avatar name={coachNameFor(booking).name} size={40} />
               <div>
                 <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fDisplay }}>{booking.service}</div>
-                <div style={{ fontSize: T.label, color: C.slate, ...fBody }}>{booking.date} · {booking.time} with {booking.coachName}</div>
+                <div style={{ fontSize: T.label, color: C.slate, ...fBody }}>{booking.date} · {booking.time} with {coachNameFor(booking).name}</div>
               </div>
             </Card>
 
             <div style={{ display: "flex", alignItems: "flex-start", gap: 8, background: C.warnTint, borderRadius: 12, padding: 12, marginBottom: 18 }}>
               <AlertTriangle size={14} color={C.brand} style={{ marginTop: 2, flexShrink: 0 }} />
               <span style={{ fontSize: T.label, color: C.slate, lineHeight: 1.5, ...fBody }}>
-                {booking.coachName.split(" ")[0]} hasn't responded to this request yet — withdrawing it now won't incur any charge.
+                {coachNameFor(booking).name.split(" ")[0]} hasn't responded to this request yet — withdrawing it now won't incur any charge.
               </span>
             </div>
 
@@ -410,7 +418,7 @@ function CancelSheet({ booking, onClose, onConfirm, pending }) {
           <SectionLabel>Booking details</SectionLabel>
           <Card style={{ marginBottom: 16 }}>
             <Row label="Service" value={booking.service} />
-            <Row label="Coach" value={booking.coachName} />
+            <Row label="Coach" value={coachNameFor(booking).name} />
             <Row label="Date" value={booking.date} />
             <Row label="Time" value={booking.time} last />
           </Card>
@@ -484,7 +492,7 @@ export function ReceiptSheet({ booking, onClose }) {
 
           <Card style={{ marginBottom: 14 }}>
             <Row label="Service" value={booking.service} />
-            <Row label="Coach" value={booking.coachName} />
+            <Row label="Coach" value={coachNameFor(booking).name} />
             <Row label="Date" value={booking.date} />
             <Row label="Time" value={booking.time} />
             <Row label="Location" value={booking.mode} last />
@@ -515,6 +523,8 @@ export function BookingCard({ b, nav, past, onReschedule, onCancel, onPay, style
   const C = darkMode ? CD : CL;
   const pending = b.status === "pending";
   const paymentDue = !past && b.status === "confirmed" && b.paymentDue;
+  const cn = coachNameFor(b);
+  const coach = COACHES.find((c) => c.id === b.coachId);
   return (
     <Card
       onClick={() => nav("client-booking-detail", { id: b.id })}
@@ -522,10 +532,10 @@ export function BookingCard({ b, nav, past, onReschedule, onCancel, onPay, style
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
         <div style={{ display: "flex", gap: 10, minWidth: 0 }}>
-          <Avatar name={b.coachName || b.clientName} size={42} />
+          <Avatar name={cn.name || b.clientName} size={42} />
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: T.subtitleLg, fontWeight: 700, color: C.jet, letterSpacing: "-0.1px", ...fDisplay }}>{b.service}</div>
-            <div style={{ fontSize: T.labelLg, color: C.slate, marginTop: 3, ...fBody }}>{b.coachName || b.clientName}</div>
+            <div style={{ fontSize: T.labelLg, color: C.slate, marginTop: 3, ...fBody }}>{cn.name || b.clientName}</div>
             <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: T.label, color: C.slateLight, marginTop: 6, ...fBody }}>
               <Clock size={11} /> {b.date} · {b.time}
             </div>
@@ -536,7 +546,7 @@ export function BookingCard({ b, nav, past, onReschedule, onCancel, onPay, style
       {paymentDue && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.brandTint, borderRadius: 12, padding: "9px 12px", marginTop: 12 }} onClick={(e) => e.stopPropagation()}>
           <CreditCard size={14} color={C.brand} style={{ flexShrink: 0 }} />
-          <span style={{ flex: 1, fontSize: T.label, color: C.jet, lineHeight: 1.4, ...fBody }}>{(b.coachName || "Your coach").split(" ")[0]} accepted — send your payment to lock in the session.</span>
+          <span style={{ flex: 1, fontSize: T.label, color: C.jet, lineHeight: 1.4, ...fBody }}>{(cn.name || "Your coach").split(" ")[0]} accepted — send your payment to lock in the session.</span>
           <Btn size="sm" variant="dark" onClick={onPay}>Pay now</Btn>
         </div>
       )}
@@ -546,7 +556,7 @@ export function BookingCard({ b, nav, past, onReschedule, onCancel, onPay, style
           <>
             <Btn size="sm" variant="secondary" full onClick={onReschedule}>Reschedule</Btn>
             <Btn size="sm" variant="outline" onClick={onCancel}>Cancel</Btn>
-            <Btn size="sm" variant="dark" icon={MessageCircle} onClick={() => nav("chat-thread", { name: b.coachName || b.clientName, context: `${b.service} · ${b.date}`, bookingId: b.id })} />
+            <Btn size="sm" variant="dark" icon={MessageCircle} onClick={() => nav("chat-thread", { name: b.coachName || b.clientName, handle: coach?.handle, context: `${b.service} · ${b.date}`, bookingId: b.id })} />
           </>
         )}
         {/* Pending: tapping the card already opens details, so a duplicate "View details" button is dead weight.
@@ -554,13 +564,13 @@ export function BookingCard({ b, nav, past, onReschedule, onCancel, onPay, style
         {!past && pending && (
           <>
             <Btn size="sm" variant="outline" full onClick={onCancel}>Withdraw</Btn>
-            <Btn size="sm" variant="dark" icon={MessageCircle} onClick={() => nav("chat-thread", { name: b.coachName || b.clientName, context: `${b.service} · ${b.date}`, bookingId: b.id })} />
+            <Btn size="sm" variant="dark" icon={MessageCircle} onClick={() => nav("chat-thread", { name: b.coachName || b.clientName, handle: coach?.handle, context: `${b.service} · ${b.date}`, bookingId: b.id })} />
           </>
         )}
         {/* Completed / cancelled: always offer a fast rebook path alongside whatever review state applies. */}
         {past && b.status === "completed" && !b.reviewed && (
           <>
-            <Btn size="sm" full onClick={() => nav("leave-review", { bookingId: b.id, name: b.coachName })}>Leave a review</Btn>
+            <Btn size="sm" full onClick={() => nav("leave-review", { bookingId: b.id, name: cn.name || b.coachName })}>Leave a review</Btn>
             <Btn size="sm" variant="outline" full icon={RefreshCcw} onClick={() => nav("coach-profile", { id: b.coachId })}>Book again</Btn>
           </>
         )}
@@ -598,6 +608,7 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
   }
 
   const coach = COACHES.find((c) => c.id === booking.coachId);
+  const cn = coachNameFor(booking);
   const isPending = booking.status === "pending";
   const isUpcoming = booking.status === "confirmed";
   const isPast = booking.status === "completed" || booking.status === "cancelled";
@@ -618,6 +629,7 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
 
   const messageParams = {
     name: booking.coachName,
+    handle: coach?.handle,
     context: `${booking.service} · ${booking.date}`,
     bookingId: booking.id,
     backTo: "client-booking-detail",
@@ -638,9 +650,11 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
 
         <Card style={{ marginBottom: 14 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <Avatar name={booking.coachName} size={50} />
+            <Avatar name={cn.name} size={50} />
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: T.subtitleLg, fontWeight: 600, color: C.jet, ...fDisplay }}>{booking.coachName}</div>
+              <div style={{ fontSize: T.subtitleLg, fontWeight: 600, color: C.jet, ...fDisplay }}>{cn.name}</div>
+              {cn.handle && <HandleTag handle={cn.handle} size={11.5} color={C.slateLight} />}
+              {cn.revealed && <div style={{ fontSize: T.captionLg, color: C.slate, ...fBody }}>Full name shared with your booking partner</div>}
               {coach && <div style={{ fontSize: T.label, color: C.slate, ...fBody }}>{coach.suburb}</div>}
             </div>
             <StatusPill status={booking.status} />
@@ -693,6 +707,44 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
           </div>
         </Card>
 
+        {isUpcoming && (
+          <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+            <button
+              onClick={() => nav("session-prep", { coachId: booking.coachId, packageId: coach?.packages?.[0]?.id, date: booking.date })}
+              style={{
+                flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                padding: "10px 12px", borderRadius: 12, border: `1px solid ${C.border}`, background: C.white,
+                cursor: "pointer", ...fBody,
+              }}
+            >
+              <CalendarDays size={14} color={C.jet} />
+              <span style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet }}>Session prep</span>
+            </button>
+          </div>
+        )}
+
+        {isPast && booking.status === "cancelled" && booking.refundStatus && (
+          <div style={{ marginBottom: 14 }}>
+            <button
+              onClick={() => nav("refund-status", { booking })}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "12px 14px",
+                borderRadius: 12, border: `1px solid ${C.border}`, background: C.white,
+                cursor: "pointer", ...fBody,
+              }}
+            >
+              <Clock size={15} color={C.brand} />
+              <div style={{ flex: 1, textAlign: "left" }}>
+                <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, ...fBody }}>Refund status</div>
+                <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>
+                  {booking.refundStatus === "refunded" ? "Refund complete" : "Refund in progress"}
+                </div>
+              </div>
+              <ChevronRight size={16} color={C.slateLight} />
+            </button>
+          </div>
+        )}
+
         {isPending && (
           <div style={{ display: "flex", gap: 8, marginTop: 4, marginBottom: 14 }}>
             <Btn full variant="secondary" icon={MessageCircle} onClick={() => nav("chat-thread", messageParams)}>Message coach</Btn>
@@ -705,7 +757,7 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
             <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
               <CreditCard size={16} color={C.brand} style={{ flexShrink: 0, marginTop: 1 }} />
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{booking.coachName.split(" ")[0]} accepted your request</div>
+                <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{cn.name.split(" ")[0]} accepted your request</div>
                 <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, lineHeight: 1.5, ...fBody }}>Send your payment to lock in the session — funds are held securely until it's complete.</div>
               </div>
             </div>
@@ -725,7 +777,7 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
 
         {isPast && booking.status === "completed" && !booking.reviewed && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
-            <Btn full onClick={() => nav("leave-review", { bookingId: booking.id, name: booking.coachName })}>Leave a review</Btn>
+            <Btn full onClick={() => nav("leave-review", { bookingId: booking.id, name: cn.name || booking.coachName })}>Leave a review</Btn>
             <Btn full variant="secondary" icon={RefreshCcw} onClick={() => nav("coach-profile", { id: booking.coachId })}>Book again</Btn>
           </div>
         )}

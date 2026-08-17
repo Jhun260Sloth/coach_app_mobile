@@ -53,9 +53,9 @@ export const COACH_BOOKINGS = [
 ];
 
 export const REVIEWS = [
-  { id: "r1", name: "Sarah L.", rating: 5, text: "Isla spotted a positioning issue in my first session that nobody else had picked up on. Genuinely improved my game.", verified: true, date: "3 weeks ago" },
-  { id: "r2", name: "Priya D.", rating: 5, text: "Great with my two kids — patient but pushes them just enough.", verified: true, date: "1 month ago" },
-  { id: "r3", name: "Owen K.", rating: 4, text: "Solid technical feedback, sessions run a little over time but worth it.", verified: true, date: "2 months ago" },
+  { id: "r1", name: "Sarah L.", handle: "sarahlin", rating: 5, text: "Isla spotted a positioning issue in my first session that nobody else had picked up on. Genuinely improved my game.", verified: true, date: "3 weeks ago" },
+  { id: "r2", name: "Priya D.", handle: "priyad", rating: 5, text: "Great with my two kids — patient but pushes them just enough.", verified: true, date: "1 month ago" },
+  { id: "r3", name: "Owen K.", handle: "owenk", rating: 4, text: "Solid technical feedback, sessions run a little over time but worth it.", verified: true, date: "2 months ago" },
 ];
 
 export const THREADS = [

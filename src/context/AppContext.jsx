@@ -4,6 +4,8 @@ import {
   INITIAL_AVAILABILITY_BLOCKS,
 } from "../data/bookings";
 import { COACHES } from "../data/coaches";
+import { CURRENT_CLIENT, isHandleTaken as isHandleTakenBase } from "../data/users";
+import { getPublicName, fullNameOf } from "../utils/name";
 import { useUserLocation } from "../utils/useUserLocation";
 import { applyTheme } from "../theme/theme";
 
@@ -43,6 +45,7 @@ export function AppProvider({ children }) {
   const [isFirstTimeClient, setIsFirstTimeClient] = useState(false);
   const [discoveryPrefs, setDiscoveryPrefs] = useState({ seeded: true });
   const [showPostSignupGuide, setShowPostSignupGuide] = useState(false);
+  const [clientIdentity, setClientIdentity] = useState(CURRENT_CLIENT);
 
   // ---- Booking state ----
   const [bookings, setBookings] = useState(INITIAL_BOOKINGS);
@@ -89,6 +92,13 @@ export function AppProvider({ children }) {
   const clientNotifications = notifications.filter((n) => n.audience === "client");
   const coachNotifications = notifications.filter((n) => n.audience === "coach");
 
+  // Public identity of the current coach (onboarding data over directory seed).
+  const coachIdentity = {
+    name: coachOnboarding.name || COACHES[1].name,
+    handle: coachOnboarding.handle || COACHES[1].handle,
+    namePrivacy: coachOnboarding.namePrivacy || COACHES[1].namePrivacy,
+  };
+
   const setClientNotifications = (updater) => {
     setNotifications((all) => {
       const clientItems = all.filter((n) => n.audience === "client");
@@ -134,13 +144,21 @@ export function AppProvider({ children }) {
 
   const updateCoachOnboarding = (patch) => setCoachOnboarding((c) => ({ ...c, ...patch }));
 
+  // ---- Identity / handles ----
+  const updateClientIdentity = (patch) => setClientIdentity((c) => ({ ...c, ...patch }));
+  const isHandleTaken = (handle) => isHandleTakenBase(handle, [clientIdentity.handle, coachOnboarding.handle]);
+
   // ---- Booking actions ----
   const addBooking = (d) => {
     const id = d.id || ("b" + (bookings.length + 1));
     const coachId = d.coach.id;
+    const clientFull = fullNameOf(clientIdentity);
+    const clientPub = getPublicName(clientIdentity, "public");
+    const who = clientPub.handle ? `${clientPub.name} (${clientPub.handle})` : clientPub.name;
     setBookings((b) => [
       {
-        id, coachId, coachName: d.coach.name, clientName: "Sarah Lin",
+        id, coachId, coachName: d.coach.name, clientName: clientFull,
+        clientHandle: clientIdentity.handle, clientPrivacy: clientIdentity.namePrivacy,
         service: d.pkg.name, date: d.day, time: d.time, mode: d.mode,
         status: "pending", price: d.total, paid: false, reviewed: false,
         participants: d.participants || "You", notes: d.conditions || "",
@@ -150,7 +168,9 @@ export function AppProvider({ children }) {
     if (coachId === "c2") {
       setCoachBookings((cb) => [
         {
-          id, clientName: "Sarah Lin", service: d.pkg.name, date: d.day,
+          id, clientName: clientFull,
+          clientHandle: clientIdentity.handle, clientPrivacy: clientIdentity.namePrivacy,
+          service: d.pkg.name, date: d.day,
           time: d.time, mode: d.mode, status: "pending", price: d.total,
           notes: d.conditions || "",
         },
@@ -159,7 +179,7 @@ export function AppProvider({ children }) {
     }
     pushNotification({
       audience: "coach", type: "booking", title: "New booking request",
-      body: `Sarah Lin requested a ${d.pkg.name} for ${d.day}, ${d.time}.`,
+      body: `${who} requested a ${d.pkg.name} for ${d.day}, ${d.time}.`,
     });
   };
 
@@ -205,16 +225,17 @@ export function AppProvider({ children }) {
     const cb = coachBookings.find((b) => b.id === id);
     setBookings((arr) => arr.map((b) => (b.id === id ? { ...b, status, paymentDue: status === "confirmed" ? true : b.paymentDue } : b)));
     if (cb) {
+      const coachPub = getPublicName(coachIdentity, "public");
       if (status === "confirmed") {
         pushNotification({
           audience: "client", type: "payment", title: "Send your payment",
-          body: `${COACHES[1].name} accepted your ${cb.service} request — send payment to confirm your session on ${cb.date}.`,
+          body: `${coachPub.name} accepted your ${cb.service} request — send payment to confirm your session on ${cb.date}.`,
           bookingId: id,
         });
       } else if (status === "cancelled") {
         pushNotification({
           audience: "client", type: "booking", title: "Booking declined",
-          body: `${COACHES[1].name} declined your ${cb.service} request for ${cb.date}.`,
+          body: `${coachPub.name} declined your ${cb.service} request for ${cb.date}.`,
           bookingId: id,
         });
       }
@@ -248,7 +269,7 @@ export function AppProvider({ children }) {
     setVerificationQueue((q) => [
       {
         id: "v" + (q.length + 1),
-        name: coachOnboarding.displayName || "New Coach",
+        name: coachOnboarding.name || "New Coach",
         sport: (coachOnboarding.primarySports && coachOnboarding.primarySports[0]) || "Coaching",
         type: documents.map((d) => d.label).join(" + "),
         suburb: coachOnboarding.location ? `${coachOnboarding.location.suburb}, ${coachOnboarding.location.state}` : "",
@@ -308,6 +329,7 @@ export function AppProvider({ children }) {
     setClientPrefs(null);
     setChildren([]);
     setCoachOnboarding({});
+    setClientIdentity(CURRENT_CLIENT);
     setBiometric(false);
     setCoachPackages(COACHES[1].packages);
     setAvailabilityBlocks(INITIAL_AVAILABILITY_BLOCKS);
@@ -335,6 +357,7 @@ export function AppProvider({ children }) {
     children: childrenState, addChild, updateChild, removeChild,
     isFirstTimeClient, setIsFirstTimeClient, discoveryPrefs, setDiscoveryPrefs,
     showPostSignupGuide, setShowPostSignupGuide,
+    clientIdentity, updateClientIdentity, isHandleTaken, coachIdentity,
     filters: clientFilters, onFiltersChange: setClientFilters,
     // Bookings
     bookings, setBookings, coachBookings, setCoachBookings,

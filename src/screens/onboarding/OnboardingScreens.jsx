@@ -2,15 +2,16 @@ import React, { useState, useEffect } from "react";
 import {
   Search, Users, Mail, Eye, EyeOff, Fingerprint, Check,
   Upload, CheckCircle2, ClipboardList, Clock, Lock, Camera, MapPin, LocateFixed,
-  Plus, Trash2, CreditCard, ScanFace, FileCheck2, Smartphone, XCircle,
+  Plus, Trash2, CreditCard, ScanFace, FileCheck2, Smartphone, XCircle, ChevronRight,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, LOGO_WHITE_SRC, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import {
   Btn, Card, Badge, Toggle, TopBar, Field, CheckboxRow, RadioRow,
-  SearchMultiSelect, Avatar, Chip, BottomSheet, Spinner,
+  SearchMultiSelect, Avatar, Chip, BottomSheet, Spinner, LogoMark,
 } from "../../components/ui/Primitives";
-import { LogoMark } from "../../components/ui/Primitives";
+import { HandleField } from "../../components/ui/PublicIdentityFields";
+import { isValidHandle } from "../../utils/name";
 import {
   LANGUAGE_OPTIONS, GENDER_OPTIONS, AU_SUBURBS, SPORT_OPTIONS_FULL,
   COACHING_CATEGORY_OPTIONS, SKILL_LEVEL_OPTIONS, AGE_GROUP_OPTIONS,
@@ -245,27 +246,40 @@ export function ScreenRoleSelect({ nav, setRole }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const Option = ({ role, title, body, icon: Icon }) => (
-    <button onClick={() => { setRole(role); nav("auth", { mode: "signup" }); }}
-      style={{ width: "100%", textAlign: "left", background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 18, padding: 16, display: "flex", gap: 14, alignItems: "flex-start", cursor: "pointer", marginBottom: 12 }}>
-      <div style={{ width: 44, height: 44, borderRadius: 13, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-        <Icon size={20} color={C.brandIcon || C.brandColor} />
+    <button
+      onClick={() => { setRole(role); nav("auth", { mode: "signup" }); }}
+      style={{
+        width: "100%", textAlign: "left", background: C.white, border: `1.5px solid ${C.border}`,
+        borderRadius: 18, padding: 16, display: "flex", gap: 14, alignItems: "center",
+        cursor: "pointer", marginBottom: 12, transition: "transform 0.12s ease, border-color 0.15s ease",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.03)",
+      }}
+    >
+      <div style={{ width: 48, height: 48, borderRadius: 14, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <Icon size={22} color={C.brand} />
       </div>
-      <div>
+      <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontWeight: 600, color: C.jet, fontSize: T.subtitleLg, marginBottom: 3, ...fDisplay }}>{title}</div>
-        <div style={{ fontSize: T.labelLg, color: C.slate, lineHeight: 1.5, ...fBody }}>{body}</div>
+        <div style={{ fontSize: T.labelLg, color: C.slate, lineHeight: 1.45, ...fBody }}>{body}</div>
       </div>
+      <ChevronRight size={18} color={C.slateLight} style={{ flexShrink: 0 }} />
     </button>
   );
   return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <div style={{ flex: 1, overflowY: "auto", padding: "24px 20px 24px" }} className="cl-hide-scrollbar">
-        <LogoMark size={34} />
-        <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, marginTop: 22, ...fDisplay }}>What brings you<br />to CoachLink?</div>
-        <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 6, marginBottom: 22, ...fBody }}>You can add a coaching profile later from the same account.</div>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column", background: C.white }}>
+      <TopBar title="" onBack={() => nav("get-started")} />
+      <div style={{ flex: 1, overflowY: "auto", padding: "14px 18px 24px" }} className="cl-hide-scrollbar">
+        <LogoMark size={36} />
+        <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, marginTop: 18, ...fDisplay }}>
+          What brings you<br />to CoachLink?
+        </div>
+        <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 6, marginBottom: 22, ...fBody }}>
+          You can add a coaching profile later from the same account.
+        </div>
         <Option role="client" icon={Search} title="Find a coach" body="Search, book and pay for sessions with verified coaches near you." />
         <Option role="coach" icon={Users} title="Coach others" body="List your services, manage bookings and get paid automatically." />
       </div>
-      <div style={{ padding: "12px 20px", paddingBottom: 22, textAlign: "center" }}>
+      <div style={{ padding: "12px 18px", paddingBottom: 22, textAlign: "center" }}>
         <button onClick={() => nav("auth", { mode: "login" })} style={{ background: "none", border: "none", color: C.slate, fontSize: T.bodyLg, cursor: "pointer", ...fBody }}>
           Have an existing account? <span style={{ color: C.brand, fontWeight: 600 }}>Sign In</span>
         </button>
@@ -274,7 +288,7 @@ export function ScreenRoleSelect({ nav, setRole }) {
   );
 }
 
-export function ScreenAuth({ nav, params, role, toast, biometric, updateCoachOnboarding }) {
+export function ScreenAuth({ nav, params, role, toast, biometric, updateCoachOnboarding, updateClientIdentity }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const inputStyle = { width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", background: C.white, color: C.jet, ...fBody };
@@ -304,7 +318,15 @@ export function ScreenAuth({ nav, params, role, toast, biometric, updateCoachOnb
       const ln = lastName.trim() || (isSocial ? "User" : "");
       updateCoachOnboarding?.({
         firstName: fn, lastName: ln, email: email.trim(),
-        displayName: `${fn} ${ln}`.trim(),
+        name: `${fn} ${ln}`.trim(),
+        namePrivacy: "initial",
+      });
+    }
+    if (role === "client" && !isSocial) {
+      // Legal name is collected for verification & payments only — the
+      // username is set in the "About you" step.
+      updateClientIdentity?.({
+        firstName: firstName.trim(), lastName: lastName.trim(), email: email.trim(),
       });
     }
     if (isSocial) {
@@ -763,12 +785,14 @@ export function ScreenEnableBiometric({ nav, params, toast, biometric, setBiomet
 }
 
 export function ScreenCoachInfo({ nav, toast, coachOnboarding, updateCoachOnboarding }) {
-  const { darkMode } = useApp();
+  const { darkMode, isHandleTaken } = useApp();
   const C = darkMode ? CD : CL;
   const inputStyle = { width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", background: C.white, color: C.jet, ...fBody };
   const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
   const [photo, setPhoto] = useState(coachOnboarding.photo || null);
-  const [displayName, setDisplayName] = useState(coachOnboarding.displayName || "");
+  const [name, setName] = useState(coachOnboarding.name || "");
+  const [handle, setHandle] = useState(coachOnboarding.handle || "");
+  const [namePrivacy, setNamePrivacy] = useState(coachOnboarding.namePrivacy || "initial");
   const [bio, setBio] = useState(coachOnboarding.bio || "");
   const [yearsExperience, setYearsExperience] = useState(coachOnboarding.yearsExperience || "");
   const [gender, setGender] = useState(coachOnboarding.gender || "");
@@ -799,10 +823,10 @@ export function ScreenCoachInfo({ nav, toast, coachOnboarding, updateCoachOnboar
     toast("Location detected");
   };
 
-  const complete = displayName.trim() && bio.trim() && yearsExperience && languages.length > 0 && location;
+  const complete = name.trim() && bio.trim() && yearsExperience && languages.length > 0 && location && isValidHandle(handle) && !isHandleTaken(handle);
 
   const proceed = () => {
-    updateCoachOnboarding({ photo, displayName, bio, yearsExperience, gender, languages, location });
+    updateCoachOnboarding({ photo, name, handle, namePrivacy, bio, yearsExperience, gender, languages, location });
     nav("coach-expertise");
   };
 
@@ -821,7 +845,7 @@ export function ScreenCoachInfo({ nav, toast, coachOnboarding, updateCoachOnboar
             {photo ? (
               <img src={photo} alt="Profile" style={{ width: 84, height: 84, borderRadius: 84, objectFit: "cover", display: "block" }} />
             ) : (
-              <Avatar name={displayName || "New Coach"} size={84} />
+              <Avatar name={name || "New Coach"} size={84} />
             )}
             <div style={{ position: "absolute", bottom: -2, right: -2, width: 28, height: 28, borderRadius: 99, background: C.brand, border: `2px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
               <Camera size={13} color={C.white} />
@@ -833,9 +857,11 @@ export function ScreenCoachInfo({ nav, toast, coachOnboarding, updateCoachOnboar
 
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div>
-            <div style={labelStyle}>Display name</div>
-            <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="How clients will see you" style={inputStyle} />
+            <div style={labelStyle}>Full name</div>
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="How clients will see you" style={inputStyle} />
           </div>
+
+          <HandleField value={handle} onChange={setHandle} isTaken={isHandleTaken(handle)} />
 
           <div>
             <div style={labelStyle}>Bio</div>

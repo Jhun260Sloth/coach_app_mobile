@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from "react";
 import {
   Home, Calendar, MessageCircle, User, ClipboardList, ShieldCheck, AlertCircle, Flag, Settings,
   WifiOff, RefreshCcw, Sparkles, ChevronRight, ChevronDown, ChevronUp, Layers, ArrowLeft, Search, Compass, ExternalLink, Activity,
-  Smartphone, Tablet, Sun, Moon, Maximize2, RotateCw, Sliders, Eye, EyeOff, Monitor, ZoomIn, ZoomOut
+  Smartphone, Tablet, Sun, Moon, Maximize2, RotateCw, Sliders, Eye, EyeOff, Monitor, ZoomIn, ZoomOut,
+  Camera, Download, Loader2
 } from "lucide-react";
 
 import { CL, CD, fBody, fDisplay, useFonts, KEYFRAMES, T } from "./theme/theme";
@@ -11,6 +12,7 @@ import { COACHES } from "./data/coaches";
 import { LogoMark, Toast, BottomTabs, StatusBar } from "./components/ui/Primitives";
 import { AppProvider, useApp } from "./context/AppContext";
 import { ROUTES, ROUTE_METADATA } from "./router/routes";
+import { downloadElementAsPng } from "./utils/screenshot";
 
 /* =========================================================================
    ERROR BOUNDARY — Catches any screen-level exceptions gracefully
@@ -103,11 +105,64 @@ function AppShell() {
   const [customHeight, setCustomHeight] = useState(852);
   const [isDeviceMenuOpen, setIsDeviceMenuOpen] = useState(false);
 
+  // Screenshot Capture States & Refs
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [isFlashing, setIsFlashing] = useState(false);
+  const [isScreenshotMenuOpen, setIsScreenshotMenuOpen] = useState(false);
+  const deviceFrameRef = useRef(null);
+  const screenDisplayRef = useRef(null);
+
   const C = darkMode ? CD : CL;
   const isDarkScreen = screen === "splash";
   const tabsForRole = role === "coach" ? COACH_TABS : CLIENT_TABS;
   const activeTabScreen = screen;
   const showTabs = tabsForRole.some((t) => t.value === activeTabScreen);
+
+  // Take screenshot and export as PNG
+  const handleTakeScreenshot = async (captureMode = "current") => {
+    if (isCapturing) return;
+    setIsCapturing(true);
+    setIsScreenshotMenuOpen(false);
+
+    try {
+      let targetEl = null;
+      if (captureMode === "screen") {
+        targetEl = screenDisplayRef.current;
+      } else if (captureMode === "frame") {
+        targetEl = deviceFrameRef.current;
+      } else {
+        targetEl = showFrame ? deviceFrameRef.current : screenDisplayRef.current;
+      }
+
+      if (!targetEl) {
+        targetEl = screenDisplayRef.current || deviceFrameRef.current;
+      }
+
+      // Shutter flash animation
+      setIsFlashing(true);
+      setTimeout(() => setIsFlashing(false), 260);
+
+      const timeStamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+      const modeTag = captureMode === "screen" ? "screen" : (showFrame ? "mockup" : "screen");
+      const fileName = `coachlink-${screen}-${modeTag}-${timeStamp}`;
+
+      await downloadElementAsPng(targetEl, {
+        fileName,
+        pixelRatio: 2,
+      });
+
+      if (app.toast) {
+        app.toast("Prototype screenshot downloaded as PNG!");
+      }
+    } catch (err) {
+      console.error("Screenshot capture error:", err);
+      if (app.toast) {
+        app.toast("Could not take screenshot. Please try again.");
+      }
+    } finally {
+      setIsCapturing(false);
+    }
+  };
 
   // Native (non-passive) wheel listener on the phone screen area: translates
   // vertical mouse-wheel deltas into horizontal scrolling for the swipeable
@@ -529,7 +584,7 @@ function AppShell() {
                 </span>
               </div>
 
-              {/* Right Controls: Rotate, Frame Toggle, Zoom & Canvas Theme */}
+              {/* Right Controls: Rotate, Frame Toggle, Zoom, Screenshot & Canvas Theme */}
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                 
                 {/* Rotate Portrait / Landscape */}
@@ -563,6 +618,118 @@ function AppShell() {
                   {!showFrame ? <EyeOff size={12} /> : <Eye size={12} />}
                   <span>{showFrame ? "Frame On" : "Screen Only"}</span>
                 </button>
+
+                {/* Screenshot / Download PNG Button with Dropdown Option */}
+                <div style={{ position: "relative", display: "inline-flex" }}>
+                  <button
+                    onClick={() => handleTakeScreenshot("current")}
+                    disabled={isCapturing}
+                    title="Take Screenshot of App Prototype & Download as PNG"
+                    style={{
+                      display: "flex", alignItems: "center", gap: 5, padding: "4px 9px", borderRadius: "6px 0 0 6px",
+                      border: `1px solid ${studioTheme === "dark" ? "#333333" : "#D1D5DB"}`,
+                      borderRight: "none",
+                      background: isCapturing
+                        ? (studioTheme === "dark" ? "#262626" : "#E5E7EB")
+                        : (studioTheme === "dark" ? "#171717" : "#FFFFFF"),
+                      color: studioTheme === "dark" ? "#FFFFFF" : "#111827",
+                      fontSize: 11, fontWeight: 600, cursor: isCapturing ? "wait" : "pointer", fontFamily: vSystem.fontFamily,
+                      transition: "all 0.12s ease",
+                    }}
+                  >
+                    {isCapturing ? (
+                      <Loader2 size={12} style={{ animation: "clSpin 0.8s linear infinite" }} />
+                    ) : (
+                      <Camera size={12} color={studioTheme === "dark" ? "#A5D6A7" : "#2E7D32"} />
+                    )}
+                    <span>{isCapturing ? "Capturing..." : "Screenshot"}</span>
+                    <Download size={10} style={{ opacity: 0.6, marginLeft: 1 }} />
+                  </button>
+
+                  <button
+                    onClick={() => setIsScreenshotMenuOpen((v) => !v)}
+                    disabled={isCapturing}
+                    title="Screenshot Options"
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "center", padding: "4px 6px", borderRadius: "0 6px 6px 0",
+                      border: `1px solid ${studioTheme === "dark" ? "#333333" : "#D1D5DB"}`,
+                      background: studioTheme === "dark" ? "#171717" : "#FFFFFF",
+                      color: studioTheme === "dark" ? "#A3A3A3" : "#6B7280",
+                      cursor: isCapturing ? "wait" : "pointer",
+                    }}
+                  >
+                    <ChevronDown size={11} />
+                  </button>
+
+                  {/* Screenshot Options Dropdown */}
+                  {isScreenshotMenuOpen && (
+                    <div
+                      onMouseLeave={() => setIsScreenshotMenuOpen(false)}
+                      style={{
+                        position: "absolute", top: "calc(100% + 4px)", right: 0, minWidth: 220,
+                        background: studioTheme === "dark" ? "#171717" : "#FFFFFF",
+                        border: `1px solid ${studioTheme === "dark" ? "#333333" : "#E5E7EB"}`,
+                        borderRadius: 8, boxShadow: "0 10px 25px rgba(0,0,0,0.15)", zIndex: 50,
+                        padding: 4, display: "flex", flexDirection: "column", gap: 2,
+                      }}
+                    >
+                      <div style={{ padding: "4px 8px", fontSize: 10, fontWeight: 700, textTransform: "uppercase", color: vSystem.textMuted, letterSpacing: "0.05em" }}>
+                        Download PNG
+                      </div>
+                      
+                      <button
+                        onClick={() => handleTakeScreenshot("current")}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "6px 8px", borderRadius: 5,
+                          border: "none", background: "transparent", color: studioTheme === "dark" ? "#FFFFFF" : "#111827",
+                          fontSize: 12, fontWeight: 500, cursor: "pointer", textAlign: "left", fontFamily: vSystem.fontFamily,
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = studioTheme === "dark" ? "#262626" : "#F3F4F6"}
+                        onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                      >
+                        <Camera size={13} color="#2E7D32" />
+                        <div style={{ flex: 1 }}>
+                          <div>Current View (PNG)</div>
+                          <div style={{ fontSize: 10, color: vSystem.textMuted }}>{showFrame ? "With device mockup" : "Clean screen only"}</div>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => handleTakeScreenshot("screen")}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "6px 8px", borderRadius: 5,
+                          border: "none", background: "transparent", color: studioTheme === "dark" ? "#FFFFFF" : "#111827",
+                          fontSize: 12, fontWeight: 500, cursor: "pointer", textAlign: "left", fontFamily: vSystem.fontFamily,
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = studioTheme === "dark" ? "#262626" : "#F3F4F6"}
+                        onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                      >
+                        <Smartphone size={13} color="#2563EB" />
+                        <div style={{ flex: 1 }}>
+                          <div>App Screen Only</div>
+                          <div style={{ fontSize: 10, color: vSystem.textMuted }}>Pure mobile UI without chassis</div>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => handleTakeScreenshot("frame")}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "6px 8px", borderRadius: 5,
+                          border: "none", background: "transparent", color: studioTheme === "dark" ? "#FFFFFF" : "#111827",
+                          fontSize: 12, fontWeight: 500, cursor: "pointer", textAlign: "left", fontFamily: vSystem.fontFamily,
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = studioTheme === "dark" ? "#262626" : "#F3F4F6"}
+                        onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                      >
+                        <Monitor size={13} color="#7C3AED" />
+                        <div style={{ flex: 1 }}>
+                          <div>Device Mockup Frame</div>
+                          <div style={{ fontSize: 10, color: vSystem.textMuted }}>Includes hardware frame & island</div>
+                        </div>
+                      </button>
+                    </div>
+                  )}
+                </div>
 
                 {/* Zoom Levels */}
                 <div style={{ display: "flex", background: studioTheme === "dark" ? "#262626" : "#F3F4F6", borderRadius: 6, padding: 2, border: `1px solid ${studioTheme === "dark" ? "#333" : "#E5E7EB"}` }}>
@@ -639,8 +806,29 @@ function AppShell() {
             )}
           </header>
         ) : (
-          /* FLOATING ARROW TRIGGER TO EXPAND TOOLBAR WHEN COLLAPSED */
-          <div style={{ position: "absolute", top: 12, right: 20, zIndex: 15 }}>
+          /* FLOATING TRIGGER WHEN COLLAPSED */
+          <div style={{ position: "absolute", top: 12, right: 20, zIndex: 15, display: "flex", alignItems: "center", gap: 6 }}>
+            <button
+              onClick={() => handleTakeScreenshot("current")}
+              disabled={isCapturing}
+              title="Quick Screenshot"
+              style={{
+                display: "flex", alignItems: "center", gap: 5, padding: "6px 11px", borderRadius: 20,
+                border: `1px solid ${studioTheme === "dark" ? "#333333" : "#D1D5DB"}`,
+                background: studioTheme === "dark" ? "rgba(24,24,24,0.92)" : "rgba(255,255,255,0.92)",
+                backdropFilter: "blur(8px)", color: studioTheme === "dark" ? "#FFFFFF" : "#111827",
+                fontSize: 11, fontWeight: 600, cursor: isCapturing ? "wait" : "pointer", boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                fontFamily: vSystem.fontFamily,
+              }}
+            >
+              {isCapturing ? (
+                <Loader2 size={12} style={{ animation: "clSpin 0.8s linear infinite" }} />
+              ) : (
+                <Camera size={12} color={studioTheme === "dark" ? "#A5D6A7" : "#2E7D32"} />
+              )}
+              <span>{isCapturing ? "Capturing..." : "Screenshot"}</span>
+            </button>
+
             <button
               onClick={() => setIsToolbarOpen(true)}
               title="Expand Toolbar Controls"
@@ -672,7 +860,7 @@ function AppShell() {
           }}>
 
             {/* DEVICE FRAME / SCREEN VIEWPORT */}
-            <div style={{
+            <div ref={deviceFrameRef} style={{
               width: targetWidth, minWidth: targetWidth, height: targetHeight, minHeight: targetHeight,
               background: showFrame ? "#18181B" : "transparent",
               borderRadius: showFrame ? activePreset.radius : 16,
@@ -686,6 +874,18 @@ function AppShell() {
               transition: "all 0.25s ease",
             }}>
               
+              {/* Camera Shutter Flash Animation */}
+              {isFlashing && (
+                <div style={{
+                  position: "absolute", inset: 0,
+                  background: "#FFFFFF",
+                  borderRadius: showFrame ? activePreset.radius : 14,
+                  zIndex: 9999,
+                  pointerEvents: "none",
+                  animation: "clFadeIn .12s ease-out",
+                }} />
+              )}
+
               {/* Protruding Physical Hardware Side Buttons */}
               {showFrame && !isLandscape && (devicePreset === "iphone-15" || devicePreset === "iphone-se" || devicePreset === "android") && (
                 <>
@@ -697,7 +897,7 @@ function AppShell() {
               )}
               
               {/* Inner Screen Display */}
-              <div className="cl-phone-screen" style={{
+              <div ref={screenDisplayRef} className="cl-phone-screen" style={{
                 width: "100%", height: "100%", background: C.white,
                 borderRadius: showFrame ? activePreset.innerRadius : 14,
                 overflow: "hidden", position: "relative",

@@ -1,11 +1,12 @@
 import React from "react";
 import {
-  Clock, DollarSign, Users, MapPin, Wrench, Tag, Info, XCircle,
+  Clock, DollarSign, Users, MapPin, Wrench, Tag, Info, XCircle, MessageCircle, CalendarDays, Bell,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { COACHES } from "../../data/mockData";
-import { Avatar, Card, SectionLabel, Btn, TopBar } from "../../components/ui/Primitives";
+import { Avatar, Card, SectionLabel, Btn, TopBar, HandleTag } from "../../components/ui/Primitives";
+import { getPublicName } from "../../utils/name";
 import { packageLocationLabel } from "../../components/ui/ServicePackageForm";
 import { formatTimeRange12, formatFullDateFromDate } from "./Booking";
 
@@ -20,6 +21,7 @@ export function ScreenPackageDetail({ nav, params }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const coach = COACHES.find((c) => c.id === params.coachId) || COACHES[0];
+  const pub = getPublicName(coach, "public");
   const pkg = coach.packages.find((p) => p.id === params.packageId) || coach.packages[0];
   const unavailable = pkg.active === false;
 
@@ -53,9 +55,10 @@ export function ScreenPackageDetail({ nav, params }) {
 
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 100px" }} className="cl-hide-scrollbar">
         <Card style={{ marginBottom: 16, display: "flex", gap: 12, alignItems: "center", border: `1px solid ${C.border}` }}>
-          <Avatar name={coach.name} size={44} />
+          <Avatar name={pub.name} size={44} />
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: T.subtitleLg, fontWeight: 700, color: C.jet, ...fDisplay }}>{coach.name}</div>
+            <div style={{ fontSize: T.subtitleLg, fontWeight: 700, color: C.jet, ...fDisplay }}>{pub.name}</div>
+            <HandleTag handle={pub.handle} size={11} color={C.slateLight} />
             <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>{coach.sport} · {coach.suburb}</div>
           </div>
         </Card>
@@ -98,16 +101,51 @@ export function ScreenPackageDetail({ nav, params }) {
           <Info size={14} color={C.slate} style={{ marginTop: 2, flexShrink: 0 }} />
           <span style={{ fontSize: T.label, color: C.slate, lineHeight: 1.5, ...fBody }}>Cancellation policy: {coach.cancellationPolicy}</span>
         </div>
+
+        <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+          <button
+            onClick={() => nav("package-inquiry", { coachId: coach.id, packageId: pkg.id })}
+            style={{
+              flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              padding: "10px 12px", borderRadius: 12, border: `1px solid ${C.border}`, background: C.white,
+              cursor: "pointer", ...fBody,
+            }}
+          >
+            <MessageCircle size={14} color={C.jet} />
+            <span style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet }}>Ask a question</span>
+          </button>
+          <button
+            onClick={() => nav("availability-calendar", { coachId: coach.id, packageId: pkg.id })}
+            style={{
+              flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              padding: "10px 12px", borderRadius: 12, border: `1px solid ${C.border}`, background: C.white,
+              cursor: "pointer", ...fBody,
+            }}
+          >
+            <CalendarDays size={14} color={C.jet} />
+            <span style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet }}>Check availability</span>
+          </button>
+        </div>
       </div>
 
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: C.white, borderTop: `1px solid ${C.border}`, padding: "14px 18px", paddingBottom: 24 }}>
-        <Btn
-          full
-          disabled={unavailable}
-          onClick={() => nav("booking-participants", { coachId: coach.id, packageId: pkg.id, presetDate: params.presetDate, presetTime: params.presetTime })}
-        >
-          Continue
-        </Btn>
+        {unavailable ? (
+          <Btn
+            full
+            variant="secondary"
+            icon={Bell}
+            onClick={() => nav("package-waitlist", { coachId: coach.id, packageId: pkg.id })}
+          >
+            Join waitlist
+          </Btn>
+        ) : (
+          <Btn
+            full
+            onClick={() => nav("booking-participants", { coachId: coach.id, packageId: pkg.id, presetDate: params.presetDate, presetTime: params.presetTime })}
+          >
+            Continue
+          </Btn>
+        )}
       </div>
     </div>
   );

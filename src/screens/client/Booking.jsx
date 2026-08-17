@@ -2,19 +2,18 @@ import React, { useState, useEffect } from "react";
 import { COACHES, CONFIG } from "../../data/mockData";
 
 import {
-  Fingerprint, CreditCard, CheckCircle2, Plus, Lock, Calendar, Navigation, MessageCircle,
+  Fingerprint, CreditCard, CheckCircle2, Check, Plus, Lock, Calendar, Navigation, MessageCircle,
   Users, User, ShieldCheck, Phone, Stethoscope, AlertTriangle, UserPlus, Send, Home,
-  Repeat as RepeatIcon, UserCheck, Camera,
+  Repeat as RepeatIcon, Camera, CalendarDays,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import {
   Avatar, Card, Chip, SectionLabel, Btn, TopBar, Toggle, Field, Row, RadioRow, BottomSheet,
 } from "../../components/ui/Primitives";
-import { LocationField } from "../../components/ui/LocationField";
 import { StatusBanner, ResultOverlay } from "../../systems/StateSystem";
-import { SPORTS } from "../../data/mockData";
-import { SKILL_LEVELS } from "./AboutYou";
+import { getPublicName } from "../../utils/name";
+import { calcAge } from "./AboutYou";
 
 const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 function parseShortDate(str, year = 2026) {
@@ -198,9 +197,11 @@ export function buildFallbackDraft(params, draft) {
 
 // Blank participant profile draft for the inline "Add Child Profile" modal —
 // same shape as the one on the Account screen, so a child created mid-booking
-// looks and behaves exactly like one added from the Account tab.
+// looks and behaves exactly like one added from the Account tab. The booking
+// sheet only asks for the essentials (name, DOB, photo, mobile); everything
+// else is filled in later from Account → Family.
 const emptyChildDraft = {
-  name: "", age: "", sport: [], skillLevel: "", goals: "", location: null, preferences: "", hasPhoto: false,
+  name: "", dob: "", age: "", sport: [], skillLevel: "", goals: "", location: null, preferences: "", hasPhoto: false,
   medicalConditions: "", allergies: "",
   guardianName: "", guardianRelationship: "", guardianMobile: "",
 };
@@ -211,9 +212,10 @@ const emptyChildDraft = {
  * both already know who the session is for.
  */
 export function ScreenBookingParticipants({ nav, params, children = [], addChild, toast }) {
-  const { darkMode } = useApp();
+  const { darkMode, clientIdentity } = useApp();
   const C = darkMode ? CD : CL;
   const { coach, pkg } = resolveBookingCoachPkg(params, null);
+  const pub = getPublicName(coach, "public");
   const allowsMultiple = packageAllowsMultipleParticipants(pkg);
   // The package's "Maximum participants" (set by the coach) caps how many
   // people the client can add to a single booking of this package.
@@ -221,7 +223,7 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
 
   const [participants, setParticipants] = useState(["self"]);
   const toggleParticipant = (key) => setParticipants((p) => {
-    if (!allowsMultiple) return p.includes(key) ? p : [key]; // 1:1 — single selection acts like a radio button
+    if (!allowsMultiple) return p.includes(key) ? p : [key]; // 1:1 single selection acts like a radio button
     if (p.includes(key)) return p.filter((x) => x !== key);
     if (p.length >= maxParticipants) return p; // package is at capacity — ignore further taps
     return [...p, key];
@@ -239,17 +241,19 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
   const canContinue = participants.length > 0;
   const selfSelected = participants.includes("self");
 
+  const selfName = `${clientIdentity?.firstName || ""} ${clientIdentity?.lastName || ""}`.trim() || "Myself";
+
   // Inline "Add Child Profile" — a slide-in modal on top of this screen
   // rather than a redirect out to the Account tab, so a parent can create
   // the participant without losing their place in the booking flow.
   const [childModalOpen, setChildModalOpen] = useState(false);
   const [childDraft, setChildDraft] = useState(emptyChildDraft);
   const openAddChild = () => { setChildDraft(emptyChildDraft); setChildModalOpen(true); };
-  const toggleDraftSport = (s) => setChildDraft((d) => ({ ...d, sport: d.sport.includes(s) ? d.sport.filter((x) => x !== s) : [...d.sport, s] }));
   const saveChildAndSelect = () => {
     if (!childDraft.name.trim()) { toast && toast("Give this profile a name first"); return; }
     const newId = Date.now();
-    addChild({ ...childDraft, id: newId });
+    const age = calcAge(childDraft.dob);
+    addChild({ ...childDraft, id: newId, age: age !== null ? String(age) : "" });
     selectParticipant(newId);
     toast && toast(`${childDraft.name}'s profile added`);
     setChildModalOpen(false);
@@ -261,10 +265,10 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
 
       <div style={{ padding: "16px 18px 0" }}>
         <Card style={{ marginBottom: 22, display: "flex", gap: 12, alignItems: "center", border: `1px solid ${C.border}`, boxShadow: "0 1px 2px rgba(22,24,29,.04)" }}>
-          <Avatar name={coach.name} size={44} />
+          <Avatar name={pub.name} size={44} />
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: T.subtitleLg, fontWeight: 700, color: C.jet, letterSpacing: "-0.1px", ...fDisplay }}>{pkg.name}</div>
-            <div style={{ fontSize: T.labelLg, color: C.slate, marginTop: 2, ...fBody }}>with {coach.name}</div>
+            <div style={{ fontSize: T.labelLg, color: C.slate, marginTop: 2, ...fBody }}>with {pub.name}</div>
           </div>
           <div style={{ marginLeft: "auto", fontSize: T.title, fontWeight: 800, color: C.jet, whiteSpace: "nowrap", ...fDisplay }}>
             ${pkg.price}
@@ -281,45 +285,120 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
         </div>
         <div style={{ fontSize: T.labelLg, color: C.slate, marginBottom: 16, lineHeight: 1.5, ...fBody }}>
           {allowsMultiple
-            ? `This is a group session — up to ${maxParticipants} participant${maxParticipants > 1 ? "s" : ""} can join. Select yourself, one child, or several. Each participant keeps their own booking history.`
-            : "This is a 1:1 session, so pick a single participant — yourself or one child profile."}
+            ? `This is a group session (up to ${maxParticipants} participants can join). Select yourself, one child, or several. Each participant keeps their own booking history.`
+            : "This is a 1:1 session, so pick a single participant (yourself or a child profile)."}
         </div>
 
-        {/* Primary path: booking for yourself. Secondary path: add (and book
-            for) a child — both are front and centre instead of being buried
-            in a same-weight chip row. */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 18 }}>
-          <div style={{ opacity: atCapacity && !selfSelected ? 0.45 : 1 }}>
-            <Btn
-              full
-              variant={selfSelected ? "primary" : "outline"}
-              icon={selfSelected ? CheckCircle2 : User}
-              disabled={atCapacity && !selfSelected}
-              onClick={() => toggleParticipant("self")}
-            >
-              {selfSelected ? "Myself — selected" : "Myself"}
-            </Btn>
-          </div>
-          <Btn full variant="secondary" icon={UserPlus} disabled={atCapacity} onClick={openAddChild}>
-            Add Child Profile
-          </Btn>
-        </div>
-
-        {children.length > 0 && (
-          <>
-            <SectionLabel>Existing profiles</SectionLabel>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {children.map((c) => {
-                const disabled = atCapacity && !participants.includes(c.id);
-                return (
-                  <div key={c.id} style={{ opacity: disabled ? 0.45 : 1 }}>
-                    <Chip active={participants.includes(c.id)} icon={Users} onClick={disabled ? undefined : () => toggleParticipant(c.id)}>{c.name || "Unnamed profile"}</Chip>
-                  </div>
-                );
-              })}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+          {/* Myself Card */}
+          <button
+            type="button"
+            onClick={atCapacity && !selfSelected ? undefined : () => toggleParticipant("self")}
+            disabled={atCapacity && !selfSelected}
+            style={{
+              width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 14,
+              padding: "13px 15px", borderRadius: 16,
+              background: selfSelected ? (darkMode ? "rgba(46,125,50,0.15)" : "#F2F9F3") : C.white,
+              border: `1.5px solid ${selfSelected ? C.brand : C.border}`,
+              opacity: atCapacity && !selfSelected ? 0.45 : 1,
+              cursor: atCapacity && !selfSelected ? "not-allowed" : "pointer",
+              transition: "all 0.15s ease",
+              boxShadow: selfSelected ? `0 2px 8px ${darkMode ? "rgba(0,0,0,0.3)" : "rgba(46,125,50,0.08)"}` : "0 1px 3px rgba(0,0,0,0.02)",
+            }}
+          >
+            <Avatar name={selfName} size={42} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...fBody }}>
+                {selfName}
+              </div>
+              <div style={{ fontSize: T.captionLg, color: selfSelected ? C.brand : C.slate, marginTop: 2, ...fBody }}>
+                Account holder (You)
+              </div>
             </div>
-          </>
-        )}
+            <div
+              style={{
+                width: 22, height: 22, borderRadius: 99,
+                border: `1.5px solid ${selfSelected ? C.brand : C.border}`,
+                background: selfSelected ? C.brand : "transparent",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                flexShrink: 0, transition: "all 0.15s ease",
+              }}
+            >
+              {selfSelected && <Check size={13} color={C.white} strokeWidth={3} />}
+            </div>
+          </button>
+
+          {/* Child Profiles (above Add Child Profile) */}
+          {children.map((c) => {
+            const isSelected = participants.includes(c.id);
+            const disabled = atCapacity && !isSelected;
+            const childSubtitle = c.age
+              ? `${c.age} years old`
+              : (c.dob ? `${calcAge(c.dob)} years old` : "Child profile");
+
+            return (
+              <button
+                key={c.id}
+                type="button"
+                onClick={disabled ? undefined : () => toggleParticipant(c.id)}
+                disabled={disabled}
+                style={{
+                  width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 14,
+                  padding: "13px 15px", borderRadius: 16,
+                  background: isSelected ? (darkMode ? "rgba(46,125,50,0.15)" : "#F2F9F3") : C.white,
+                  border: `1.5px solid ${isSelected ? C.brand : C.border}`,
+                  opacity: disabled ? 0.45 : 1,
+                  cursor: disabled ? "not-allowed" : "pointer",
+                  transition: "all 0.15s ease",
+                  boxShadow: isSelected ? `0 2px 8px ${darkMode ? "rgba(0,0,0,0.3)" : "rgba(46,125,50,0.08)"}` : "0 1px 3px rgba(0,0,0,0.02)",
+                }}
+              >
+                <Avatar name={c.name || "Child"} size={42} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...fBody }}>
+                    {c.name || "Child Profile"}
+                  </div>
+                  <div style={{ fontSize: T.captionLg, color: isSelected ? C.brand : C.slate, marginTop: 2, ...fBody }}>
+                    {childSubtitle}
+                  </div>
+                </div>
+                <div
+                  style={{
+                    width: 22, height: 22, borderRadius: 99,
+                    border: `1.5px solid ${isSelected ? C.brand : C.border}`,
+                    background: isSelected ? C.brand : "transparent",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    flexShrink: 0, transition: "all 0.15s ease",
+                  }}
+                >
+                  {isSelected && <Check size={13} color={C.white} strokeWidth={3} />}
+                </div>
+              </button>
+            );
+          })}
+
+          {/* Add Child Profile Button */}
+          <button
+            type="button"
+            onClick={atCapacity ? undefined : openAddChild}
+            disabled={atCapacity}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              padding: "14px 16px", borderRadius: 16,
+              background: darkMode ? "rgba(255,255,255,0.03)" : "#FAFAFA",
+              border: `1.5px dashed ${C.border}`,
+              color: atCapacity ? C.slateLight : C.brand,
+              fontSize: T.bodyLg, fontWeight: 600,
+              cursor: atCapacity ? "not-allowed" : "pointer",
+              opacity: atCapacity ? 0.5 : 1,
+              transition: "all 0.15s ease",
+              ...fBody,
+            }}
+          >
+            <Plus size={18} color={atCapacity ? C.slateLight : C.brand} strokeWidth={2.2} />
+            Add Child Profile
+          </button>
+        </div>
       </div>
 
       <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
@@ -328,9 +407,10 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
 
       {/* Slide-in "Add Child Profile" modal — creates the participant right
           here in the booking flow, then returns to this screen with them
-          selected, instead of redirecting out to the Account tab. */}
-      <BottomSheet open={childModalOpen} onClose={() => setChildModalOpen(false)} title="Add child profile" heightPct={88}>
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 18 }}>
+          selected, instead of redirecting out to the Account tab. Only the
+          essentials are asked here; the rest lives on the Account edit sheet. */}
+      <BottomSheet open={childModalOpen} onClose={() => setChildModalOpen(false)} title="Add child profile" heightPct={60}>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
           <button
             onClick={() => setChildDraft((d) => ({ ...d, hasPhoto: !d.hasPhoto }))}
             style={{ position: "relative", background: "none", border: "none", cursor: "pointer" }}
@@ -346,53 +426,29 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
           </button>
         </div>
 
+        <div style={{ fontSize: T.labelLg, color: C.slate, lineHeight: 1.5, marginBottom: 16, textAlign: "center", ...fBody }}>
+          We'll keep this quick — add sports, skill level and medical details anytime from Account.
+        </div>
+
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <Field label="Child's name" placeholder="e.g. Ava" icon={User} value={childDraft.name} onChange={(e) => setChildDraft((d) => ({ ...d, name: e.target.value }))} />
-          <Field label="Age" placeholder="e.g. 9" value={childDraft.age} onChange={(e) => setChildDraft((d) => ({ ...d, age: e.target.value }))} />
-          <LocationField
-            value={childDraft.location}
-            onChange={(loc) => setChildDraft((d) => ({ ...d, location: loc }))}
-            label="Location"
-            placeholder="Search suburb or postcode…"
-          />
-        </div>
-
-        <div style={{ marginTop: 4 }}>
-          <SectionLabel>Guardian information</SectionLabel>
-          <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: -6, marginBottom: 12, lineHeight: 1.5, ...fBody }}>
-            The parent or legal guardian responsible for this participant.
+          <div>
+            <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Date of birth</div>
+            <div className="cl-input" style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", background: C.white }}>
+              <CalendarDays size={16} color={C.slateLight} />
+              <input
+                type="date"
+                value={childDraft.dob}
+                max={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => setChildDraft((d) => ({ ...d, dob: e.target.value }))}
+                style={{ flex: 1, border: "none", outline: "none", fontSize: T.bodyLg, color: C.jet, background: "transparent", ...fBody }}
+              />
+            </div>
+            <div style={{ fontSize: T.caption, color: C.slateLight, marginTop: 5, ...fBody }}>
+              {childDraft.dob ? `${calcAge(childDraft.dob)} years old` : "Recommended so coaches can prepare"}
+            </div>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <Field label="Guardian name" placeholder="e.g. Jamie Chen" icon={UserCheck} value={childDraft.guardianName} onChange={(e) => setChildDraft((d) => ({ ...d, guardianName: e.target.value }))} />
-            <Field label="Relationship to participant" placeholder="e.g. Parent" value={childDraft.guardianRelationship} onChange={(e) => setChildDraft((d) => ({ ...d, guardianRelationship: e.target.value }))} />
-            <Field label="Mobile number" placeholder="04XX XXX XXX" icon={Phone} type="tel" value={childDraft.guardianMobile} onChange={(e) => setChildDraft((d) => ({ ...d, guardianMobile: e.target.value.replace(/[^0-9+\s]/g, "") }))} />
-          </div>
-        </div>
-
-        <div style={{ marginTop: 18 }}>
-          <SectionLabel>Sport / interests</SectionLabel>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
-            {SPORTS.map((s) => (
-              <Chip key={s} active={childDraft.sport.includes(s)} onClick={() => toggleDraftSport(s)}>{s}</Chip>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ marginTop: 18 }}>
-          <SectionLabel>Skill level</SectionLabel>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
-            {SKILL_LEVELS.map((lvl) => (
-              <Chip key={lvl} active={childDraft.skillLevel === lvl} onClick={() => setChildDraft((d) => ({ ...d, skillLevel: lvl }))}>{lvl}</Chip>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ marginTop: 18 }}>
-          <SectionLabel>Medical information (optional)</SectionLabel>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <Field label="Medical conditions" placeholder="e.g. asthma" icon={Stethoscope} value={childDraft.medicalConditions} onChange={(e) => setChildDraft((d) => ({ ...d, medicalConditions: e.target.value }))} />
-            <Field label="Allergies" placeholder="e.g. bee stings, peanuts" icon={AlertTriangle} value={childDraft.allergies} onChange={(e) => setChildDraft((d) => ({ ...d, allergies: e.target.value }))} />
-          </div>
+          <Field label="Mobile number" placeholder="04XX XXX XXX" icon={Phone} type="tel" value={childDraft.guardianMobile} onChange={(e) => setChildDraft((d) => ({ ...d, guardianMobile: e.target.value.replace(/[^0-9+\s]/g, "") }))} />
         </div>
 
         <div style={{ marginTop: 22 }}>
@@ -407,6 +463,7 @@ export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings =
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const { coach, pkg } = resolveBookingCoachPkg(params, draft);
+  const pub = getPublicName(coach, "public");
 
   // Date & time are chosen earlier in the flow (the coach's Packages tab, or
   // the package details screen) and simply arrive here as params — this
@@ -463,10 +520,10 @@ export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings =
 
         <Card style={{ marginBottom: 18, border: `1px solid ${C.border}` }}>
           <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: hasDateTime ? 12 : 0 }}>
-            <Avatar name={coach.name} size={40} />
+            <Avatar name={pub.name} size={40} />
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: T.subtitle, fontWeight: 700, color: C.jet, ...fDisplay }}>{pkg.name}</div>
-              <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>with {coach.name} · {pkg.duration} min</div>
+              <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>with {pub.name} · {pkg.duration} min</div>
             </div>
             <div style={{ marginLeft: "auto", fontSize: T.subtitleLg, fontWeight: 800, color: C.jet, whiteSpace: "nowrap", ...fDisplay }}>${pkg.price}</div>
           </div>
@@ -493,7 +550,7 @@ export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings =
           <div style={{ marginBottom: 18 }}>
             <StatusBanner
               state="scheduleConflict"
-              message={`You already have ${conflictBooking.service} with ${conflictBooking.coachName} at this time.`}
+              message={`You already have ${conflictBooking.service} with ${(() => { const cc = COACHES.find((c) => c.id === conflictBooking.coachId); return getPublicName(cc || { name: conflictBooking.coachName }, "confirmed").name; })()} at this time.`}
               onPrimary={() => nav("coach-profile", { id: coach.id })}
               primaryLabel="Pick a different time"
               onSecondary={() => nav("client-booking-detail", { id: conflictBooking.id })}
@@ -561,7 +618,7 @@ export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings =
             <SectionLabel>Session Summary</SectionLabel>
             <Card style={{ marginBottom: 18, background: C.brandTint, border: "none" }}>
               <Row label="Package" value={pkg.name} />
-              <Row label="Coach" value={coach.name} />
+              <Row label="Coach" value={pub.name} />
               <Row label="Date" value={formatFullDateFromDate(selectedDate)} />
               <Row label="Time" value={formatTimeRange12(time, pkg.duration)} />
               <Row label="Repeats" value={repeatSummaryText(repeat)} />
@@ -588,7 +645,7 @@ export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings =
               sessionCount,
               total: totalPrice,
             });
-            nav("booking-review");
+            nav("booking-participant-details", { coachId: coach.id, packageId: pkg.id, participants: params.participants || ["self"] });
           }}
         >
           Continue
@@ -602,6 +659,7 @@ export function ScreenBookingReview({ nav, params, draft, setDraft, toast, child
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const d = buildFallbackDraft(params, draft);
+  const pub = getPublicName(d.coach, "public");
   // Who's attending was already chosen on the previous step (ScreenBookingParticipants).
   const participants = d.participants || ["self"];
   const [guardianName, setGuardianName] = useState("");
@@ -657,7 +715,7 @@ export function ScreenBookingReview({ nav, params, draft, setDraft, toast, child
       <TopBar title="Review booking" onBack={() => nav("booking-datetime", { coachId: d.coach.id, packageId: d.pkg.id, participants })} />
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
         <Card style={{ marginBottom: 14}}>
-          <Row label="Coach" value={d.coach.name} />
+          <Row label="Coach" value={pub.name} />
           <Row label="Service" value={d.pkg.name} />
           <Row label="When" value={`${d.day} at ${d.time}`} />
           <Row label="Venue" value={venueLabel(d.pkg, d.coach)} />
@@ -680,7 +738,7 @@ export function ScreenBookingReview({ nav, params, draft, setDraft, toast, child
               <div>
                 <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Child safety details</div>
                 <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, lineHeight: 1.55, ...fBody }}>
-                  This booking includes a participant under 18, so we share a few extra details with your coach to keep sessions safe. {d.coach.name.split(" ")[0]} holds the required Working with Children Check, and this information is shared with them only as needed for the session.
+                  This booking includes a participant under 18, so we share a few extra details with your coach to keep sessions safe. {pub.name.split(" ")[0]} holds the required Working with Children Check, and this information is shared with them only as needed for the session.
                 </div>
               </div>
             </div>
@@ -806,6 +864,7 @@ export function ScreenPayment({ nav, params, draft, toast, addBooking, markBooki
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const d = buildFallbackDraft(params, draft);
+  const pub = getPublicName(d.coach, "public");
   const [confirming, setConfirming] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [result, setResult] = useState(null); // null | "success" | "failed" | "cancelled"
@@ -882,7 +941,7 @@ export function ScreenPayment({ nav, params, draft, toast, addBooking, markBooki
           <div style={{ fontSize: T.body, color: C.jet, fontWeight: 500, ...fBody }}>Visa •••• 4821</div>
           <CheckCircle2 size={16} color={C.brand} style={{ marginLeft: "auto" }} />
         </Card>
-        <Btn variant="outline" size="sm" icon={Plus}>Add new card</Btn>
+        <Btn variant="outline" size="sm" icon={Plus} onClick={() => nav("payment-add-card", params)}>Add new card</Btn>
 
         <div style={{ marginTop: 20 }}>
           <Field label="Promo code" placeholder="Enter code" />
@@ -893,7 +952,7 @@ export function ScreenPayment({ nav, params, draft, toast, addBooking, markBooki
         </Card>
         <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginTop: 14 }}>
           <Lock size={13} color={C.slateLight} style={{ marginTop: 2, flexShrink: 0 }} />
-          <span style={{ fontSize: T.captionLg, color: C.slateLight, lineHeight: 1.5, ...fBody }}>Funds are held securely and only released to {d.coach.name.split(" ")[0]} once you confirm the session is complete.</span>
+          <span style={{ fontSize: T.captionLg, color: C.slateLight, lineHeight: 1.5, ...fBody }}>Funds are held securely and only released to {pub.name.split(" ")[0]} once you confirm the session is complete.</span>
         </div>
 
         <button
@@ -933,6 +992,7 @@ export function ScreenBookingConfirmation({ nav, params, draft, toast }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const d = buildFallbackDraft(params, draft);
+  const pub = getPublicName(d.coach, "public");
   const [synced, setSynced] = useState(false);
   const [locShare, setLocShare] = useState(false);
   return (
@@ -945,7 +1005,7 @@ export function ScreenBookingConfirmation({ nav, params, draft, toast }) {
           {d.coach.instantBook ? "Booking confirmed" : "Request sent"}
         </div>
         <div style={{ fontSize: T.body, color: C.slate, marginTop: 4, ...fBody }}>
-          {d.coach.instantBook ? `You're all set with ${d.coach.name}.` : `${d.coach.name} will respond within 24 hours.`}
+          {d.coach.instantBook ? `You're all set with ${pub.name}.` : `${pub.name} will respond within 24 hours.`}
         </div>
       </div>
 
@@ -978,7 +1038,7 @@ export function ScreenBookingConfirmation({ nav, params, draft, toast }) {
       </div>
 
       <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, display: "flex", flexDirection: "column", gap: 10, flexShrink: 0 }}>
-        <Btn full variant="secondary" icon={MessageCircle} onClick={() => nav("chat-thread", { name: d.coach.name })}>Message {d.coach.name.split(" ")[0]}</Btn>
+        <Btn full variant="secondary" icon={MessageCircle} onClick={() => nav("chat-thread", { name: d.coach.name, handle: d.coach.handle })}>Message {pub.name.split(" ")[0]}</Btn>
         <Btn full onClick={() => nav("client-dashboard")}>Go to dashboard</Btn>
       </div>
     </div>
@@ -994,7 +1054,8 @@ export function ScreenBookingConfirmation({ nav, params, draft, toast }) {
 export function ScreenBookingRequestSent({ nav, params }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
-  const coachName = params?.coachName || COACHES[0].name;
+  const coach = COACHES.find((c) => c.name === params?.coachName) || COACHES[0];
+  const pub = getPublicName(coach, "public");
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "18px 18px 0", textAlign: "center", marginBottom: 24 }}>
@@ -1009,7 +1070,7 @@ export function ScreenBookingRequestSent({ nav, params }) {
 
       <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, display: "flex", flexDirection: "column", gap: 10, marginTop: "auto", flexShrink: 0 }}>
         <Btn full icon={Home} onClick={() => nav("client-home")}>Return to home</Btn>
-        <Btn full variant="secondary" icon={MessageCircle} onClick={() => nav("chat-thread", { name: coachName })}>Message Coach</Btn>
+        <Btn full variant="secondary" icon={MessageCircle} onClick={() => nav("chat-thread", { name: coach.name, handle: coach.handle })}>Message Coach</Btn>
       </div>
     </div>
   );

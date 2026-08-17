@@ -3,8 +3,19 @@ import { HelpCircle, ChevronLeft, Paperclip, MapPin, Send, MoreVertical, Flag, B
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { THREADS, COACH_THREADS, CHAT_MESSAGES, BOOKING_ENQUIRY_MESSAGES, COACHES } from "../../data/mockData";
-import { Avatar, BottomSheet, Btn, EmptyState, TopBar } from "../../components/ui/Primitives";
+import { Avatar, BottomSheet, Btn, EmptyState, TopBar, HandleTag } from "../../components/ui/Primitives";
 import { StatusBanner } from "../../systems/StateSystem";
+import { getPublicName } from "../../utils/name";
+import { clientMetaFor } from "../../data/users";
+
+/** Privacy-safe display name for a thread participant. */
+function threadParticipantName(withName, role) {
+  if (role !== "coach") {
+    const coach = COACHES.find((c) => c.name === withName);
+    if (coach) return getPublicName(coach, "public").name;
+  }
+  return getPublicName({ name: withName, ...clientMetaFor(withName) }, "public").name;
+}
 
 /* ── Blocked Threads Store ─────────────────────────────────────────────── */
 
@@ -130,6 +141,7 @@ export function ScreenMessages({ nav, role, isFirstTimeClient }) {
         {threads.map((t, i) => {
           const blocked = isBlocked(t.id);
           const pinned = isPinned(t.id);
+          const participantName = threadParticipantName(t.withName, role);
           return (
             <div
               key={t.id}
@@ -149,7 +161,7 @@ export function ScreenMessages({ nav, role, isFirstTimeClient }) {
             >
               <div style={{ position: "relative", flexShrink: 0 }}>
                 <div style={{ filter: blocked ? "grayscale(1)" : "none" }}>
-                  <Avatar name={t.withName} size={46} />
+                  <Avatar name={participantName} size={46} />
                 </div>
                 {blocked && (
                   <div style={{
@@ -167,7 +179,7 @@ export function ScreenMessages({ nav, role, isFirstTimeClient }) {
                   <span style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
                     {pinned && <Pin size={11} color={C.brand} style={{ flexShrink: 0 }} fill={C.brand} />}
                     <span style={{ fontSize: T.subtitle, fontWeight: 600, color: blocked ? C.slate : C.jet, ...fDisplay, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {t.withName}
+                      {participantName}
                     </span>
                   </span>
                   <span style={{ fontSize: T.caption, color: C.slateLight, ...fBody, flexShrink: 0 }}>{t.time}</span>
@@ -458,6 +470,17 @@ export function ScreenChatThread({ nav, params, role, toast, offline, bookings, 
     ? (relatedBooking.status === "confirmed" || relatedBooking.status === "completed")
     : !!params?.context?.startsWith("Booking");
 
+  // Privacy-safe name for the chat header — public name unless this thread's
+  // booking is confirmed (then the full partner name is revealed).
+  const pub = role === "coach"
+    ? getPublicName(
+      { name: params.name, ...clientMetaFor(params.name) },
+      relatedBooking && ["confirmed", "completed"].includes(relatedBooking.status) ? "confirmed" : "public"
+    )
+    : (coach
+      ? getPublicName(coach, relatedBooking && ["confirmed", "completed"].includes(relatedBooking?.status) ? "confirmed" : "public")
+      : { name: params.name, handle: params.handle ? `@${params.handle}` : null });
+
   const [messages, setMessages] = useState(
     (params?.bookingId && BOOKING_ENQUIRY_MESSAGES[params.bookingId]) || CHAT_MESSAGES
   );
@@ -541,9 +564,10 @@ export function ScreenChatThread({ nav, params, role, toast, offline, bookings, 
           }}>
             <ChevronLeft size={18} color={C.jet} />
           </button>
-          <Avatar name={params.name} size={38} />
+          <Avatar name={pub.name} size={38} />
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: T.subtitle, fontWeight: 600, color: C.jet, ...fDisplay }}>{params.name}</div>
+            <div style={{ fontSize: T.subtitle, fontWeight: 600, color: C.jet, ...fDisplay }}>{pub.name}</div>
+            {pub.handle && <HandleTag handle={pub.handle} size={11} color={C.slateLight} />}
             {params.context && <div style={{ fontSize: T.caption, color: C.brand, fontWeight: 600, ...fBody }}>{params.context}</div>}
           </div>
           <button onClick={() => setStep("options")} style={{

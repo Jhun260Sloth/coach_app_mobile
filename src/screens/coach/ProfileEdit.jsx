@@ -9,8 +9,10 @@ import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { COACHES, LANGUAGE_OPTIONS, GENDER_OPTIONS, AU_SUBURBS, SPORTS, SPORT_ICON } from "../../data/mockData";
 import {
   Avatar, SectionLabel, Chip, Card, Toggle, Btn, Badge, BottomSheet, Field,
-  SearchMultiSelect, SearchSelect, ScrollFadeRow, SegTabs,
+  SearchMultiSelect, SearchSelect, ScrollFadeRow, SegTabs, HandleTag,
 } from "../../components/ui/Primitives";
+import { HandleField } from "../../components/ui/PublicIdentityFields";
+import { isValidHandle, getPublicName } from "../../utils/name";
 import { useApp } from "../../context/AppContext";
 import { CoverBanner } from "../client/CoachProfile";
 
@@ -88,7 +90,7 @@ function OptionCard({ icon: Icon, dotColor, title, desc, selected, onClick }) {
 }
 
 export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage, removePackage, biometric, setBiometric, coachMedia = [], coachAvailableNow, setCoachAvailableNow }) {
-  const { darkMode } = useApp();
+  const { darkMode, coachOnboarding, updateCoachOnboarding, isHandleTaken } = useApp();
   const C = darkMode ? CD : CL;
   const coach = COACHES[1];
 
@@ -109,6 +111,11 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
 
   function ProfilePreview({ coach, data, packages, bookingType }) {
     const activePackages = packages.filter((p) => p.active !== false);
+    const pub = getPublicName({
+      name: data.name || coach.name,
+      handle: data.handle,
+      namePrivacy: data.namePrivacy,
+    }, "public");
     return (
       <div>
         <div style={{ margin: "-4px -20px 0", position: "relative" }}>
@@ -117,13 +124,14 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
             {data.photo ? (
               <img src={data.photo} alt="Profile" style={{ width: 64, height: 64, borderRadius: 64, objectFit: "cover", border: `3px solid ${C.white}`, display: "block" }} />
             ) : (
-              <Avatar name={data.displayName || coach.name} size={64} ring />
+              <Avatar name={pub.name || coach.name} size={64} ring />
             )}
           </div>
         </div>
         <div style={{ height: 38 }} />
 
-        <div style={{ fontSize: T.heading, fontWeight: 600, color: C.jet, ...fDisplay }}>{data.displayName || coach.name}</div>
+        <div style={{ fontSize: T.heading, fontWeight: 600, color: C.jet, ...fDisplay }}>{pub.name || coach.name}</div>
+        <HandleTag handle={pub.handle} size={12.5} color={C.slateLight} />
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
           {(data.sports?.length ? data.sports : [coach.sport]).map((s) => <SportTag key={s} sport={s} />)}
         </div>
@@ -170,7 +178,9 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
 
   const [profile, setProfile] = useState({
     photo: null,
-    displayName: coach.name,
+    name: coachOnboarding.name || coach.name,
+    handle: coachOnboarding.handle || coach.handle,
+    namePrivacy: coachOnboarding.namePrivacy || coach.namePrivacy,
     bio: coach.bio,
     yearsExperience: (coach.experience.match(/\d+/) || [""])[0],
     gender: "",
@@ -192,9 +202,12 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
   };
   const openPreview = (data) => { setPreviewData(data); setPreviewOpen(true); };
   const saveProfile = () => {
-    if (!draft.displayName.trim()) { toast("Add a display name first"); return; }
+    if (!draft.name.trim()) { toast("Add your name first"); return; }
+    if (!isValidHandle(draft.handle)) { toast("Pick a valid username — 3–24 characters"); return; }
+    if (isHandleTaken(draft.handle)) { toast("That username's taken — try another"); return; }
     if (!draft.sports || draft.sports.length === 0) { toast("Pick at least one sport you coach"); return; }
     setProfile(draft);
+    updateCoachOnboarding?.({ name: draft.name, handle: draft.handle, namePrivacy: draft.namePrivacy });
     toast("Profile changes saved and published");
     setDraft(null);
     setSheet(null);
@@ -244,11 +257,14 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
         <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, marginBottom: 18, ...fDisplay }}>My coaching profile</div>
 
         <div style={{ display: "flex", gap: 14, marginBottom: 22 }}>
-          <Avatar name={profile.displayName} size={58} />
+          <Avatar name={profile.name} size={58} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <div style={{ fontSize: T.title, fontWeight: 600, color: C.jet, ...fDisplay }}>{profile.displayName}</div>
+              <div style={{ fontSize: T.title, fontWeight: 600, color: C.jet, ...fDisplay }}>{profile.name}</div>
               <Badge tone="neutral">Coach account</Badge>
+            </div>
+            <div style={{ marginTop: 3 }}>
+              <HandleTag handle={profile.handle} size={12} color={C.brand} />
             </div>
 
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
@@ -500,7 +516,7 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
                 {draft.photo ? (
                   <img src={draft.photo} alt="Profile" style={{ width: 76, height: 76, borderRadius: 76, objectFit: "cover", display: "block" }} />
                 ) : (
-                  <Avatar name={draft.displayName || "You"} size={76} />
+                  <Avatar name={draft.name || "You"} size={76} />
                 )}
                 <button onClick={() => photoInputRef.current?.click()} style={{ position: "absolute", bottom: -2, right: -2, width: 26, height: 26, borderRadius: 99, background: C.brand, border: `2px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                   <Camera size={12} color={C.white} />
@@ -511,7 +527,8 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
 
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <SectionLabel>Basics</SectionLabel>
-              <Field label="Display name" placeholder="How athletes will see you" icon={User} value={draft.displayName} onChange={(e) => setDraftField({ displayName: e.target.value })} />
+              <Field label="Full name" placeholder="How athletes will see you" icon={User} value={draft.name} onChange={(e) => setDraftField({ name: e.target.value })} />
+              <HandleField value={draft.handle} onChange={(v) => setDraftField({ handle: v })} isTaken={isHandleTaken(draft.handle)} />
 
               <div>
                 <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Bio</div>

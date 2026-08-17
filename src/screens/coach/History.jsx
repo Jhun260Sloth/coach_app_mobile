@@ -8,6 +8,8 @@ import { CONFIG, COACH_NOTIFICATIONS } from "../../data/mockData";
 import { Card, Row, SectionLabel, EmptyState, TopBar, SegTabs, BottomSheet, Avatar } from "../../components/ui/Primitives";
 import { useApp } from "../../context/AppContext";
 import { useLiveNotifications } from "../../systems/StateSystem";
+import { getBookingClientName } from "../../utils/name";
+import { withClientMeta } from "../../data/users";
 
 const COACH_ACTIVITY_ICON = {
   message: MessageCircle,
@@ -49,7 +51,7 @@ export function ScreenCoachHistory({ nav, coachBookings = [], coachNotifications
 
             <Card style={{ marginBottom: 14 }}>
               <Row label="Service" value={booking.service} />
-              <Row label="Client" value={booking.clientName} />
+              <Row label="Client" value={getBookingClientName(withClientMeta(booking)).name} />
               <Row label="Date" value={booking.date} />
               <Row label="Time" value={booking.time} last />
             </Card>
@@ -86,10 +88,10 @@ export function ScreenCoachHistory({ nav, coachBookings = [], coachNotifications
             {completed.map((b, i) => (
               <Card key={b.id} onClick={() => setReceiptTarget(b)} style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center", animationDelay: `${Math.min(i, 8) * 45}ms` }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <Avatar name={b.clientName} size={40} />
+                  <Avatar name={getBookingClientName(withClientMeta(b)).name} size={40} />
                   <div>
                     <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>{b.service}</div>
-                    <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{b.date} · {b.clientName}</div>
+                    <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{b.date} · {getBookingClientName(withClientMeta(b)).name}</div>
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>

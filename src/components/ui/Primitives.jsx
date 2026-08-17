@@ -400,6 +400,20 @@ export function StatusPill({ status }) {
   );
 }
 
+export function HandleTag({ handle, size = 12, color }) {
+  const C = useColors();
+  if (!handle) return null;
+  const h = String(handle).startsWith("@") ? handle : `@${handle}`;
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center",
+      fontSize: size, fontWeight: 600, color: color || C.slateLight, ...fBody,
+    }}>
+      {h}
+    </span>
+  );
+}
+
 export function Avatar({ name, size = 42, ring, src }) {
   const C = useColors();
   const label = String(name || "User");
