@@ -6,6 +6,7 @@ import {
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { COACHES, REVIEWS, SPORT_ICON } from "../../data/mockData";
+import { getCoachMedia } from "../../data/media";
 import { Avatar, BackButton, Badge, SegTabs, SectionLabel, Card, Btn, StarRow, HandleTag } from "../../components/ui/Primitives";
 import { getPublicName } from "../../utils/name";
 import { StatusBanner } from "../../systems/StateSystem";
@@ -36,27 +37,32 @@ function derivePackageAvailability(coach, pkg) {
 
 const LIVE_AVAILABILITY_COACH_ID = "c2";
 
-export function CoverBanner({ sport, height = 150 }) {
+export function CoverBanner({ sport, image, name, height = 150, rounded = false }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const Icon = SPORT_ICON[sport] || Trophy;
   return (
-    <div style={{ height, position: "relative", flexShrink: 0, overflow: "hidden", background: `linear-gradient(145deg, ${CL.jet} 0%, ${CL.jetSoft} 55%, ${CL.slate} 100%)` }}>
-      {/* soft light wash for photographic depth */}
-      <div style={{ position: "absolute", inset: 0, background: "radial-gradient(120% 90% at 15% 0%, rgba(255,255,255,.10), transparent 55%)" }} />
-      {/* signature angled accent, echoing the logo flag */}
-      <div style={{ position: "absolute", top: -30, right: -20, width: 160, height: 100, background: C.brand, opacity: 0.9, transform: "rotate(-18deg)", clipPath: "polygon(20% 0%, 100% 0%, 80% 100%, 0% 100%)" }} />
-      <div style={{ position: "absolute", top: -30, right: 40, width: 90, height: 100, background: CL.jet, opacity: 0.55, transform: "rotate(-18deg)", clipPath: "polygon(20% 0%, 100% 0%, 80% 100%, 0% 100%)" }} />
-      {/* oversized watermark icon for a sport-specific "stock photo" feel */}
-      <Icon size={140} color={CL.white} strokeWidth={1.1} style={{ position: "absolute", bottom: -30, left: -20, opacity: 0.14, transform: "rotate(-8deg)" }} />
+    <div style={{ height, position: "relative", flexShrink: 0, overflow: "hidden", borderRadius: rounded ? 24 : 0, background: `linear-gradient(145deg, ${CL.jet} 0%, ${CL.jetSoft} 58%, ${CL.slate} 100%)` }}>
+      {image ? (
+        <img src={image} alt={`${name || sport} coaching session`} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 42%", display: "block" }} />
+      ) : (
+        <>
+          <div style={{ position: "absolute", inset: 0, background: `radial-gradient(120% 90% at 15% 0%, ${C.onDarkDivider}, transparent 55%)` }} />
+          <div style={{ position: "absolute", top: -30, right: -20, width: 160, height: 100, background: C.brand, opacity: 0.9, transform: "rotate(-18deg)", clipPath: "polygon(20% 0%, 100% 0%, 80% 100%, 0% 100%)" }} />
+          <div style={{ position: "absolute", top: -30, right: 40, width: 90, height: 100, background: CL.jet, opacity: 0.55, transform: "rotate(-18deg)", clipPath: "polygon(20% 0%, 100% 0%, 80% 100%, 0% 100%)" }} />
+          <Icon size={140} color={CL.white} strokeWidth={1.1} style={{ position: "absolute", bottom: -30, left: -20, opacity: 0.14, transform: "rotate(-8deg)" }} />
+        </>
+      )}
+      <div style={{ position: "absolute", inset: 0, background: `linear-gradient(180deg, transparent 24%, ${CL.jet} 118%)`, opacity: image ? 0.9 : 0.25 }} />
     </div>
   );
 }
 
 export function ScreenCoachProfile({ nav, goBack, params = {}, favorites = [], toggleFav, coachAvailableNow }) {
-  const { darkMode } = useApp();
+  const { darkMode, coachMedia, toast } = useApp();
   const C = darkMode ? CD : CL;
   const coach = COACHES.find((c) => c.id === (params?.id)) || COACHES[0];
+  const media = coach.id === COACHES[1].id ? coachMedia : getCoachMedia(coach.id);
   const pub = getPublicName(coach, "public");
   const { getReply } = useReviewActions();
   const [tab, setTab] = useState("about");
@@ -72,7 +78,13 @@ export function ScreenCoachProfile({ nav, goBack, params = {}, favorites = [], t
   const selectedPkg = coach.packages.find((p) => p.id === selectedPkgId) || null;
   const safeFavorites = Array.isArray(favorites) ? favorites : [];
   const fav = safeFavorites.includes(coach.id);
+  const heroImage = media.find((item) => item.type === "photo")?.url;
   const unavailable = coach.id === LIVE_AVAILABILITY_COACH_ID && coachAvailableNow === false;
+  const handleFavourite = () => {
+    toggleFav?.(coach.id);
+    toast?.(fav ? "Removed from saved coaches" : "Coach saved to favourites");
+  };
+  const handleShare = () => toast?.("Profile link ready to share");
 
   // Calendar + slots reflect the selected package's derived availability, or
   // the coach's overall (all-packages) availability when none is picked yet
@@ -125,49 +137,72 @@ export function ScreenCoachProfile({ nav, goBack, params = {}, favorites = [], t
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      {/* Banner + avatar now scroll away with the rest of the profile instead
-          of staying pinned at the top — they live inside the same scroll
-          container as everything below them. */}
       <div style={{ flex: 1, overflowY: "auto", paddingBottom: 100 }} className="cl-hide-scrollbar">
-        <CoverBanner sport={coach.sport} height={150} />
-        <div style={{ height: 150, position: "relative", marginTop: -150, pointerEvents: "none" }}>
-          <div style={{ position: "absolute", top: 16, left: 16, pointerEvents: "auto" }}>
+        <div style={{ margin: "12px 14px 0", position: "relative" }}>
+          <CoverBanner sport={coach.sport} image={heroImage} name={pub.name} height={188} rounded />
+          <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+          <div style={{ position: "absolute", top: 12, left: 12, pointerEvents: "auto" }}>
             <BackButton floating onClick={() => goBack("client-home")} />
           </div>
-          <div style={{ position: "absolute", top: 16, right: 16, display: "flex", gap: 8, pointerEvents: "auto" }}>
-            <button type="button" aria-label={fav ? "Remove coach from favourites" : "Add coach to favourites"} onClick={() => toggleFav(coach.id)} style={{ width: 44, height: 44, borderRadius: 14, background: "rgba(255,255,255,.18)", backdropFilter: "blur(4px)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-              <Heart size={16} color={CL.white} fill={fav ? C.brand : "none"} />
+          <div style={{ position: "absolute", top: 12, right: 12, display: "flex", gap: 8, pointerEvents: "auto" }}>
+            <button type="button" aria-label={fav ? "Remove coach from favourites" : "Add coach to favourites"} aria-pressed={fav} onClick={handleFavourite} style={{ width: 44, height: 44, borderRadius: 99, background: fav ? C.brand : CL.jetSoft, opacity: 0.94, border: `1px solid ${CL.onDarkDivider}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 8px 20px rgba(0,0,0,.18)" }}>
+              <Heart size={18} color={CL.white} fill={fav ? CL.white : "none"} />
             </button>
-            <button type="button" aria-label="Share coach profile" style={{ width: 44, height: 44, borderRadius: 14, background: "rgba(255,255,255,.18)", backdropFilter: "blur(4px)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-              <Share2 size={15} color={CL.white} />
+            <button type="button" aria-label="Share coach profile" onClick={handleShare} style={{ width: 44, height: 44, borderRadius: 99, background: CL.jetSoft, opacity: 0.94, border: `1px solid ${CL.onDarkDivider}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 8px 20px rgba(0,0,0,.18)" }}>
+              <Share2 size={18} color={CL.white} />
             </button>
           </div>
-          <div style={{ position: "absolute", bottom: -34, left: 20, zIndex: 5, pointerEvents: "auto" }}>
-            <Avatar name={pub.name} size={68} ring />
+          </div>
+        </div>
+
+        <div style={{ margin: "-34px 14px 0", padding: "0 16px 16px", position: "relative", zIndex: 2, background: C.white, border: `1px solid ${C.border}`, borderRadius: 24, boxShadow: "0 12px 32px rgba(22,24,29,.10)" }}>
+          <div style={{ height: 42 }} />
+          <div style={{ position: "absolute", top: -42, left: 16 }}>
+            <div style={{ padding: 3, borderRadius: 99, background: C.white, boxShadow: "0 6px 18px rgba(22,24,29,.14)" }}>
+              <Avatar name={pub.name} src={coach.avatar} size={76} ring />
+            </div>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: T.headingLg, fontWeight: 700, color: C.jet, lineHeight: 1.15, ...fDisplay }}>{pub.name}</div>
+              <HandleTag handle={pub.handle} size={12.5} color={C.slateLight} />
+              <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3, fontSize: T.captionLg, color: C.slate, ...fBody }}>
+                <MapPin size={12} color={C.brand} style={{ flexShrink: 0 }} />
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{coach.sport} · {coach.suburb}</span>
+              </div>
+            </div>
+            <div style={{ flexShrink: 0, textAlign: "right", paddingTop: 2 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4, fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...fBody }}>
+                <Star size={15} fill={C.brand} color={C.brand} /> {coach.rating}
+              </div>
+              <div style={{ fontSize: T.caption, color: C.slate, marginTop: 1, ...fBody }}>{coach.reviews} reviews</div>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
+            {coach.verified.identity && <Badge tone="success" icon={ShieldCheck}>ID verified</Badge>}
+            {coach.verified.wwcc && <Badge tone="success" icon={ShieldCheck}>WWCC verified</Badge>}
+            {coach.verified.quals && <Badge tone="success" icon={BadgeCheck}>Qualifications checked</Badge>}
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8, marginTop: 14 }}>
+            {[
+              { icon: Clock, label: "Response", value: coach.responseTime.replace("Usually replies within ", "") },
+              { icon: TrendingUp, label: "Acceptance", value: `${coach.acceptanceRate}%` },
+              { icon: Repeat, label: "Repeat clients", value: `${coach.repeatClientRate}%` },
+            ].map((s) => (
+              <div key={s.label} style={{ minWidth: 0, background: C.fog, border: `1px solid ${C.border}`, borderRadius: 13, padding: "10px 5px 9px", textAlign: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                  <s.icon size={13} color={C.brand} style={{ flexShrink: 0 }} />
+                  <span style={{ fontSize: T.captionLg, fontWeight: 700, color: C.jet, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", ...fBody }}>{s.value}</span>
+                </div>
+                <div style={{ fontSize: T.tiny, color: C.slate, marginTop: 3, lineHeight: 1.2, ...fBody }}>{s.label}</div>
+              </div>
+            ))}
           </div>
         </div>
 
         <div style={{ padding: "0 18px" }}>
-        <div style={{ height: 40 }} />
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginTop: 10 }}>
-          <div>
-            <div style={{ fontSize: T.headingLg, fontWeight: 600, color: C.jet, ...fDisplay }}>{pub.name}</div>
-            <HandleTag handle={pub.handle} size={12.5} color={C.slateLight} />
-            <div style={{ fontSize: T.body, color: C.slate, ...fBody }}>{coach.sport} · {coach.suburb}</div>
-          </div>
-          <div style={{ textAlign: "right" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 4, fontWeight: 700, color: C.jet, ...fBody }}>
-              <Star size={14} fill={C.brand} color={C.brand} /> {coach.rating}
-            </div>
-            <div style={{ fontSize: T.captionLg, color: C.slate, ...fBody }}>{coach.reviews} reviews</div>
-          </div>
-        </div>
-
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
-          {coach.verified.identity && <Badge tone="success" icon={ShieldCheck}>ID verified</Badge>}
-          {coach.verified.wwcc && <Badge tone="success" icon={ShieldCheck}>WWCC verified</Badge>}
-          {coach.verified.quals && <Badge tone="success" icon={BadgeCheck}>Qualifications checked</Badge>}
-        </div>
 
         {unavailable && (
           <div style={{ marginTop: 14 }}>
@@ -181,26 +216,7 @@ export function ScreenCoachProfile({ nav, goBack, params = {}, favorites = [], t
           </div>
         )}
 
-        {/* Compact stats strip — label sits below the value in each tile (not
-            beside it) so nothing truncates, while three equal-width tiles
-            keep the whole strip short and secondary to the tabs below. */}
-        <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
-          {[
-            { icon: Clock, label: "Response", value: coach.responseTime.replace("Usually replies within ", "") },
-            { icon: TrendingUp, label: "Acceptance", value: `${coach.acceptanceRate}%` },
-            { icon: Repeat, label: "Repeat clients", value: `${coach.repeatClientRate}%` },
-          ].map((s, i) => (
-            <div key={i} style={{ flex: 1, minWidth: 0, background: C.fog, borderRadius: 10, padding: "8px 4px", textAlign: "center" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
-                <s.icon size={11} color={C.brand} style={{ flexShrink: 0 }} />
-                <span style={{ fontSize: T.caption, fontWeight: 700, color: C.jet, ...fBody }}>{s.value}</span>
-              </div>
-              <div style={{ fontSize: T.tiny, color: C.slate, marginTop: 3, lineHeight: 1.25, ...fBody }}>{s.label}</div>
-            </div>
-          ))}
-        </div>
-
-        <div style={{ marginTop: 18 }}>
+        <div style={{ marginTop: 14 }}>
           <SegTabs value={tab} onChange={setTab} items={[
             { value: "about", label: "About" }, { value: "reels", label: "Reels" },
             { value: "packages", label: "Packages" }, { value: "reviews", label: "Reviews" },
@@ -252,14 +268,22 @@ export function ScreenCoachProfile({ nav, goBack, params = {}, favorites = [], t
         )}
 
         {tab === "reels" && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 16 }}>
-            {Array.from({ length: coach.reelsCount }).map((_, i) => (
-              <div key={i} style={{ aspectRatio: "3/4", borderRadius: 14, background: `linear-gradient(160deg, ${C.jetSoft}, ${C.jet})`, position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <div style={{ width: 34, height: 34, borderRadius: 99, background: "rgba(255,255,255,.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Play size={14} color={C.white} fill={C.white} />
-                </div>
-              </div>
-            ))}
+          <div style={{ marginTop: 16 }}>
+            <div style={{ fontSize: T.labelLg, color: C.slate, lineHeight: 1.5, marginBottom: 12, ...fBody }}>A look inside {pub.name}'s coaching sessions.</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {media.map((item) => (
+                <button key={item.id} type="button" aria-label={`Open ${item.caption}`} onClick={() => nav("coach-media", { coachId: coach.id, mediaId: item.id })} style={{ aspectRatio: "3/4", padding: 0, overflow: "hidden", borderRadius: 14, border: `1px solid ${C.border}`, background: C.fog, position: "relative", cursor: "pointer" }}>
+                  {item.type === "reel" ? (
+                    <video src={item.url} muted loop autoPlay playsInline preload="metadata" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                  ) : (
+                    <img src={item.url} alt={item.caption} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                  )}
+                  <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 45%, rgba(0,0,0,.56))" }} />
+                  {item.type === "reel" && <span style={{ position: "absolute", top: 8, right: 8, width: 30, height: 30, borderRadius: 99, background: "rgba(22,24,29,.60)", display: "flex", alignItems: "center", justifyContent: "center" }}><Play size={13} color={C.white} fill={C.white} /></span>}
+                  <span style={{ position: "absolute", left: 9, right: 9, bottom: 9, textAlign: "left", color: C.white, fontSize: T.caption, fontWeight: 600, lineHeight: 1.25, ...fBody }}>{item.caption}</span>
+                </button>
+              ))}
+            </div>
           </div>
         )}
 

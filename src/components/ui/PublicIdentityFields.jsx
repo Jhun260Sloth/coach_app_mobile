@@ -13,7 +13,7 @@ import { isValidHandle } from "../../utils/name";
    ========================================================================= */
 
 /** Username input with live validity / availability feedback. */
-export function HandleField({ value, onChange, isTaken, label = "Username", placeholder = "shane22", helper }) {
+export function HandleField({ value, onChange, isTaken, showStatus = true, label = "Username", placeholder = "shane22", helper }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const trimmed = String(value || "").trim();
@@ -21,11 +21,11 @@ export function HandleField({ value, onChange, isTaken, label = "Username", plac
   const available = valid && !isTaken;
 
   let status = null;
-  if (trimmed && !valid) {
+  if (showStatus && trimmed && !valid) {
     status = { tone: "error", icon: XCircle, text: "Use 3 to 24 characters with lowercase letters, numbers, dots, or underscores." };
-  } else if (trimmed && valid && isTaken) {
+  } else if (showStatus && trimmed && valid && isTaken) {
     status = { tone: "error", icon: XCircle, text: "That username is already taken. Try adding a number or underscore." };
-  } else if (trimmed && available) {
+  } else if (showStatus && trimmed && available) {
     status = { tone: "success", icon: CheckCircle2, text: "Username is available!" };
   }
 

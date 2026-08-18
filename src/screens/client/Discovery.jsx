@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { Search, SlidersHorizontal, ArrowUpDown, ChevronDown, ChevronRight, Navigation, Star, MapPin, Heart, X, LocateFixed, Calendar, MessageCircle, Sparkles, Check, LayoutList, Map as MapIcon } from "lucide-react";
+import { Search, SlidersHorizontal, ArrowUpDown, ChevronDown, ChevronRight, Navigation, Star, MapPin, Heart, X, LocateFixed, Calendar, MessageCircle, Sparkles, Check, BadgeCheck, LayoutList, Map as MapIcon } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 
@@ -38,57 +38,53 @@ export function CoachListCard({ coach, onOpen, unavailable, style }) {
   return (
     <Card
       onClick={onOpen}
-      style={{ marginBottom: 14, border: `1px solid ${C.border}`, boxShadow: "0 1px 2px rgba(22,24,29,.04)", opacity: unavailable ? 0.8 : 1, ...style }}
+      ariaLabel={`View ${pub.name}'s coach profile`}
+      style={{ marginBottom: 12, padding: 14, border: `1px solid ${C.border}`, boxShadow: "0 4px 16px rgba(22,24,29,.06)", opacity: unavailable ? 0.76 : 1, ...style }}
     >
-      <div style={{ display: "flex", gap: 12 }}>
+      <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
         <div style={{ position: "relative", flexShrink: 0 }}>
-          <Avatar name={pub.name} size={54} />
+          <Avatar name={pub.name} src={coach.avatar} size={56} />
+          {coach.verified.identity && !unavailable && (
+            <span aria-label="Verified coach" title="Verified coach" style={{ position: "absolute", right: -3, bottom: -3, width: 20, height: 20, borderRadius: 99, background: C.white, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <BadgeCheck size={19} color={C.white} fill={C.info} strokeWidth={2.5} />
+            </span>
+          )}
           {unavailable && (
-            <span style={{ position: "absolute", right: -2, bottom: -2, width: 16, height: 16, borderRadius: 99, background: C.slateLight, border: `2px solid ${C.white}` }} />
+            <span aria-label="Currently unavailable" style={{ position: "absolute", right: -2, bottom: -2, width: 16, height: 16, borderRadius: 99, background: C.slateLight, border: `2px solid ${C.white}` }} />
           )}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          {/* Identity + price: price sits top-right, same visual weight as the name, so it's
-              one of the first two things scanned — not something buried at the bottom of the card. */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
             <div style={{ minWidth: 0, flex: 1 }}>
               <div style={{ fontWeight: 700, fontSize: T.title, color: C.jet, letterSpacing: "-0.1px", ...oneLine, ...fDisplay }}>{pub.name}</div>
               {pub.handle && <HandleTag handle={pub.handle} size={11.5} color={C.slateLight} />}
-              {/* Sport category — bumped up in size/weight and given the brand colour so a
-                  client's eye lands on "what this coach does" as fast as on their name. */}
               <div style={{ fontSize: T.subtitle, fontWeight: 700, color: C.brand, marginTop: 2, ...oneLine, ...fDisplay }}>{coach.sport}</div>
             </div>
-            <div style={{ fontSize: T.titleLg, fontWeight: 800, color: C.jet, whiteSpace: "nowrap", flexShrink: 0, ...fDisplay }}>
-              ${coach.packages[0].price}<span style={{ fontSize: T.caption, fontWeight: 500, color: C.slateLight }}>/session</span>
+            <div style={{ whiteSpace: "nowrap", flexShrink: 0, textAlign: "right" }}>
+              <div style={{ fontSize: T.titleLg, fontWeight: 800, color: C.jet, lineHeight: 1, ...fDisplay }}>${coach.packages[0].price}</div>
+              <div style={{ fontSize: T.micro, fontWeight: 500, color: C.slateLight, marginTop: 4, ...fBody }}>per session</div>
             </div>
           </div>
 
-          <div style={{ marginTop: 10 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: T.labelLg, color: C.jet, fontWeight: 600, ...fBody }}>
-              <Star size={12} fill={C.brand} color={C.brand} /> {coach.rating}
-              <span style={{ color: C.slateLight, fontWeight: 400 }}>({coach.reviews})</span>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 10, paddingTop: 10, borderTop: `1px solid ${C.border}` }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: T.labelLg, color: C.jet, fontWeight: 600, ...fBody }}>
+                <Star size={12} fill={C.brand} color={C.brand} /> {coach.rating}
+                <span style={{ color: C.slateLight, fontWeight: 400 }}>({coach.reviews})</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: T.labelLg, color: C.slate, marginTop: 4, ...fBody }}>
+                <MapPin size={12} color={C.slateLight} style={{ flexShrink: 0 }} />
+                <span style={{ minWidth: 0, ...oneLine }}>{coach.suburb}</span>
+              </div>
             </div>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 4, fontSize: T.labelLg, color: C.slate, marginTop: 4, ...fBody }}>
-              <MapPin size={12} style={{ flexShrink: 0, marginTop: 1 }} /> <span style={{ minWidth: 0 }}>{coach.suburb} · {coach.liveDistanceKm ?? coach.distanceKm} km</span>
-            </div>
+            {unavailable ? (
+              <Badge tone="neutral" style={{ flexShrink: 0 }}>Unavailable</Badge>
+            ) : coach.instantBook ? (
+              <Badge tone="success" icon={Calendar} style={{ flexShrink: 0 }}>Instant book</Badge>
+            ) : (
+              <ChevronRight size={17} color={C.slateLight} style={{ flexShrink: 0 }} />
+            )}
           </div>
-
-          {(coach.instantBook || unavailable) && (
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
-              {unavailable ? (
-                <span style={{ fontSize: T.caption, fontWeight: 700, padding: "4px 9px", borderRadius: 8, background: C.fog, color: C.slate, ...fBody }}>Currently unavailable</span>
-              ) : (
-                <>
-                  {coach.verified.identity && (
-                    <span style={{ fontSize: T.caption, fontWeight: 700, padding: "4px 9px", borderRadius: 8, background: C.successTint, color: C.success, ...fBody }}>Verified</span>
-                  )}
-                  {coach.instantBook && (
-                    <span style={{ fontSize: T.caption, fontWeight: 700, padding: "4px 9px", borderRadius: 8, background: C.brandTint, color: C.brand, ...fBody }}>Instant book</span>
-                  )}
-                </>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </Card>

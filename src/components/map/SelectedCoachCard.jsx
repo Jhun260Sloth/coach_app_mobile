@@ -18,7 +18,7 @@ function SelectedCoachCardBase({ coach, routing, routeInfo, onOpen, onClose }) {
       borderRadius: 16, padding: 14, display: "flex", gap: 12, alignItems: "center",
       boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
     }}>
-      <Avatar name={pub.name} size={46} />
+      <Avatar name={pub.name} src={coach.avatar} size={46} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontWeight: 700, fontSize: T.subtitle, color: C.jet, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", ...fDisplay }}>{pub.name}</div>
         {pub.handle && <HandleTag handle={pub.handle} size={11} color={C.slateLight} />}

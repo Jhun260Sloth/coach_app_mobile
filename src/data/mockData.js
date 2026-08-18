@@ -15,6 +15,7 @@ export { CONFIG } from "../config";
 
 // --- Coaches & sport data ---
 export { COACHES, SPORT_ICON, SPORTS, ALL_SUBURBS, SUBURB_COORDS } from "./coaches";
+export { COACH_AVATARS, PROFILE_AVATARS, DEFAULT_COACH_MEDIA, getCoachMedia } from "./media";
 
 // --- Form option lists ---
 export {

@@ -2,7 +2,7 @@ import React, { useRef, useState } from "react";
 import { UploadCloud, Play, Image as ImageIcon, Trash2, Film, Camera } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { COACHES, SPORTS } from "../../data/mockData";
-import { TopBar, Btn, Card, Chip, Field, BottomSheet, ConfirmDialog, EmptyState, Badge } from "../../components/ui/Primitives";
+import { TopBar, Btn, Chip, Field, BottomSheet, ConfirmDialog, EmptyState } from "../../components/ui/Primitives";
 import { useApp } from "../../context/AppContext";
 
 export function ScreenCoachReels({ nav, toast, coachMedia = [], addMedia, removeMedia }) {
@@ -13,23 +13,22 @@ export function ScreenCoachReels({ nav, toast, coachMedia = [], addMedia, remove
   const [pendingUpload, setPendingUpload] = useState(null); // { url, type, caption, sport }
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  /* One tile in the reels & photos grid. Shows a real preview when the item
-     was actually uploaded in this session (item.url), otherwise falls back to
-     a placeholder tile so the seeded mock library still reads as media. */
+  /* One tile in the reels & photos grid. Video tiles use the actual clip so
+     the preview always matches what clients will watch. */
   function MediaTile({ item, onDelete }) {
     const isReel = item.type === "reel";
     return (
-      <div style={{ position: "relative" }}>
+      <div style={{ position: "relative", minWidth: 0 }}>
         <div
           style={{
-            aspectRatio: "3/4", borderRadius: 16, overflow: "hidden", position: "relative",
-            background: `linear-gradient(160deg, ${C.jetSoft}, ${C.jet})`,
+            width: "100%", aspectRatio: "4 / 5", borderRadius: 16, overflow: "hidden", position: "relative",
+            background: C.fog, border: `1px solid ${C.border}`,
             display: "flex", alignItems: "center", justifyContent: "center",
           }}
         >
           {item.url ? (
             isReel ? (
-              <video src={item.url} muted loop autoPlay playsInline style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <video src={item.url} muted loop autoPlay playsInline preload="metadata" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
             ) : (
               <img src={item.url} alt={item.caption} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
             )
@@ -39,24 +38,22 @@ export function ScreenCoachReels({ nav, toast, coachMedia = [], addMedia, remove
             </div>
           )}
           {item.url && isReel && (
-            <div style={{ position: "absolute", bottom: 8, left: 8, width: 26, height: 26, borderRadius: 99, background: "rgba(22,24,29,.55)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ position: "absolute", bottom: 8, left: 8, width: 28, height: 28, borderRadius: 99, background: C.jet, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Play size={11} color={C.white} fill={C.white} />
             </div>
           )}
           <button
+            type="button"
             onClick={onDelete}
-            aria-label="Delete"
-            style={{ position: "absolute", top: 8, right: 8, width: 26, height: 26, borderRadius: 99, background: "rgba(22,24,29,.55)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+            aria-label={`Remove ${item.caption || "media"}`}
+            title="Remove media"
+            style={{ position: "absolute", top: 6, right: 6, width: 34, height: 34, minWidth: 34, minHeight: 34, padding: 0, borderRadius: 99, background: C.white, border: `1px solid ${C.border}`, boxShadow: "0 2px 6px rgba(22,24,29,.12)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
           >
-            <Trash2 size={12} color={C.white} />
+            <Trash2 size={14} color={C.slate} />
           </button>
         </div>
-        <div style={{ marginTop: 6 }}>
+        <div style={{ minHeight: 34, margin: "7px 2px 0" }}>
           <div style={{ fontSize: T.label, fontWeight: 600, color: C.jet, ...fBody, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.caption || (isReel ? "Untitled reel" : "Untitled photo")}</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
-            <Badge tone="neutral">{isReel ? "Reel" : "Photo"}</Badge>
-            {item.sport && <span style={{ fontSize: T.caption, color: C.slateLight, ...fBody }}>{item.sport}</span>}
-          </div>
         </div>
       </div>
     );
@@ -98,7 +95,7 @@ export function ScreenCoachReels({ nav, toast, coachMedia = [], addMedia, remove
           {coachMedia.length === 0 ? (
             <EmptyState icon={Film} title="Nothing uploaded yet" body="Add your first reel or photo so athletes can see your coaching style before they book." />
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", columnGap: 10, rowGap: 18 }}>
               {coachMedia.map((item) => (
                 <MediaTile key={item.id} item={item} onDelete={() => setDeleteTarget(item)} />
               ))}

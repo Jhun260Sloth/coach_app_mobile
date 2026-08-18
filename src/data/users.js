@@ -6,6 +6,7 @@
    the unique-username availability check.
    ========================================================================= */
 import { COACHES } from "./coaches";
+import { PROFILE_AVATARS } from "./media";
 
 /** The signed-in client — replaces the "Sarah Lin" strings scattered around. */
 export const CURRENT_CLIENT = {
@@ -15,18 +16,19 @@ export const CURRENT_CLIENT = {
   email: "sarah.lin@email.com",
   handle: "sarahlin",
   namePrivacy: "initial",
+  avatar: PROFILE_AVATARS["sarah lin"],
 };
 
 /** Client roster seen from the coach side (used for handle lookups). */
 export const MOCK_CLIENTS = [
-  { id: "mc1", name: "Marcus Webb", handle: "marcusw", namePrivacy: "initial" },
-  { id: "mc2", name: "The Chen Family (u18)", handle: "thechens", namePrivacy: "initial" },
-  { id: "mc3", name: "Aiden Cross", handle: "aidenruns", namePrivacy: "initial" },
-  { id: "mc4", name: "Grace Liu", handle: "graceliu", namePrivacy: "initial" },
-  { id: "mc5", name: "Sarah Lin", handle: "sarahlin", namePrivacy: "initial" },
-  { id: "mc6", name: "Ravi Patel", handle: "ravip", namePrivacy: "initial" },
-  { id: "mc7", name: "Owen King", handle: "owenk", namePrivacy: "initial" },
-  { id: "mc8", name: "The Nguyen Family (u18)", handle: "nguyenfam", namePrivacy: "initial" },
+  { id: "mc1", name: "Marcus Webb", handle: "marcusw", namePrivacy: "initial", avatar: PROFILE_AVATARS["marcus webb"] },
+  { id: "mc2", name: "The Chen Family (u18)", handle: "thechens", namePrivacy: "initial", avatar: PROFILE_AVATARS["the chen family (u18)"] },
+  { id: "mc3", name: "Aiden Cross", handle: "aidenruns", namePrivacy: "initial", avatar: PROFILE_AVATARS["aiden cross"] },
+  { id: "mc4", name: "Grace Liu", handle: "graceliu", namePrivacy: "initial", avatar: PROFILE_AVATARS["grace liu"] },
+  { id: "mc5", name: "Sarah Lin", handle: "sarahlin", namePrivacy: "initial", avatar: PROFILE_AVATARS["sarah lin"] },
+  { id: "mc6", name: "Ravi Patel", handle: "ravip", namePrivacy: "initial", avatar: PROFILE_AVATARS["ravi patel"] },
+  { id: "mc7", name: "Owen King", handle: "owenk", namePrivacy: "initial", avatar: PROFILE_AVATARS["owen king"] },
+  { id: "mc8", name: "The Nguyen Family (u18)", handle: "nguyenfam", namePrivacy: "initial", avatar: PROFILE_AVATARS["the nguyen family (u18)"] },
 ];
 
 export const TAKEN_HANDLES = [

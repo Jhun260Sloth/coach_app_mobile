@@ -216,6 +216,8 @@ export function ScreenPaymentAddCard({ nav, params, toast }) {
   const [postcode, setPostcode] = useState("");
   const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
+  const returnTo = params?.returnTo || "payment";
+  const returnParams = params?.returnParams || params;
 
   const formatCardNumber = (v) => {
     const digits = v.replace(/\D/g, "").slice(0, 16);
@@ -250,17 +252,17 @@ export function ScreenPaymentAddCard({ nav, params, toast }) {
     setTimeout(() => {
       setSaving(false);
       toast && toast("Card added successfully");
-      nav("payment", params);
+      nav(returnTo, returnParams);
     }, 800);
   };
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title="Add payment method" onBack={() => nav("payment", params)} />
+      <TopBar title="Add payment method" onBack={() => nav(returnTo, returnParams)} />
 
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
         <div style={{ fontSize: T.labelLg, color: C.slate, lineHeight: 1.5, marginBottom: 20, ...fBody }}>
-          Add a card to pay for your booking securely. Your details are encrypted and never stored on our servers.
+          Add a card to pay securely. Your details are encrypted and never stored on our servers.
         </div>
 
         <div style={{ marginBottom: 20 }}>

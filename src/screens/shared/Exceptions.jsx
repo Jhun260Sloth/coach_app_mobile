@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import {
   ArrowRight, BadgeDollarSign, CalendarDays, Check, CheckCircle2,
-  CircleDot, FileCheck2, LifeBuoy, LockKeyhole, MessageCircle,
-  Paperclip, ReceiptText, Scale, ShieldCheck, UploadCloud, WalletCards, XCircle,
+  CircleDot, CreditCard, FileCheck2, LifeBuoy, LockKeyhole, MessageCircle,
+  Paperclip, Plus, ReceiptText, Scale, ShieldCheck, UploadCloud, WalletCards, XCircle,
 } from "lucide-react";
 import { CL, CD, fBody, fDisplay, T, LAYOUT } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
@@ -10,7 +10,7 @@ import {
   ADDITIONAL_CHARGE_STATUS, DISPUTE_OUTCOME, DISPUTE_STATUS,
 } from "../../data/bookings";
 import {
-  Badge, Btn, Card, Chip, EmptyState, StepProgress, Toggle, TopBar,
+  Badge, Btn, Card, Chip, EmptyState, SectionLabel, StepProgress, Toggle, TopBar,
 } from "../../components/ui/Primitives";
 
 const CLIENT_ISSUES = [
@@ -470,28 +470,19 @@ export function ScreenAdditionalChargeCreate({ nav, params, coachBookings = [], 
 
 export function ScreenAdditionalChargeReview({
   nav, params, role: appRole, bookings = [], coachBookings = [], additionalCharges = [],
-  payAdditionalCharge, cancelAdditionalCharge, toast,
+  cancelAdditionalCharge, toast,
 }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const role = params?.role || appRole || "client";
   const charge = additionalCharges.find((item) => item.id === (params?.chargeId || params?.id)) || additionalCharges[0];
   const booking = charge ? findBooking(charge.bookingId, bookings, coachBookings) : null;
-  const [paying, setPaying] = useState(false);
 
   if (!charge || !booking) return <EmptyState icon={ReceiptText} title="Request not found" body="This payment request may have been withdrawn." />;
   const pending = charge.status === ADDITIONAL_CHARGE_STATUS.PENDING;
   const paid = charge.status === ADDITIONAL_CHARGE_STATUS.PAID;
   const disputed = charge.status === ADDITIONAL_CHARGE_STATUS.DISPUTED;
   const person = role === "coach" ? booking.clientName : booking.coachName;
-  const pay = () => {
-    setPaying(true);
-    window.setTimeout(() => {
-      const ok = payAdditionalCharge?.(charge.id);
-      setPaying(false);
-      if (ok) toast?.("Additional payment completed securely");
-    }, 800);
-  };
   const withdraw = () => {
     if (cancelAdditionalCharge?.(charge.id)) toast?.("Payment request withdrawn");
   };
@@ -536,12 +527,145 @@ export function ScreenAdditionalChargeReview({
         </div>
       </div>
       <div style={{ padding: `12px ${LAYOUT.pagePadX}px 28px`, borderTop: `1px solid ${C.border}`, background: C.white, display: "flex", flexDirection: "column", gap: 9 }}>
-        {role === "client" && pending && <Btn full loading={paying} loadingText="Processing securely…" icon={WalletCards} onClick={pay}>Approve & pay ${Number(charge.amount).toFixed(2)}</Btn>}
+        {role === "client" && pending && <Btn full icon={WalletCards} onClick={() => nav("additional-charge-payment", { chargeId: charge.id, role: "client" })}>Continue to payment · ${Number(charge.amount).toFixed(2)}</Btn>}
         {role === "client" && pending && <Btn full variant="outline" icon={MessageCircle} onClick={() => nav("chat-thread", { name: booking.coachName, bookingId: booking.id, context: `Additional payment · ${booking.service}`, backTo: "additional-charge-review", backParams: { chargeId: charge.id, role } })}>Ask the coach a question</Btn>}
         {role === "client" && pending && <Btn full variant="ghost" icon={Scale} onClick={() => nav("dispute-create", { bookingId: booking.id, role: "client", category: "additional_charge", chargeId: charge.id, description: `I don’t recognise or agree with the ${charge.reason.toLowerCase()} request.`, backTo: "additional-charge-review" })}>Dispute this request</Btn>}
         {role === "coach" && pending && <Btn full icon={MessageCircle} onClick={() => nav("chat-thread", { name: booking.clientName, bookingId: booking.id, context: `Additional payment · ${booking.service}`, backTo: "additional-charge-review", backParams: { chargeId: charge.id, role } })}>Message the client</Btn>}
         {role === "coach" && pending && <Btn full variant="danger" icon={XCircle} onClick={withdraw}>Withdraw request</Btn>}
         {(paid || disputed || charge.status === ADDITIONAL_CHARGE_STATUS.CANCELLED) && <Btn full icon={paid ? CheckCircle2 : LifeBuoy} onClick={() => paid ? nav(role === "coach" ? "coach-session-detail" : "client-booking-detail", { id: booking.id }) : nav("support", { presetTab: "contact", faqTopic: role, bookingId: booking.id, backTo: "additional-charge-review" })}>{paid ? "Done" : "Get help with this request"}</Btn>}
+      </div>
+    </div>
+  );
+}
+
+export function ScreenAdditionalChargePayment({
+  nav, params, bookings = [], coachBookings = [], additionalCharges = [],
+  payAdditionalCharge, toast, offline,
+}) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
+  const charge = additionalCharges.find((item) => item.id === params?.chargeId);
+  const booking = charge ? findBooking(charge.bookingId, bookings, coachBookings) : null;
+  const [method, setMethod] = useState("visa");
+  const [processing, setProcessing] = useState(false);
+
+  if (!charge || !booking) {
+    return (
+      <div style={{ height: "100%", display: "flex", flexDirection: "column", background: C.white }}>
+        <TopBar title="Secure payment" onBack={() => nav("client-dashboard")} />
+        <EmptyState icon={ReceiptText} title="Payment request unavailable" body="This request may already have been paid or withdrawn." />
+      </div>
+    );
+  }
+
+  const pending = charge.status === ADDITIONAL_CHARGE_STATUS.PENDING;
+  const amount = Number(charge.amount || 0);
+  const confirmPayment = () => {
+    if (!pending || processing) return;
+    if (offline) {
+      toast?.("Reconnect to complete payment");
+      return;
+    }
+    setProcessing(true);
+    window.setTimeout(() => {
+      const paid = payAdditionalCharge?.(charge.id);
+      setProcessing(false);
+      if (!paid) {
+        toast?.("Payment request is no longer available");
+        nav("additional-charge-review", { chargeId: charge.id, role: "client" });
+        return;
+      }
+      toast?.("Additional payment completed");
+      nav("additional-charge-review", { chargeId: charge.id, role: "client" });
+    }, 900);
+  };
+
+  const methodOption = (value, icon, title, detail) => {
+    const Icon = icon;
+    const selected = method === value;
+    return (
+      <button
+        type="button"
+        role="radio"
+        aria-checked={selected}
+        onClick={() => setMethod(value)}
+        style={{
+          width: "100%", minHeight: 60, padding: "10px 12px", borderRadius: 14,
+          border: `1.5px solid ${selected ? C.brand : C.border}`,
+          background: selected ? C.brandTint : C.white, cursor: "pointer",
+          display: "flex", alignItems: "center", gap: 11, textAlign: "left",
+        }}
+      >
+        <div style={{ width: 38, height: 30, borderRadius: 9, background: selected ? C.brand : C.jet, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Icon size={16} color={C.white} />
+        </div>
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span style={{ display: "block", fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>{title}</span>
+          <span style={{ display: "block", fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{detail}</span>
+        </span>
+        <span style={{ width: 20, height: 20, borderRadius: 99, border: `1.5px solid ${selected ? C.brand : C.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          {selected && <span style={{ width: 10, height: 10, borderRadius: 99, background: C.brand }} />}
+        </span>
+      </button>
+    );
+  };
+
+  return (
+    <div style={{ height: "100%", display: "flex", flexDirection: "column", background: C.white }}>
+      <TopBar title="Secure payment" onBack={() => nav("additional-charge-review", { chargeId: charge.id, role: "client" })} right={<Badge tone="success" icon={ShieldCheck}>Protected</Badge>} />
+
+      <div style={{ flex: 1, overflowY: "auto", padding: `${LAYOUT.pagePadTop}px ${LAYOUT.pagePadX}px 24px` }} className="cl-hide-scrollbar">
+        <Card style={{ padding: 18, marginBottom: 20, background: C.warnTint, borderColor: C.warnStrong }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: T.captionLg, fontWeight: 700, color: C.slate, textTransform: "uppercase", letterSpacing: ".04em", ...fBody }}>Additional payment</div>
+              <div style={{ fontSize: T.title, fontWeight: 700, color: C.jet, marginTop: 5, ...fDisplay }}>{charge.reason}</div>
+              <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 4, lineHeight: 1.45, ...fBody }}>{booking.coachName} · {booking.service}</div>
+            </div>
+            <div style={{ fontSize: T.headingLg, fontWeight: 800, color: C.jet, ...fDisplay }}>${amount.toFixed(2)}</div>
+          </div>
+        </Card>
+
+        <SectionLabel>Payment method</SectionLabel>
+        <div role="radiogroup" aria-label="Payment method" style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+          {methodOption("visa", CreditCard, "Visa •••• 4821", "Saved card · Expires 08/28")}
+          {methodOption("wallet", WalletCards, "CoachLink Pay", "Use your saved mobile wallet")}
+        </div>
+
+        <div style={{ marginTop: 12 }}>
+          <Btn
+            variant="outline"
+            size="sm"
+            icon={Plus}
+            onClick={() => nav("payment-add-card", {
+              returnTo: "additional-charge-payment",
+              returnParams: { chargeId: charge.id, role: "client" },
+            })}
+          >
+            Add another card
+          </Btn>
+        </div>
+
+        <div style={{ marginTop: 22 }}><SectionLabel>Payment summary</SectionLabel></div>
+        <Card>
+          <DetailRow label="Additional charge" value={`$${amount.toFixed(2)}`} />
+          <DetailRow label="Processing fee" value="$0.00" />
+          <DetailRow label="Total due today" value={`$${amount.toFixed(2)}`} last />
+        </Card>
+
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 9, marginTop: 14, padding: 12, borderRadius: 13, background: C.fog }}>
+          <LockKeyhole size={15} color={C.brand} style={{ marginTop: 1, flexShrink: 0 }} />
+          <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.55, ...fBody }}>Your payment details are encrypted. This creates a separate receipt linked to the original booking.</div>
+        </div>
+        {offline && <div style={{ marginTop: 12 }}><ReviewNotice>You’re offline. Reconnect before confirming this payment.</ReviewNotice></div>}
+      </div>
+
+      <div style={{ padding: `12px ${LAYOUT.pagePadX}px 28px`, borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+          <span style={{ fontSize: T.labelLg, color: C.slate, ...fBody }}>Total</span>
+          <span style={{ fontSize: T.titleLg, fontWeight: 800, color: C.jet, ...fDisplay }}>${amount.toFixed(2)}</span>
+        </div>
+        <Btn full loading={processing} loadingText="Processing securely…" disabled={!pending || offline} icon={LockKeyhole} onClick={confirmPayment}>Pay ${amount.toFixed(2)}</Btn>
       </div>
     </div>
   );

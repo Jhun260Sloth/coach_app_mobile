@@ -126,7 +126,7 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
             {data.photo ? (
               <img src={data.photo} alt="Profile" style={{ width: 64, height: 64, borderRadius: 64, objectFit: "cover", border: `3px solid ${C.white}`, display: "block" }} />
             ) : (
-              <Avatar name={pub.name || coach.name} size={64} ring />
+              <Avatar name={pub.name || coach.name} src={coach.avatar} size={64} ring />
             )}
           </div>
         </div>
@@ -179,7 +179,7 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
   }
 
   const [profile, setProfile] = useState({
-    photo: null,
+    photo: coachOnboarding.photo || coach.avatar,
     name: coachOnboarding.name || coach.name,
     handle: coachOnboarding.handle || coach.handle,
     namePrivacy: coachOnboarding.namePrivacy || coach.namePrivacy,
@@ -193,9 +193,10 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
   const [draft, setDraft] = useState(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewData, setPreviewData] = useState(null);
+  const [handleEdited, setHandleEdited] = useState(false);
   const photoInputRef = useRef(null);
 
-  const openEditProfile = () => { setDraft({ ...profile }); setSheet("edit"); };
+  const openEditProfile = () => { setHandleEdited(false); setDraft({ ...profile }); setSheet("edit"); };
   const setDraftField = (patch) => setDraft((d) => ({ ...d, ...patch }));
   const onPhotoChange = (e) => {
     const file = e.target.files?.[0];
@@ -206,10 +207,10 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
   const saveProfile = () => {
     if (!draft.name.trim()) { toast("Add your name first"); return; }
     if (!isValidHandle(draft.handle)) { toast("Pick a valid username — 3–24 characters"); return; }
-    if (isHandleTaken(draft.handle)) { toast("That username's taken — try another"); return; }
+    if (isHandleTaken(draft.handle, [coach.handle, profile.handle])) { toast("That username's taken — try another"); return; }
     if (!draft.sports || draft.sports.length === 0) { toast("Pick at least one sport you coach"); return; }
     setProfile(draft);
-    updateCoachOnboarding?.({ name: draft.name, handle: draft.handle, namePrivacy: draft.namePrivacy });
+    updateCoachOnboarding?.({ name: draft.name, handle: draft.handle, namePrivacy: draft.namePrivacy, photo: draft.photo });
     toast("Profile changes saved and published");
     setDraft(null);
     setSheet(null);
@@ -359,26 +360,28 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
             {coachMedia.slice(0, 6).map((item) => {
               const isReel = item.type === "reel";
               return (
-                <div
+                <button
                   key={item.id}
+                  type="button"
+                  aria-label={`Manage ${item.caption || "media"}`}
                   onClick={() => nav("coach-reels")}
-                  style={{
-                    width: 76, aspectRatio: "3/4", borderRadius: 14, flexShrink: 0, cursor: "pointer",
-                    background: item.url ? `url(${item.url}) center/cover` : `linear-gradient(160deg, ${C.jetSoft}, ${C.jet})`,
-                    display: "flex", alignItems: "center", justifyContent: "center", position: "relative",
-                  }}
+                  style={{ width: 76, minWidth: 76, minHeight: 0, aspectRatio: "3 / 4", padding: 0, overflow: "hidden", borderRadius: 14, flexShrink: 0, cursor: "pointer", background: C.fog, border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}
                 >
-                  {!item.url && (
-                    <div style={{ width: 26, height: 26, borderRadius: 99, background: "rgba(255,255,255,.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {item.url ? (
+                    isReel
+                      ? <video src={item.url} muted loop autoPlay playsInline preload="metadata" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                      : <img src={item.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                  ) : (
+                    <div style={{ width: 26, height: 26, borderRadius: 99, background: C.jet, display: "flex", alignItems: "center", justifyContent: "center" }}>
                       {isReel ? <Play size={11} color={C.white} fill={C.white} /> : <ImageIcon size={12} color={C.white} />}
                     </div>
                   )}
                   {item.url && isReel && (
-                    <div style={{ width: 22, height: 22, borderRadius: 99, background: "rgba(22,24,29,.55)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ position: "absolute", bottom: 6, left: 6, width: 22, height: 22, borderRadius: 99, background: C.jet, display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <Play size={9} color={C.white} fill={C.white} />
                     </div>
                   )}
-                </div>
+                </button>
               );
             })}
             <button
@@ -514,24 +517,25 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
       <BottomSheet open={sheet === "edit"} onClose={() => { setSheet(null); setDraft(null); }} title="Edit profile" heightPct={90}>
         {draft && (
           <>
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: 18 }}>
-              <div style={{ position: "relative", display: "inline-block" }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 18 }}>
+              <div style={{ position: "relative", width: 76, height: 76 }}>
                 {draft.photo ? (
                   <img src={draft.photo} alt="Profile" style={{ width: 76, height: 76, borderRadius: 76, objectFit: "cover", display: "block" }} />
                 ) : (
-                  <Avatar name={draft.name || "You"} size={76} />
+                  <Avatar name={draft.name || "You"} src={coach.avatar} size={76} />
                 )}
-                <button onClick={() => photoInputRef.current?.click()} style={{ position: "absolute", bottom: -2, right: -2, width: 26, height: 26, borderRadius: 99, background: C.brand, border: `2px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                  <Camera size={12} color={C.white} />
+                <button type="button" aria-label="Change profile photo" onClick={() => photoInputRef.current?.click()} style={{ position: "absolute", bottom: -10, right: -10, width: 44, height: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ width: 28, height: 28, borderRadius: 999, background: C.brand, border: `2px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 6px rgba(22,24,29,.16)" }}><Camera size={13} color={C.white} /></span>
                 </button>
               </div>
               <input ref={photoInputRef} type="file" accept="image/*" onChange={onPhotoChange} style={{ display: "none" }} />
+              <button type="button" onClick={() => photoInputRef.current?.click()} style={{ minHeight: 44, marginTop: 5, padding: "0 10px", border: "none", background: "transparent", color: C.brand, cursor: "pointer", fontSize: T.labelLg, fontWeight: 600, ...fBody }}>Change photo</button>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <SectionLabel>Basics</SectionLabel>
               <Field label="Full name" placeholder="How athletes will see you" icon={User} value={draft.name} onChange={(e) => setDraftField({ name: e.target.value })} />
-              <HandleField value={draft.handle} onChange={(v) => setDraftField({ handle: v })} isTaken={isHandleTaken(draft.handle)} />
+              <HandleField value={draft.handle} onChange={(v) => { setHandleEdited(true); setDraftField({ handle: v }); }} isTaken={isHandleTaken(draft.handle, [coach.handle, profile.handle])} showStatus={handleEdited && draft.handle.trim() !== String(profile.handle || "").trim()} />
 
               <div>
                 <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Bio</div>
@@ -556,7 +560,7 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
               </div>
 
               <div style={{ height: 1, background: C.border, margin: "4px 0" }} />
-              <SectionLabel>Sports you coach</SectionLabel>
+              <SectionLabel>Profile details</SectionLabel>
               <div>
                 <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Sports</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -579,15 +583,13 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
                 )}
               </div>
 
-              <div style={{ height: 1, background: C.border, margin: "4px 0" }} />
-              <SectionLabel>Languages & location</SectionLabel>
               <div>
-                <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Languages spoken</div>
+                <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Languages</div>
                 <SearchMultiSelect options={LANGUAGE_OPTIONS} value={draft.languages} onChange={(v) => setDraftField({ languages: v })} placeholder="Search languages…" />
               </div>
 
               <div>
-                <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Current location</div>
+                <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Location</div>
                 <SearchSelect options={LOCATION_OPTIONS} value={draft.location} onChange={(v) => setDraftField({ location: v })} placeholder="Search suburb or city…" />
               </div>
             </div>

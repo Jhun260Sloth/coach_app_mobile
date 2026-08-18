@@ -304,6 +304,7 @@ export const FAQS = {
 };
 
 export const CLIENT_NOTIFICATIONS = [
+  { id: "n4", type: "payment", title: "Additional payment requested", body: "Noah Kelly requested $18.00 for extra session time.", time: "Just now", unread: true, bookingId: "s1", chargeId: "charge-101" },
   { id: "n1", type: "booking", title: "Booking confirmed", body: "Your session with Isla Ferguson is confirmed for Tue, 4:00pm.", time: "9:41am", unread: true, coachId: "c1", coachName: "Isla Ferguson" },
   { id: "n2", type: "message", title: "New message from Noah Kelly", body: "Do you have any morning slots next week?", time: "Yesterday", unread: true, coachName: "Noah Kelly" },
   { id: "n3", type: "review", title: "How was your session?", body: "Leave a quick review for Ruby Hendricks to help other clients.", time: "2 days ago", unread: true, coachName: "Ruby Hendricks" },

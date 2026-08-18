@@ -55,7 +55,7 @@ export function ScreenPackageDetail({ nav, params }) {
 
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 100px" }} className="cl-hide-scrollbar">
         <Card style={{ marginBottom: 16, display: "flex", gap: 12, alignItems: "center", border: `1px solid ${C.border}` }}>
-          <Avatar name={pub.name} size={44} />
+          <Avatar name={pub.name} src={coach.avatar} size={44} />
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: T.subtitleLg, fontWeight: 700, color: C.jet, ...fDisplay }}>{pub.name}</div>
             <HandleTag handle={pub.handle} size={11} color={C.slateLight} />

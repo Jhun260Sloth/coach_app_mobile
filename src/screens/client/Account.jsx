@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   Edit3, Bell, CreditCard, Fingerprint, Lock, FileText, Shield, HelpCircle, LogOut, Users, ChevronRight,
   Mail, Phone, User, Plus, Trash2, Eye, EyeOff, AlertTriangle, Camera, MapPin, Target, Calendar, UserPlus, Download,
@@ -41,6 +41,8 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
     email: clientIdentity.email || "",
   };
   const [editDraft, setEditDraft] = useState(null);
+  const [handleEdited, setHandleEdited] = useState(false);
+  const profilePhotoInputRef = useRef(null);
 
   const openNewChild = () => { setEditingChildId(null); setChildDraft(emptyChildDraft); setSheet("child"); };
   const openEditChild = (child) => { setEditingChildId(child.id); setChildDraft({ ...emptyChildDraft, ...child }); setSheet("child"); };
@@ -94,10 +96,12 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
   // (mobile, address, postal code, sports, goals) plus the account's name/email,
   // so editing the profile shows exactly what sign-up asked for.
   const openEditProfile = () => {
+    setHandleEdited(false);
     setEditDraft({
       name: profile.name,
       email: profile.email,
       handle: clientIdentity.handle || "",
+      photo: clientIdentity.photo || clientIdentity.avatar || null,
       phone: clientPrefs?.mobile || "",
       address: clientPrefs?.address || "",
       location: clientPrefs?.location || null,
@@ -113,6 +117,11 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
     });
     setSheet("edit");
   };
+  const onProfilePhotoChange = (event) => {
+    const file = event.target.files?.[0];
+    if (file) setEditDraft((draft) => ({ ...draft, photo: URL.createObjectURL(file) }));
+    event.target.value = "";
+  };
   const toggleEditSport = (s) => setEditDraft((d) => ({ ...d, sports: d.sports.includes(s) ? d.sports.filter((x) => x !== s) : [...d.sports, s] }));
   const saveProfile = () => {
     if (!editDraft.name.trim()) { toast("Add your name first"); return; }
@@ -124,6 +133,7 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
       lastName: parts.slice(1).join(" ") || "",
       email: editDraft.email,
       handle: editDraft.handle.trim(),
+      photo: editDraft.photo,
     });
     if (onComplete) {
       onComplete({
@@ -176,7 +186,7 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
       <div style={{ padding: "18px 18px 0" }}>
         <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, marginBottom: 18, ...fDisplay }}>Account</div>
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 28 }}>
-          <Avatar name={profile.name} size={58} />
+          <Avatar name={profile.name} src={clientIdentity.photo || clientIdentity.avatar} size={58} />
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div style={{ fontSize: T.title, fontWeight: 600, color: C.jet, ...fDisplay }}>{profile.name}</div>
@@ -412,8 +422,19 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
       <BottomSheet open={sheet === "edit"} onClose={closeSheet} title="Edit profile" heightPct={88}>
         {editDraft && (
           <>
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: 18 }}>
-              <Avatar name={editDraft.name || "You"} size={64} />
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 18 }}>
+              <div style={{ position: "relative", width: 76, height: 76 }}>
+                {editDraft.photo ? (
+                  <img src={editDraft.photo} alt="Profile" style={{ width: 76, height: 76, borderRadius: 76, objectFit: "cover", display: "block" }} />
+                ) : (
+                  <Avatar name={editDraft.name || "You"} src={clientIdentity.avatar} size={76} />
+                )}
+                <button type="button" aria-label="Change profile photo" onClick={() => profilePhotoInputRef.current?.click()} style={{ position: "absolute", right: -10, bottom: -10, width: 44, height: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ width: 28, height: 28, borderRadius: 999, background: C.brand, border: `2px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 6px rgba(22,24,29,.16)" }}><Camera size={13} color={C.white} /></span>
+                </button>
+              </div>
+              <button type="button" onClick={() => profilePhotoInputRef.current?.click()} style={{ minHeight: 44, marginTop: 5, padding: "0 10px", border: "none", background: "transparent", color: C.brand, cursor: "pointer", fontSize: T.labelLg, fontWeight: 600, ...fBody }}>Change photo</button>
+              <input ref={profilePhotoInputRef} type="file" accept="image/*" onChange={onProfilePhotoChange} style={{ display: "none" }} />
             </div>
             <SectionLabel>Account</SectionLabel>
             <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 20 }}>
@@ -423,8 +444,9 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
               </div>
               <HandleField
                 value={editDraft.handle}
-                onChange={(v) => setEditDraft((d) => ({ ...d, handle: v }))}
+                onChange={(v) => { setHandleEdited(true); setEditDraft((d) => ({ ...d, handle: v })); }}
                 isTaken={isHandleTaken(editDraft.handle)}
+                showStatus={handleEdited && editDraft.handle.trim() !== String(clientIdentity.handle || "").trim()}
               />
               <Field label="Email" placeholder="you@email.com" icon={Mail} type="email" value={editDraft.email} onChange={(e) => setEditDraft((d) => ({ ...d, email: e.target.value }))} />
               <Field label="Mobile number" placeholder="04XX XXX XXX" icon={Phone} type="tel" value={editDraft.phone} onChange={(e) => setEditDraft((d) => ({ ...d, phone: e.target.value }))} />

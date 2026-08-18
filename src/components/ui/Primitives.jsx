@@ -4,7 +4,7 @@ import {
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T, LAYOUT } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
-import { initials, hashColor } from "../../data/mockData";
+import { initials, hashColor, avatarForName } from "../../utils/avatar";
 
 /* =========================================================================
    SHARED UI PRIMITIVES
@@ -145,7 +145,7 @@ export function Chip({ children, active, onClick, icon: Icon }) {
       type="button"
       onClick={onClick}
       style={{
-        display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 13px", borderRadius: LAYOUT.pillRadius, minHeight: LAYOUT.touchTarget,
+        display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: LAYOUT.pillRadius, minHeight: 40,
         fontSize: T.body, fontWeight: 500, whiteSpace: "nowrap", border: `1px solid ${active ? C.brand : C.border}`,
         background: active ? C.brandTint : C.white, color: active ? (C.brandIcon || C.brandColor) : C.jet, ...fBody,
       }}
@@ -281,11 +281,11 @@ export function SearchMultiSelect({ options, value, onChange, placeholder = "Sea
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: value.length ? 8 : 0 }}>
           {value.map((v) => (
             <span key={v} style={{
-              display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 999,
+              display: "inline-flex", alignItems: "center", gap: 4, minHeight: 32, boxSizing: "border-box", padding: "4px 8px", borderRadius: LAYOUT.pillRadius,
               fontSize: T.labelLg, fontWeight: 500, border: `1px solid ${C.brand}`, background: C.brandTint, color: C.brandIcon || C.brandColor, ...fBody,
             }}>
               {v}
-              <button type="button" onClick={() => remove(v)} aria-label={`Remove ${v}`} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, color: C.brandIcon || C.brandColor }}>
+              <button type="button" onClick={() => remove(v)} aria-label={`Remove ${v}`} style={{ width: 20, height: 20, minWidth: 20, minHeight: 20, flexShrink: 0, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, color: C.brandIcon || C.brandColor }}>
                 <svg width={11} height={11} viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" /></svg>
               </button>
             </span>
@@ -454,9 +454,9 @@ export function HandleTag({ handle, size = 12, color }) {
 export function Avatar({ name, size = 42, ring, src }) {
   const C = useColors();
   const label = String(name || "User");
-  // DiceBear initials avatar is used whenever no real photo is supplied; the
-  // local initials circle sits behind it as an offline/error fallback so the
-  // avatar never renders as a broken image.
+  const localSrc = src || avatarForName(label);
+    // First-party seed avatars are preferred; DiceBear and the initials circle
+    // remain resilient fallbacks for profiles created during the prototype.
   const dicebearSrc = `https://api.dicebear.com/10.x/initials/svg?initialsVariant=default:1&lettersProbability=100&lettersVariant=single:1&seed=${encodeURIComponent(label)}`;
   return (
     <div style={{
@@ -467,7 +467,7 @@ export function Avatar({ name, size = 42, ring, src }) {
     }}>
       <span>{initials(name)}</span>
       <img
-        src={src || dicebearSrc}
+          src={localSrc || dicebearSrc}
         alt={`${label} avatar`}
         width={size}
         height={size}

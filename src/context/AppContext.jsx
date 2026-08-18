@@ -6,6 +6,7 @@ import {
   ADDITIONAL_CHARGE_STATUS, CLIENT_NOTIFICATIONS, COACH_NOTIFICATIONS,
 } from "../data/bookings";
 import { COACHES } from "../data/coaches";
+import { getCoachMedia } from "../data/media";
 import { CURRENT_CLIENT, isHandleTaken as isHandleTakenBase } from "../data/users";
 import { getPublicName, fullNameOf } from "../utils/name";
 import { useUserLocation } from "../utils/useUserLocation";
@@ -72,15 +73,7 @@ export function AppProvider({ children }) {
   const [hasCoachRole, setHasCoachRole] = useState(false);
   const [coachOnboarding, setCoachOnboarding] = useState({});
   const [coachPackages, setCoachPackages] = useState(COACHES[1].packages);
-  const [coachMedia, setCoachMedia] = useState(
-    Array.from({ length: COACHES[1].reelsCount }, (_, i) => ({
-      id: `m${i + 1}`,
-      type: i % 4 === 3 ? "photo" : "reel",
-      caption: i % 4 === 3 ? "Training photo" : "Session highlight",
-      sport: COACHES[1].sport,
-      url: null,
-    }))
-  );
+  const [coachMedia, setCoachMedia] = useState(() => getCoachMedia(COACHES[1].id));
   const [availabilityBlocks, setAvailabilityBlocks] = useState(INITIAL_AVAILABILITY_BLOCKS);
   const [coachAvailableNow, setCoachAvailableNow] = useState(true);
 
@@ -222,11 +215,11 @@ export function AppProvider({ children }) {
   const toggleFav = (id) =>
     setFavorites((f) => (f.includes(id) ? f.filter((x) => x !== id) : [...f, id]));
 
-  const pushNotification = ({ audience, type = "booking", title, body, bookingId }) => {
+  const pushNotification = ({ audience, type = "booking", title, body, bookingId, chargeId }) => {
     setNotifications((n) => [
       {
         id: `rt${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
-        audience, type, title, body, bookingId, time: "Just now", unread: true,
+        audience, type, title, body, bookingId, chargeId, time: "Just now", unread: true,
       },
       ...n,
     ]);
@@ -236,7 +229,11 @@ export function AppProvider({ children }) {
 
   // ---- Identity / handles ----
   const updateClientIdentity = (patch) => setClientIdentity((c) => ({ ...c, ...patch }));
-  const isHandleTaken = (handle) => isHandleTakenBase(handle, [clientIdentity.handle, coachOnboarding.handle]);
+  const isHandleTaken = (handle, ownHandles = []) => isHandleTakenBase(handle, [
+    clientIdentity.handle,
+    coachOnboarding.handle,
+    ...ownHandles,
+  ]);
 
   // ---- Booking actions ----
   const addBooking = (d) => {
@@ -604,9 +601,24 @@ export function AppProvider({ children }) {
   };
 
   const createAdditionalCharge = ({ bookingId, reason, note, amount, evidence }) => {
-    const target = coachBookings.find((booking) => booking.id === bookingId)
-      || bookings.find((booking) => booking.id === bookingId);
+    const coachBooking = coachBookings.find((booking) => booking.id === bookingId);
+    const target = coachBooking || bookings.find((booking) => booking.id === bookingId);
     if (!target) return null;
+    const currentClientName = fullNameOf(clientIdentity).trim().toLowerCase();
+    const requestClientName = String(target.clientName || "").trim().toLowerCase();
+    // Coach and client views share an ID for live bookings. Some seeded coach
+    // history predates that convention, so create the matching client record
+    // when the request belongs to the signed-in client.
+    if (coachBooking && !bookings.some((booking) => booking.id === bookingId) && requestClientName === currentClientName) {
+      setBookings((items) => [{
+        ...coachBooking,
+        id: bookingId,
+        coachId: COACHES[1].id,
+        coachName: coachIdentity.name,
+        reviewed: false,
+        participants: coachBooking.participants || "You",
+      }, ...items]);
+    }
     const id = `charge-${Date.now()}`;
     setAdditionalCharges((items) => [{
       id, bookingId, reason, note, amount: Number(amount || 0), evidence,
@@ -616,7 +628,7 @@ export function AppProvider({ children }) {
     pushNotification({
       audience: "client", type: "payment", title: "Additional payment requested",
       body: `${target.coachName || coachIdentity.name} requested $${Number(amount || 0).toFixed(2)} for ${reason.toLowerCase()}.`,
-      bookingId,
+      bookingId, chargeId: id,
     });
     return id;
   };
@@ -627,8 +639,8 @@ export function AppProvider({ children }) {
     setAdditionalCharges((items) => items.map((item) => (
       item.id === id ? { ...item, status: ADDITIONAL_CHARGE_STATUS.PAID, paidAt: "Just now" } : item
     )));
-    pushNotification({ audience: "coach", type: "payment", title: "Additional payment received", body: `$${Number(charge.amount).toFixed(2)} has been paid and added to your payout.`, bookingId: charge.bookingId });
-    pushNotification({ audience: "client", type: "payment", title: "Additional payment complete", body: `$${Number(charge.amount).toFixed(2)} was paid securely. Your receipt is ready.`, bookingId: charge.bookingId });
+    pushNotification({ audience: "coach", type: "payment", title: "Additional payment received", body: `$${Number(charge.amount).toFixed(2)} has been paid and added to your payout.`, bookingId: charge.bookingId, chargeId: charge.id });
+    pushNotification({ audience: "client", type: "payment", title: "Additional payment complete", body: `$${Number(charge.amount).toFixed(2)} was paid securely. Your receipt is ready.`, bookingId: charge.bookingId, chargeId: charge.id });
     return true;
   };
 
@@ -657,7 +669,7 @@ export function AppProvider({ children }) {
     setAdditionalCharges((items) => items.map((item) => (
       item.id === id ? { ...item, status: ADDITIONAL_CHARGE_STATUS.CANCELLED } : item
     )));
-    pushNotification({ audience: "client", type: "payment", title: "Payment request withdrawn", body: "The coach withdrew this additional payment request.", bookingId: charge.bookingId });
+    pushNotification({ audience: "client", type: "payment", title: "Payment request withdrawn", body: "The coach withdrew this additional payment request.", bookingId: charge.bookingId, chargeId: charge.id });
     return true;
   };
 
@@ -732,15 +744,7 @@ export function AppProvider({ children }) {
     setBiometric(false);
     setCoachPackages(COACHES[1].packages);
     setAvailabilityBlocks(INITIAL_AVAILABILITY_BLOCKS);
-    setCoachMedia(
-      Array.from({ length: COACHES[1].reelsCount }, (_, i) => ({
-        id: `m${i + 1}`,
-        type: i % 4 === 3 ? "photo" : "reel",
-        caption: i % 4 === 3 ? "Training photo" : "Session highlight",
-        sport: COACHES[1].sport,
-        url: null,
-      }))
-    );
+    setCoachMedia(getCoachMedia(COACHES[1].id));
     setIsFirstTimeClient(false);
     setDiscoveryPrefs({ seeded: true });
   };

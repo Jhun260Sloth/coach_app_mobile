@@ -5,7 +5,14 @@
    Extracted from mockData.js — these are UI utilities, not data.
    ========================================================================= */
 
+import { PROFILE_AVATARS } from "../data/media";
+
 const AVATAR_PALETTE = ["#4d7c0e"];
+
+/** First-party avatars for every seeded person; unknown names retain initials. */
+export function avatarForName(name) {
+  return PROFILE_AVATARS[String(name || "").trim().toLowerCase()] || null;
+}
 
 /** Extract up to two-letter initials from a display name (or @handle). */
 export function initials(name) {

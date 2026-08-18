@@ -22,6 +22,7 @@ import {
 import { ScreenClientHome, ScreenSearchFilters } from "../screens/client/Discovery";
 import { ScreenNotifications } from "../screens/client/Notifications";
 import { ScreenCoachProfile } from "../screens/client/CoachProfile";
+import { ScreenCoachMedia } from "../screens/client/Reels";
 import { ScreenPackageDetail } from "../screens/client/PackageDetail";
 import {
   ScreenBookingParticipants, ScreenBookingDateTime, ScreenBookingReview, ScreenPayment,
@@ -57,7 +58,7 @@ import { ScreenMessages, ScreenChatThread } from "../screens/messaging/Messaging
 import { ScreenSupport } from "../screens/support/Support";
 import { ScreenSessionCompletion, ScreenFundsReleaseStatus } from "../screens/shared/SessionLifecycle";
 import {
-  ScreenAdditionalChargeCreate, ScreenAdditionalChargeReview,
+  ScreenAdditionalChargeCreate, ScreenAdditionalChargePayment, ScreenAdditionalChargeReview,
   ScreenDisputeCreate, ScreenDisputeStatus,
 } from "../screens/shared/Exceptions";
 
@@ -92,6 +93,7 @@ export const ROUTES = {
   "notifications": ScreenNotifications,
   "search-filters": ScreenSearchFilters,
   "coach-profile": ScreenCoachProfile,
+  "coach-media": ScreenCoachMedia,
   "package-detail": ScreenPackageDetail,
   "booking-participants": ScreenBookingParticipants,
   "booking-select-datetime": ScreenBookingSelectDateTime,
@@ -143,6 +145,7 @@ export const ROUTES = {
   "dispute-create": ScreenDisputeCreate,
   "dispute-status": ScreenDisputeStatus,
   "additional-charge-create": ScreenAdditionalChargeCreate,
+  "additional-charge-payment": ScreenAdditionalChargePayment,
   "additional-charge-review": ScreenAdditionalChargeReview,
   "support": ScreenSupport,
 };
@@ -175,6 +178,7 @@ const ROUTE_METADATA_BASE = {
   "notifications": { title: "Notifications Log", category: "Client", role: "client" },
   "search-filters": { title: "Search & Filters", category: "Client", role: "client" },
   "coach-profile": { title: "Coach Profile Detail", category: "Client", role: "client" },
+  "coach-media": { title: "Coach Reels & Media", category: "Client", role: "client" },
   "package-detail": { title: "Package Detail", category: "Client", role: "client" },
   "booking-participants": { title: "Booking Step 1: Participants", category: "Client", role: "client" },
   "booking-select-datetime": { title: "Booking: Select Date & Time", category: "Client", role: "client" },
@@ -226,6 +230,7 @@ const ROUTE_METADATA_BASE = {
   "dispute-create": { title: "Report a Session Issue", category: "Shared", role: "client" },
   "dispute-status": { title: "Case Tracking & No-show Outcome", category: "Shared", role: "client" },
   "additional-charge-create": { title: "Coach: Request Additional Payment", category: "Coach", role: "coach" },
+  "additional-charge-payment": { title: "Client: Pay Additional Charge", category: "Client", role: "client" },
   "additional-charge-review": { title: "Client: Review Additional Payment", category: "Client", role: "client" },
   "support": { title: "Help & Support Center", category: "Shared", role: "client" },
 };
@@ -244,6 +249,7 @@ const ROUTE_DEMO_PARAMS = {
   "enable-biometric": { next: "about-you-profile" },
   "client-setup-complete": { name: "Sarah Lin" },
   "coach-profile": { id: "c1" },
+  "coach-media": { coachId: "c1", mediaId: "c1-r1" },
   "package-detail": { coachId: "c1", packageId: "p1", presetDate: "2026-08-19", presetTime: "16:00" },
   "booking-participants": { coachId: "c1", packageId: "p1", presetDate: "2026-08-19", presetTime: "16:00" },
   "booking-select-datetime": { coachId: "c1", packageId: "p1" },
@@ -291,6 +297,7 @@ const ROUTE_DEMO_PARAMS = {
   "dispute-create": { bookingId: "s1", role: "client", category: "session_not_delivered", backTo: "client-booking-detail" },
   "dispute-status": { caseId: "case-102", role: "client", backTo: "client-history" },
   "additional-charge-create": { bookingId: "cb10", role: "coach" },
+  "additional-charge-payment": { chargeId: "charge-101", role: "client" },
   "additional-charge-review": { chargeId: "charge-101", role: "client" },
   "support": { presetTab: "faq", faqTopic: "client", backTo: "client-home" },
 };
