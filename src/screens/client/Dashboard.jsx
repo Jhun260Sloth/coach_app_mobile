@@ -2,17 +2,18 @@ import React, { useState, useMemo, useEffect } from "react";
 import {
   WifiOff, Calendar, ClipboardList, Heart, Download, Clock, MessageCircle, Star, CheckCircle2,
   AlertTriangle, CreditCard, ShieldCheck, LifeBuoy, Hourglass, RefreshCcw, ChevronLeft, ChevronRight, CalendarX2, CalendarDays,
-  List as ListIcon,
+  Banknote, List as ListIcon, Scale, BadgeDollarSign,
 } from "lucide-react";
-import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
+import { CL, CD, fDisplay, fBody, T, LAYOUT } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { COACHES } from "../../data/mockData";
 import { BOOKING_STATUS, PAYMENT_STATUS } from "../../data/bookings";
 import {
-  Avatar, Card, Badge, SegTabs, SectionLabel, Btn, TopBar, EmptyState, StatusPill, Chip, BottomSheet, Row, ScrollFadeRow, HandleTag,
+  Avatar, BottomActionBar, Card, Badge, SegTabs, SectionLabel, Btn, TopBar, EmptyState, StatusPill, Chip, BottomSheet, Row, ScrollFadeRow, HandleTag,
 } from "../../components/ui/Primitives";
 import { StatusBanner } from "../../systems/StateSystem";
 import { getBookingCoachName } from "../../utils/name";
+import { PaymentDeadlineCard, SessionJourneyTimeline } from "../../components/booking/SessionJourneyTimeline";
 
 /** Resolved name for a booking's coach — public name until the booking is
     confirmed, full name afterwards (partner reveal). */
@@ -103,7 +104,7 @@ export function ScreenClientDashboard({ nav, bookings = [], offline, toast, canc
   const [rescheduleTarget, setRescheduleTarget] = useState(null);
   const [cancelTarget, setCancelTarget] = useState(null);
 
-  const upcoming = safeBookings.filter((b) => b?.status === BOOKING_STATUS.CONFIRMED);
+  const upcoming = safeBookings.filter((b) => [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.COMPLETION_PENDING].includes(b?.status));
   const pending = safeBookings.filter((b) => [BOOKING_STATUS.PENDING, BOOKING_STATUS.AWAITING_PAYMENT].includes(b?.status));
   const past = safeBookings.filter((b) => [
     BOOKING_STATUS.COMPLETED,
@@ -163,11 +164,11 @@ export function ScreenClientDashboard({ nav, bookings = [], offline, toast, canc
           {!showEmptyDashboard && (
             <div role="tablist" aria-label="View mode" style={{ display: "flex", alignItems: "center", gap: 2, background: C.fog, borderRadius: 11, padding: 3, flexShrink: 0, marginTop: 2 }}>
               <button
-                role="tab" aria-selected={view === "list"} title="List view"
+                type="button" role="tab" aria-selected={view === "list"} aria-label="List view" title="List view"
                 onClick={() => setView("list")}
                 style={{
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  width: 32, height: 28, borderRadius: 8, border: "none", cursor: "pointer",
+                  width: 44, height: 44, borderRadius: 10, border: "none", cursor: "pointer",
                   background: view === "list" ? C.jet : "transparent",
                   boxShadow: "none", transition: "background .15s ease",
                 }}
@@ -175,11 +176,11 @@ export function ScreenClientDashboard({ nav, bookings = [], offline, toast, canc
                 <ListIcon size={14} color={view === "list" ? C.white : C.slateLight} />
               </button>
               <button
-                role="tab" aria-selected={view === "calendar"} title="Calendar view"
+                type="button" role="tab" aria-selected={view === "calendar"} aria-label="Calendar view" title="Calendar view"
                 onClick={() => setView("calendar")}
                 style={{
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  width: 32, height: 28, borderRadius: 8, border: "none", cursor: "pointer",
+                  width: 44, height: 44, borderRadius: 10, border: "none", cursor: "pointer",
                   background: view === "calendar" ? C.jet : "transparent",
                   boxShadow: "none", transition: "background .15s ease",
                 }}
@@ -204,11 +205,11 @@ export function ScreenClientDashboard({ nav, bookings = [], offline, toast, canc
         {!showEmptyDashboard && view === "calendar" && (
           <>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16, marginBottom: 10 }}>
-              <button onClick={goPrev} style={{ width: 30, height: 30, borderRadius: 10, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+              <button type="button" aria-label="Previous month" onClick={goPrev} style={{ width: 44, height: 44, borderRadius: 12, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                 <ChevronLeft size={16} color={C.jet} />
               </button>
               <span style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...fDisplay }}>{headerLabel}</span>
-              <button onClick={goNext} style={{ width: 30, height: 30, borderRadius: 10, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+              <button type="button" aria-label="Next month" onClick={goNext} style={{ width: 44, height: 44, borderRadius: 12, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                 <ChevronRight size={16} color={C.jet} />
               </button>
             </div>
@@ -566,7 +567,7 @@ export function BookingCard({ b, nav, past, onReschedule, onCancel, onPay, style
           <>
             <Btn size="sm" variant="secondary" full onClick={onReschedule}>Reschedule</Btn>
             <Btn size="sm" variant="outline" onClick={onCancel}>Cancel</Btn>
-            <Btn size="sm" variant="dark" icon={MessageCircle} onClick={() => nav("chat-thread", { name: b.coachName || b.clientName, handle: coach?.handle, context: `${b.service} · ${b.date}`, bookingId: b.id })} />
+            <Btn size="sm" variant="dark" icon={MessageCircle} ariaLabel={`Message ${cn.name}`} onClick={() => nav("chat-thread", { name: b.coachName || b.clientName, handle: coach?.handle, context: `${b.service} · ${b.date}`, bookingId: b.id })} />
           </>
         )}
         {/* Pending: tapping the card already opens details, so a duplicate "View details" button is dead weight.
@@ -574,7 +575,7 @@ export function BookingCard({ b, nav, past, onReschedule, onCancel, onPay, style
         {!past && pending && (
           <>
             <Btn size="sm" variant="outline" full onClick={onCancel}>Withdraw</Btn>
-            <Btn size="sm" variant="dark" icon={MessageCircle} onClick={() => nav("chat-thread", { name: b.coachName || b.clientName, handle: coach?.handle, context: `${b.service} · ${b.date}`, bookingId: b.id })} />
+            <Btn size="sm" variant="dark" icon={MessageCircle} ariaLabel={`Message ${cn.name}`} onClick={() => nav("chat-thread", { name: b.coachName || b.clientName, handle: coach?.handle, context: `${b.service} · ${b.date}`, bookingId: b.id })} />
           </>
         )}
         {/* Completed / cancelled: always offer a fast rebook path alongside whatever review state applies. */}
@@ -604,7 +605,7 @@ export function BookingCard({ b, nav, past, onReschedule, onCancel, onPay, style
 /* Booking details — the client-side counterpart to the coach's booking detail page.
    Surfaces the same categories of information (party info, session details, notes,
    booking policy) but never exposes the Accept/Decline workflow, which is coach-only. */
-export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancelBooking, rescheduleBooking }) {
+export function ScreenClientBookingDetail({ nav, goBack, params, bookings, toast, cancelBooking, rescheduleBooking, sessionDisputes = [], additionalCharges = [] }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const booking = bookings.find((b) => b.id === params.id);
@@ -614,7 +615,7 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
   if (!booking) {
     return (
       <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-        <TopBar title="Booking details" onBack={() => nav("client-dashboard")} />
+        <TopBar title="Booking details" onBack={() => goBack("client-dashboard")} />
         <EmptyState icon={ClipboardList} title="Booking not found" body="This booking may have been removed." />
       </div>
     );
@@ -625,9 +626,11 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
   const isPending = booking.status === BOOKING_STATUS.PENDING;
   const isAwaitingPayment = booking.status === BOOKING_STATUS.AWAITING_PAYMENT;
   const isUpcoming = booking.status === BOOKING_STATUS.CONFIRMED;
-  const isActive = isAwaitingPayment || isUpcoming;
+  const isCompletionPending = booking.status === BOOKING_STATUS.COMPLETION_PENDING;
   const isPast = [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.CANCELLED, BOOKING_STATUS.DECLINED, BOOKING_STATUS.EXPIRED].includes(booking.status);
   const priceLabel = typeof booking.price === "number" ? `$${booking.price.toFixed(2)}` : `$${booking.price}`;
+  const relatedCase = sessionDisputes.find((item) => item.bookingId === booking.id);
+  const relatedCharge = additionalCharges.find((item) => item.bookingId === booking.id && item.status !== "cancelled");
 
   const handleReschedule = (id, when) => {
     rescheduleBooking(id, when);
@@ -660,7 +663,7 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title="Booking details" onBack={() => nav("client-dashboard")} />
+      <TopBar title="Booking details" onBack={() => goBack("client-dashboard")} />
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
 
         <Card style={{ marginBottom: 14 }}>
@@ -701,6 +704,26 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
           {booking.participants && <Row label="For" value={booking.participants} />}
           <Row label="Price" value={priceLabel} bold last />
         </Card>
+
+        <div style={{ marginBottom: 14 }}>
+          <SessionJourneyTimeline booking={booking} role="client" />
+        </div>
+
+        {relatedCase && (
+          <Card style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 11, background: C.warnTint, borderColor: C.brand }} onClick={() => nav("dispute-status", { caseId: relatedCase.id, role: "client", backTo: "client-booking-detail", bookingId: booking.id })}>
+            <div style={{ width: 38, height: 38, borderRadius: 12, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Scale size={18} color={C.brand} /></div>
+            <div style={{ flex: 1 }}><div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>{relatedCase.status === "resolved" ? "Case decision available" : "Session report under review"}</div><div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{relatedCase.categoryLabel} · View status and outcome</div></div>
+            <ChevronRight size={16} color={C.slateLight} />
+          </Card>
+        )}
+
+        {relatedCharge && (
+          <Card style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 11 }} onClick={() => nav("additional-charge-review", { chargeId: relatedCharge.id, role: "client", backTo: "client-booking-detail" })}>
+            <div style={{ width: 38, height: 38, borderRadius: 12, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><BadgeDollarSign size={18} color={C.brand} /></div>
+            <div style={{ flex: 1 }}><div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>Additional payment · ${Number(relatedCharge.amount).toFixed(2)}</div><div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{relatedCharge.reason} · {relatedCharge.status.replace("_", " ")}</div></div>
+            <ChevronRight size={16} color={C.slateLight} />
+          </Card>
+        )}
 
         {booking.notes && (
           <>
@@ -771,46 +794,34 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
           </div>
         )}
 
-        {isPending && (
-          <div style={{ display: "flex", gap: 8, marginTop: 4, marginBottom: 14 }}>
-            <Btn full variant="secondary" icon={MessageCircle} onClick={() => nav("chat-thread", messageParams)}>Message coach</Btn>
-            <Btn full variant="outline" onClick={() => setCancelOpen(true)}>Withdraw</Btn>
+        {isAwaitingPayment && booking.paymentStatus === PAYMENT_STATUS.DUE && (
+          <div style={{ marginBottom: 14 }}>
+            <PaymentDeadlineCard booking={booking} role="client" />
           </div>
         )}
 
-        {isAwaitingPayment && booking.paymentStatus === PAYMENT_STATUS.DUE && (
-          <Card style={{ marginBottom: 14, background: C.brandTint, border: "none" }}>
-            <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-              <CreditCard size={16} color={C.brand} style={{ flexShrink: 0, marginTop: 1 }} />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{cn.name.split(" ")[0]} accepted your request</div>
-                <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, lineHeight: 1.5, ...fBody }}>Send your payment to lock in the session — funds are held securely until it's complete.</div>
-              </div>
-            </div>
-            <div style={{ marginTop: 10 }}>
-              <Btn full size="sm" variant="dark" onClick={() => nav("payment", { bookingId: booking.id })}>Review and pay ${typeof booking.price === "number" ? booking.price.toFixed(2) : booking.price}</Btn>
-            </div>
-          </Card>
-        )}
-
-        {isActive && (
+        {isUpcoming && (
           <div style={{ display: "flex", gap: 8, marginTop: 4, marginBottom: 14 }}>
             <Btn size="sm" variant="secondary" full onClick={() => setRescheduleOpen(true)}>Reschedule</Btn>
             <Btn size="sm" variant="outline" full onClick={() => setCancelOpen(true)}>Cancel</Btn>
-            <Btn size="sm" variant="dark" icon={MessageCircle} onClick={() => nav("chat-thread", messageParams)} />
+            <Btn size="sm" variant="dark" icon={MessageCircle} ariaLabel={`Message ${cn.name}`} onClick={() => nav("chat-thread", messageParams)} />
           </div>
         )}
 
         {isPast && booking.status === BOOKING_STATUS.COMPLETED && !booking.reviewed && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
+            <Btn full variant="outline" icon={Banknote} onClick={() => nav("funds-release-status", { bookingId: booking.id, role: "client", backTo: "client-booking-detail" })}>View payment release</Btn>
             <Btn full onClick={() => nav("leave-review", { bookingId: booking.id, name: cn.name || booking.coachName })}>Leave a review</Btn>
             <Btn full variant="secondary" icon={RefreshCcw} onClick={() => nav("coach-profile", { id: booking.coachId })}>Book again</Btn>
+            {!relatedCase && <Btn full variant="ghost" icon={Scale} onClick={() => nav("dispute-create", { bookingId: booking.id, role: "client", category: "session_not_delivered", backTo: "client-booking-detail" })}>Report a session issue</Btn>}
           </div>
         )}
         {isPast && booking.status === BOOKING_STATUS.COMPLETED && booking.reviewed && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
             <Badge tone="success" icon={CheckCircle2} style={{ alignSelf: "flex-start" }}>Review submitted</Badge>
+            <Btn full variant="outline" icon={Banknote} onClick={() => nav("funds-release-status", { bookingId: booking.id, role: "client", backTo: "client-booking-detail" })}>View payment release</Btn>
             <Btn full variant="secondary" icon={RefreshCcw} onClick={() => nav("coach-profile", { id: booking.coachId })}>Book again</Btn>
+            {!relatedCase && <Btn full variant="ghost" icon={Scale} onClick={() => nav("dispute-create", { bookingId: booking.id, role: "client", category: "session_not_delivered", backTo: "client-booking-detail" })}>Report a session issue</Btn>}
           </div>
         )}
         {isPast && booking.status === BOOKING_STATUS.CANCELLED && (
@@ -830,6 +841,26 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
         <Btn full variant="outline" icon={LifeBuoy} onClick={goSupport}>Contact support</Btn>
       </div>
 
+      {isPending && (
+        <BottomActionBar>
+          <Btn full variant="secondary" icon={MessageCircle} onClick={() => nav("chat-thread", messageParams)}>Message coach</Btn>
+          <Btn full variant="outline" onClick={() => setCancelOpen(true)}>Withdraw</Btn>
+        </BottomActionBar>
+      )}
+
+      {isAwaitingPayment && booking.paymentStatus === PAYMENT_STATUS.DUE && (
+        <BottomActionBar>
+          <Btn variant="secondary" icon={MessageCircle} ariaLabel={`Message ${cn.name}`} title={`Message ${cn.name}`} onClick={() => nav("chat-thread", messageParams)} />
+          <Btn full onClick={() => nav("payment", { bookingId: booking.id })}>Review & pay {priceLabel}</Btn>
+        </BottomActionBar>
+      )}
+
+      {(isUpcoming || isCompletionPending) && (
+        <BottomActionBar>
+          <Btn full icon={CheckCircle2} onClick={() => nav("session-completion", { bookingId: booking.id, role: "client", backTo: "client-booking-detail" })}>Confirm session completed</Btn>
+        </BottomActionBar>
+      )}
+
       <RescheduleSheet
         booking={rescheduleOpen ? booking : null}
         onClose={() => setRescheduleOpen(false)}
@@ -845,42 +876,132 @@ export function ScreenClientBookingDetail({ nav, params, bookings, toast, cancel
   );
 }
 
-export function ScreenLeaveReview({ nav, params, toast, bookings = [] }) {
+export function ScreenLeaveReview({ nav, goBack, params, toast, bookings = [], setBookings }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
+  const booking = params?.bookingId ? bookings.find((item) => item.id === params.bookingId) : null;
   const name = params?.name
-    || (params?.bookingId ? bookings.find((b) => b.id === params.bookingId)?.coachName : null)
+    || booking?.coachName
     || COACHES[0].name;
-  const [rating, setRating] = useState(5);
+  const coach = COACHES.find((item) => item.id === booking?.coachId)
+    || COACHES.find((item) => item.name === name);
+  const [rating, setRating] = useState(0);
   const [tags, setTags] = useState([]);
+  const [review, setReview] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const options = ["Great communicator", "Punctual", "Well prepared", "Motivating", "Flexible"];
+  const ratingLabels = ["", "Needs improvement", "Fair", "Good", "Great", "Excellent"];
+  const maxReviewLength = 500;
   const toggle = (t) => setTags((arr) => arr.includes(t) ? arr.filter((x) => x !== t) : [...arr, t]);
+
+  const submitReview = () => {
+    if (!rating || submitting) return;
+    setSubmitting(true);
+    window.setTimeout(() => {
+      if (booking?.id) {
+        setBookings?.((items) => items.map((item) => item.id === booking.id
+          ? { ...item, reviewed: true, review: { rating, tags, comment: review.trim() } }
+          : item));
+      }
+      toast("Review sent — thank you!");
+      nav("client-dashboard");
+    }, 450);
+  };
+
   return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title="Leave a review" onBack={() => nav("client-dashboard")} />
-      <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
-        <div style={{ textAlign: "center", marginTop: 6, marginBottom: 20 }}>
-          <Avatar name={name} size={54} />
-          <div style={{ fontSize: T.subtitleLg, fontWeight: 600, color: C.jet, marginTop: 10, ...fDisplay }}>{name}</div>
-          <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 12 }}>
-            {[1, 2, 3, 4, 5].map((i) => (
-              <button key={i} onClick={() => setRating(i)} style={{ background: "none", border: "none", cursor: "pointer" }}>
-                <Star size={30} fill={i <= rating ? C.brand : "none"} color={i <= rating ? C.brand : C.slateLight} />
-              </button>
-            ))}
+    <div style={{ height: "100%", display: "flex", flexDirection: "column", background: C.white }}>
+      <TopBar title="Leave a review" onBack={() => goBack ? goBack() : nav("client-dashboard")} />
+
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "16px 18px 32px" }} className="cl-hide-scrollbar">
+        <Card style={{ padding: 16, background: C.fog, marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <Avatar name={name} src={coach?.avatar} size={52} />
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ fontSize: T.title, fontWeight: 700, color: C.jet, ...fDisplay }}>{name}</div>
+              <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.45, marginTop: 2, ...fBody }}>
+                {booking?.service || coach?.sport || "Completed coaching session"}
+              </div>
+              {booking?.date && (
+                <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: 3, ...fBody }}>
+                  {booking.date} · {booking.time}
+                </div>
+              )}
+            </div>
+          </div>
+        </Card>
+
+        <Card style={{ padding: "18px 14px", textAlign: "center", marginBottom: 14 }}>
+          <div style={{ fontSize: T.heading, fontWeight: 700, color: C.jet, ...fDisplay }}>How was your session?</div>
+          <div style={{ fontSize: T.body, color: C.slate, marginTop: 4, ...fBody }}>Tap a star to share your overall experience.</div>
+          <div role="radiogroup" aria-label="Session rating" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 2, marginTop: 12 }}>
+            {[1, 2, 3, 4, 5].map((value) => {
+              const active = value <= rating;
+              return (
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={rating === value}
+                  aria-label={`${value} star${value === 1 ? "" : "s"}: ${ratingLabels[value]}`}
+                  key={value}
+                  onClick={() => setRating(value)}
+                  style={{
+                    width: LAYOUT.touchTarget, height: LAYOUT.touchTarget, padding: 0,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    background: "transparent", border: "none", borderRadius: LAYOUT.buttonRadius, cursor: "pointer",
+                  }}
+                >
+                  <Star aria-hidden="true" size={30} strokeWidth={1.8} fill={active ? C.brand : "none"} color={active ? C.brand : C.border} />
+                </button>
+              );
+            })}
+          </div>
+          <div aria-live="polite" style={{ minHeight: 18, fontSize: T.labelLg, fontWeight: 600, color: rating ? C.brand : C.slateLight, marginTop: 5, ...fBody }}>
+            {rating ? ratingLabels[rating] : "No rating selected"}
+          </div>
+        </Card>
+
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: T.title, fontWeight: 700, color: C.jet, ...fDisplay }}>What stood out?</div>
+          <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.45, marginTop: 3, marginBottom: 10, ...fBody }}>Choose any highlights that describe your session.</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {options.map((tag) => <Chip key={tag} active={tags.includes(tag)} onClick={() => toggle(tag)}>{tag}</Chip>)}
           </div>
         </div>
-        <SectionLabel>What stood out?</SectionLabel>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
-          {options.map((t) => <Chip key={t} active={tags.includes(t)} onClick={() => toggle(t)}>{t}</Chip>)}
+
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, marginBottom: 7 }}>
+            <label htmlFor="client-review" style={{ fontSize: T.title, fontWeight: 700, color: C.jet, ...fDisplay }}>Share more</label>
+            <span style={{ fontSize: T.caption, color: C.slateLight, ...fBody }}>Optional</span>
+          </div>
+          <textarea
+            id="client-review"
+            name="client-review"
+            value={review}
+            maxLength={maxReviewLength}
+            onChange={(event) => setReview(event.target.value)}
+            placeholder="What did you enjoy, and what could help future clients?"
+            rows={5}
+            className="cl-input"
+            style={{
+              display: "block", width: "100%", minHeight: 112, boxSizing: "border-box",
+              border: `1.5px solid ${C.border}`, borderRadius: LAYOUT.inputRadius, padding: "12px 13px",
+              fontSize: T.bodyLg, lineHeight: 1.5, resize: "none", outline: "none",
+              color: C.jet, background: C.white, ...fBody,
+            }}
+          />
+          <div style={{ textAlign: "right", fontSize: T.caption, color: C.slateLight, marginTop: 5, ...fBody }}>{review.length}/{maxReviewLength}</div>
         </div>
-        <textarea placeholder="Tell other clients about your session..." rows={4}
-          className="cl-input"
-          style={{ border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, resize: "none", outline: "none", color: C.jet, background: C.white, ...fBody }} />
-        <div style={{ fontSize: T.caption, color: C.slateLight, marginTop: 10, ...fBody }}>Only clients with a verified booking can leave a review. Your review is moderated before it appears publicly.</div>
+
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 9, padding: 12, borderRadius: LAYOUT.inputRadius, background: C.fog, marginTop: 14 }}>
+          <ShieldCheck aria-hidden="true" size={17} color={C.brand} style={{ flexShrink: 0, marginTop: 1 }} />
+          <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, ...fBody }}>
+            Reviews are available only after verified bookings and are checked before appearing publicly.
+          </div>
+        </div>
       </div>
-      <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
-        <Btn full onClick={() => { toast("Review submitted for moderation"); nav("client-dashboard"); }}>Submit review</Btn>
+
+      <div style={{ padding: "12px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
+        <Btn full disabled={!rating} loading={submitting} loadingText="Sending review…" icon={Star} onClick={submitReview}>Send review</Btn>
       </div>
     </div>
   );

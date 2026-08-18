@@ -6,6 +6,7 @@
    ========================================================================= */
 
 :root {
+  color-scheme: light;
   /* ---------- Brand palette ---------- */
   --cl-brand-color: #1B5E20;
   --cl-secondary: #66BB6A;
@@ -75,6 +76,7 @@
    DARK MODE — activated via data-theme="dark" on <html>
    ========================================================================= */
 [data-theme="dark"] {
+  color-scheme: dark;
   /* ---------- Brand palette ---------- */
   --cl-brand-color: #1B5E20;
   --cl-secondary: #81C784;
@@ -135,8 +137,12 @@ body {
   font-family: var(--cl-font-body);
 }
 
-button, input, textarea {
+button, input, textarea, select {
   font-family: inherit;
+}
+
+button, select {
+  color: inherit;
 }
 
 input::placeholder, textarea::placeholder {
@@ -170,11 +176,21 @@ input::placeholder, textarea::placeholder {
 .cl-phone-screen {
   -webkit-tap-highlight-color: transparent;
   scroll-behavior: smooth;
+  overscroll-behavior: contain;
 }
 
 .cl-phone-screen button {
   -webkit-tap-highlight-color: transparent;
+  min-width: 44px;
+  min-height: 44px;
   transition: transform .14s cubic-bezier(.2,.7,.3,1), opacity .18s ease;
+}
+
+.cl-phone-screen button:focus-visible,
+.cl-phone-screen [role="button"]:focus-visible,
+.cl-phone-screen a:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--cl-secondary) 55%, transparent);
+  outline-offset: 2px;
 }
 
 .cl-phone-screen button:active:not(:disabled) {
@@ -195,6 +211,13 @@ input::placeholder, textarea::placeholder {
   box-shadow: none !important;
 }
 
+.cl-phone-screen input:focus-visible,
+.cl-phone-screen textarea:focus-visible,
+.cl-phone-screen select:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--cl-secondary) 45%, transparent);
+  outline-offset: 1px;
+}
+
 /* Shared field wrapper — used by Field, SearchSelect, SearchMultiSelect,
    LocationField and other bordered input containers. */
 .cl-input {
@@ -209,10 +232,22 @@ input::placeholder, textarea::placeholder {
 .cl-card {
   transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
 }
-.cl-card:hover {
+.cl-card[data-interactive="true"]:hover {
   transform: translateY(-1px);
   box-shadow: 0 8px 18px -8px rgba(22, 24, 29, .12);
   border-color: var(--cl-secondary);
+}
+
+.cl-card[data-interactive="true"]:active {
+  transform: scale(.99);
+}
+
+.cl-phone-screen [role="dialog"] {
+  overscroll-behavior: contain;
+}
+
+.cl-safe-bottom {
+  padding-bottom: max(28px, env(safe-area-inset-bottom)) !important;
 }
 
 /* Native-app feel: text stays selectable only inside form fields. */

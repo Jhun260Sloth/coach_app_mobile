@@ -1,8 +1,10 @@
 # CoachLink Prototype Flow & UI Audit
 
 **Audit date:** 17 August 2026  
-**Scope:** Client and coach mobile prototype only. No implementation changes were made.  
-**Sources reviewed:** `Client journey flowchart.pdf`, `Coach journey flowchart.pdf`, the 59 registered prototype routes, shared UI primitives, theme tokens, mock data, and representative screens in the running prototype.
+**Last implementation update:** 18 August 2026
+
+**Scope:** Client and coach mobile prototype flow audit plus phased prototype implementation tracking.
+**Sources reviewed:** `Client journey flowchart.pdf`, `Coach journey flowchart.pdf`, the registered prototype routes, shared UI primitives, theme tokens, mock data, and representative screens in the running prototype.
 
 ## Executive summary
 
@@ -21,16 +23,18 @@ The largest gaps are not basic screens. They are the states that connect the scr
 
 Recommendation: preserve the current visual language, fix the lifecycle state model first, then add a small set of role-aware status screens. The most distinctive and useful new design pattern should be a shared **Session Journey Timeline** used on both client and coach booking details.
 
+> **Implementation update — 18 August 2026:** Phases 1–4 are complete. The original request/payment, exception, consistency, and accessibility findings below are retained as the audit baseline; each implemented result is summarized in the completion sections near the end of this document.
+
 ## What exists today
 
-There are **59 registered routes**:
+There are now **68 registered routes** after the Phase 3 exception-journey additions:
 
 | Area | Registered routes | General assessment |
 |---|---:|---|
-| Onboarding/auth | 15 | Strong coverage; coach rejection branch is not rendered |
-| Client | 27 | Strong discovery and booking-request coverage; weak post-session coverage |
-| Coach | 15 | Strong setup/dashboard/profile coverage; weak payment-waiting and post-session coverage |
-| Shared | 2 | Messaging and generic support are present |
+| Onboarding/auth | 16 | Full verification submission, pending, approval, rejection, and targeted resubmission coverage |
+| Client | 28 | Discovery, request, session lifecycle, history, and additional-payment review coverage |
+| Coach | 18 | Setup/dashboard/profile, payment/session lifecycle, and additional-payment creation coverage |
+| Shared | 6 | Messaging, support, session completion, funds release, dispute intake, and case outcomes |
 
 ### Strongest existing areas
 
@@ -235,7 +239,7 @@ Avoid using “confirmed” before payment has been completed.
 
 ## Accessibility and interaction audit
 
-The prototype is visually polished but needs a systematic accessibility pass.
+The prototype was visually polished but needed a systematic accessibility pass. The items below are retained as the pre-Phase 4 baseline.
 
 1. **Clickable cards are `<div onClick>`.** `Card` should render a semantic button/link when interactive, or add keyboard behavior and focusability. Current cards are not keyboard reachable.
 2. **Field labels are visual `<div>` elements.** The shared `Field` component should generate a stable input ID and semantic `<label htmlFor>`, plus `name`, `autoComplete`, and appropriate `inputMode`.
@@ -243,12 +247,14 @@ The prototype is visually polished but needs a systematic accessibility pass.
 4. **Many touch targets are below 44 px.** Common examples are 26–38 px icon buttons and small chips.
 5. **Focus indicators are removed globally.** Inputs and tabs use `outline: none`; add a visible `:focus-visible` treatment rather than relying only on border color.
 6. **Bottom sheets need dialog behavior.** Add `aria-modal`, accessible title linkage, initial focus, focus containment, Escape handling, and scroll containment.
-7. **Animations do not honor reduced motion.** Add a `prefers-reduced-motion` override for screen entry, sheets, tabs, pulses, and skeletons.
+7. **Animations do not honor reduced motion.** This recommendation was intentionally excluded from Phase 4 because CoachLink is being delivered as a visual prototype; its premium motion language remains unchanged by product direction.
 8. **Dark mode needs native integration.** Set `color-scheme` on the root and update `theme-color`; audit the remaining raw light colors.
 9. **Avoid `transition: all`.** It appears in shared tabs and several booking/profile controls; list only the properties being animated.
 10. **Images should have explicit dimensions where practical.** Reels and uploaded profile previews currently rely mainly on CSS sizing.
 
 Reference used for this pass: Vercel Web Interface Guidelines, fetched on the audit date.
+
+> **Phase 4 resolution:** Items 1–6 and 8–10 are resolved across the shared primitives and the rendered route set. Interactive cards are keyboard reachable, shared fields use semantic labels, icon actions have accessible names, all rendered buttons meet the 44 px minimum, visible focus treatments are restored, bottom sheets have modal/focus/Escape/scroll behavior, dark mode now integrates `color-scheme` and `theme-color`, broad transitions were removed, and shared imagery has explicit dimensions where applicable. Reduced-motion behavior remains intentionally out of scope.
 
 ## Recommended target flows
 
@@ -317,28 +323,35 @@ flowchart TD
 
 Implementation result: coach acceptance now moves a request to `awaiting_payment`; successful payment is the only transition to `confirmed`. Client and coach booking records receive the same lifecycle, schedule, cancellation, refund, and payment updates. The Payment screen owns payment confirmation, the context owns lifecycle notifications, terminal outcomes remain visible in History, and all 59 directory routes receive clean demo parameters when opened directly.
 
-### Phase 2 — Complete the main session lifecycle
+### Phase 2 — Complete the main session lifecycle — Completed 18 August 2026
 
-1. Coach awaiting-payment/deadline state.
-2. Client payment-due and post-payment confirmation.
-3. Coach confirmed session detail/reschedule.
-4. Shared completion confirmation.
-5. Funds-release/payout status.
+- [x] Coach awaiting-payment/deadline state.
+- [x] Client payment-due and post-payment confirmation.
+- [x] Coach confirmed session detail/reschedule.
+- [x] Shared completion confirmation.
+- [x] Funds-release/payout status.
 
-### Phase 3 — Complete exception journeys
+Implementation result: CoachLink now uses a shared, role-aware **Session Journey Timeline** from request through funds release. Coaches can see the payment deadline, send one reminder, message the client, or close the payment window and release the slot. Successful client payment opens a definitive confirmation screen and synchronizes the same booking into the coach schedule. Confirmed coach sessions have status-specific details, secure-payment context, messaging, rescheduling, support, and completion actions. Either role can open the shared completion decision; confirmation moves funds through processing to released, updates both booking records, creates role-specific notifications, and surfaces the result in client history, coach history, earnings, and the new payout/payment detail screen. Coach Calendar now separates **Schedule** and **Availability**, and all four Phase 2 routes include deterministic directory demo data.
 
-1. Verification rejection/resubmission.
-2. Dispute intake and tracking.
-3. Additional charge request/review/payment/dispute.
-4. No-show compensation and client refund outcomes.
+### Phase 3 — Complete exception journeys — Completed 18 August 2026
 
-### Phase 4 — Consistency and accessibility
+- [x] Verification rejection/resubmission.
+- [x] Dispute intake and tracking.
+- [x] Additional charge request/review/payment/dispute.
+- [x] No-show compensation and client refund outcomes.
 
-1. Token and layout cleanup.
-2. Semantic fields, buttons, cards, dialogs, and focus states.
-3. 44 px touch targets and safe areas.
-4. Reduced motion and dark-mode native integration.
-5. Compact-device and long-content QA.
+Implementation result: verification now has a dedicated rejection state with per-document decisions, actionable review reasons, preserved approved documents, and a targeted resubmission path. Both roles can open a structured two-step session report with issue category, statement, requested amount, evidence, optional session chat, and a review-before-submit checkpoint. Submitted cases share one role-aware status record with protected-funds messaging, evidence summary, a three-stage review timeline, support access, and resolved no-show variants for client refunds, coach compensation, or no adjustment. Coaches can create an additional payment with an agreed reason, amount, client-facing explanation, evidence, and exact client preview; clients can approve and pay, ask a question, or escalate the request into the same dispute system. Booking details on both sides surface live case and charge records, and the session-completion “did not happen” branch now opens structured intake rather than generic support.
+
+### Phase 4 — Consistency and accessibility — Completed 18 August 2026
+
+- [x] Token and layout cleanup.
+- [x] Semantic fields, buttons, cards, dialogs, and focus states.
+- [x] 44 px touch targets and safe areas.
+- [x] Dark-mode native integration.
+- [x] Compact-device and long-content QA.
+- [x] Preserve the existing prototype motion system; reduced-motion variants are intentionally not included.
+
+Implementation result: shared primitives now enforce the CoachLink radius, typography, color, spacing, focus, and 44 px interaction standards across client, coach, onboarding, messaging, support, and lifecycle screens. Bottom actions and sheets use safe-area-aware padding; sheets include accessible dialog naming, focus entry/containment/restoration, Escape dismissal, and scroll containment. Fields, OTP inputs, switches, segmented controls, rating stars, calendar navigation, menus, notifications, message actions, and clickable cards now expose consistent semantics and accessible names. Raw mobile-screen colors and `transition: all` exceptions were removed, native light/dark browser integration was added, and fixed dark hero/status surfaces retain correct contrast in either theme. A rendered audit of all 68 registered routes at the iPhone SE 375 × 667 and iPhone 15 393 × 852 presets found no screen render failures, no root horizontal overflow, no visible controls below 44 px, and no remaining unnamed buttons or unlabeled visible form controls. The production build passes; the existing non-blocking bundle-size warning remains appropriate for this single-bundle prototype.
 
 ## Definition of done for the prototype
 

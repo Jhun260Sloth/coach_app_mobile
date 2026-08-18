@@ -317,16 +317,16 @@ export function ResultOverlay({ open, state, params, title, message }) {
       <div style={{ width: 64, height: 64, borderRadius: 20, background: isProcessing ? "rgba(255,255,255,.1)" : tone.bg, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14, animation: isProcessing ? "none" : "clPopIn .25s ease" }}>
         {isProcessing ? <Spin /> : <Icon size={28} color={tone.fg} />}
       </div>
-      <div style={{ color: C.white, fontSize: T.subtitleLg, fontWeight: 700, ...fDisplay }}>{title || cfg.title}</div>
+      <div style={{ color: CL.white, fontSize: T.subtitleLg, fontWeight: 700, ...fDisplay }}>{title || cfg.title}</div>
       {(message || cfg.message) && (
-        <div style={{ color: "rgba(255,255,255,.72)", fontSize: T.labelLg, marginTop: 6, lineHeight: 1.5, ...fBody }}>{message || cfg.message}</div>
+        <div style={{ color: CL.onDark, fontSize: T.labelLg, marginTop: 6, lineHeight: 1.5, ...fBody }}>{message || cfg.message}</div>
       )}
     </div>
   );
 }
 
 function Spin() {
-  return <span style={{ width: 24, height: 24, borderRadius: "50%", border: "2.5px solid rgba(255,255,255,.3)", borderTopColor: "#FFFFFF", display: "inline-block", animation: "clSpin .7s linear infinite" }} />;
+  return <span aria-hidden="true" style={{ width: 24, height: 24, borderRadius: "50%", border: `2.5px solid ${CL.onDarkDivider}`, borderTopColor: CL.white, display: "inline-block", animation: "clSpin .7s linear infinite" }} />;
 }
 
 /* -------------------------------------------------------------------------
@@ -351,7 +351,7 @@ export function InlineStatus({ state, params, label }) {
 export function NotificationBellButton({ count = 0, onClick }) {
   const C = useColors();
   return (
-    <button onClick={onClick} style={{ background: "none", border: "none", cursor: "pointer" }}>
+    <button type="button" aria-label={count > 0 ? `Notifications, ${count} unread` : "Notifications"} onClick={onClick} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
       <div style={{ position: "relative" }}>
         <Bell size={22} color={C.jet} />
         {count > 0 && (
@@ -373,7 +373,7 @@ export function NotificationBellButton({ count = 0, onClick }) {
    ------------------------------------------------------------------------- */
 export function useLiveNotifications(runtime = [], initialSeed = []) {
   const [items, setItems] = useState(initialSeed);
-  const seen = useRef(new Set());
+  const seen = useRef(new Set(initialSeed.map((item) => item.id)));
   useEffect(() => {
     const fresh = runtime.filter((n) => !seen.current.has(n.id));
     if (fresh.length) {

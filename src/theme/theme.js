@@ -111,6 +111,15 @@ export const C = CL;
 
 export function applyTheme(docElement, mode) {
   docElement.setAttribute("data-theme", mode);
+  docElement.style.colorScheme = mode;
+  const themeColor = mode === "dark" ? CD.white : CL.white;
+  let meta = document.querySelector('meta[name="theme-color"]');
+  if (!meta) {
+    meta = document.createElement("meta");
+    meta.name = "theme-color";
+    document.head.appendChild(meta);
+  }
+  meta.content = themeColor;
 }
 
 /* =========================================================================
@@ -184,7 +193,8 @@ export const LAYOUT = {
   pagePadTop: 16,
   headerPadTop: 6,
   tabClearance: 116,       // scroll padding on tab screens so content clears the floating tab island
-  ctaPadBottom: 24,        // safe-area padding for bottom-fixed action bars
+  ctaPadBottom: 28,        // minimum safe-area padding for bottom-fixed action bars
+  touchTarget: 44,
   cardRadius: 18,
   inputRadius: 13,
   buttonRadius: 14,

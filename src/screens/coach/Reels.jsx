@@ -2,7 +2,7 @@ import React, { useRef, useState } from "react";
 import { UploadCloud, Play, Image as ImageIcon, Trash2, Film, Camera } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { COACHES, SPORTS } from "../../data/mockData";
-import { TopBar, Btn, Card, Chip, Field, BottomSheet, EmptyState, Badge } from "../../components/ui/Primitives";
+import { TopBar, Btn, Card, Chip, Field, BottomSheet, ConfirmDialog, EmptyState, Badge } from "../../components/ui/Primitives";
 import { useApp } from "../../context/AppContext";
 
 export function ScreenCoachReels({ nav, toast, coachMedia = [], addMedia, removeMedia }) {
@@ -11,6 +11,7 @@ export function ScreenCoachReels({ nav, toast, coachMedia = [], addMedia, remove
   const coach = COACHES[1];
   const fileInputRef = useRef(null);
   const [pendingUpload, setPendingUpload] = useState(null); // { url, type, caption, sport }
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   /* One tile in the reels & photos grid. Shows a real preview when the item
      was actually uploaded in this session (item.url), otherwise falls back to
@@ -77,6 +78,7 @@ export function ScreenCoachReels({ nav, toast, coachMedia = [], addMedia, remove
 
   const confirmDelete = (item) => {
     removeMedia(item.id);
+    setDeleteTarget(null);
     toast(item.type === "reel" ? "Reel removed" : "Photo removed");
   };
 
@@ -98,7 +100,7 @@ export function ScreenCoachReels({ nav, toast, coachMedia = [], addMedia, remove
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               {coachMedia.map((item) => (
-                <MediaTile key={item.id} item={item} onDelete={() => confirmDelete(item)} />
+                <MediaTile key={item.id} item={item} onDelete={() => setDeleteTarget(item)} />
               ))}
             </div>
           )}
@@ -144,6 +146,15 @@ export function ScreenCoachReels({ nav, toast, coachMedia = [], addMedia, remove
           </>
         )}
       </BottomSheet>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => confirmDelete(deleteTarget)}
+        title={`Remove this ${deleteTarget?.type === "reel" ? "reel" : "photo"}?`}
+        description="It will be permanently removed from your public profile. This can't be undone."
+        confirmLabel={`Remove ${deleteTarget?.type === "reel" ? "reel" : "photo"}`}
+      />
     </div>
   );
 }

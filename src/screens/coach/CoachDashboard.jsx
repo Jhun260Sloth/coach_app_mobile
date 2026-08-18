@@ -6,15 +6,13 @@ import {
   Banknote,
   Bell,
   MessageCircle,
-  ShieldAlert,
   Check,
-  Percent,
   CornerUpLeft,
   Flag,
   Clock,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
-import { REVIEWS, CONFIG, COACH_NOTIFICATIONS } from "../../data/mockData";
+import { REVIEWS, CONFIG } from "../../data/mockData";
 import {
   Avatar,
   Card,
@@ -26,7 +24,6 @@ import {
   Badge,
   HandleTag,
 } from "../../components/ui/Primitives";
-import { useLiveNotifications } from "../../systems/StateSystem";
 import { useReviewActions, DISPUTE_REASONS } from "../../systems/ReviewsSystem";
 import { useApp } from "../../context/AppContext";
 import { getBookingClientName } from "../../utils/name";
@@ -39,26 +36,17 @@ function clientNameFor(booking) {
   return getBookingClientName(withClientMeta(booking));
 }
 
-const NOTIF_ICON = {
-  message: MessageCircle,
-  verification: ShieldAlert,
-  booking: Calendar,
-  review: Star,
-  promo: Percent,
-};
-
 export function ScreenCoachDashboard({
   nav,
   coachBookings,
   respondBooking,
-  coachNotifications,
+  coachNotifications = [],
   verified,
   toast,
   offline,
 }) {
   const { darkMode, coachIdentity } = useApp();
   const C = darkMode ? CD : CL;
-  const [notifOpen, setNotifOpen] = useState(false);
   const [respondingId, setRespondingId] = useState(null);
   const { getReply, getDispute, submitReply, submitDispute } = useReviewActions();
   const [replyTarget, setReplyTarget] = useState(null); // review being replied to
@@ -84,13 +72,12 @@ export function ScreenCoachDashboard({
     toast?.("Dispute submitted to CoachLink Support");
     closeDispute();
   };
-  // Merges real, in-app-generated notifications (bookings actioned, etc) on
-  // top of the seed list — which already includes the verification-expiry
-  // notice — so expiry warnings surface here instead of as a dashboard banner.
-  const [notifications, setNotifications] = useLiveNotifications(coachNotifications, COACH_NOTIFICATIONS);
+  const notifications = coachNotifications;
 
-  const pending = coachBookings.filter((b) => [BOOKING_STATUS.PENDING, BOOKING_STATUS.AWAITING_PAYMENT].includes(b.status));
-  const upcoming = coachBookings.filter((b) => b.status === BOOKING_STATUS.CONFIRMED);
+  const pendingRequests = coachBookings.filter((b) => b.status === BOOKING_STATUS.PENDING);
+  const awaitingPayment = coachBookings.filter((b) => b.status === BOOKING_STATUS.AWAITING_PAYMENT);
+  const pending = [...pendingRequests, ...awaitingPayment];
+  const upcoming = coachBookings.filter((b) => [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.COMPLETION_PENDING].includes(b.status));
   const completed = coachBookings.filter((b) => b.status === BOOKING_STATUS.COMPLETED);
 
   const earningsThisWeek = upcoming.reduce((s, b) => s + b.price, 0);
@@ -115,14 +102,6 @@ export function ScreenCoachDashboard({
       toast(message);
     }, 600);
   };
-
-  const markAllRead = () =>
-    setNotifications((arr) =>
-      arr.map((n) => ({
-        ...n,
-        unread: false,
-      }))
-    );
 
   function StatMini({ label, value, icon: Icon }) {
     return (
@@ -150,35 +129,6 @@ export function ScreenCoachDashboard({
       </Card>
     );
   }
-
-  const openNotification = (n) => {
-    setNotifications((arr) =>
-      arr.map((x) =>
-        x.id === n.id
-          ? {
-              ...x,
-              unread: false,
-            }
-          : x
-      )
-    );
-
-    setNotifOpen(false);
-
-    if (n.type === "message") {
-      nav("chat-thread", {
-        name: n.clientName,
-        handle: withClientMeta({ clientName: n.clientName }).clientHandle,
-        threadId: n.threadId,
-      });
-    } else if (n.type === "verification") {
-      nav("coach-profile-edit");
-    } else if (n.type === "booking") {
-      nav("coach-bookings");
-    } else if (n.type === "review") {
-      nav("coach-dashboard");
-    }
-  };
 
   return (
     <div
@@ -233,7 +183,7 @@ export function ScreenCoachDashboard({
           >
             {/* Notifications */}
             <button
-              onClick={() => setNotifOpen(true)}
+              onClick={() => nav("coach-notifications")}
               style={{
                 background: "none",
                 border: "none",
@@ -437,7 +387,7 @@ export function ScreenCoachDashboard({
           </button>
         </div>
 
-        {pending.length === 0 && (
+        {pendingRequests.length === 0 && (
           <div
             style={{
               fontSize: T.labelLg,
@@ -451,7 +401,7 @@ export function ScreenCoachDashboard({
         )}
 
         <div className="cl-stagger">
-        {pending.map((b, i) => {
+        {pendingRequests.slice(0, 2).map((b, i) => {
           const cn = clientNameFor(b);
           return (
           <Card
@@ -514,7 +464,7 @@ export function ScreenCoachDashboard({
               </div>
             </div>
 
-            {b.status === BOOKING_STATUS.PENDING ? <div
+            <div
               style={{
                 display: "flex",
                 gap: 8,
@@ -555,17 +505,36 @@ export function ScreenCoachDashboard({
               >
                 Decline
               </Btn>
-            </div> : (
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, padding: "9px 10px", borderRadius: 12, background: C.brandTint }}>
-                <Clock size={14} color={C.brand} />
-                <span style={{ flex: 1, fontSize: T.label, color: C.slate, ...fBody }}>Accepted — waiting for the client to pay.</span>
-                <StatusPill status={b.status} />
-              </div>
-            )}
+            </div>
           </Card>
           );
         })}
         </div>
+
+        {awaitingPayment.length > 0 && (
+          <>
+            <div style={{ marginTop: 18, marginBottom: 10 }}><SectionLabel>Waiting for payment</SectionLabel></div>
+            {awaitingPayment.slice(0, 2).map((b) => {
+              const cn = clientNameFor(b);
+              return (
+                <Card key={b.id} onClick={() => nav("booking-awaiting-payment", { id: b.id })} style={{ marginBottom: 10, borderColor: C.strong }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <Avatar name={cn.name} size={38} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>{cn.name}</div>
+                      <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{b.service} · {b.date}</div>
+                    </div>
+                    <StatusPill status={b.status} />
+                  </div>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 10, padding: "9px 10px", borderRadius: 12, background: C.strongTint }}>
+                    <Clock size={14} color={C.strong} />
+                    <span style={{ flex: 1, fontSize: T.label, color: C.slate, ...fBody }}>Reserved until {b.paymentDeadline || "tomorrow, 6:00pm"}</span>
+                  </div>
+                </Card>
+              );
+            })}
+          </>
+        )}
 
         {/* Upcoming Sessions */}
         <div
@@ -601,6 +570,7 @@ export function ScreenCoachDashboard({
                 alignItems: "center",
                 animationDelay: `${Math.min(i, 8) * 45}ms`,
               }}
+              onClick={() => nav("coach-session-detail", { id: b.id })}
             >
               <div
                 style={{
@@ -636,7 +606,7 @@ export function ScreenCoachDashboard({
                 </div>
               </div>
 
-              <StatusPill status="confirmed" />
+              <StatusPill status={b.status} />
             </Card>
             );
           })}
@@ -742,7 +712,7 @@ export function ScreenCoachDashboard({
               <textarea
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
-                placeholder="Write a public reply..."
+                placeholder="Write a public reply…"
                 rows={4}
                 autoFocus
                 style={{
@@ -791,7 +761,7 @@ export function ScreenCoachDashboard({
                 <textarea
                   value={disputeDetail}
                   onChange={(e) => setDisputeDetail(e.target.value)}
-                  placeholder="Tell us what's going on..."
+                  placeholder="Tell us what's going on…"
                   rows={4}
                   autoFocus
                   style={{
@@ -811,139 +781,6 @@ export function ScreenCoachDashboard({
         )}
       </BottomSheet>
 
-      {/* Notifications Bottom Sheet */}
-      <BottomSheet
-        open={notifOpen}
-        onClose={() => setNotifOpen(false)}
-        title="Notifications"
-        heightPct={72}
-      >
-        {unreadCount > 0 && (
-          <button
-            onClick={markAllRead}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-              background: "none",
-              border: "none",
-              color: C.brand,
-              fontSize: T.labelLg,
-              fontWeight: 600,
-              cursor: "pointer",
-              marginBottom: 10,
-              padding: "2px 0",
-              ...fBody,
-            }}
-          >
-            <Check size={13} />
-            Mark all as read
-          </button>
-        )}
-
-        {notifications.map((n) => {
-          const Icon = NOTIF_ICON[n.type] || Bell;
-
-          return (
-            <button
-              key={n.id}
-              onClick={() => openNotification(n)}
-              style={{
-                width: "100%",
-                display: "flex",
-                gap: 12,
-                alignItems: "flex-start",
-                padding: "12px 4px",
-                background: "none",
-                border: "none",
-                borderBottom: `1px solid ${C.border}`,
-                cursor: "pointer",
-                textAlign: "left",
-              }}
-            >
-              <div
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 11,
-                  background:
-                    n.type === "verification"
-                      ? C.warnTint
-                      : C.brandTint,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
-                <Icon size={16} color={C.brand} />
-              </div>
-
-              <div
-                style={{
-                  flex: 1,
-                  minWidth: 0,
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: 8,
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: T.body,
-                      fontWeight: 600,
-                      color: C.jet,
-                      ...fBody,
-                    }}
-                  >
-                    {n.title}
-                  </span>
-
-                  <span
-                    style={{
-                      fontSize: T.tiny,
-                      color: C.slateLight,
-                      flexShrink: 0,
-                      ...fBody,
-                    }}
-                  >
-                    {n.time}
-                  </span>
-                </div>
-
-                <div
-                  style={{
-                    fontSize: T.labelLg,
-                    color: C.slate,
-                    marginTop: 3,
-                    lineHeight: 1.45,
-                    ...fBody,
-                  }}
-                >
-                  {n.body}
-                </div>
-              </div>
-
-              {n.unread && (
-                <span
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: 99,
-                    background: C.brand,
-                    flexShrink: 0,
-                    marginTop: 5,
-                  }}
-                />
-              )}
-            </button>
-          );
-        })}
-      </BottomSheet>
     </div>
   );
 }

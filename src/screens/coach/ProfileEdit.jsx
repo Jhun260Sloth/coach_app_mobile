@@ -1,14 +1,14 @@
 import React, { useState, useRef } from "react";
 import {
   Camera, Edit3, Eye, EyeOff, CreditCard, Fingerprint, Lock, Shield, HelpCircle,
-  LogOut, ChevronRight, Trash2, Plus, User, ShieldCheck, BadgeCheck, AlertTriangle,
+  LogOut, ChevronRight, Trash2, Plus, User, ShieldCheck, BadgeCheck,
   Wallet, Banknote, CalendarClock, Zap, Hand, Bell, MapPin, Film, Play, Image as ImageIcon, Trophy,
   History as HistoryIcon,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { COACHES, LANGUAGE_OPTIONS, GENDER_OPTIONS, AU_SUBURBS, SPORTS, SPORT_ICON } from "../../data/mockData";
 import {
-  Avatar, SectionLabel, Chip, Card, Toggle, Btn, Badge, BottomSheet, Field,
+  Avatar, SectionLabel, Chip, Card, Toggle, Btn, Badge, BottomSheet, ConfirmDialog, Field,
   SearchMultiSelect, SearchSelect, ScrollFadeRow, SegTabs, HandleTag,
 } from "../../components/ui/Primitives";
 import { HandleField } from "../../components/ui/PublicIdentityFields";
@@ -33,11 +33,13 @@ function SportTag({ sport }) {
 function Row2({ icon: Icon, label, sub, onClick, right, danger }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
+  const Component = onClick ? "button" : "div";
   return (
-    <button
+    <Component
+      type={onClick ? "button" : undefined}
       onClick={onClick}
       style={{
-        width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "13px 4px",
+        width: "100%", minHeight: 44, display: "flex", alignItems: "center", gap: 12, padding: "13px 4px",
         background: "none", border: "none", borderBottom: `1px solid ${C.border}`,
         cursor: onClick ? "pointer" : "default", textAlign: "left",
       }}
@@ -48,7 +50,7 @@ function Row2({ icon: Icon, label, sub, onClick, right, danger }) {
         {sub && <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 1, ...fBody }}>{sub}</div>}
       </div>
       {right !== undefined ? right : (onClick ? <ChevronRight size={16} color={C.slateLight} /> : null)}
-    </button>
+    </Component>
   );
 }
 
@@ -89,7 +91,7 @@ function OptionCard({ icon: Icon, dotColor, title, desc, selected, onClick }) {
   );
 }
 
-export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage, removePackage, biometric, setBiometric, coachMedia = [], coachAvailableNow, setCoachAvailableNow }) {
+export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, savePackage, removePackage, biometric, setBiometric, coachMedia = [], coachAvailableNow, setCoachAvailableNow }) {
   const { darkMode, coachOnboarding, updateCoachOnboarding, isHandleTaken } = useApp();
   const C = darkMode ? CD : CL;
   const coach = COACHES[1];
@@ -242,7 +244,7 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
         <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>{label}</div>
         {sub && <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>{sub}</div>}
       </div>
-      <Toggle on={notifPrefs[prefKey]} onClick={() => toggleNotif(prefKey)} />
+      <Toggle label={label} on={notifPrefs[prefKey]} onClick={() => toggleNotif(prefKey)} />
     </div>
   );
 
@@ -335,6 +337,7 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
             </div>
           </div>
           <Toggle
+            label="Available for bookings"
             on={coachAvailableNow}
             onClick={() => {
               const next = !coachAvailableNow;
@@ -419,7 +422,7 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
                 </div>
               </div>
               <div onClick={(e) => e.stopPropagation()} style={{ flexShrink: 0 }}>
-                <Toggle on={isActive} onClick={() => toggleActive(p)} />
+                <Toggle label={`${p.name} active`} on={isActive} onClick={() => toggleActive(p)} />
               </div>
             </Card>
           );
@@ -489,7 +492,7 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
 
         <div style={{ marginTop: 22 }}>
           <SectionLabel>Security</SectionLabel>
-          <Row2 icon={Fingerprint} label="Biometric login" right={<Toggle on={biometric} onClick={() => setBiometric((v) => !v)} />} />
+          <Row2 icon={Fingerprint} label="Biometric login" right={<Toggle label="Biometric login" on={biometric} onClick={() => setBiometric((v) => !v)} />} />
           <Row2 icon={Lock} label="Change password" onClick={() => setSheet("password")} />
         </div>
 
@@ -682,23 +685,20 @@ export function ScreenCoachProfileEdit({ nav, toast, coachPackages, savePackage,
           Are you sure you want to sign out of your coach account?
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <Btn full variant="dark" icon={LogOut} onClick={() => { closeSheet(); nav("splash"); }}>Sign out</Btn>
+          <Btn full variant="dark" icon={LogOut} onClick={() => { closeSheet(); resetNav("splash", {}, "client"); }}>Sign out</Btn>
           <Btn full variant="secondary" onClick={closeSheet}>Cancel</Btn>
         </div>
       </BottomSheet>
 
-      <BottomSheet open={sheet === "delete"} onClose={closeSheet} title="Delete account" heightPct={50}>
-        <div style={{ display: "flex", gap: 10, padding: 12, background: C.warnTint, borderRadius: 14, marginBottom: 16 }}>
-          <AlertTriangle size={17} color={C.danger} style={{ flexShrink: 0, marginTop: 1 }} />
-          <div style={{ fontSize: T.labelLg, color: C.jet, lineHeight: 1.5, ...fBody }}>
-            This permanently deletes your coach account, public profile, service packages and booking history. Upcoming bookings will be cancelled and athletes notified. This can't be undone.
-          </div>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <Btn full variant="danger" icon={Trash2} onClick={() => { closeSheet(); toast("Account deleted"); nav("splash"); }}>Delete account permanently</Btn>
-          <Btn full variant="secondary" onClick={closeSheet}>Cancel</Btn>
-        </div>
-      </BottomSheet>
+      <ConfirmDialog
+        open={sheet === "delete"}
+        onClose={closeSheet}
+        onConfirm={() => { closeSheet(); toast("Account deleted"); resetNav("splash", {}, "client"); }}
+        title="Delete your coach account?"
+        description="Your public profile, packages and booking history will be permanently deleted. Upcoming bookings will be cancelled and athletes notified. This can't be undone."
+        confirmLabel="Delete account"
+        icon={Trash2}
+      />
     </div>
   );
 }

@@ -1,9 +1,9 @@
-import React, { useState, useRef } from "react";
-import { HelpCircle, ChevronLeft, Paperclip, MapPin, Send, MoreVertical, Flag, Ban, Check, CheckCircle2, Calendar, FileText, Navigation, AlertCircle, RotateCcw, Pin, PinOff, Trash2, MessageCircle } from "lucide-react";
-import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
+import React, { useEffect, useState, useRef } from "react";
+import { HelpCircle, Paperclip, MapPin, Send, MoreVertical, Flag, Ban, Check, CheckCircle2, Calendar, ChevronRight, FileText, Navigation, AlertCircle, RotateCcw, Pin, PinOff, Trash2, MessageCircle } from "lucide-react";
+import { CL, CD, fDisplay, fBody, T, LAYOUT } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { THREADS, COACH_THREADS, CHAT_MESSAGES, BOOKING_ENQUIRY_MESSAGES, COACHES } from "../../data/mockData";
-import { Avatar, BottomSheet, Btn, EmptyState, TopBar, HandleTag } from "../../components/ui/Primitives";
+import { Avatar, BackButton, BottomSheet, Btn, ConfirmDialog, EmptyState, TopBar, HandleTag } from "../../components/ui/Primitives";
 import { StatusBanner } from "../../systems/StateSystem";
 import { getPublicName } from "../../utils/name";
 import { clientMetaFor } from "../../data/users";
@@ -114,7 +114,7 @@ export function ScreenMessages({ nav, role, isFirstTimeClient }) {
       <TopBar
         title="Messages"
         right={
-          <button onClick={() => nav("support")} style={{ background: "none", border: "none", cursor: "pointer" }}>
+          <button type="button" aria-label="Open help and support" onClick={() => nav("support")} style={{ width: LAYOUT.touchTarget, height: LAYOUT.touchTarget, padding: 0, background: "transparent", border: "none", borderRadius: LAYOUT.pillRadius, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <HelpCircle size={22} color={C.jet} />
           </button>
         }
@@ -151,6 +151,12 @@ export function ScreenMessages({ nav, role, isFirstTimeClient }) {
                 ? setBlockedThread(t)
                 : nav("chat-thread", { name: t.withName, context: t.context, threadId: t.id })
               }
+              onKeyDown={(event) => {
+                if (event.key !== "Enter" && event.key !== " ") return;
+                event.preventDefault();
+                if (blocked) setBlockedThread(t);
+                else nav("chat-thread", { name: t.withName, context: t.context, threadId: t.id });
+              }}
               style={{
                 width: "100%", display: "flex", gap: 12, alignItems: "center",
                 padding: "12px 4px", background: pinned ? C.fog : "none", borderRadius: pinned ? 13 : 0,
@@ -214,8 +220,10 @@ export function ScreenMessages({ nav, role, isFirstTimeClient }) {
               )}
 
               <button
+                type="button"
+                aria-label={`Conversation options for ${participantName}`}
                 onClick={(e) => { e.stopPropagation(); setOptionsThread(t); }}
-                style={{ background: "none", border: "none", cursor: "pointer", padding: 4, flexShrink: 0, marginLeft: 2 }}
+                style={{ width: LAYOUT.touchTarget, height: LAYOUT.touchTarget, background: "transparent", border: "none", borderRadius: LAYOUT.pillRadius, cursor: "pointer", padding: 0, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginLeft: 2 }}
               >
                 <MoreVertical size={16} color={C.slateLight} />
               </button>
@@ -279,26 +287,22 @@ export function ScreenMessages({ nav, role, isFirstTimeClient }) {
       </BottomSheet>
 
       {/* Delete confirmation */}
-      <ConfirmDialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)}>
-        <div style={{ textAlign: "center", marginBottom: 16 }}>
-          <div style={{ ...iconBox(C.dangerTint), margin: "0 auto 12px" }}><Trash2 size={18} color={C.danger} /></div>
-          <div style={{ fontSize: T.subtitleLg, fontWeight: 700, color: C.jet, ...fDisplay }}>Delete this conversation?</div>
-          <div style={{ fontSize: T.labelLg, color: C.slate, marginTop: 6, lineHeight: 1.5, ...fBody }}>
-            Your chat history with {deleteTarget?.withName} will be removed from Messages. This can't be undone.
-          </div>
-        </div>
-        <div style={{ display: "flex", gap: 10 }}>
-          <Btn full variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Btn>
-          <Btn full variant="danger" onClick={() => { remove(deleteTarget.id); setDeleteTarget(null); }}>Delete</Btn>
-        </div>
-      </ConfirmDialog>
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => { remove(deleteTarget.id); setDeleteTarget(null); }}
+        title="Delete this conversation?"
+        description={`Your chat history with ${deleteTarget?.withName || "this person"} will be removed from Messages. This can't be undone.`}
+        confirmLabel="Delete"
+        icon={Trash2}
+      />
     </div>
   );
 }
 
 /* ── Confirm Dialog ────────────────────────────────────────────────────── */
 
-function ConfirmDialog({ open, onClose, children }) {
+function CenteredDialog({ open, onClose, children }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   if (!open) return null;
@@ -331,7 +335,7 @@ function ConversationOptionsFlow({ otherName, onReportSubmit, onBlockConfirm, is
   return (
     <>
       {/* Options Sheet */}
-      <BottomSheet open={step === "options"} onClose={closeAll} title="Conversation options" heightPct={isBlocked ? 30 : 34}>
+      <BottomSheet open={step === "options"} onClose={closeAll} heightPct={isBlocked ? 24 : 28}>
         <div style={{ display: "flex", flexDirection: "column" }}>
           <button onClick={() => setStep("report-reason")} style={sheetBtn(C)()}>
             <div style={iconBox(C.brandTint)}><Flag size={16} color={C.brand} /></div>
@@ -358,8 +362,6 @@ function ConversationOptionsFlow({ otherName, onReportSubmit, onBlockConfirm, is
               </div>
             </button>
           )}
-
-          <button onClick={closeAll} style={cancelBtn(C)}>Cancel</button>
         </div>
       </BottomSheet>
 
@@ -384,7 +386,7 @@ function ConversationOptionsFlow({ otherName, onReportSubmit, onBlockConfirm, is
             </div>
             {selectedReason === "Something else" && (
               <textarea value={customReason} onChange={e => setCustomReason(e.target.value)}
-                placeholder="Tell us what's going on..." rows={4} autoFocus
+                placeholder="Tell us what's going on…" rows={4} autoFocus
                 style={{
                   width: "100%", boxSizing: "border-box", background: C.white, marginTop: 14,
                   border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px",
@@ -410,23 +412,20 @@ function ConversationOptionsFlow({ otherName, onReportSubmit, onBlockConfirm, is
       </BottomSheet>
 
       {/* Block Confirm Dialog */}
-      <ConfirmDialog open={blockStep === "confirm"} onClose={closeAll}>
-        <div style={{ fontSize: T.titleLg, fontWeight: 600, color: C.jet, ...fDisplay, marginBottom: 8 }}>Block {otherName}?</div>
-        <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.55, marginBottom: 20, ...fBody }}>
-          {otherName} won't be able to message you or book you. You can unblock them later in your settings.
-        </div>
-        <div style={{ display: "flex", gap: 10 }}>
-          <Btn variant="outline" onClick={closeAll}>Cancel</Btn>
-          <div style={{ flex: 1 }}>
-            <Btn full onClick={() => { onBlockConfirm(); setBlockStep("success"); }} style={{ background: C.danger }}>Block</Btn>
-          </div>
-        </div>
-      </ConfirmDialog>
+      <ConfirmDialog
+        open={blockStep === "confirm"}
+        onClose={closeAll}
+        onConfirm={() => { onBlockConfirm(); setBlockStep("success"); }}
+        title={`Block ${otherName}?`}
+        description={`${otherName} won't be able to message you or book you. You can unblock them later in settings.`}
+        confirmLabel="Block"
+        icon={Ban}
+      />
 
       {/* Block Success Dialog */}
-      <ConfirmDialog open={blockStep === "success"} onClose={closeAll}>
+      <CenteredDialog open={blockStep === "success"} onClose={closeAll}>
         <SuccessPanel title={`${otherName} blocked`} body="They can no longer message you or book you." onDone={closeAll} />
-      </ConfirmDialog>
+      </CenteredDialog>
     </>
   );
 }
@@ -450,7 +449,7 @@ function SuccessPanel({ title, body, onDone }) {
 
 /* ── Chat Thread Screen ────────────────────────────────────────────────── */
 
-export function ScreenChatThread({ nav, params, role, toast, offline, bookings, coachBookings }) {
+export function ScreenChatThread({ nav, goBack, params, role, toast, offline, bookings, coachBookings }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const { isBlocked, block, unblock } = useBlockedThreads();
@@ -463,9 +462,20 @@ export function ScreenChatThread({ nav, params, role, toast, offline, bookings, 
   // unpaid other party. Prefer the real booking record (status can change
   // after this thread was opened); fall back to the thread's own context
   // label ("Booking · ..." vs "Enquiry") when there's no bookingId to look up.
-  const relatedBooking = params?.bookingId
-    ? (role === "coach" ? coachBookings : bookings)?.find((b) => b.id === params.bookingId)
+  const bookingPool = (role === "coach" ? coachBookings : bookings) || [];
+  const explicitBooking = params?.bookingId
+    ? bookingPool.find((booking) => booking.id === params.bookingId)
     : null;
+  const isBookingConversation = !!params?.context?.startsWith("Booking");
+  const bookingStatusPriority = { confirmed: 0, awaiting_payment: 1, pending: 2, completed: 3 };
+  const inferredBooking = isBookingConversation
+    ? [...bookingPool]
+      .filter((booking) => role === "coach"
+        ? String(booking.clientName || "").replace(/\s*\(u18\)\s*/i, "").startsWith(String(params.name || "").replace(/\s*\(u18\)\s*/i, ""))
+        : booking.coachName === params.name)
+      .sort((a, b) => (bookingStatusPriority[a.status] ?? 9) - (bookingStatusPriority[b.status] ?? 9))[0]
+    : null;
+  const relatedBooking = explicitBooking || inferredBooking || null;
   const locationUnlocked = relatedBooking
     ? (relatedBooking.status === "confirmed" || relatedBooking.status === "completed")
     : !!params?.context?.startsWith("Booking");
@@ -491,8 +501,15 @@ export function ScreenChatThread({ nav, params, role, toast, offline, bookings, 
   const [customReason, setCustomReason] = useState("");
   const [locationSheet, setLocationSheet] = useState(false);
   const fileInputRef = useRef(null);
+  const messageListRef = useRef(null);
   const msgIdRef = useRef(1000);
   const nextMsgId = () => (msgIdRef.current += 1);
+
+  useEffect(() => {
+    const list = messageListRef.current;
+    if (!list) return;
+    list.scrollTop = list.scrollHeight;
+  }, [messages.length]);
 
   // Sends a message through a brief "sending" state before landing on
   // sent/failed — offline always fails; otherwise it succeeds. Failed
@@ -552,43 +569,84 @@ export function ScreenChatThread({ nav, params, role, toast, offline, bookings, 
   };
 
   const backTarget = params?.backTo || (role === "coach" ? "coach-messages" : "client-messages");
+  const openBooking = () => {
+    if (!relatedBooking) return;
+    if (role !== "coach") {
+      nav("client-booking-detail", { id: relatedBooking.id });
+      return;
+    }
+    const coachRoute = ["confirmed", "completed"].includes(relatedBooking.status)
+      ? "coach-session-detail"
+      : relatedBooking.status === "awaiting_payment" ? "booking-awaiting-payment" : "coach-booking-detail";
+    nav(coachRoute, { id: relatedBooking.id });
+  };
 
   return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
+    <div style={{ height: "100%", minWidth: 0, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden", background: C.white }}>
       {/* Header */}
-      <div style={{ padding: "16px 18px 0" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <button onClick={() => nav(backTarget, params?.backParams || {})} style={{
-            width: 34, height: 34, borderRadius: 11, background: C.fog,
-            border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
-          }}>
-            <ChevronLeft size={18} color={C.jet} />
+      <div style={{ flexShrink: 0, borderBottom: `1px solid ${C.border}`, background: C.white }}>
+        <div style={{ minHeight: LAYOUT.topBarH, boxSizing: "border-box", padding: `6px ${LAYOUT.pagePadX}px`, display: "flex", alignItems: "center", gap: 10 }}>
+          <BackButton onClick={() => goBack(backTarget, params?.backParams || {})} />
+          <button
+            type="button"
+            disabled={!coach}
+            aria-label={coach ? `View ${pub.name}'s coach profile` : undefined}
+            onClick={coach ? () => nav("coach-profile", { id: coach.id }) : undefined}
+            style={{
+              flex: 1, minWidth: 0, minHeight: LAYOUT.touchTarget, padding: 0,
+              display: "flex", alignItems: "center", gap: 10, textAlign: "left",
+              background: "transparent", border: "none", borderRadius: LAYOUT.inputRadius,
+              cursor: coach ? "pointer" : "default", opacity: 1,
+            }}
+          >
+            <Avatar name={pub.name} size={40} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 3, minWidth: 0 }}>
+                <span style={{ minWidth: 0, fontSize: T.subtitle, fontWeight: 700, color: C.jet, ...fDisplay, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{pub.name}</span>
+                {coach && <ChevronRight aria-hidden="true" size={13} color={C.slateLight} style={{ flexShrink: 0 }} />}
+              </div>
+              {pub.handle && (
+                <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  <HandleTag handle={pub.handle} size={11} color={C.slateLight} />
+                </div>
+              )}
+            </div>
           </button>
-          <Avatar name={pub.name} size={38} />
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: T.subtitle, fontWeight: 600, color: C.jet, ...fDisplay }}>{pub.name}</div>
-            {pub.handle && <HandleTag handle={pub.handle} size={11} color={C.slateLight} />}
-            {params.context && <div style={{ fontSize: T.caption, color: C.brand, fontWeight: 600, ...fBody }}>{params.context}</div>}
-          </div>
-          <button onClick={() => setStep("options")} style={{
-            width: 34, height: 34, borderRadius: 11, background: "none", border: "none",
+          <button type="button" aria-label="Conversation options" onClick={() => setStep("options")} style={{
+            width: LAYOUT.touchTarget, height: LAYOUT.touchTarget, borderRadius: LAYOUT.pillRadius, background: "transparent", border: "none",
             display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0,
           }}>
             <MoreVertical size={20} color={C.jet} />
           </button>
         </div>
 
-        {coach && !blocked && (
-          <div style={{ marginTop: 12 }}>
-            <Btn full size="sm" variant="secondary" icon={Calendar} onClick={() => nav("coach-profile", { id: coach.id })}>
-              Book now
-            </Btn>
+        {relatedBooking && !blocked && (
+          <div style={{ padding: "0 14px 10px" }}>
+            <button
+              type="button"
+              onClick={openBooking}
+              aria-label={`View booking for ${relatedBooking.service}`}
+              style={{
+                width: "100%", minHeight: LAYOUT.touchTarget, padding: "8px 11px",
+                display: "flex", alignItems: "center", gap: 9, textAlign: "left",
+                background: C.fog, border: `1px solid ${C.border}`, borderRadius: LAYOUT.inputRadius,
+                cursor: "pointer",
+              }}
+            >
+              <Calendar aria-hidden="true" size={16} color={C.brand} style={{ flexShrink: 0 }} />
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ display: "block", fontSize: T.labelLg, fontWeight: 700, color: C.jet, ...fBody }}>View booking</span>
+                <span style={{ display: "block", fontSize: T.caption, color: C.slate, marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", ...fBody }}>{relatedBooking.service} · {relatedBooking.date}</span>
+              </span>
+              <ChevronRight aria-hidden="true" size={15} color={C.slateLight} />
+            </button>
           </div>
         )}
       </div>
 
       {/* Messages */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 10px", display: "flex", flexDirection: "column", gap: 10 }}>
+      <div ref={messageListRef} className="cl-hide-scrollbar" style={{ flex: 1, minHeight: 0, overflowY: "auto", overscrollBehavior: "contain", padding: "14px 16px 12px", display: "flex", flexDirection: "column", gap: 10, background: C.white }}>
+        <div style={{ alignSelf: "center", padding: "4px 9px", borderRadius: LAYOUT.pillRadius, background: C.fog, fontSize: T.caption, fontWeight: 600, color: C.slate, ...fBody }}>Today</div>
         {messages.map(m => (
           <div key={m.id} style={{ display: "flex", justifyContent: m.from === "me" ? "flex-end" : "flex-start", animation: "clSlideUp .3s ease" }}>
             {m.type === "attachment" ? (
@@ -639,7 +697,7 @@ export function ScreenChatThread({ nav, params, role, toast, offline, bookings, 
                   <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 4, fontSize: T.tiny, fontWeight: 600, ...fBody,
                     color: m.status === "failed" ? C.danger : m.status === "sending" ? C.slateLight : C.success }}>
                     {m.status === "sending" && <>Sending…</>}
-                    {m.status === "sent" && <><Check size={10} /> Sent</>}
+                    {m.status === "sent" && <><Check size={10} /> {m.time && m.time !== "now" ? `${m.time} · ` : ""}Sent</>}
                     {m.status === "failed" && (
                       <>
                         <AlertCircle size={10} /> Not delivered
@@ -649,6 +707,9 @@ export function ScreenChatThread({ nav, params, role, toast, offline, bookings, 
                       </>
                     )}
                   </div>
+                )}
+                {(m.from !== "me" || !m.status) && m.time && (
+                  <div style={{ marginTop: 4, fontSize: T.tiny, color: C.slateLight, ...fBody }}>{m.time}</div>
                 )}
               </div>
             )}
@@ -672,22 +733,24 @@ export function ScreenChatThread({ nav, params, role, toast, offline, bookings, 
           </div>
         </div>
       ) : (
-        <div style={{ padding: "10px 18px", paddingBottom: 24, display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${C.border}`, background: C.white }}>
+        <div style={{ width: "100%", minWidth: 0, boxSizing: "border-box", padding: "8px 12px", paddingBottom: "max(24px, env(safe-area-inset-bottom))", display: "flex", alignItems: "center", gap: 6, borderTop: `1px solid ${C.border}`, background: C.white, overflow: "hidden", flexShrink: 0 }}>
           <input ref={fileInputRef} type="file" accept="image/*,application/pdf,video/*" onChange={handleAttachmentPick} style={{ display: "none" }} />
-          <button onClick={() => fileInputRef.current?.click()} style={{ background: "none", border: "none", cursor: "pointer" }}><Paperclip size={19} color={C.slate} /></button>
+          <button type="button" aria-label="Attach a file" onClick={() => fileInputRef.current?.click()} style={{ width: LAYOUT.touchTarget, height: LAYOUT.touchTarget, padding: 0, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", borderRadius: LAYOUT.pillRadius, cursor: "pointer" }}><Paperclip size={19} color={C.slate} /></button>
           <button
+            type="button"
+            aria-label={locationUnlocked ? "Share your location" : "Location sharing is available after confirmation"}
             onClick={() => setLocationSheet(true)}
             title={locationUnlocked ? "Share your location" : "Available once the booking is confirmed"}
-            style={{ background: "none", border: "none", cursor: "pointer", opacity: locationUnlocked ? 1 : 0.4 }}
+            style={{ width: LAYOUT.touchTarget, height: LAYOUT.touchTarget, padding: 0, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", borderRadius: LAYOUT.pillRadius, cursor: "pointer", opacity: locationUnlocked ? 1 : 0.4 }}
           >
             <MapPin size={19} color={C.slate} />
           </button>
-          <div className="cl-input" style={{ flex: 1, display: "flex", alignItems: "center", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", background: C.white }}>
-            <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && send()}
-              placeholder="Message..." style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "none", fontSize: T.bodyLg, color: C.jet, ...fBody }} />
+          <div className="cl-input" style={{ flex: "1 1 0", minWidth: 0, height: LAYOUT.touchTarget, boxSizing: "border-box", display: "flex", alignItems: "center", border: `1.5px solid ${C.border}`, borderRadius: LAYOUT.inputRadius, padding: "0 12px", background: C.white }}>
+            <input name="message" autoComplete="off" aria-label="Message" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && send()}
+              placeholder="Write a message…" style={{ width: "100%", minWidth: 0, border: "none", outline: "none", background: "transparent", fontSize: T.bodyLg, color: C.jet, ...fBody }} />
           </div>
-          <button onClick={send} style={{ width: 36, height: 36, borderRadius: 99, background: C.brand, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
-            <Send size={15} color={C.white} />
+          <button type="button" aria-label="Send message" disabled={!input.trim()} onClick={send} style={{ width: LAYOUT.touchTarget, height: LAYOUT.touchTarget, padding: 0, borderRadius: LAYOUT.pillRadius, background: input.trim() ? C.brand : C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: input.trim() ? "pointer" : "default", flexShrink: 0, transition: "background .15s ease" }}>
+            <Send size={16} color={input.trim() ? C.white : C.slateLight} />
           </button>
         </div>
       )}

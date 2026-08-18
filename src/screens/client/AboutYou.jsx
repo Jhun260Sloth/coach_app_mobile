@@ -79,7 +79,7 @@ export function ScreenAboutYouProfile({ nav, onComplete }) {
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <StepHeader title="Let's learn about you" subtitle="A few quick details to set up your profile." />
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: 24 }} className="cl-hide-scrollbar">
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))" }} className="cl-hide-scrollbar">
         <SectionLabel>Build your profile</SectionLabel>
 
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 20 }}>
@@ -131,6 +131,8 @@ export function ScreenAboutYouProfile({ nav, onComplete }) {
               <CalendarDays size={16} color={C.slateLight} />
               <input
                 type="date"
+                name="account-date-of-birth"
+                aria-label="Date of birth"
                 value={dob}
                 max={new Date().toISOString().slice(0, 10)}
                 onChange={(e) => setDob(e.target.value)}
@@ -162,7 +164,7 @@ export function ScreenAboutYouProfile({ nav, onComplete }) {
         </div>
       </div>
 
-      <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
+      <div style={{ padding: "14px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
         <Btn full disabled={!canContinue} onClick={goNext}>
           Continue
         </Btn>
@@ -207,7 +209,7 @@ export function ScreenAccountType({ nav, params }) {
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <StepHeader title="Who are you booking for?" subtitle="Parents and guardians can keep a separate profile for each child." onBack={() => nav("about-you-profile")} />
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: 24 }} className="cl-hide-scrollbar">
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))" }} className="cl-hide-scrollbar">
         <SectionLabel>Participants</SectionLabel>
         <Option value="self" icon={User} title="Myself" body="I'll be the one attending coaching sessions." />
         <Option value="child" icon={Users} title="My Child / Children" body="I'm booking sessions on behalf of one or more children." />
@@ -222,7 +224,7 @@ export function ScreenAccountType({ nav, params }) {
         </Card>
       </div>
 
-      <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
+      <div style={{ padding: "14px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
         <Btn full disabled={!accountType} onClick={goNext}>Continue</Btn>
       </div>
     </div>
@@ -282,6 +284,8 @@ export function ParticipantFields({ draft, setDraft, showGuardianInfo = false })
             <CalendarDays size={16} color={C.slateLight} />
             <input
               type="date"
+              name="participant-date-of-birth"
+              aria-label="Participant date of birth"
               value={draft.dob}
               max={new Date().toISOString().slice(0, 10)}
               onChange={(e) => patch({ dob: e.target.value })}
@@ -302,6 +306,8 @@ export function ParticipantFields({ draft, setDraft, showGuardianInfo = false })
         <div>
           <div style={labelStyle}>Gender (optional)</div>
           <select
+            name="participant-gender"
+            aria-label="Gender (optional)"
             value={draft.gender}
             onChange={(e) => patch({ gender: e.target.value })}
             style={{ ...inputStyle, appearance: "auto", background: C.white, color: draft.gender ? C.jet : C.slateLight }}
@@ -449,7 +455,7 @@ export function ScreenAboutYouParticipants({ nav, params, addChild, toast }) {
         subtitle="Create a profile for each child you would like to book coaching sessions for. You can add and manage multiple participant profiles at any time."
         onBack={() => nav("account-type", params)}
       />
-      <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: 24 }} className="cl-hide-scrollbar">
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))" }} className="cl-hide-scrollbar">
         {savedCount > 0 && (
           <div style={{ marginBottom: 16 }}>
             <Badge tone="success">{savedCount} participant{savedCount === 1 ? "" : "s"} added so far</Badge>
@@ -457,7 +463,7 @@ export function ScreenAboutYouParticipants({ nav, params, addChild, toast }) {
         )}
         <ParticipantFields draft={draft} setDraft={setDraft} showGuardianInfo />
       </div>
-      <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, display: "flex", flexDirection: "column", gap: 10, flexShrink: 0 }}>
+      <div style={{ padding: "14px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", borderTop: `1px solid ${C.border}`, background: C.white, display: "flex", flexDirection: "column", gap: 10, flexShrink: 0 }}>
         <Btn full disabled={!canSave} onClick={saveAndFinish}>Save participant</Btn>
         <Btn full variant="outline" icon={Plus} disabled={!canSave} onClick={saveAndAddAnother}>Add another participant</Btn>
       </div>
@@ -488,10 +494,10 @@ export function ScreenAboutYouSelf({ nav, params, onComplete }) {
         subtitle="Help us recommend suitable coaches and personalise your coaching experience."
         onBack={() => nav("account-type", params)}
       />
-      <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: 24 }} className="cl-hide-scrollbar">
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))" }} className="cl-hide-scrollbar">
         <ParticipantFields draft={draft} setDraft={setDraft} />
       </div>
-      <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
+      <div style={{ padding: "14px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
         <Btn full disabled={!canContinue} onClick={finish}>Continue</Btn>
       </div>
     </div>

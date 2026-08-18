@@ -13,7 +13,10 @@ import {
   ScreenForgotPassword, ScreenResetCode, ScreenResetPassword, ScreenVerifyEmail,
 } from "../screens/onboarding/OnboardingScreens";
 
-import { ScreenAboutYouProfile } from "../screens/client/AboutYou";
+import {
+  ScreenAboutYouProfile, ScreenAccountType,
+  ScreenAboutYouParticipants, ScreenAboutYouSelf,
+} from "../screens/client/AboutYou";
 
 // Client
 import { ScreenClientHome, ScreenSearchFilters } from "../screens/client/Discovery";
@@ -36,6 +39,7 @@ import { ScreenClientSetupComplete } from "../screens/client/SetupComplete";
 
 // Coach
 import { ScreenCoachDashboard } from "../screens/coach/CoachDashboard";
+import { ScreenCoachNotifications } from "../screens/coach/Notifications";
 import { ScreenCoachCalendar } from "../screens/coach/Calendar";
 import { ScreenCoachBookings, ScreenCoachBookingDetail } from "../screens/coach/Bookings";
 import { ScreenCoachProfileEdit } from "../screens/coach/ProfileEdit";
@@ -51,6 +55,11 @@ import { ScreenCoachSetupComplete } from "../screens/coach/SetupComplete";
 // Shared: messaging & support
 import { ScreenMessages, ScreenChatThread } from "../screens/messaging/Messaging";
 import { ScreenSupport } from "../screens/support/Support";
+import { ScreenSessionCompletion, ScreenFundsReleaseStatus } from "../screens/shared/SessionLifecycle";
+import {
+  ScreenAdditionalChargeCreate, ScreenAdditionalChargeReview,
+  ScreenDisputeCreate, ScreenDisputeStatus,
+} from "../screens/shared/Exceptions";
 
 /**
  * Route registry — each key is a screen name (the string passed to `nav()`),
@@ -70,9 +79,13 @@ export const ROUTES = {
   "coach-info": ScreenCoachInfo,
   "coach-expertise": ScreenCoachExpertise,
   "about-you-profile": ScreenAboutYouProfile,
+  "account-type": ScreenAccountType,
+  "about-you-participants": ScreenAboutYouParticipants,
+  "about-you-self": ScreenAboutYouSelf,
   "client-setup-complete": ScreenClientSetupComplete,
   "verification": ScreenVerification,
   "verification-pending": ScreenVerificationPending,
+  "verification-rejected": ScreenVerificationPending,
 
   // Client
   "client-home": ScreenClientHome,
@@ -105,6 +118,7 @@ export const ROUTES = {
 
   // Coach
   "coach-dashboard": ScreenCoachDashboard,
+  "coach-notifications": ScreenCoachNotifications,
   "coach-services-setup": ScreenCoachServicesSetup,
   "coach-availability-setup": ScreenCoachAvailabilitySetup,
   "coach-payout-setup": ScreenCoachPayoutSetup,
@@ -112,6 +126,8 @@ export const ROUTES = {
   "coach-calendar": ScreenCoachCalendar,
   "coach-bookings": ScreenCoachBookings,
   "coach-booking-detail": ScreenCoachBookingDetail,
+  "booking-awaiting-payment": ScreenCoachBookingDetail,
+  "coach-session-detail": ScreenCoachBookingDetail,
   "coach-profile-edit": ScreenCoachProfileEdit,
   "coach-reels": ScreenCoachReels,
   "coach-create-package": ScreenCoachPackageForm,
@@ -122,6 +138,12 @@ export const ROUTES = {
 
   // Shared
   "chat-thread": ScreenChatThread,
+  "session-completion": ScreenSessionCompletion,
+  "funds-release-status": ScreenFundsReleaseStatus,
+  "dispute-create": ScreenDisputeCreate,
+  "dispute-status": ScreenDisputeStatus,
+  "additional-charge-create": ScreenAdditionalChargeCreate,
+  "additional-charge-review": ScreenAdditionalChargeReview,
   "support": ScreenSupport,
 };
 
@@ -140,9 +162,13 @@ const ROUTE_METADATA_BASE = {
   "coach-info": { title: "Coach Info Step 2", category: "Onboarding", role: "coach" },
   "coach-expertise": { title: "Coach Expertise Step 3", category: "Onboarding", role: "coach" },
   "about-you-profile": { title: "Client Setup: Profile", category: "Onboarding", role: "client" },
+  "account-type": { title: "Choose Participant Type", category: "Onboarding", role: "client" },
+  "about-you-participants": { title: "Add Child Participants", category: "Onboarding", role: "client" },
+  "about-you-self": { title: "Client Coaching Preferences", category: "Onboarding", role: "client" },
   "client-setup-complete": { title: "Client Setup Complete", category: "Onboarding", role: "client" },
   "verification": { title: "Submit Verification Docs", category: "Onboarding", role: "coach" },
   "verification-pending": { title: "Verification Pending Banner", category: "Onboarding", role: "coach" },
+  "verification-rejected": { title: "Verification Rejected & Resubmit", category: "Onboarding", role: "coach" },
 
   // Client Flow
   "client-home": { title: "Client Discover Home", category: "Client", role: "client" },
@@ -175,6 +201,7 @@ const ROUTE_METADATA_BASE = {
 
   // Coach Flow
   "coach-dashboard": { title: "Coach Dashboard", category: "Coach", role: "coach" },
+  "coach-notifications": { title: "Coach Notifications", category: "Coach", role: "coach" },
   "coach-services-setup": { title: "Coach Setup: Services", category: "Coach", role: "coach" },
   "coach-availability-setup": { title: "Coach Setup: Availability", category: "Coach", role: "coach" },
   "coach-payout-setup": { title: "Coach Setup: Payouts", category: "Coach", role: "coach" },
@@ -182,6 +209,8 @@ const ROUTE_METADATA_BASE = {
   "coach-calendar": { title: "Coach Calendar & Slot Manager", category: "Coach", role: "coach" },
   "coach-bookings": { title: "Coach Bookings Queue", category: "Coach", role: "coach" },
   "coach-booking-detail": { title: "Coach Booking Request Detail", category: "Coach", role: "coach" },
+  "booking-awaiting-payment": { title: "Coach: Waiting for Payment", category: "Coach", role: "coach" },
+  "coach-session-detail": { title: "Coach Confirmed Session Detail", category: "Coach", role: "coach" },
   "coach-profile-edit": { title: "Edit Coach Public Profile", category: "Coach", role: "coach" },
   "coach-reels": { title: "Manage Video Reels & Photos", category: "Coach", role: "coach" },
   "coach-create-package": { title: "Create Service Package", category: "Coach", role: "coach" },
@@ -192,6 +221,12 @@ const ROUTE_METADATA_BASE = {
 
   // Shared
   "chat-thread": { title: "Interactive Chat Thread", category: "Shared", role: "client" },
+  "session-completion": { title: "Shared Session Completion", category: "Shared", role: "client" },
+  "funds-release-status": { title: "Shared Funds Release Status", category: "Shared", role: "client" },
+  "dispute-create": { title: "Report a Session Issue", category: "Shared", role: "client" },
+  "dispute-status": { title: "Case Tracking & No-show Outcome", category: "Shared", role: "client" },
+  "additional-charge-create": { title: "Coach: Request Additional Payment", category: "Coach", role: "coach" },
+  "additional-charge-review": { title: "Client: Review Additional Payment", category: "Client", role: "client" },
   "support": { title: "Help & Support Center", category: "Shared", role: "client" },
 };
 
@@ -217,7 +252,7 @@ const ROUTE_DEMO_PARAMS = {
   "booking-review": { coachId: "c1", packageId: "p1", participants: ["self"], presetDate: "2026-08-19", presetTime: "16:00" },
   "payment": { bookingId: "b5" },
   "payment-add-card": { bookingId: "b5" },
-  "booking-confirmation": { coachId: "c1", packageId: "p1", participants: ["self"], presetDate: "2026-08-19", presetTime: "16:00" },
+  "booking-confirmation": { bookingId: "s1" },
   "booking-request-sent": { id: "b2", coachName: "Noah Kelly" },
   "package-listing": { sport: "Netball" },
   "package-inquiry": { coachId: "c1", packageId: "p1" },
@@ -246,8 +281,17 @@ const ROUTE_DEMO_PARAMS = {
   "client-booking-detail": { id: "b5" },
   "leave-review": { bookingId: "b3", name: "Ruby Hendricks" },
   "coach-booking-detail": { id: "cb2" },
+  "booking-awaiting-payment": { id: "cb5" },
+  "coach-session-detail": { id: "s1" },
   "coach-edit-package": { id: "p1" },
   "chat-thread": { threadId: "t1", name: "Isla Ferguson", handle: "isla.netball", context: "Booking · Wed, 19 Aug", bookingId: "b1" },
+  "session-completion": { bookingId: "s1", role: "client", backTo: "client-booking-detail" },
+  "funds-release-status": { bookingId: "b3", role: "client", backTo: "client-history" },
+  "verification-rejected": { variant: "rejected" },
+  "dispute-create": { bookingId: "s1", role: "client", category: "session_not_delivered", backTo: "client-booking-detail" },
+  "dispute-status": { caseId: "case-102", role: "client", backTo: "client-history" },
+  "additional-charge-create": { bookingId: "cb10", role: "coach" },
+  "additional-charge-review": { chargeId: "charge-101", role: "client" },
   "support": { presetTab: "faq", faqTopic: "client", backTo: "client-home" },
 };
 

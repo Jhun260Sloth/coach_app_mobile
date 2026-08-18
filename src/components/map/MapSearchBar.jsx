@@ -15,21 +15,25 @@ function MapSearchBarBase({ value, onChange, onClear, onClose, onFocus, onBlur, 
         display: "flex", alignItems: "center", gap: 10, background: C.white,
         padding: "14px 16px", boxShadow: "0 4px 14px rgba(0,0,0,0.08)",
       }}>
-        <button onClick={onClose} style={{ width: 40, height: 40, borderRadius: 12, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+        <button type="button" aria-label="Close map search" onClick={onClose} style={{ width: 44, height: 44, borderRadius: 12, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
           <X size={18} color={C.jet} />
         </button>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0 }}>
           <Search size={15} color={C.slateLight} style={{ flexShrink: 0 }} />
           <input
+            name="map-location-search"
+            type="search"
+            autoComplete="off"
+            aria-label="Search map locations"
             value={value}
             onChange={e => onChange(e.target.value)}
             onFocus={onFocus}
             onBlur={onBlur}
-            placeholder="Search location..."
+            placeholder="Search location…"
             style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", fontSize: T.subtitle, color: C.jet, ...fBody }}
           />
           {value && (
-            <button onMouseDown={e => e.preventDefault()} onClick={onClear} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", flexShrink: 0 }}>
+            <button type="button" aria-label="Clear map search" onMouseDown={e => e.preventDefault()} onClick={onClear} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <X size={14} color={C.slateLight} />
             </button>
           )}

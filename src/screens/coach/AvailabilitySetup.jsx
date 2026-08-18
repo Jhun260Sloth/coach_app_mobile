@@ -118,23 +118,23 @@ export function ScreenCoachAvailabilitySetup({ nav, toast }) {
             <Card key={d.key} style={{ marginBottom: 10 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: day.enabled ? 10 : 0 }}>
                 <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>{d.label}</div>
-                <Toggle on={day.enabled} onClick={() => toggleDay(d.key)} />
+                <Toggle label={`${d.label} availability`} on={day.enabled} onClick={() => toggleDay(d.key)} />
               </div>
               {day.enabled && (
                 <div>
                   {day.slots.map((s) => (
                     <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                      <input type="time" value={s.start} onChange={(e) => updateSlot(d.key, s.id, { start: e.target.value })} style={timeInputStyle} />
+                      <input type="time" name={`${d.key}-${s.id}-start`} aria-label={`${d.label} start time`} value={s.start} onChange={(e) => updateSlot(d.key, s.id, { start: e.target.value })} style={timeInputStyle} />
                       <span style={{ fontSize: T.label, color: C.slateLight, ...fBody }}>to</span>
-                      <input type="time" value={s.end} onChange={(e) => updateSlot(d.key, s.id, { end: e.target.value })} style={timeInputStyle} />
+                      <input type="time" name={`${d.key}-${s.id}-end`} aria-label={`${d.label} end time`} value={s.end} onChange={(e) => updateSlot(d.key, s.id, { end: e.target.value })} style={timeInputStyle} />
                       {day.slots.length > 1 && (
-                        <button onClick={() => removeSlot(d.key, s.id)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", flexShrink: 0 }}>
+                        <button type="button" aria-label={`Remove ${d.label} time slot`} onClick={() => removeSlot(d.key, s.id)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                           <X size={14} color={C.slateLight} />
                         </button>
                       )}
                     </div>
                   ))}
-                  <button onClick={() => addSlot(d.key)} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", cursor: "pointer", padding: "2px 0" }}>
+                  <button type="button" onClick={() => addSlot(d.key)} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", cursor: "pointer", padding: "2px 0" }}>
                     <Plus size={13} color={C.brand} />
                     <span style={{ fontSize: T.label, color: C.brand, fontWeight: 600, ...fBody }}>Add time slot</span>
                   </button>
@@ -154,7 +154,7 @@ export function ScreenCoachAvailabilitySetup({ nav, toast }) {
             <Card style={{ padding: 12 }}>
               <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 8, ...fBody }}>Block holiday</div>
               <div style={{ display: "flex", gap: 8, marginBottom: blockedHolidays.length ? 10 : 0 }}>
-                <input type="date" value={holidayDraft} onChange={(e) => setHolidayDraft(e.target.value)} style={timeInputStyle} />
+                <input type="date" name="blocked-holiday" aria-label="Holiday date to block" value={holidayDraft} onChange={(e) => setHolidayDraft(e.target.value)} style={timeInputStyle} />
                 <Btn size="sm" variant="outline" onClick={blockHoliday}>Block</Btn>
               </div>
               {blockedHolidays.length > 0 && (
@@ -162,7 +162,7 @@ export function ScreenCoachAvailabilitySetup({ nav, toast }) {
                   {blockedHolidays.map((d) => (
                     <Badge key={d} tone="neutral">
                       {d}
-                      <button onClick={() => removeHoliday(d)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", marginLeft: 2, padding: 0 }}>
+                      <button type="button" aria-label={`Remove blocked holiday ${d}`} onClick={() => removeHoliday(d)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", marginLeft: 2, padding: 0 }}>
                         <X size={10} color={C.slate} />
                       </button>
                     </Badge>
@@ -174,7 +174,7 @@ export function ScreenCoachAvailabilitySetup({ nav, toast }) {
             <Card style={{ padding: 12 }}>
               <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 8, ...fBody }}>Add One-off Unavailable Date</div>
               <div style={{ display: "flex", gap: 8, marginBottom: unavailableDates.length ? 10 : 0 }}>
-                <input type="date" value={oneOffDraft} onChange={(e) => setOneOffDraft(e.target.value)} style={timeInputStyle} />
+                <input type="date" name="one-off-unavailable-date" aria-label="One-off unavailable date" value={oneOffDraft} onChange={(e) => setOneOffDraft(e.target.value)} style={timeInputStyle} />
                 <Btn size="sm" variant="outline" onClick={addOneOff}>Add</Btn>
               </div>
               {unavailableDates.length > 0 && (
@@ -182,7 +182,7 @@ export function ScreenCoachAvailabilitySetup({ nav, toast }) {
                   {unavailableDates.map((d) => (
                     <Badge key={d} tone="neutral">
                       {d}
-                      <button onClick={() => removeOneOff(d)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", marginLeft: 2, padding: 0 }}>
+                      <button type="button" aria-label={`Remove unavailable date ${d}`} onClick={() => removeOneOff(d)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", marginLeft: 2, padding: 0 }}>
                         <X size={10} color={C.slate} />
                       </button>
                     </Badge>

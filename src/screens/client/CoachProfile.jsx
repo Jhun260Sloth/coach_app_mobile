@@ -6,7 +6,7 @@ import {
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { COACHES, REVIEWS, SPORT_ICON } from "../../data/mockData";
-import { Avatar, Badge, SegTabs, SectionLabel, Card, Btn, StarRow, HandleTag } from "../../components/ui/Primitives";
+import { Avatar, BackButton, Badge, SegTabs, SectionLabel, Card, Btn, StarRow, HandleTag } from "../../components/ui/Primitives";
 import { getPublicName } from "../../utils/name";
 import { StatusBanner } from "../../systems/StateSystem";
 import { useReviewActions } from "../../systems/ReviewsSystem";
@@ -41,19 +41,19 @@ export function CoverBanner({ sport, height = 150 }) {
   const C = darkMode ? CD : CL;
   const Icon = SPORT_ICON[sport] || Trophy;
   return (
-    <div style={{ height, position: "relative", flexShrink: 0, overflow: "hidden", background: `linear-gradient(145deg, ${C.jet} 0%, ${C.jetSoft} 55%, #3A3F4C 100%)` }}>
+    <div style={{ height, position: "relative", flexShrink: 0, overflow: "hidden", background: `linear-gradient(145deg, ${CL.jet} 0%, ${CL.jetSoft} 55%, ${CL.slate} 100%)` }}>
       {/* soft light wash for photographic depth */}
       <div style={{ position: "absolute", inset: 0, background: "radial-gradient(120% 90% at 15% 0%, rgba(255,255,255,.10), transparent 55%)" }} />
       {/* signature angled accent, echoing the logo flag */}
       <div style={{ position: "absolute", top: -30, right: -20, width: 160, height: 100, background: C.brand, opacity: 0.9, transform: "rotate(-18deg)", clipPath: "polygon(20% 0%, 100% 0%, 80% 100%, 0% 100%)" }} />
-      <div style={{ position: "absolute", top: -30, right: 40, width: 90, height: 100, background: C.jet, opacity: 0.55, transform: "rotate(-18deg)", clipPath: "polygon(20% 0%, 100% 0%, 80% 100%, 0% 100%)" }} />
+      <div style={{ position: "absolute", top: -30, right: 40, width: 90, height: 100, background: CL.jet, opacity: 0.55, transform: "rotate(-18deg)", clipPath: "polygon(20% 0%, 100% 0%, 80% 100%, 0% 100%)" }} />
       {/* oversized watermark icon for a sport-specific "stock photo" feel */}
-      <Icon size={140} color="#FFFFFF" strokeWidth={1.1} style={{ position: "absolute", bottom: -30, left: -20, opacity: 0.14, transform: "rotate(-8deg)" }} />
+      <Icon size={140} color={CL.white} strokeWidth={1.1} style={{ position: "absolute", bottom: -30, left: -20, opacity: 0.14, transform: "rotate(-8deg)" }} />
     </div>
   );
 }
 
-export function ScreenCoachProfile({ nav, params = {}, favorites = [], toggleFav, coachAvailableNow }) {
+export function ScreenCoachProfile({ nav, goBack, params = {}, favorites = [], toggleFav, coachAvailableNow }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const coach = COACHES.find((c) => c.id === (params?.id)) || COACHES[0];
@@ -132,16 +132,14 @@ export function ScreenCoachProfile({ nav, params = {}, favorites = [], toggleFav
         <CoverBanner sport={coach.sport} height={150} />
         <div style={{ height: 150, position: "relative", marginTop: -150, pointerEvents: "none" }}>
           <div style={{ position: "absolute", top: 16, left: 16, pointerEvents: "auto" }}>
-            <button onClick={() => nav("client-home")} style={{ width: 34, height: 34, borderRadius: 11, background: "rgba(255,255,255,.18)", backdropFilter: "blur(4px)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-              <ChevronLeft size={18} color={C.white} />
-            </button>
+            <BackButton floating onClick={() => goBack("client-home")} />
           </div>
           <div style={{ position: "absolute", top: 16, right: 16, display: "flex", gap: 8, pointerEvents: "auto" }}>
-            <button onClick={() => toggleFav(coach.id)} style={{ width: 34, height: 34, borderRadius: 11, background: "rgba(255,255,255,.18)", backdropFilter: "blur(4px)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-              <Heart size={16} color={C.white} fill={fav ? C.brand : "none"} />
+            <button type="button" aria-label={fav ? "Remove coach from favourites" : "Add coach to favourites"} onClick={() => toggleFav(coach.id)} style={{ width: 44, height: 44, borderRadius: 14, background: "rgba(255,255,255,.18)", backdropFilter: "blur(4px)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+              <Heart size={16} color={CL.white} fill={fav ? C.brand : "none"} />
             </button>
-            <button style={{ width: 34, height: 34, borderRadius: 11, background: "rgba(255,255,255,.18)", backdropFilter: "blur(4px)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-              <Share2 size={15} color={C.white} />
+            <button type="button" aria-label="Share coach profile" style={{ width: 44, height: 44, borderRadius: 14, background: "rgba(255,255,255,.18)", backdropFilter: "blur(4px)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+              <Share2 size={15} color={CL.white} />
             </button>
           </div>
           <div style={{ position: "absolute", bottom: -34, left: 20, zIndex: 5, pointerEvents: "auto" }}>
@@ -277,11 +275,11 @@ export function ScreenCoachProfile({ nav, params = {}, favorites = [], toggleFav
                 selected package's availability once one is chosen. */}
             <Card style={{ marginBottom: 16 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                <button onClick={pkgGoPrevMonth} disabled={pkgIsCurrentMonth} style={{ width: 28, height: 28, borderRadius: 9, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: pkgIsCurrentMonth ? "default" : "pointer", opacity: pkgIsCurrentMonth ? 0.4 : 1 }}>
+                <button type="button" aria-label="Previous month" onClick={pkgGoPrevMonth} disabled={pkgIsCurrentMonth} style={{ width: 44, height: 44, borderRadius: 12, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: pkgIsCurrentMonth ? "default" : "pointer", opacity: pkgIsCurrentMonth ? 0.4 : 1 }}>
                   <ChevronLeft size={15} color={C.jet} />
                 </button>
                 <span style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...fDisplay }}>{pkgMonthLabel}</span>
-                <button onClick={pkgGoNextMonth} style={{ width: 28, height: 28, borderRadius: 9, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                <button type="button" aria-label="Next month" onClick={pkgGoNextMonth} style={{ width: 44, height: 44, borderRadius: 12, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                   <ChevronRight size={15} color={C.jet} />
                 </button>
               </div>
@@ -376,7 +374,7 @@ export function ScreenCoachProfile({ nav, params = {}, favorites = [], toggleFav
                                   background: active ? (C.brandIcon || C.brandColor || C.brand) : C.white, color: active ? C.white : C.jet,
                                   fontSize: T.labelLg, fontWeight: 600, cursor: "pointer", ...fBody,
                                   boxShadow: active ? "0 2px 8px rgba(27, 94, 32, 0.2)" : "none",
-                                  transition: "all 0.15s ease",
+                                  transition: "background .15s ease, border-color .15s ease, color .15s ease, transform .15s ease",
                                 }}
                               >
                                 {formatTimeRange12(t, pkgSlotDuration)}
@@ -421,7 +419,7 @@ export function ScreenCoachProfile({ nav, params = {}, favorites = [], toggleFav
                     cursor: pkgDisabled ? "not-allowed" : "pointer",
                     boxShadow: selected ? "0 4px 14px rgba(27, 94, 32, 0.12)" : "none",
                     position: "relative",
-                    transition: "all 0.2s ease",
+                    transition: "background .2s ease, border-color .2s ease, color .2s ease, transform .2s ease",
                     padding: 16,
                     animationDelay: `${Math.min(i, 8) * 45}ms`,
                   }}
@@ -515,6 +513,8 @@ export function ScreenCoachProfile({ nav, params = {}, favorites = [], toggleFav
             {reviewPageCount > 1 && (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, marginTop: 8 }}>
                 <button
+                  type="button"
+                  aria-label="Previous reviews page"
                   onClick={() => setReviewPage((p) => Math.max(1, p - 1))}
                   disabled={reviewPage === 1}
                   style={{ width: 32, height: 32, borderRadius: 10, border: `1px solid ${C.border}`, background: C.white, display: "flex", alignItems: "center", justifyContent: "center", cursor: reviewPage === 1 ? "default" : "pointer", opacity: reviewPage === 1 ? 0.4 : 1 }}
@@ -525,6 +525,8 @@ export function ScreenCoachProfile({ nav, params = {}, favorites = [], toggleFav
                   Page {reviewPage} of {reviewPageCount}
                 </span>
                 <button
+                  type="button"
+                  aria-label="Next reviews page"
                   onClick={() => setReviewPage((p) => Math.min(reviewPageCount, p + 1))}
                   disabled={reviewPage === reviewPageCount}
                   style={{ width: 32, height: 32, borderRadius: 10, border: `1px solid ${C.border}`, background: C.white, display: "flex", alignItems: "center", justifyContent: "center", cursor: reviewPage === reviewPageCount ? "default" : "pointer", opacity: reviewPage === reviewPageCount ? 0.4 : 1 }}
@@ -538,7 +540,7 @@ export function ScreenCoachProfile({ nav, params = {}, favorites = [], toggleFav
         </div>
       </div>
 
-      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: C.white, borderTop: `1px solid ${C.border}`, padding: "14px 18px", paddingBottom: 24, display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: C.white, borderTop: `1px solid ${C.border}`, padding: "14px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", display: "flex", alignItems: "center", gap: 12 }}>
         {unavailable ? (
           <div style={{ flex: 1 }}>
             <Btn full disabled variant="secondary">Unavailable for new bookings</Btn>
@@ -572,7 +574,7 @@ export function ScreenCoachProfile({ nav, params = {}, favorites = [], toggleFav
             <Btn full onClick={() => setTab("packages")}>Select a service</Btn>
           </div>
         )}
-        <button onClick={() => nav("chat-thread", { name: coach.name, handle: coach.handle })} style={{ width: 46, height: 46, borderRadius: 14, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+        <button type="button" aria-label={`Message ${pub.name}`} onClick={() => nav("chat-thread", { name: coach.name, handle: coach.handle })} style={{ width: 46, height: 46, borderRadius: 14, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
           <MessageCircle size={18} color={C.jet} />
         </button>
       </div>

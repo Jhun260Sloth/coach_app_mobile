@@ -10,7 +10,7 @@ import { Btn } from "../../components/ui/Primitives";
  * side. Gives a clear "you're done" moment before dropping the client into
  * the Discover tab.
  */
-export function ScreenClientSetupComplete({ nav, params, setIsFirstTimeClient, setDiscoveryPrefs, setBookings, setShowPostSignupGuide }) {
+export function ScreenClientSetupComplete({ resetNav, params, setIsFirstTimeClient, setDiscoveryPrefs, setBookings, setShowPostSignupGuide }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const name = params?.name ? params.name.split(" ")[0] : "";
@@ -25,7 +25,7 @@ export function ScreenClientSetupComplete({ nav, params, setIsFirstTimeClient, s
     setBookings?.([]);
     // Land on Discover with the 5-step post-sign-up guide queued up.
     setShowPostSignupGuide?.(true);
-    nav("client-home");
+    resetNav("client-home", {}, "client");
   };
 
   return (
@@ -43,7 +43,7 @@ export function ScreenClientSetupComplete({ nav, params, setIsFirstTimeClient, s
         </div>
       </div>
 
-      <div style={{ marginTop: "auto", padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
+      <div style={{ marginTop: "auto", padding: "14px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
         <Btn full onClick={startExploring}>Start exploring</Btn>
       </div>
     </div>

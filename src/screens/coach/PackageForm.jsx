@@ -1,8 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { Trash2 } from "lucide-react";
-import { CL, CD, fBody, T } from "../../theme/theme";
+import { CL, CD, fBody, LAYOUT, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
-import { TopBar } from "../../components/ui/Primitives";
+import { ConfirmDialog, TopBar } from "../../components/ui/Primitives";
 import { ServicePackageForm, recordToPackageForm, packageFormToRecord } from "../../components/ui/ServicePackageForm";
 
 /**
@@ -13,6 +13,7 @@ import { ServicePackageForm, recordToPackageForm, packageFormToRecord } from "..
 export function ScreenCoachPackageForm({ nav, params, toast, coachPackages, savePackage, removePackage }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const editing = params?.id ? coachPackages.find((p) => p.id === params.id) : null;
   const initial = editing ? recordToPackageForm(editing) : undefined;
 
@@ -24,6 +25,7 @@ export function ScreenCoachPackageForm({ nav, params, toast, coachPackages, save
 
   const handleDelete = () => {
     removePackage(editing.id);
+    setDeleteOpen(false);
     toast("Package removed");
     nav("coach-profile-edit");
   };
@@ -34,8 +36,16 @@ export function ScreenCoachPackageForm({ nav, params, toast, coachPackages, save
         title={editing ? "Edit package" : "Create package"}
         onBack={() => nav("coach-profile-edit")}
         right={editing ? (
-          <button onClick={handleDelete} aria-label="Delete package" style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}>
-            <Trash2 size={17} color={C.slateLight} />
+          <button
+            onClick={() => setDeleteOpen(true)}
+            aria-label="Delete package"
+            style={{
+              width: LAYOUT.touchTarget, height: LAYOUT.touchTarget, padding: 0, flexShrink: 0,
+              background: "none", border: "none", cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >
+            <Trash2 size={18} color={C.slateLight} />
           </button>
         ) : null}
       />
@@ -50,6 +60,14 @@ export function ScreenCoachPackageForm({ nav, params, toast, coachPackages, save
           saveLabel={editing ? "Save changes" : "Create package"}
         />
       </div>
+      <ConfirmDialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={handleDelete}
+        title="Remove this package?"
+        description={`“${editing?.name || "This package"}” will disappear from your profile and can no longer be booked. This can't be undone.`}
+        confirmLabel="Remove package"
+      />
     </div>
   );
 }

@@ -30,12 +30,15 @@ function AppleIcon({ size = 16, color = "currentColor" }) {
 function SelectField({ label, value, onChange, options, placeholder = "Select…" }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
+  const fieldId = React.useId();
   const inputStyle = { width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", background: C.white, color: C.jet, ...fBody };
   const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
   return (
     <div>
-      <div style={labelStyle}>{label}</div>
+      <label htmlFor={fieldId} style={{ ...labelStyle, display: "block" }}>{label}</label>
       <select
+        id={fieldId}
+        name={String(label).toLowerCase().replace(/[^a-z0-9]+/g, "-")}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         style={{ ...inputStyle, appearance: "auto", background: C.white, color: value ? C.jet : C.slateLight }}
@@ -89,7 +92,7 @@ export function ScreenSplash({ nav }) {
         <img src={LOGO_WHITE_SRC} alt="CoachLink" style={{ width: 120, height: "auto" }} />
       </div>
       <div style={{ marginTop: 34 }}>
-        <Spinner size={22} color="#C7CAD3" />
+        <Spinner size={22} color={C.slateLight} />
       </div>
     </div>
   );
@@ -173,7 +176,7 @@ export function ScreenGetStarted({ nav }) {
           style={{
             fontSize: T.hero,
             fontWeight: 700,
-            color: "#FFFFFF",
+            color: CL.white,
             lineHeight: 1.2,
             ...fDisplay,
           }}
@@ -200,7 +203,7 @@ export function ScreenGetStarted({ nav }) {
         {/* Subtitle / Description */}
         <div
           style={{
-            color: "#D1D5DB",
+            color: CL.onDark,
             fontSize: T.subtitleLg,
             lineHeight: 1.5,
             marginBottom: 28,
@@ -222,9 +225,9 @@ export function ScreenGetStarted({ nav }) {
               width: "100%",
               padding: "14px 0",
               borderRadius: 16,
-              background: "#FFFFFF",
+              background: CL.white,
               border: "none",
-              color: "#111827",
+              color: CL.jet,
               fontSize: T.subtitle,
               fontWeight: 600,
               cursor: "pointer",
@@ -247,7 +250,7 @@ export function ScreenRoleSelect({ nav, setRole }) {
   const C = darkMode ? CD : CL;
   const Option = ({ role, title, body, icon: Icon }) => (
     <button
-      onClick={() => { setRole(role); nav("auth", { mode: "signup" }); }}
+      onClick={() => nav("auth", { mode: "signup" }, role)}
       style={{
         width: "100%", textAlign: "left", background: C.white, border: `1.5px solid ${C.border}`,
         borderRadius: 18, padding: 16, display: "flex", gap: 14, alignItems: "center",
@@ -279,7 +282,7 @@ export function ScreenRoleSelect({ nav, setRole }) {
         <Option role="client" icon={Search} title="Find a coach" body="Search, book and pay for sessions with verified coaches near you." />
         <Option role="coach" icon={Users} title="Coach others" body="List your services, manage bookings and get paid automatically." />
       </div>
-      <div style={{ padding: "12px 18px", paddingBottom: 22, textAlign: "center" }}>
+      <div style={{ padding: "12px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", textAlign: "center" }}>
         <button onClick={() => nav("auth", { mode: "login" })} style={{ background: "none", border: "none", color: C.slate, fontSize: T.bodyLg, cursor: "pointer", ...fBody }}>
           Have an existing account? <span style={{ color: C.brand, fontWeight: 600 }}>Sign In</span>
         </button>
@@ -288,11 +291,9 @@ export function ScreenRoleSelect({ nav, setRole }) {
   );
 }
 
-export function ScreenAuth({ nav, params, role, toast, biometric, updateCoachOnboarding, updateClientIdentity }) {
+export function ScreenAuth({ nav, resetNav, params, role, toast, biometric, updateCoachOnboarding, updateClientIdentity }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
-  const inputStyle = { width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", background: C.white, color: C.jet, ...fBody };
-  const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
   const [mode, setMode] = useState(params?.mode || "login");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -312,7 +313,7 @@ export function ScreenAuth({ nav, params, role, toast, biometric, updateCoachOnb
 
   const proceedAfterAuth = (method) => {
     const isSocial = method === "apple" || method === "google";
-    if (mode === "login") { nav(homeScreen); return; }
+    if (mode === "login") { resetNav(homeScreen, {}, role); return; }
     if (role === "coach") {
       const fn = firstName.trim() || (isSocial ? (method === "apple" ? "Apple" : "Google") : "");
       const ln = lastName.trim() || (isSocial ? "User" : "");
@@ -343,9 +344,9 @@ export function ScreenAuth({ nav, params, role, toast, biometric, updateCoachOnb
   const goCreateAccount = () => nav("role-select");
 
   return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column", overflowX: "hidden" }}>
       <TopBar title="" onBack={() => nav(params?.backTo || "role-select")} />
-      <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
+      <div style={{ flex: 1, minWidth: 0, overflowY: "auto", overflowX: "hidden", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
       <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>{mode === "signup" ? "Create your account" : "Welcome back"}</div>
       <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 6, marginBottom: 20, ...fBody }}>
         {mode === "signup"
@@ -355,23 +356,17 @@ export function ScreenAuth({ nav, params, role, toast, biometric, updateCoachOnb
 
        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {mode === "signup" && (
-          <div style={{ display: "flex", gap: 10 }}>
-            <div style={{ flex: 1 }}>
-              <div style={labelStyle}>First name</div>
-              <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Josh" style={inputStyle} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={labelStyle}>Last name</div>
-              <input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Whitfield" style={inputStyle} />
-            </div>
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 10, width: "100%", minWidth: 0 }}>
+            <Field label="First name" name="given-name" autoComplete="given-name" placeholder="Josh" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+            <Field label="Last name" name="family-name" autoComplete="family-name" placeholder="Whitfield" value={lastName} onChange={(e) => setLastName(e.target.value)} />
           </div>
         )}
 
-        <Field label="Email address" placeholder="you@email.com" icon={Mail} value={email} onChange={(e) => setEmail(e.target.value)} />
-        <Field label="Password" placeholder="••••••••" type={showPw ? "text" : "password"} rightIcon={showPw ? EyeOff : Eye} onRight={() => setShowPw((s) => !s)} value={password} onChange={(e) => setPassword(e.target.value)} />
+        <Field label="Email address" name="email" autoComplete="email" type="email" inputMode="email" placeholder="you@email.com" icon={Mail} value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Field label="Password" name="password" autoComplete={mode === "signup" ? "new-password" : "current-password"} placeholder="••••••••" type={showPw ? "text" : "password"} rightIcon={showPw ? EyeOff : Eye} onRight={() => setShowPw((s) => !s)} value={password} onChange={(e) => setPassword(e.target.value)} />
         {mode === "signup" && (
           <div>
-            <Field label="Confirm password" placeholder="••••••••" type={showConfirmPw ? "text" : "password"} rightIcon={showConfirmPw ? EyeOff : Eye} onRight={() => setShowConfirmPw((s) => !s)} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+            <Field label="Confirm password" name="confirm-password" autoComplete="new-password" placeholder="••••••••" type={showConfirmPw ? "text" : "password"} rightIcon={showConfirmPw ? EyeOff : Eye} onRight={() => setShowConfirmPw((s) => !s)} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
             {confirmPassword.length > 0 && !passwordsMatch && (
               <div style={{ fontSize: T.captionLg, color: C.danger, marginTop: 6, ...fBody }}>Passwords don't match</div>
             )}
@@ -388,7 +383,7 @@ export function ScreenAuth({ nav, params, role, toast, biometric, updateCoachOnb
       )}
 
       {mode === "signup" && (
-        <button onClick={() => setAgree((v) => !v)} style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "none", border: "none", cursor: "pointer", textAlign: "left", marginTop: 14, padding: "6px 0" }}>
+        <button type="button" role="checkbox" aria-checked={agree} onClick={() => setAgree((v) => !v)} style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "none", border: "none", cursor: "pointer", textAlign: "left", marginTop: 14, padding: "6px 0" }}>
           <div style={{ width: 19, height: 19, borderRadius: 6, border: `1.5px solid ${agree ? C.brand : C.border}`, background: agree ? C.brand : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
             {agree && <Check size={12} color={C.white} />}
           </div>
@@ -424,7 +419,7 @@ export function ScreenAuth({ nav, params, role, toast, biometric, updateCoachOnb
       </div>
       </div>
 
-      <div style={{ marginTop: "auto", textAlign: "center", paddingBottom: 22 }}>
+      <div style={{ marginTop: "auto", textAlign: "center", paddingBottom: "max(28px, env(safe-area-inset-bottom))" }}>
         <button onClick={mode === "signup" ? () => setMode("login") : goCreateAccount} style={{ background: "none", border: "none", color: C.slate, fontSize: T.body, cursor: "pointer", ...fBody }}>
           {mode === "signup" ? "Already have an account? " : "New to CoachLink? "}
           <span style={{ color: C.brand, fontWeight: 600 }}>{mode === "signup" ? "Sign in" : "Create an account"}</span>
@@ -475,7 +470,7 @@ export function ScreenForgotPassword({ nav, params, role, toast }) {
         <Btn full disabled={!canSubmit} loading={sending} loadingText="Sending…" onClick={submit}>Send reset code</Btn>
       </div>
       </div>
-      <div style={{ marginTop: "auto", textAlign: "center", paddingBottom: 22 }}>
+      <div style={{ marginTop: "auto", textAlign: "center", paddingBottom: "max(28px, env(safe-area-inset-bottom))" }}>
         <button onClick={() => nav("auth", { mode: "login", backTo: params?.backTo })} style={{ background: "none", border: "none", color: C.slate, fontSize: T.body, cursor: "pointer", ...fBody }}>
           Remembered it? <span style={{ color: C.brand, fontWeight: 600 }}>Back to sign in</span>
         </button>
@@ -518,6 +513,9 @@ export function ScreenResetCode({ nav, params, toast }) {
         {digits.map((d, i) => (
           <input
             key={i}
+            name={`reset-code-${i + 1}`}
+            aria-label={`Reset code digit ${i + 1} of 6`}
+            autoComplete={i === 0 ? "one-time-code" : "off"}
             ref={(el) => (inputsRef.current[i] = el)}
             value={d}
             onChange={(e) => setDigit(i, e.target.value)}
@@ -702,6 +700,9 @@ export function ScreenVerifyEmail({ nav, params, toast, role }) {
               {digits.map((d, i) => (
                 <input
                   key={i}
+                  name={`verification-code-${i + 1}`}
+                  aria-label={`Verification code digit ${i + 1} of 6`}
+                  autoComplete={i === 0 ? "one-time-code" : "off"}
                   ref={(el) => (inputsRef.current[i] = el)}
                   value={d}
                   onChange={(e) => setDigit(i, e.target.value)}
@@ -776,7 +777,7 @@ export function ScreenEnableBiometric({ nav, params, toast, biometric, setBiomet
           Your account is ready. Turn on Face ID to sign in instantly next time — no password needed.
         </div>
       </div>
-      <div style={{ paddingBottom: 24, display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ paddingBottom: "max(28px, env(safe-area-inset-bottom))", display: "flex", flexDirection: "column", gap: 10 }}>
         <Btn full variant="dark" icon={Fingerprint} onClick={enable}>Enable Face ID</Btn>
         <Btn full variant="ghost" onClick={skip}>Not now</Btn>
       </div>
@@ -1035,19 +1036,22 @@ function emptyQualification() {
   return { id: "q" + qualIdCounter++, type: "", name: "", uploaded: false };
 }
 
-export function ScreenVerification({ nav, toast, submitVerification, coachOnboarding }) {
+export function ScreenVerification({ nav, toast, submitVerification, coachOnboarding, params }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
+  const resubmitting = !!params?.resubmit;
   const inputStyle = { width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", background: C.white, color: C.jet, ...fBody };
   const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
-  const [idType, setIdType] = useState("");
+  const [idType, setIdType] = useState(resubmitting ? "Driver licence" : "");
   const [idUploaded, setIdUploaded] = useState(false);
-  const [selfieUploaded, setSelfieUploaded] = useState(false);
-  const [worksWithMinors, setWorksWithMinors] = useState(false);
+  const [selfieUploaded, setSelfieUploaded] = useState(resubmitting);
+  const [worksWithMinors, setWorksWithMinors] = useState(resubmitting);
   const [wwccNumber, setWwccNumber] = useState("");
   const [wwccExpiry, setWwccExpiry] = useState("");
   const [wwccUploaded, setWwccUploaded] = useState(false);
-  const [qualifications, setQualifications] = useState([emptyQualification()]);
+  const [qualifications, setQualifications] = useState(resubmitting
+    ? [{ id: "q-approved", type: "Coaching accreditation", name: "Level 2 Coaching Certificate", uploaded: true }]
+    : [emptyQualification()]);
 
   const updateQual = (id, patch) => setQualifications((qs) => qs.map((q) => (q.id === id ? { ...q, ...patch } : q)));
   const addQualification = () => setQualifications((qs) => [...qs, emptyQualification()]);
@@ -1064,8 +1068,20 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
 
         <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Get verified</div>
         <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 8, marginBottom: 18, lineHeight: 1.55, ...fBody }}>
-          Verification builds trust with clients and unlocks bookings. Most reviews complete within 2 business days.
+          {resubmitting ? "Update the two documents highlighted by our review team. Your approved selfie and qualification stay on file." : "Verification builds trust with clients and unlocks bookings. Most reviews complete within 2 business days."}
         </div>
+
+        {resubmitting && (
+          <Card style={{ marginBottom: 18, background: C.warnTint, borderColor: C.brand }}>
+            <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+              <Upload size={18} color={C.brand} style={{ flexShrink: 0, marginTop: 1 }} />
+              <div>
+                <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>Resubmission in progress</div>
+                <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, marginTop: 3, ...fBody }}>Replace your photo ID and WWCC image with clear, uncropped copies. You won’t need to restart verification.</div>
+              </div>
+            </div>
+          </Card>
+        )}
 
         <div style={{ fontSize: T.labelLg, fontWeight: 700, color: C.jet, marginBottom: 8, ...fDisplay }}>Government-issued photo ID</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
@@ -1111,7 +1127,7 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
         <Card style={{ marginBottom: worksWithMinors ? 12 : 18 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>Do you coach athletes under 18 years of age?</div>
-            <Toggle on={worksWithMinors} onClick={() => setWorksWithMinors((v) => !v)} />
+            <Toggle label="I work with children under 18" on={worksWithMinors} onClick={() => setWorksWithMinors((v) => !v)} />
           </div>
         </Card>
 
@@ -1200,14 +1216,65 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
   );
 }
 
-export function ScreenVerificationPending({ nav, verificationStatus, setReachedDashboardAfterVerification }) {
+export function ScreenVerificationPending({ nav, params, verificationStatus, setReachedDashboardAfterVerification }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
+  const rejected = verificationStatus === "rejected" || params?.variant === "rejected";
   const approved = verificationStatus === "approved";
   const goToSetup = () => {
     if (approved && setReachedDashboardAfterVerification) setReachedDashboardAfterVerification(true);
     nav("coach-services-setup");
   };
+  if (rejected) {
+    const documents = [
+      { label: "Photo ID", detail: "Glare obscures the expiry date and the lower edge is cropped.", action: true },
+      { label: "Selfie verification", detail: "Identity match confirmed.", action: false },
+      { label: "Working with Children Check", detail: "The expiry date is not readable in the uploaded image.", action: true },
+      { label: "Coaching qualification", detail: "Level 2 Coaching Certificate approved.", action: false },
+    ];
+    return (
+      <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+        <TopBar title="Verification review" onBack={() => nav("coach-dashboard")} />
+        <div style={{ flex: 1, overflowY: "auto", padding: "18px 18px 24px" }} className="cl-hide-scrollbar">
+          <div style={{ textAlign: "center", padding: "5px 10px 20px" }}>
+            <div style={{ width: 68, height: 68, borderRadius: 22, background: C.dangerTint, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 15px" }}>
+              <XCircle size={30} color={C.danger} />
+            </div>
+            <Badge tone="neutral" icon={Clock}>Action needed</Badge>
+            <div style={{ fontSize: T.display, fontWeight: 700, color: C.jet, marginTop: 11, ...fDisplay }}>Two documents need an update</div>
+            <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.6, margin: "7px auto 0", maxWidth: 310, ...fBody }}>Your application is saved. Replace the items below and we’ll prioritise the new review.</div>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {documents.map((document) => (
+              <Card key={document.label} style={{ display: "flex", gap: 11, alignItems: "flex-start", background: document.action ? C.warnTint : C.white, borderColor: document.action ? C.brand : C.border }}>
+                <div style={{ width: 34, height: 34, borderRadius: 11, background: document.action ? C.brandTint : C.successTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  {document.action ? <Upload size={16} color={C.brand} /> : <CheckCircle2 size={16} color={C.success} />}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
+                    <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>{document.label}</div>
+                    <Badge tone={document.action ? "orange" : "success"}>{document.action ? "Replace" : "Approved"}</Badge>
+                  </div>
+                  <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, marginTop: 4, ...fBody }}>{document.detail}</div>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          <Card style={{ marginTop: 14, display: "flex", gap: 10, alignItems: "flex-start", background: C.fog }}>
+            <Lock size={17} color={C.brand} style={{ flexShrink: 0, marginTop: 1 }} />
+            <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.55, ...fBody }}>Approved documents remain securely on file. Resubmitting does not affect your profile or require a new application.</div>
+          </Card>
+        </div>
+        <div style={{ padding: "12px 18px 28px", borderTop: `1px solid ${C.border}`, background: C.white, display: "flex", flexDirection: "column", gap: 9 }}>
+          <Btn full icon={Upload} onClick={() => nav("verification", { resubmit: true })}>Update documents</Btn>
+          <Btn full variant="outline" onClick={() => nav("support", { presetTab: "contact", faqTopic: "verification", backTo: "verification-rejected" })}>Ask verification support</Btn>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ padding: "28px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ textAlign: "center", marginTop: 20 }}>

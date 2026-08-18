@@ -28,10 +28,10 @@ function SelectedCoachCardBase({ coach, routing, routeInfo, onOpen, onClose }) {
           {routing ? "Finding route…" : routeInfo ? `${routeInfo.distanceKm.toFixed(1)} km · ${Math.round(routeInfo.durationMin)} min drive` : `${coach.distanceKm} km away`}
         </div>
       </div>
-      <button onClick={() => onOpen?.(coach.id)} style={{ width: 38, height: 38, borderRadius: 11, background: C.brand, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+      <button type="button" aria-label={`Open ${pub.name}'s profile`} onClick={() => onOpen?.(coach.id)} style={{ width: 44, height: 44, borderRadius: 12, background: C.brand, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
         <ChevronRight size={19} color={C.white} />
       </button>
-      <button onClick={onClose} style={{ position: "absolute", top: -9, right: -9, width: 24, height: 24, borderRadius: 99, background: C.jet, border: `2px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+      <button type="button" aria-label="Close selected coach card" onClick={onClose} style={{ position: "absolute", top: -12, right: -12, width: 44, height: 44, borderRadius: 999, background: C.jet, border: `2px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
         <X size={12} color={C.white} />
       </button>
     </div>

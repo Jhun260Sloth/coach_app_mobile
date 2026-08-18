@@ -1,7 +1,9 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import {
   INITIAL_BOOKINGS, COACH_BOOKINGS, ADMIN_VERIFICATION_QUEUE, ADMIN_DISPUTES,
-  INITIAL_AVAILABILITY_BLOCKS, BOOKING_STATUS, PAYMENT_STATUS,
+  INITIAL_AVAILABILITY_BLOCKS, BOOKING_STATUS, PAYMENT_STATUS, PAYOUT_STATUS,
+  SESSION_DISPUTES, ADDITIONAL_CHARGES, DISPUTE_STATUS, DISPUTE_OUTCOME,
+  ADDITIONAL_CHARGE_STATUS, CLIENT_NOTIFICATIONS, COACH_NOTIFICATIONS,
 } from "../data/bookings";
 import { COACHES } from "../data/coaches";
 import { CURRENT_CLIENT, isHandleTaken as isHandleTakenBase } from "../data/users";
@@ -18,6 +20,11 @@ import { applyTheme } from "../theme/theme";
 
 const AppContext = createContext(null);
 
+const seedNotifications = () => [
+  ...CLIENT_NOTIFICATIONS.map((notification) => ({ ...notification, audience: "client" })),
+  ...COACH_NOTIFICATIONS.map((notification) => ({ ...notification, audience: "coach" })),
+];
+
 export function useApp() {
   const ctx = useContext(AppContext);
   if (!ctx) throw new Error("useApp() must be used inside <AppProvider>");
@@ -30,6 +37,10 @@ export function AppProvider({ children }) {
   const [screen, setScreen] = useState("splash");
   const [params, setParams] = useState({});
   const [history, setHistory] = useState([]);
+  const screenRef = useRef(screen);
+  const paramsRef = useRef(params);
+  const historyRef = useRef(history);
+  const roleRef = useRef(role);
 
   // ---- UI ----
   const [toastMsg, setToastMsg] = useState(null);
@@ -50,6 +61,8 @@ export function AppProvider({ children }) {
   // ---- Booking state ----
   const [bookings, setBookings] = useState(INITIAL_BOOKINGS);
   const [coachBookings, setCoachBookings] = useState(COACH_BOOKINGS);
+  const [sessionDisputes, setSessionDisputes] = useState(SESSION_DISPUTES);
+  const [additionalCharges, setAdditionalCharges] = useState(ADDITIONAL_CHARGES);
   const [draft, setDraft] = useState(null);
 
   // ---- Coach state ----
@@ -76,7 +89,7 @@ export function AppProvider({ children }) {
   const [disputes, setDisputes] = useState(ADMIN_DISPUTES);
 
   // ---- Notifications ----
-  const [notifications, setNotifications] = useState([]);
+  const [notifications, setNotifications] = useState(seedNotifications);
 
   // ---- Shared location ----
   const userLocationState = useUserLocation();
@@ -85,6 +98,11 @@ export function AppProvider({ children }) {
   useEffect(() => {
     applyTheme(document.documentElement, darkMode ? "dark" : "light");
   }, [darkMode]);
+
+  useEffect(() => { screenRef.current = screen; }, [screen]);
+  useEffect(() => { paramsRef.current = params; }, [params]);
+  useEffect(() => { historyRef.current = history; }, [history]);
+  useEffect(() => { roleRef.current = role; }, [role]);
 
   const toggleDarkMode = () => setDarkMode((v) => !v);
 
@@ -114,19 +132,91 @@ export function AppProvider({ children }) {
     setTimeout(() => setToastMsg(null), 2200);
   };
 
-  const nav = (s, p = {}) => {
-    setHistory((h) => [...h, screen]);
-    setScreen(s);
-    setParams(p);
+  const normaliseHistoryEntry = (entry) => typeof entry === "string"
+    ? { screen: entry, params: {}, role: roleRef.current }
+    : entry;
+
+  const commitRoute = (nextScreen, nextParams = {}, nextRole = roleRef.current) => {
+    screenRef.current = nextScreen;
+    paramsRef.current = nextParams;
+    roleRef.current = nextRole;
+    setScreen(nextScreen);
+    setParams(nextParams);
+    setRole(nextRole);
   };
 
-  const goBack = () => {
-    setHistory((h) => {
-      const n = [...h];
-      const last = n.pop();
-      if (last) setScreen(last);
-      return n;
+  const setCoachNotifications = (updater) => {
+    setNotifications((all) => {
+      const coachItems = all.filter((n) => n.audience === "coach");
+      const nextCoachItems = typeof updater === "function" ? updater(coachItems) : updater;
+      const nextById = new Map(nextCoachItems.map((n) => [n.id, n]));
+      return all.map((n) => (n.audience === "coach" ? nextById.get(n.id) || n : n));
     });
+  };
+
+  const commitHistory = (nextHistory) => {
+    historyRef.current = nextHistory;
+    setHistory(nextHistory);
+  };
+
+  const nav = (nextScreen, nextParams = {}, nextRole = roleRef.current) => {
+    if (!nextScreen) return;
+    if (nextScreen === screenRef.current && nextRole === roleRef.current) {
+      commitRoute(nextScreen, nextParams, nextRole);
+      return;
+    }
+    const stack = historyRef.current.map(normaliseHistoryEntry);
+    const previous = stack[stack.length - 1];
+
+    // Several legacy screens use nav(previousRoute) for their back button.
+    // Recognise that immediate reversal and unwind it instead of creating a
+    // forward/back loop in the stack.
+    if (previous?.screen === nextScreen) {
+      commitHistory(stack.slice(0, -1));
+      commitRoute(nextScreen, Object.keys(nextParams).length ? nextParams : previous.params, previous.role);
+      return;
+    }
+
+    const currentEntry = {
+      screen: screenRef.current,
+      params: paramsRef.current,
+      role: roleRef.current,
+    };
+    commitHistory([...stack, currentEntry]);
+    commitRoute(nextScreen, nextParams, nextRole);
+  };
+
+  const goBack = (fallbackScreen, fallbackParams = {}) => {
+    const stack = historyRef.current.map(normaliseHistoryEntry);
+    const previous = stack.pop();
+    if (previous) {
+      commitHistory(stack);
+      commitRoute(previous.screen, previous.params || {}, previous.role || roleRef.current);
+      return;
+    }
+
+    const explicitFallback = typeof fallbackScreen === "string" ? fallbackScreen : null;
+    const safeFallback = explicitFallback
+      || (roleRef.current === "coach" ? "coach-dashboard" : "client-home");
+    commitHistory([]);
+    commitRoute(safeFallback, explicitFallback && fallbackParams && !fallbackParams.nativeEvent ? fallbackParams : {}, roleRef.current);
+  };
+
+  const replaceNav = (nextScreen, nextParams = {}, nextRole = roleRef.current) => {
+    commitRoute(nextScreen, nextParams, nextRole);
+  };
+
+  const resetNav = (nextScreen, nextParams = {}, nextRole = roleRef.current) => {
+    commitHistory([]);
+    commitRoute(nextScreen, nextParams, nextRole);
+  };
+
+  const goToHistory = (index) => {
+    const stack = historyRef.current.map(normaliseHistoryEntry);
+    const target = stack[index];
+    if (!target) return;
+    commitHistory(stack.slice(0, index));
+    commitRoute(target.screen, target.params || {}, target.role || roleRef.current);
   };
 
   const toggleFav = (id) =>
@@ -161,8 +251,15 @@ export function AppProvider({ children }) {
         clientHandle: clientIdentity.handle, clientPrivacy: clientIdentity.namePrivacy,
         service: d.pkg.name, date: d.day, time: d.time, mode: d.mode,
         status: BOOKING_STATUS.PENDING, paymentStatus: PAYMENT_STATUS.NOT_REQUESTED,
+        payoutStatus: PAYOUT_STATUS.NOT_READY,
         price: d.total, reviewed: false,
         participants: d.participants || "You", notes: d.conditions || "",
+        includesMinor: !!d.includesMinor,
+        guardianName: d.guardianName || "",
+        guardianRelationship: d.guardianRelationship || "",
+        guardianPhone: d.guardianPhone || "",
+        emergencyName: d.emergencyName || "",
+        emergencyPhone: d.emergencyPhone || "",
       },
       ...b,
     ]);
@@ -173,8 +270,14 @@ export function AppProvider({ children }) {
           clientHandle: clientIdentity.handle, clientPrivacy: clientIdentity.namePrivacy,
           service: d.pkg.name, date: d.day,
           time: d.time, mode: d.mode, status: BOOKING_STATUS.PENDING,
-          paymentStatus: PAYMENT_STATUS.NOT_REQUESTED, price: d.total,
+          paymentStatus: PAYMENT_STATUS.NOT_REQUESTED, payoutStatus: PAYOUT_STATUS.NOT_READY, price: d.total,
           notes: d.conditions || "",
+          includesMinor: !!d.includesMinor,
+          guardianName: d.guardianName || "",
+          guardianRelationship: d.guardianRelationship || "",
+          guardianPhone: d.guardianPhone || "",
+          emergencyName: d.emergencyName || "",
+          emergencyPhone: d.emergencyPhone || "",
         },
         ...cb,
       ]);
@@ -235,7 +338,7 @@ export function AppProvider({ children }) {
     }
   };
 
-  const rescheduleBooking = (id, { date, time }) => {
+  const rescheduleBooking = (id, { date, time }, actorRole = "client") => {
     const target = bookings.find((booking) => booking.id === id)
       || coachBookings.find((booking) => booking.id === id);
     if (!target) return;
@@ -244,10 +347,12 @@ export function AppProvider({ children }) {
     setBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...schedulePatch } : booking)));
     setCoachBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...schedulePatch } : booking)));
     pushNotification({
-      audience: "coach",
+      audience: actorRole === "coach" ? "client" : "coach",
       type: "booking",
       title: "Session rescheduled",
-      body: `${target.clientName || "Your client"} moved ${target.service} to ${date}, ${time}.`,
+      body: actorRole === "coach"
+        ? `${target.coachName || coachIdentity.name} moved ${target.service} to ${date}, ${time}.`
+        : `${target.clientName || "Your client"} moved ${target.service} to ${date}, ${time}.`,
       bookingId: id,
     });
   };
@@ -257,7 +362,12 @@ export function AppProvider({ children }) {
       || coachBookings.find((booking) => booking.id === id);
     if (!target || target.status !== BOOKING_STATUS.AWAITING_PAYMENT) return false;
 
-    const paymentPatch = { status: BOOKING_STATUS.CONFIRMED, paymentStatus: PAYMENT_STATUS.HELD };
+    const paymentPatch = {
+      status: BOOKING_STATUS.CONFIRMED,
+      paymentStatus: PAYMENT_STATUS.HELD,
+      payoutStatus: PAYOUT_STATUS.NOT_READY,
+      paidAt: "Just now",
+    };
     setBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...paymentPatch } : booking)));
     setCoachBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...paymentPatch } : booking)));
     pushNotification({
@@ -283,6 +393,10 @@ export function AppProvider({ children }) {
       paymentStatus: nextStatus === BOOKING_STATUS.AWAITING_PAYMENT
         ? PAYMENT_STATUS.DUE
         : PAYMENT_STATUS.NOT_REQUESTED,
+      payoutStatus: PAYOUT_STATUS.NOT_READY,
+      ...(nextStatus === BOOKING_STATUS.AWAITING_PAYMENT
+        ? { acceptedAt: "Just now", paymentDeadline: "Tomorrow, 6:00pm", paymentReminderSent: false }
+        : {}),
     };
     setCoachBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...responsePatch } : booking)));
     setBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...responsePatch } : booking)));
@@ -300,6 +414,97 @@ export function AppProvider({ children }) {
         bookingId: id,
       });
     }
+    return true;
+  };
+
+  const sendPaymentReminder = (id) => {
+    const target = coachBookings.find((booking) => booking.id === id)
+      || bookings.find((booking) => booking.id === id);
+    if (!target || target.status !== BOOKING_STATUS.AWAITING_PAYMENT) return false;
+
+    const reminderPatch = { paymentReminderSent: true, paymentReminderSentAt: "Just now" };
+    setCoachBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...reminderPatch } : booking)));
+    setBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...reminderPatch } : booking)));
+    pushNotification({
+      audience: "client",
+      type: "payment",
+      title: "Payment reminder",
+      body: `Complete payment for ${target.service} by ${target.paymentDeadline || "tomorrow at 6:00pm"} to keep your session.`,
+      bookingId: id,
+    });
+    return true;
+  };
+
+  const expireAwaitingPayment = (id) => {
+    const target = coachBookings.find((booking) => booking.id === id)
+      || bookings.find((booking) => booking.id === id);
+    if (!target || target.status !== BOOKING_STATUS.AWAITING_PAYMENT) return false;
+
+    const expiryPatch = {
+      status: BOOKING_STATUS.EXPIRED,
+      paymentStatus: PAYMENT_STATUS.NOT_REQUESTED,
+      payoutStatus: PAYOUT_STATUS.NOT_READY,
+      slotReleased: true,
+    };
+    setCoachBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...expiryPatch } : booking)));
+    setBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...expiryPatch } : booking)));
+    pushNotification({
+      audience: "client",
+      type: "booking",
+      title: "Payment window closed",
+      body: `The reserved slot for ${target.service} was released because payment was not completed.`,
+      bookingId: id,
+    });
+    return true;
+  };
+
+  const confirmSessionCompletion = (id, actorRole = role) => {
+    const target = (actorRole === "coach" ? coachBookings : bookings).find((booking) => booking.id === id)
+      || bookings.find((booking) => booking.id === id)
+      || coachBookings.find((booking) => booking.id === id);
+    if (!target || ![BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.COMPLETION_PENDING].includes(target.status)) return false;
+
+    const completionPatch = {
+      status: BOOKING_STATUS.COMPLETION_PENDING,
+      paymentStatus: PAYMENT_STATUS.HELD,
+      payoutStatus: PAYOUT_STATUS.PROCESSING,
+      completionConfirmedBy: actorRole,
+      completionConfirmedAt: "Just now",
+    };
+    setCoachBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...completionPatch } : booking)));
+    setBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...completionPatch } : booking)));
+    pushNotification({
+      audience: actorRole === "coach" ? "client" : "coach",
+      type: "booking",
+      title: "Session completion confirmed",
+      body: `${target.service} on ${target.date} was confirmed complete. Funds are now being released.`,
+      bookingId: id,
+    });
+
+    setTimeout(() => {
+      const releasePatch = {
+        status: BOOKING_STATUS.COMPLETED,
+        paymentStatus: PAYMENT_STATUS.RELEASED,
+        payoutStatus: PAYOUT_STATUS.RELEASED,
+        fundsReleasedAt: "Just now",
+      };
+      setCoachBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...releasePatch } : booking)));
+      setBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...releasePatch } : booking)));
+      pushNotification({
+        audience: "coach",
+        type: "payment",
+        title: "Payout released",
+        body: `Your payout for ${target.service} is on its way to your bank account.`,
+        bookingId: id,
+      });
+      pushNotification({
+        audience: "client",
+        type: "payment",
+        title: "Payment released securely",
+        body: `Your payment for ${target.service} has been released to the coach.`,
+        bookingId: id,
+      });
+    }, 900);
     return true;
   };
 
@@ -323,6 +528,138 @@ export function AppProvider({ children }) {
     setChildren((c) => c.map((ch) => (ch.id === id ? { ...ch, ...patch } : ch)));
   const removeChild = (id) =>
     setChildren((c) => c.filter((ch) => ch.id !== id));
+
+  // ---- Session exceptions & additional charges ----
+  const createSessionDispute = ({
+    bookingId, filedByRole = role, category, categoryLabel, description,
+    amountRequested, evidence = [], includeChat = true, chargeId,
+  }) => {
+    const target = bookings.find((booking) => booking.id === bookingId)
+      || coachBookings.find((booking) => booking.id === bookingId);
+    if (!target) return null;
+
+    const id = `case-${Date.now()}`;
+    const record = {
+      id, bookingId, filedByRole, category, categoryLabel, description,
+      amountRequested: Number(amountRequested || target.price || 0),
+      evidence, includeChat, chargeId,
+      status: DISPUTE_STATUS.SUBMITTED,
+      submittedAt: "Just now",
+      updatedAt: "Just now",
+      supportNote: "Your report is safely recorded. A resolution specialist will review the booking, messages and evidence.",
+    };
+    setSessionDisputes((items) => [record, ...items]);
+    const exceptionPatch = { exceptionStatus: DISPUTE_STATUS.SUBMITTED, payoutStatus: PAYOUT_STATUS.PROCESSING };
+    setBookings((items) => items.map((booking) => (booking.id === bookingId ? { ...booking, ...exceptionPatch } : booking)));
+    setCoachBookings((items) => items.map((booking) => (booking.id === bookingId ? { ...booking, ...exceptionPatch } : booking)));
+    pushNotification({
+      audience: filedByRole === "coach" ? "client" : "coach",
+      type: "dispute",
+      title: "Session report submitted",
+      body: `A report was opened for ${target.service}. Funds will stay protected while it is reviewed.`,
+      bookingId,
+    });
+    window.setTimeout(() => {
+      setSessionDisputes((items) => items.map((item) => (
+        item.id === id
+          ? { ...item, status: DISPUTE_STATUS.REVIEWING, updatedAt: "Just now" }
+          : item
+      )));
+      setBookings((items) => items.map((booking) => (booking.id === bookingId ? { ...booking, exceptionStatus: DISPUTE_STATUS.REVIEWING } : booking)));
+      setCoachBookings((items) => items.map((booking) => (booking.id === bookingId ? { ...booking, exceptionStatus: DISPUTE_STATUS.REVIEWING } : booking)));
+    }, 900);
+    return id;
+  };
+
+  const resolveSessionDispute = (id, outcome) => {
+    const target = sessionDisputes.find((item) => item.id === id);
+    if (!target) return false;
+    const booking = bookings.find((item) => item.id === target.bookingId)
+      || coachBookings.find((item) => item.id === target.bookingId);
+    const financialPatch = outcome === DISPUTE_OUTCOME.CLIENT_REFUNDED
+      ? { paymentStatus: PAYMENT_STATUS.REFUNDED, refundStatus: "refunded", payoutStatus: PAYOUT_STATUS.NOT_READY }
+      : { paymentStatus: PAYMENT_STATUS.RELEASED, payoutStatus: PAYOUT_STATUS.RELEASED };
+    setSessionDisputes((items) => items.map((item) => (
+      item.id === id
+        ? { ...item, status: DISPUTE_STATUS.RESOLVED, outcome, updatedAt: "Just now" }
+        : item
+    )));
+    setBookings((items) => items.map((item) => (item.id === target.bookingId ? { ...item, ...financialPatch, exceptionStatus: DISPUTE_STATUS.RESOLVED } : item)));
+    setCoachBookings((items) => items.map((item) => (item.id === target.bookingId ? { ...item, ...financialPatch, exceptionStatus: DISPUTE_STATUS.RESOLVED } : item)));
+    pushNotification({
+      audience: "client", type: "dispute", title: "Case decision ready",
+      body: outcome === DISPUTE_OUTCOME.CLIENT_REFUNDED
+        ? `A refund was approved for ${booking?.service || "your session"}.`
+        : `The case for ${booking?.service || "your session"} has been decided.`,
+      bookingId: target.bookingId,
+    });
+    pushNotification({
+      audience: "coach", type: "dispute", title: "Case decision ready",
+      body: outcome === DISPUTE_OUTCOME.COACH_COMPENSATED
+        ? `Compensation was approved for ${booking?.service || "your session"}.`
+        : `The case for ${booking?.service || "your session"} has been decided.`,
+      bookingId: target.bookingId,
+    });
+    return true;
+  };
+
+  const createAdditionalCharge = ({ bookingId, reason, note, amount, evidence }) => {
+    const target = coachBookings.find((booking) => booking.id === bookingId)
+      || bookings.find((booking) => booking.id === bookingId);
+    if (!target) return null;
+    const id = `charge-${Date.now()}`;
+    setAdditionalCharges((items) => [{
+      id, bookingId, reason, note, amount: Number(amount || 0), evidence,
+      status: ADDITIONAL_CHARGE_STATUS.PENDING,
+      createdAt: "Just now", dueAt: "Respond within 48 hours",
+    }, ...items]);
+    pushNotification({
+      audience: "client", type: "payment", title: "Additional payment requested",
+      body: `${target.coachName || coachIdentity.name} requested $${Number(amount || 0).toFixed(2)} for ${reason.toLowerCase()}.`,
+      bookingId,
+    });
+    return id;
+  };
+
+  const payAdditionalCharge = (id) => {
+    const charge = additionalCharges.find((item) => item.id === id);
+    if (!charge || charge.status !== ADDITIONAL_CHARGE_STATUS.PENDING) return false;
+    setAdditionalCharges((items) => items.map((item) => (
+      item.id === id ? { ...item, status: ADDITIONAL_CHARGE_STATUS.PAID, paidAt: "Just now" } : item
+    )));
+    pushNotification({ audience: "coach", type: "payment", title: "Additional payment received", body: `$${Number(charge.amount).toFixed(2)} has been paid and added to your payout.`, bookingId: charge.bookingId });
+    pushNotification({ audience: "client", type: "payment", title: "Additional payment complete", body: `$${Number(charge.amount).toFixed(2)} was paid securely. Your receipt is ready.`, bookingId: charge.bookingId });
+    return true;
+  };
+
+  const disputeAdditionalCharge = (id, details = {}) => {
+    const charge = additionalCharges.find((item) => item.id === id);
+    if (!charge || charge.status !== ADDITIONAL_CHARGE_STATUS.PENDING) return null;
+    setAdditionalCharges((items) => items.map((item) => (
+      item.id === id ? { ...item, status: ADDITIONAL_CHARGE_STATUS.DISPUTED } : item
+    )));
+    return createSessionDispute({
+      bookingId: charge.bookingId,
+      filedByRole: "client",
+      category: "additional_charge",
+      categoryLabel: "Question an additional charge",
+      description: details.description || `I don’t recognise or agree with the additional ${charge.reason.toLowerCase()} charge.`,
+      amountRequested: charge.amount,
+      evidence: details.evidence || [charge.evidence].filter(Boolean),
+      includeChat: true,
+      chargeId: id,
+    });
+  };
+
+  const cancelAdditionalCharge = (id) => {
+    const charge = additionalCharges.find((item) => item.id === id);
+    if (!charge || charge.status !== ADDITIONAL_CHARGE_STATUS.PENDING) return false;
+    setAdditionalCharges((items) => items.map((item) => (
+      item.id === id ? { ...item, status: ADDITIONAL_CHARGE_STATUS.CANCELLED } : item
+    )));
+    pushNotification({ audience: "client", type: "payment", title: "Payment request withdrawn", body: "The coach withdrew this additional payment request.", bookingId: charge.bookingId });
+    return true;
+  };
 
   // ---- Verification ----
   const submitVerification = ({ documents, worksWithMinors }) => {
@@ -377,11 +714,12 @@ export function AppProvider({ children }) {
 
   // ---- Reset (for prototype controls) ----
   const resetAll = () => {
-    setScreen("splash");
-    setHistory([]);
+    resetNav("splash", {}, "client");
     setBookings(INITIAL_BOOKINGS);
     setCoachBookings(COACH_BOOKINGS);
-    setNotifications([]);
+    setSessionDisputes(SESSION_DISPUTES);
+    setAdditionalCharges(ADDITIONAL_CHARGES);
+    setNotifications(seedNotifications());
     setVerified(false);
     setVerificationStatus("none");
     setReachedDashboardAfterVerification(false);
@@ -410,7 +748,8 @@ export function AppProvider({ children }) {
   // ======== Context value ========
   const value = {
     // Navigation
-    nav, goBack, screen, setScreen, params, setParams, history, setHistory, role, setRole,
+    nav, goBack, replaceNav, resetNav, goToHistory,
+    screen, setScreen, params, setParams, history, setHistory, role, setRole,
     // UI
     toast, toastMsg, offline, setOffline, darkMode, toggleDarkMode,
     // Client
@@ -423,6 +762,10 @@ export function AppProvider({ children }) {
     // Bookings
     bookings, setBookings, coachBookings, setCoachBookings,
     addBooking, cancelBooking, rescheduleBooking, markBookingPaid, respondBooking,
+    sendPaymentReminder, expireAwaitingPayment, confirmSessionCompletion,
+    sessionDisputes, createSessionDispute, resolveSessionDispute,
+    additionalCharges, createAdditionalCharge, payAdditionalCharge,
+    disputeAdditionalCharge, cancelAdditionalCharge,
     draft, setDraft,
     // Coach
     verified, verificationStatus, reachedDashboardAfterVerification, setReachedDashboardAfterVerification,
@@ -435,7 +778,7 @@ export function AppProvider({ children }) {
     // Verification & admin
     submitVerification, verificationQueue, decideVerification, disputes, resolveDispute,
     // Notifications
-    pushNotification, notifications, clientNotifications, coachNotifications, setClientNotifications,
+    pushNotification, notifications, clientNotifications, coachNotifications, setClientNotifications, setCoachNotifications,
     // Location
     ...userLocationState,
     // Reset

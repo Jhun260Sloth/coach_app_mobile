@@ -4,12 +4,12 @@ import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { Btn } from "../../components/ui/Primitives";
 
-export function ScreenCoachSetupComplete({ nav, setReachedDashboardAfterVerification }) {
+export function ScreenCoachSetupComplete({ resetNav, setReachedDashboardAfterVerification }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const goToDashboard = () => {
     if (setReachedDashboardAfterVerification) setReachedDashboardAfterVerification(true);
-    nav("coach-dashboard");
+    resetNav("coach-dashboard", {}, "coach");
   };
 
   return (
@@ -27,7 +27,7 @@ export function ScreenCoachSetupComplete({ nav, setReachedDashboardAfterVerifica
         </div>
       </div>
 
-      <div style={{ marginTop: "auto", padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white }}>
+      <div style={{ marginTop: "auto", padding: "14px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", borderTop: `1px solid ${C.border}`, background: C.white }}>
         <Btn full onClick={goToDashboard}>Go to dashboard</Btn>
       </div>
     </div>

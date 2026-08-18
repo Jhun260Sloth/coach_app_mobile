@@ -71,11 +71,11 @@ export function ScreenBookingSelectDateTime({ nav, params }) {
 
         <Card style={{ marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-            <button onClick={goPrev} disabled={isCurrentMonth} style={{ width: 32, height: 32, borderRadius: 10, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: isCurrentMonth ? "default" : "pointer", opacity: isCurrentMonth ? 0.4 : 1 }}>
+            <button type="button" aria-label="Previous month" onClick={goPrev} disabled={isCurrentMonth} style={{ width: 44, height: 44, borderRadius: 12, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: isCurrentMonth ? "default" : "pointer", opacity: isCurrentMonth ? 0.4 : 1 }}>
               <ChevronLeft size={16} color={C.jet} />
             </button>
             <span style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...fDisplay }}>{monthLabel}</span>
-            <button onClick={goNext} style={{ width: 32, height: 32, borderRadius: 10, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+            <button type="button" aria-label="Next month" onClick={goNext} style={{ width: 44, height: 44, borderRadius: 12, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
               <ChevronRight size={16} color={C.jet} />
             </button>
           </div>
@@ -165,7 +165,7 @@ export function ScreenBookingSelectDateTime({ nav, params }) {
                               color: active ? C.white : C.jet,
                               fontSize: T.labelLg, fontWeight: 600, cursor: "pointer", ...fBody,
                               boxShadow: active ? `0 2px 8px rgba(27, 94, 32, 0.2)` : "none",
-                              transition: "all 0.15s ease",
+                              transition: "background .15s ease, border-color .15s ease, color .15s ease, transform .15s ease",
                             }}
                           >
                             {formatTimeRange12(t, duration)}
@@ -181,7 +181,7 @@ export function ScreenBookingSelectDateTime({ nav, params }) {
         )}
       </div>
 
-      <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
+      <div style={{ padding: "14px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
         <Btn
           full
           disabled={!canContinue}
@@ -330,7 +330,7 @@ export function ScreenPaymentAddCard({ nav, params, toast }) {
         </div>
       </div>
 
-      <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
+      <div style={{ padding: "14px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
         <Btn full disabled={!isValid || saving} loading={saving} loadingText="Saving card…" onClick={save}>
           Save card
         </Btn>
@@ -413,6 +413,8 @@ export function ScreenPackageListing({ nav, params }) {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
           <span style={{ fontSize: T.labelLg, color: C.slate, ...fBody }}>{filtered.length} package{filtered.length !== 1 ? "s" : ""}</span>
           <select
+            name="package-sort"
+            aria-label="Sort packages"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
             style={{
@@ -572,7 +574,7 @@ export function ScreenPackageInquiry({ nav, params, toast }) {
         </div>
       </div>
 
-      <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
+      <div style={{ padding: "14px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
         <Btn full disabled={!message.trim() || sending} loading={sending} loadingText="Sending…" onClick={send}>
           Send message
         </Btn>
@@ -641,6 +643,10 @@ export function ScreenPackageWaitlist({ nav, params, toast }) {
               <span style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>Notify me when available</span>
             </div>
             <button
+              type="button"
+              role="switch"
+              aria-checked={notifEnabled}
+              aria-label="Notify me when this package is available"
               onClick={() => setNotifEnabled((v) => !v)}
               style={{
                 width: 48, height: 28, borderRadius: 999,
@@ -675,7 +681,7 @@ export function ScreenPackageWaitlist({ nav, params, toast }) {
         </Card>
       </div>
 
-      <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
+      <div style={{ padding: "14px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
         {saved ? (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "13px 0" }}>
             <Check size={18} color={C.success} />
@@ -787,7 +793,7 @@ export function ScreenSessionPrep({ nav, params }) {
         </Card>
       </div>
 
-      <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
+      <div style={{ padding: "14px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
         <Btn full onClick={() => nav("client-dashboard")}>Got it</Btn>
       </div>
     </div>
@@ -869,7 +875,7 @@ export function ScreenRefundStatus({ nav, params }) {
         </Card>
       </div>
 
-      <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
+      <div style={{ padding: "14px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
         <Btn full onClick={() => nav("client-dashboard")}>Back to sessions</Btn>
       </div>
     </div>
@@ -958,9 +964,12 @@ export function ScreenBookingMessage({ nav, params, toast }) {
         ))}
       </div>
 
-      <div style={{ padding: "12px 18px", paddingBottom: 20, borderTop: `1px solid ${C.border}`, background: C.white, display: "flex", gap: 10, flexShrink: 0 }}>
+      <div style={{ padding: "12px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", borderTop: `1px solid ${C.border}`, background: C.white, display: "flex", gap: 10, flexShrink: 0 }}>
         <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 999, padding: "10px 14px", background: C.white }}>
           <input
+            name="coach-response"
+            aria-label="Reply to coach"
+            autoComplete="off"
             value={reply}
             onChange={(e) => setReply(e.target.value)}
             placeholder="Type a reply…"
@@ -969,6 +978,8 @@ export function ScreenBookingMessage({ nav, params, toast }) {
           />
         </div>
         <button
+          type="button"
+          aria-label="Send reply"
           onClick={send}
           disabled={!reply.trim() || sending}
           style={{
@@ -1044,11 +1055,11 @@ export function ScreenAvailabilityCalendar({ nav, params }) {
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
         <Card style={{ marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-            <button onClick={goPrev} disabled={isCurrentMonth} style={{ width: 32, height: 32, borderRadius: 10, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: isCurrentMonth ? "default" : "pointer", opacity: isCurrentMonth ? 0.4 : 1 }}>
+            <button type="button" aria-label="Previous month" onClick={goPrev} disabled={isCurrentMonth} style={{ width: 44, height: 44, borderRadius: 12, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: isCurrentMonth ? "default" : "pointer", opacity: isCurrentMonth ? 0.4 : 1 }}>
               <ChevronLeft size={16} color={C.jet} />
             </button>
             <span style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...fDisplay }}>{monthLabel}</span>
-            <button onClick={goNext} style={{ width: 32, height: 32, borderRadius: 10, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+            <button type="button" aria-label="Next month" onClick={goNext} style={{ width: 44, height: 44, borderRadius: 12, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
               <ChevronRight size={16} color={C.jet} />
             </button>
           </div>
@@ -1135,7 +1146,7 @@ export function ScreenAvailabilityCalendar({ nav, params }) {
                               color: active ? C.white : C.jet,
                               fontSize: T.labelLg, fontWeight: 600, cursor: "pointer", ...fBody,
                               boxShadow: active ? `0 2px 8px rgba(27, 94, 32, 0.2)` : "none",
-                              transition: "all 0.15s ease",
+                              transition: "background .15s ease, border-color .15s ease, color .15s ease, transform .15s ease",
                             }}
                           >
                             {formatTimeRange12(t, duration)}
@@ -1152,7 +1163,7 @@ export function ScreenAvailabilityCalendar({ nav, params }) {
       </div>
 
       {selectedDate && selectedTime && (
-        <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
+        <div style={{ padding: "14px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
           <Btn full onClick={confirm}>
             {pkg ? "Continue to book" : "Confirm time"}
           </Btn>
@@ -1171,12 +1182,28 @@ export function ScreenAvailabilityCalendar({ nav, params }) {
    ========================================================================= */
 
 export function ScreenBookingParticipantDetails({ nav, params, draft, toast }) {
-  const { darkMode, children } = useApp();
+  const { darkMode, children, clientPrefs } = useApp();
   const C = darkMode ? CD : CL;
 
   const participantIds = params?.participants || draft?.participants || ["self"];
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [details, setDetails] = useState({});
+  const [details, setDetails] = useState(() => Object.fromEntries(participantIds.map((id) => {
+    if (id === "self") {
+      return [id, {
+        emergencyName: clientPrefs?.emergencyName || "",
+        emergencyPhone: clientPrefs?.emergencyMobile || "",
+        conditions: clientPrefs?.medicalConditions || "",
+        allergies: clientPrefs?.allergies || "",
+      }];
+    }
+    const child = children.find((item) => item.id === id);
+    return [id, {
+      emergencyName: child?.emergencyName || "",
+      emergencyPhone: child?.emergencyMobile || "",
+      conditions: child?.medicalConditions || child?.medicalNotes || "",
+      allergies: child?.allergies || "",
+    }];
+  })));
 
   const getParticipantLabel = (id) => {
     if (id === "self") return "You";
@@ -1187,6 +1214,10 @@ export function ScreenBookingParticipantDetails({ nav, params, draft, toast }) {
   const currentId = participantIds[currentIndex];
   const currentLabel = getParticipantLabel(currentId);
   const currentDetail = details[currentId] || { emergencyName: "", emergencyPhone: "", conditions: "", allergies: "" };
+  const currentProfile = currentId === "self" ? clientPrefs : children.find((child) => child.id === currentId);
+  const loadedSavedDetails = currentId === "self"
+    ? !!(clientPrefs?.emergencyName || clientPrefs?.emergencyMobile || clientPrefs?.medicalConditions || clientPrefs?.allergies)
+    : !!(currentProfile?.emergencyName || currentProfile?.emergencyMobile || currentProfile?.medicalConditions || currentProfile?.allergies || currentProfile?.medicalNotes);
   const isLast = currentIndex === participantIds.length - 1;
 
   const update = (field, value) => {
@@ -1224,6 +1255,16 @@ export function ScreenBookingParticipantDetails({ nav, params, draft, toast }) {
           Add emergency contact and medical details for {currentLabel}. This helps keep everyone safe during the session.
         </div>
 
+        {loadedSavedDetails && (
+          <Card style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: 12, background: C.successTint, marginBottom: 16 }}>
+            <Check size={16} color={C.success} style={{ flexShrink: 0, marginTop: 1 }} />
+            <div>
+              <div style={{ fontSize: T.labelLg, fontWeight: 700, color: C.jet, ...fBody }}>Saved details applied</div>
+              <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.45, marginTop: 2, ...fBody }}>We filled this from {currentId === "self" ? "your account" : `${currentLabel}'s profile`}. You can edit anything for this booking without changing the saved profile.</div>
+            </div>
+          </Card>
+        )}
+
         <SectionLabel>Emergency contact</SectionLabel>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 18 }}>
           <Field label="Contact name" placeholder="e.g. Jamie Chen" value={currentDetail.emergencyName} onChange={(e) => update("emergencyName", e.target.value)} />
@@ -1237,7 +1278,7 @@ export function ScreenBookingParticipantDetails({ nav, params, draft, toast }) {
         </div>
       </div>
 
-      <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
+      <div style={{ padding: "14px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
         <Btn full onClick={next}>
           {isLast ? "Continue" : "Next participant"}
         </Btn>

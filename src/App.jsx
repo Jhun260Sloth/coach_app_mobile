@@ -84,7 +84,7 @@ function AppShell() {
   useFonts();
   const app = useApp();
   const {
-    screen, role, setRole, setScreen, setParams, history, setHistory, goBack, toastMsg, offline, setOffline,
+    screen, role, history, goBack, resetNav, goToHistory, toastMsg, offline, setOffline,
     darkMode, toggleDarkMode,
     isFirstTimeClient, setIsFirstTimeClient, setDiscoveryPrefs, setBookings,
     setShowPostSignupGuide, verificationStatus, reachedDashboardAfterVerification,
@@ -291,12 +291,11 @@ function AppShell() {
                   <button
                     key={r}
                     onClick={() => {
-                      setRole(r); setHistory([]);
                       if (r === "coach") {
                         const stillOnVerification = (verificationStatus === "pending" || verificationStatus === "approved") && !reachedDashboardAfterVerification;
-                        setScreen(stillOnVerification ? "verification-pending" : "coach-dashboard");
+                        resetNav(verificationStatus === "rejected" ? "verification-rejected" : stillOnVerification ? "verification-pending" : "coach-dashboard", {}, r);
                       } else {
-                        setScreen("client-home");
+                        resetNav("client-home", {}, r);
                       }
                     }}
                     style={{
@@ -392,17 +391,21 @@ function AppShell() {
                   Navigation Stack ({history.length}):
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 3, flexWrap: "wrap" }}>
-                  {history.slice(-4).map((hStep, idx) => (
-                    <React.Fragment key={idx}>
+                  {history.slice(-4).map((hStep, idx) => {
+                    const historyIndex = Math.max(0, history.length - 4) + idx;
+                    const historyScreen = typeof hStep === "string" ? hStep : hStep.screen;
+                    return (
+                    <React.Fragment key={`${historyScreen}-${historyIndex}`}>
                       <span
-                        onClick={() => setScreen(hStep)}
+                        onClick={() => goToHistory(historyIndex)}
                         style={{ fontSize: 10, color: vSystem.textSecondary, cursor: "pointer", textDecoration: "underline" }}
                       >
-                        {hStep}
+                        {historyScreen}
                       </span>
                       <ChevronRight size={9} color={vSystem.textMuted} />
                     </React.Fragment>
-                  ))}
+                    );
+                  })}
                   <span style={{ fontSize: 10, fontWeight: 700, color: vSystem.textPrimary }}>{screen}</span>
                 </div>
               </div>
@@ -459,10 +462,7 @@ function AppShell() {
                     key={key}
                     ref={isSelected ? activeItemRef : null}
                     onClick={() => {
-                      setScreen(key);
-                      setParams(meta.demoParams || {});
-                      setHistory([]);
-                      if (meta.role && meta.role !== role) setRole(meta.role);
+                      resetNav(key, meta.demoParams || {}, meta.role || role);
                     }}
                     style={{
                       display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%",
@@ -928,7 +928,7 @@ function AppShell() {
                 {/* Active Screen Component */}
                 <div ref={screenWrapRef} style={{ flex: 1, position: "relative", overflow: "hidden" }}>
                   <div key={screen} style={{ height: "100%", animation: "clScreenIn .3s cubic-bezier(.22,1,.36,1)" }}>
-                    <ScreenErrorBoundary screen={screen} onReset={() => { setRole("client"); setScreen("client-home"); }}>
+                    <ScreenErrorBoundary screen={screen} onReset={() => resetNav("client-home", {}, "client")}>
                       <ScreenComponent {...screenProps} />
                     </ScreenErrorBoundary>
                   </div>
@@ -936,7 +936,7 @@ function AppShell() {
                 </div>
 
                 {/* Bottom Tab Bar */}
-                {showTabs && <BottomTabs items={tabsForRole} value={activeTabScreen} onChange={(v) => { setHistory([]); setScreen(v); }} />}
+                {showTabs && <BottomTabs items={tabsForRole} value={activeTabScreen} onChange={(v) => resetNav(v, {}, role)} />}
 
                 {/* iOS Bottom Home Indicator Swipe Bar */}
                 {showFrame && !isLandscape && devicePreset === "iphone-15" && (

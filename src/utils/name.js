@@ -86,7 +86,7 @@ export function getPublicName(user, context = "public") {
 
 /** Name a coach should see for a booking's client — full name once confirmed. */
 export function getBookingClientName(booking) {
-  const confirmed = ["confirmed", "completed", "paid"].includes(booking?.status);
+  const confirmed = ["confirmed", "completion_pending", "completed", "paid"].includes(booking?.status);
   if (confirmed && booking?.clientName) {
     return {
       name: booking.clientName,
@@ -106,7 +106,7 @@ export function getBookingClientName(booking) {
 
 /** Name a client should see for a booking's coach — full name once confirmed. */
 export function getBookingCoachName(booking, coach) {
-  const confirmed = ["confirmed", "completed", "paid"].includes(booking?.status);
+  const confirmed = ["confirmed", "completion_pending", "completed", "paid"].includes(booking?.status);
   if (confirmed && booking?.coachName) {
     return {
       name: booking.coachName,

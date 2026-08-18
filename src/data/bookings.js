@@ -13,6 +13,7 @@ export const BOOKING_STATUS = Object.freeze({
   PENDING: "pending",
   AWAITING_PAYMENT: "awaiting_payment",
   CONFIRMED: "confirmed",
+  COMPLETION_PENDING: "completion_pending",
   COMPLETED: "completed",
   DECLINED: "declined",
   EXPIRED: "expired",
@@ -26,6 +27,31 @@ export const PAYMENT_STATUS = Object.freeze({
   REFUND_PROCESSING: "refund_processing",
   REFUNDED: "refunded",
   RELEASED: "released",
+});
+
+export const PAYOUT_STATUS = Object.freeze({
+  NOT_READY: "not_ready",
+  PROCESSING: "processing",
+  RELEASED: "released",
+});
+
+export const DISPUTE_STATUS = Object.freeze({
+  SUBMITTED: "submitted",
+  REVIEWING: "reviewing",
+  RESOLVED: "resolved",
+});
+
+export const DISPUTE_OUTCOME = Object.freeze({
+  CLIENT_REFUNDED: "client_refunded",
+  COACH_COMPENSATED: "coach_compensated",
+  DISMISSED: "dismissed",
+});
+
+export const ADDITIONAL_CHARGE_STATUS = Object.freeze({
+  PENDING: "pending",
+  PAID: "paid",
+  DISPUTED: "disputed",
+  CANCELLED: "cancelled",
 });
 
 export const BOOKING_LIFECYCLE = Object.freeze({
@@ -42,7 +68,12 @@ export const BOOKING_LIFECYCLE = Object.freeze({
   [BOOKING_STATUS.CONFIRMED]: {
     label: "Confirmed",
     paymentStatus: PAYMENT_STATUS.HELD,
-    next: [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.CANCELLED],
+    next: [BOOKING_STATUS.COMPLETION_PENDING, BOOKING_STATUS.CANCELLED],
+  },
+  [BOOKING_STATUS.COMPLETION_PENDING]: {
+    label: "Confirm completion",
+    paymentStatus: PAYMENT_STATUS.HELD,
+    next: [BOOKING_STATUS.COMPLETED],
   },
   [BOOKING_STATUS.COMPLETED]: {
     label: "Completed",
@@ -68,17 +99,24 @@ export const BOOKING_LIFECYCLE = Object.freeze({
 
 export function withBookingLifecycle(booking) {
   const lifecycle = BOOKING_LIFECYCLE[booking.status] || BOOKING_LIFECYCLE[BOOKING_STATUS.PENDING];
-  return { ...booking, paymentStatus: booking.paymentStatus || lifecycle.paymentStatus };
+  const payoutStatus = booking.payoutStatus
+    || (booking.status === BOOKING_STATUS.COMPLETED
+      ? PAYOUT_STATUS.RELEASED
+      : booking.status === BOOKING_STATUS.COMPLETION_PENDING
+        ? PAYOUT_STATUS.PROCESSING
+        : PAYOUT_STATUS.NOT_READY);
+  return { ...booking, paymentStatus: booking.paymentStatus || lifecycle.paymentStatus, payoutStatus };
 }
 
 export const INITIAL_BOOKINGS = [
   // Pending — awaiting the coach's response
   { id: "b2", coachId: "c2", coachName: "Noah Kelly", clientName: "Sarah Lin", service: "1:1 Programming Session", date: "Fri, 25 Jul", time: "6:00am", mode: "In-person", status: "pending", price: 65, reviewed: false, participants: "You", notes: "Coming back from a shoulder injury — cleared for light training, will bring physio notes." },
-  { id: "b5", coachId: "c1", coachName: "Isla Ferguson", clientName: "Sarah Lin", service: "Group Clinic", date: "Fri, 8 Aug", time: "3:00pm", mode: "In-person", status: "awaiting_payment", price: 42, reviewed: false, participants: "You", notes: "" },
+  { id: "b5", coachId: "c1", coachName: "Isla Ferguson", clientName: "Sarah Lin", service: "Group Clinic", date: "Fri, 21 Aug", time: "3:00pm", mode: "In-person", status: "awaiting_payment", paymentDeadline: "Tomorrow, 6:00pm", paymentReminderSent: false, price: 42, reviewed: false, participants: "You", notes: "" },
   { id: "b6", coachId: "c5", coachName: "Chloe Dawson", clientName: "Sarah Lin", service: "Virtual Swing Review", date: "Sun, 10 Aug", time: "9:00am", mode: "Virtual", status: "pending", price: 40, reviewed: false, participants: "You", notes: "" },
   { id: "b7", coachId: "c6", coachName: "Liam O'Connor", clientName: "Sarah Lin", service: "Small Group Ride", date: "Thu, 14 Aug", time: "5:30pm", mode: "In-person", status: "pending", price: 42, reviewed: false, participants: "You", notes: "" },
 
   // Upcoming — confirmed and on the calendar
+  { id: "s1", coachId: "c2", coachName: "Noah Kelly", clientName: "Sarah Lin", clientHandle: "sarahlin", service: "1:1 Programming Session", date: "Thu, 20 Aug", time: "6:00am", mode: "In-person", status: "confirmed", price: 65, reviewed: false, participants: "You", notes: "Focus on clean return-to-training technique." },
   { id: "b1", coachId: "c1", coachName: "Isla Ferguson", clientName: "Sarah Lin", service: "1:1 Court Session", date: "Tue, 22 Jul", time: "4:00pm", mode: "In-person", status: "confirmed", price: 72, reviewed: false, participants: "You", notes: "" },
   { id: "b8", coachId: "c3", coachName: "Ruby Hendricks", clientName: "Sarah Lin", service: "1:1 Beach Session", date: "Thu, 6 Aug", time: "7:00am", mode: "In-person", status: "confirmed", price: 65, reviewed: false, participants: "You", notes: "" },
   { id: "b9", coachId: "c4", coachName: "Marcus Ude", clientName: "Sarah Lin", service: "1:1 Pad Session", date: "Sat, 8 Aug", time: "10:00am", mode: "In-person", status: "confirmed", price: 68, reviewed: false, participants: "You", notes: "" },
@@ -109,10 +147,11 @@ export const COACH_BOOKINGS = [
   // Pending — awaiting the coach's accept/decline
   { id: "cb2", clientName: "Marcus Webb", service: "Junior Group (max 4)", date: "Wed, 23 Jul", time: "5:00pm", mode: "In-person", status: "pending", price: 30, notes: "First session for his son, age 9." },
   { id: "cb3", clientName: "The Chen Family (u18)", service: "1:1 Court Session", date: "Sat, 26 Jul", time: "9:00am", mode: "In-person", status: "pending", price: 72, notes: "Booking for two children, guardian consent provided at checkout." },
-  { id: "cb5", clientName: "Aiden Cross", service: "1:1 Court Session", date: "Mon, 28 Jul", time: "6:30am", mode: "In-person", status: "awaiting_payment", price: 72, notes: "" },
+  { id: "cb5", clientName: "Aiden Cross", service: "1:1 Court Session", date: "Fri, 21 Aug", time: "6:30am", mode: "In-person", status: "awaiting_payment", paymentDeadline: "Tomorrow, 6:00pm", paymentReminderSent: false, price: 72, notes: "" },
   { id: "cb6", clientName: "Grace Liu", service: "Junior Group (max 4)", date: "Thu, 30 Jul", time: "4:30pm", mode: "In-person", status: "pending", price: 30, notes: "Wants to try group coaching for the first time." },
 
   // Upcoming — confirmed and on the calendar
+  { id: "s1", coachId: "c2", coachName: "Noah Kelly", clientName: "Sarah Lin", clientHandle: "sarahlin", service: "1:1 Programming Session", date: "Thu, 20 Aug", time: "6:00am", mode: "In-person", status: "confirmed", price: 65, notes: "Focus on clean return-to-training technique." },
   { id: "cb1", clientName: "Sarah Lin", service: "1:1 Court Session", date: "Tue, 22 Jul", time: "4:00pm", mode: "In-person", status: "confirmed", price: 72, notes: "" },
   { id: "cb7", clientName: "Ravi Patel", service: "1:1 Court Session", date: "Tue, 29 Jul", time: "7:00am", mode: "In-person", status: "confirmed", price: 72, notes: "" },
   { id: "cb8", clientName: "Owen King", service: "1:1 Court Session", date: "Fri, 1 Aug", time: "5:30pm", mode: "In-person", status: "confirmed", price: 72, notes: "" },
@@ -130,6 +169,71 @@ export const COACH_BOOKINGS = [
   { id: "cb15", clientName: "Alex Morgan", service: "1:1 Court Session", date: "Fri, 24 Jul", time: "7:00am", mode: "In-person", status: "expired", price: 72, notes: "Payment window expired" },
   { id: "cb16", clientName: "Jordan Lee", service: "1:1 Court Session", date: "Sat, 25 Jul", time: "8:00am", mode: "In-person", status: "cancelled", paymentStatus: "refunded", refundStatus: "refunded", price: 72, notes: "Cancelled by client" },
 ].map(withBookingLifecycle);
+
+/** Role-facing exception records used by the client and coach prototypes. */
+export const SESSION_DISPUTES = [
+  {
+    id: "case-101",
+    bookingId: "s1",
+    filedByRole: "client",
+    category: "session_not_delivered",
+    categoryLabel: "Session didn’t happen",
+    description: "I arrived before the scheduled start time and waited for 25 minutes, but the coach did not arrive.",
+    amountRequested: 65,
+    status: DISPUTE_STATUS.REVIEWING,
+    evidence: ["Gym check-in · 5:52am", "Message thread · 6 messages"],
+    includeChat: true,
+    submittedAt: "Today, 6:28am",
+    updatedAt: "Today, 9:10am",
+    supportNote: "A resolution specialist is checking the session messages and arrival records.",
+  },
+  {
+    id: "case-102",
+    bookingId: "b3",
+    filedByRole: "client",
+    category: "coach_no_show",
+    categoryLabel: "Coach no-show",
+    description: "The coach could not attend and confirmed this in the session chat.",
+    amountRequested: 65,
+    status: DISPUTE_STATUS.RESOLVED,
+    outcome: DISPUTE_OUTCOME.CLIENT_REFUNDED,
+    evidence: ["Session chat included", "Arrival check-in verified"],
+    includeChat: true,
+    submittedAt: "11 Aug, 8:24am",
+    updatedAt: "12 Aug, 2:40pm",
+    decisionNote: "The attendance record supports the client’s no-show claim. A full refund has been approved.",
+  },
+  {
+    id: "case-103",
+    bookingId: "cb10",
+    filedByRole: "coach",
+    category: "client_no_show",
+    categoryLabel: "Client no-show",
+    description: "I was at the venue for the full arrival window and the client did not attend or respond.",
+    amountRequested: 72,
+    status: DISPUTE_STATUS.RESOLVED,
+    outcome: DISPUTE_OUTCOME.COACH_COMPENSATED,
+    evidence: ["Venue check-in · 3:48pm", "Unanswered session messages"],
+    includeChat: true,
+    submittedAt: "10 Aug, 4:32pm",
+    updatedAt: "11 Aug, 12:05pm",
+    decisionNote: "The booking and check-in records meet the coach’s published no-show policy. Compensation has been released.",
+  },
+];
+
+export const ADDITIONAL_CHARGES = [
+  {
+    id: "charge-101",
+    bookingId: "s1",
+    reason: "Extra session time",
+    note: "We agreed in chat to extend the programming session by 20 minutes to finish the return-to-training plan.",
+    amount: 18,
+    evidence: "Session extension note · 1 attachment",
+    status: ADDITIONAL_CHARGE_STATUS.PENDING,
+    createdAt: "Today, 8:12am",
+    dueAt: "Respond by 20 Aug, 6:00pm",
+  },
+];
 
 export const REVIEWS = [
   { id: "r1", name: "Sarah L.", handle: "sarahlin", rating: 5, text: "Isla spotted a positioning issue in my first session that nobody else had picked up on. Genuinely improved my game.", verified: true, date: "3 weeks ago" },

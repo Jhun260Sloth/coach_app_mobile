@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
-import { SectionLabel, Card, Btn, TopBar } from "../../components/ui/Primitives";
+import { SectionLabel, Card, Btn, ConfirmDialog, TopBar } from "../../components/ui/Primitives";
 import { ServicePackageForm, packageSummary, packageFormToRecord } from "../../components/ui/ServicePackageForm";
 
 let svcIdCounter = 1;
@@ -11,6 +11,7 @@ export function ScreenCoachServicesSetup({ nav, toast, savePackage, removePackag
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const [services, setServices] = useState([]);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const addService = (pkg) => {
     const id = "svc" + svcIdCounter++;
@@ -23,6 +24,8 @@ export function ScreenCoachServicesSetup({ nav, toast, savePackage, removePackag
   const removeService = (id) => {
     setServices((s) => s.filter((x) => x.id !== id));
     if (removePackage) removePackage(id);
+    setDeleteTarget(null);
+    toast("Service removed");
   };
 
   const canContinue = services.length > 0;
@@ -55,7 +58,7 @@ export function ScreenCoachServicesSetup({ nav, toast, savePackage, removePackag
                   <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: 4, lineHeight: 1.5, ...fBody }}>{s.description}</div>
                 )}
               </div>
-              <button onClick={() => removeService(s.id)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", flexShrink: 0, marginLeft: 8 }}>
+              <button onClick={() => setDeleteTarget(s)} aria-label={`Remove ${s.name}`} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", flexShrink: 0, marginLeft: 8 }}>
                 <Trash2 size={15} color={C.slateLight} />
               </button>
             </div>
@@ -80,6 +83,14 @@ export function ScreenCoachServicesSetup({ nav, toast, savePackage, removePackag
           </div>
         )}
       </div>
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => removeService(deleteTarget?.id)}
+        title="Remove this service?"
+        description={`“${deleteTarget?.name || "This service"}” will be removed from your profile and booking options.`}
+        confirmLabel="Remove service"
+      />
     </div>
   );
 }

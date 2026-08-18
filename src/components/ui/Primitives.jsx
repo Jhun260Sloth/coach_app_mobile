@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
-  ChevronLeft, Star, CheckCircle2, Search, Wifi, Battery,
+  ChevronLeft, Star, CheckCircle2, Search, Wifi, Battery, AlertTriangle,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T, LAYOUT } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
@@ -25,6 +25,7 @@ function useColors() {
 export function Spinner({ size = 15, color }) {
   return (
     <span
+      aria-hidden="true"
       style={{
         width: size, height: size, borderRadius: "50%", flexShrink: 0,
         border: "2px solid currentColor", borderTopColor: "transparent",
@@ -35,15 +36,16 @@ export function Spinner({ size = 15, color }) {
   );
 }
 
-export function Btn({ children, onClick, variant = "primary", full, icon: Icon, disabled, loading, loadingText, size = "md", type = "button" }) {
+export function Btn({ children, onClick, variant = "primary", full, icon: Icon, disabled, loading, loadingText, size = "md", type = "button", ariaLabel, title }) {
   const C = useColors();
+  const iconOnly = !!Icon && !children;
   const base = {
     display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
     borderRadius: LAYOUT.buttonRadius, fontWeight: 600, cursor: (disabled || loading) ? "default" : "pointer",
     border: "1px solid transparent",
     transition: "opacity .16s ease, transform .14s cubic-bezier(.2,.7,.3,1), background .15s ease",
-    opacity: disabled ? 0.5 : 1, width: full ? "100%" : "auto",
-    padding: size === "sm" ? "9px 14px" : "13px 18px",
+    opacity: disabled ? 0.5 : 1, width: full ? "100%" : "auto", minWidth: iconOnly && !full ? LAYOUT.touchTarget : undefined, minHeight: LAYOUT.touchTarget,
+    padding: iconOnly ? 0 : size === "sm" ? "9px 14px" : "13px 18px",
     fontSize: size === "sm" ? T.body : T.subtitleLg, ...fBody,
   };
   const variants = {
@@ -55,8 +57,8 @@ export function Btn({ children, onClick, variant = "primary", full, icon: Icon, 
     danger: { background: "transparent", color: C.danger, border: `1px solid ${C.dangerBorder}` },
   };
   return (
-    <button type={type} disabled={disabled || loading} aria-busy={loading || undefined} onClick={(disabled || loading) ? undefined : onClick} style={{ ...base, ...variants[variant] }}>
-      {loading ? <Spinner size={size === "sm" ? 13 : 15} /> : (Icon && <Icon size={size === "sm" ? 14 : 17} strokeWidth={2.3} />)}
+    <button type={type} disabled={disabled || loading} aria-busy={loading || undefined} aria-label={ariaLabel} title={title} onClick={(disabled || loading) ? undefined : onClick} style={{ ...base, ...variants[variant] }}>
+      {loading ? <Spinner size={size === "sm" ? 13 : 15} /> : (Icon && <Icon aria-hidden="true" size={size === "sm" ? 14 : 17} strokeWidth={2.3} />)}
       {loading ? (loadingText || children) : children}
     </button>
   );
@@ -112,13 +114,24 @@ export function ScrollFadeRow({ children, style, className }) {
   );
 }
 
-export function Card({ children, style, onClick }) {
+export function Card({ children, style, onClick, ariaLabel }) {
   const C = useColors();
   return (
     <div
       onClick={onClick}
+      onKeyDown={onClick ? (event) => {
+        if (event.currentTarget !== event.target) return;
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onClick(event);
+        }
+      } : undefined}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      aria-label={ariaLabel}
+      data-interactive={onClick ? "true" : "false"}
       className="cl-card"
-      style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 18, padding: 14, cursor: onClick ? "pointer" : "default", ...style }}
+      style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: LAYOUT.cardRadius, padding: 14, cursor: onClick ? "pointer" : "default", ...style }}
     >
       {children}
     </div>
@@ -129,9 +142,10 @@ export function Chip({ children, active, onClick, icon: Icon }) {
   const C = useColors();
   return (
     <button
+      type="button"
       onClick={onClick}
       style={{
-        display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 13px", borderRadius: 999,
+        display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 13px", borderRadius: LAYOUT.pillRadius, minHeight: LAYOUT.touchTarget,
         fontSize: T.body, fontWeight: 500, whiteSpace: "nowrap", border: `1px solid ${active ? C.brand : C.border}`,
         background: active ? C.brandTint : C.white, color: active ? (C.brandIcon || C.brandColor) : C.jet, ...fBody,
       }}
@@ -193,10 +207,13 @@ export function CheckboxRow({ label, checked, onClick }) {
   const C = useColors();
   return (
     <button
+      type="button"
       onClick={onClick}
+      role="checkbox"
+      aria-checked={checked}
       style={{
         display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left",
-        background: "none", border: "none", cursor: "pointer", padding: "8px 0",
+        background: "none", border: "none", cursor: "pointer", padding: "8px 0", minHeight: LAYOUT.touchTarget,
       }}
     >
       <div style={{
@@ -214,7 +231,7 @@ export function CheckboxRow({ label, checked, onClick }) {
 function CheckCircle2Fill({ color }) {
   return (
     <svg width={12} height={12} viewBox="0 0 24 24" fill="none">
-      <path d="M20 6L9 17l-5-5" stroke={color || "#FFFFFF"} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M20 6L9 17l-5-5" stroke={color || "currentColor"} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -223,10 +240,13 @@ export function RadioRow({ label, selected, onClick }) {
   const C = useColors();
   return (
     <button
+      type="button"
       onClick={onClick}
+      role="radio"
+      aria-checked={selected}
       style={{
         display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left",
-        background: "none", border: "none", cursor: "pointer", padding: "8px 0",
+        background: "none", border: "none", cursor: "pointer", padding: "8px 0", minHeight: LAYOUT.touchTarget,
       }}
     >
       <div style={{
@@ -243,6 +263,7 @@ export function RadioRow({ label, selected, onClick }) {
 
 export function SearchMultiSelect({ options, value, onChange, placeholder = "Searchâ€¦" }) {
   const C = useColors();
+  const inputId = React.useId();
   const [query, setQuery] = React.useState("");
   const [open, setOpen] = React.useState(false);
 
@@ -264,7 +285,7 @@ export function SearchMultiSelect({ options, value, onChange, placeholder = "Sea
               fontSize: T.labelLg, fontWeight: 500, border: `1px solid ${C.brand}`, background: C.brandTint, color: C.brandIcon || C.brandColor, ...fBody,
             }}>
               {v}
-              <button onClick={() => remove(v)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 0, color: C.brandIcon || C.brandColor }}>
+              <button type="button" onClick={() => remove(v)} aria-label={`Remove ${v}`} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, color: C.brandIcon || C.brandColor }}>
                 <svg width={11} height={11} viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" /></svg>
               </button>
             </span>
@@ -275,6 +296,11 @@ export function SearchMultiSelect({ options, value, onChange, placeholder = "Sea
         <div className="cl-input" style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: LAYOUT.inputRadius, padding: "11px 13px", background: C.white }}>
           <Search size={15} color={C.slateLight} />
           <input
+            id={inputId}
+            name="multi-select-search"
+            type="search"
+            autoComplete="off"
+            aria-label={placeholder}
             value={query}
             onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
             onFocus={() => setOpen(true)}
@@ -287,10 +313,11 @@ export function SearchMultiSelect({ options, value, onChange, placeholder = "Sea
           <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.white, border: `1px solid ${C.border}`, borderRadius: 13, boxShadow: "0 10px 24px rgba(0,0,0,.10)", zIndex: 30, maxHeight: 190, overflowY: "auto", animation: "clFadeUp .18s ease" }}>
             {filtered.map((o) => (
               <button
+                type="button"
                 key={o}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => add(o)}
-                style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 13px", background: "none", border: "none", cursor: "pointer", fontSize: T.body, color: C.jet, ...fBody }}
+                style={{ display: "block", width: "100%", minHeight: LAYOUT.touchTarget, textAlign: "left", padding: "10px 13px", background: "none", border: "none", cursor: "pointer", fontSize: T.body, color: C.jet, ...fBody }}
               >
                 {o}
               </button>
@@ -304,6 +331,7 @@ export function SearchMultiSelect({ options, value, onChange, placeholder = "Sea
 
 export function SearchSelect({ options, value, onChange, placeholder = "Searchâ€¦", allowCustom = true }) {
   const C = useColors();
+  const inputId = React.useId();
   const [query, setQuery] = React.useState("");
   const [open, setOpen] = React.useState(false);
 
@@ -318,9 +346,9 @@ export function SearchSelect({ options, value, onChange, placeholder = "Searchâ€
 
   if (value) {
     return (
-      <div className="cl-input" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: LAYOUT.inputRadius, padding: "11px 13px", background: C.white }}>
+      <div className="cl-input" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, minHeight: LAYOUT.touchTarget, boxSizing: "border-box", border: `1.5px solid ${C.border}`, borderRadius: LAYOUT.inputRadius, padding: "0 13px", background: C.white }}>
         <span style={{ fontSize: T.bodyLg, color: C.jet, fontWeight: 500, ...fBody }}>{value}</span>
-        <button onClick={clear} aria-label="Clear" style={{ background: "none", border: "none", cursor: "pointer", display: "flex", color: C.slateLight, flexShrink: 0 }}>
+        <button type="button" onClick={clear} aria-label="Clear selection" style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: C.slateLight, flexShrink: 0 }}>
           <svg width={13} height={13} viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth={2.3} strokeLinecap="round" /></svg>
         </button>
       </div>
@@ -329,9 +357,14 @@ export function SearchSelect({ options, value, onChange, placeholder = "Searchâ€
 
   return (
     <div style={{ position: "relative" }}>
-      <div className="cl-input" style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: LAYOUT.inputRadius, padding: "11px 13px", background: C.white }}>
+      <div className="cl-input" style={{ display: "flex", alignItems: "center", gap: 8, minHeight: LAYOUT.touchTarget, boxSizing: "border-box", border: `1.5px solid ${C.border}`, borderRadius: LAYOUT.inputRadius, padding: "0 13px", background: C.white }}>
         <Search size={15} color={C.slateLight} />
         <input
+          id={inputId}
+          name="single-select-search"
+          type="search"
+          autoComplete="off"
+          aria-label={placeholder}
           value={query}
           onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
@@ -344,6 +377,7 @@ export function SearchSelect({ options, value, onChange, placeholder = "Searchâ€
         <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.white, border: `1px solid ${C.border}`, borderRadius: 13, boxShadow: "0 10px 24px rgba(0,0,0,.10)", zIndex: 30, maxHeight: 190, overflowY: "auto", animation: "clFadeUp .18s ease" }}>
           {filtered.map((o) => (
             <button
+              type="button"
               key={o}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => choose(o)}
@@ -354,6 +388,7 @@ export function SearchSelect({ options, value, onChange, placeholder = "Searchâ€
           ))}
           {showAddCustom && (
             <button
+              type="button"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => choose(trimmed)}
               style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 13px", background: "none", border: "none", borderTop: filtered.length ? `1px solid ${C.border}` : "none", cursor: "pointer", fontSize: T.body, color: C.brand, fontWeight: 600, ...fBody }}
@@ -373,6 +408,7 @@ export function StatusPill({ status }) {
     pending: { label: "Awaiting coach", tone: "orange", pulse: true },
     awaiting_payment: { label: "Payment due", tone: "orange", pulse: true },
     confirmed: { label: "Confirmed", tone: "success" },
+    completion_pending: { label: "Confirm completion", tone: "orange", pulse: true },
     completed: { label: "Completed", tone: "neutral" },
     cancelled: { label: "Cancelled", tone: "neutral" },
     declined: { label: "Declined", tone: "danger" },
@@ -390,7 +426,7 @@ export function StatusPill({ status }) {
   }[m.tone];
   return (
     <span style={{
-      display: "inline-flex", alignItems: "center", gap: 5,
+      display: "inline-flex", alignItems: "center", gap: 5, flexShrink: 0, whiteSpace: "nowrap",
       color: colors.fg,
       fontSize: T.captionLg, fontWeight: 700, padding: "4px 8px", borderRadius: 8,
       background: colors.bg, ...fBody,
@@ -433,6 +469,10 @@ export function Avatar({ name, size = 42, ring, src }) {
       <img
         src={src || dicebearSrc}
         alt={`${label} avatar`}
+        width={size}
+        height={size}
+        loading={size >= 64 ? "eager" : "lazy"}
+        decoding="async"
         onError={(e) => { e.currentTarget.style.display = "none"; }}
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
       />
@@ -451,11 +491,13 @@ export function StarRow({ value, size = 13 }) {
   );
 }
 
-export function Toggle({ on, onClick }) {
+export function Toggle({ on, onClick, label = "Toggle setting" }) {
   const C = useColors();
   return (
-    <button onClick={onClick} style={{ width: 42, height: 25, borderRadius: 99, background: on ? C.brand : C.border, position: "relative", flexShrink: 0, border: "none", cursor: "pointer", transition: "background .2s ease" }}>
-      <span style={{ position: "absolute", top: 2.5, left: on ? 20 : 2.5, width: 20, height: 20, borderRadius: 99, background: C.white, transition: "left .15s ease", boxShadow: "0 1px 2px rgba(0,0,0,.2)" }} />
+    <button type="button" role="switch" aria-checked={on} aria-label={label} onClick={onClick} style={{ width: 48, height: LAYOUT.touchTarget, borderRadius: LAYOUT.pillRadius, background: "transparent", position: "relative", flexShrink: 0, border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <span aria-hidden="true" style={{ width: 42, height: 25, borderRadius: LAYOUT.pillRadius, background: on ? C.brand : C.border, position: "relative", transition: "background .2s ease", display: "block" }}>
+        <span style={{ position: "absolute", top: 2.5, left: on ? 20 : 2.5, width: 20, height: 20, borderRadius: LAYOUT.pillRadius, background: C.white, transition: "left .15s ease", boxShadow: "0 1px 2px rgba(0,0,0,.2)" }} />
+      </span>
     </button>
   );
 }
@@ -463,7 +505,7 @@ export function Toggle({ on, onClick }) {
 export function SegTabs({ items, value, onChange, strong }) {
   const C = useColors();
   return (
-    <div style={{ display: "flex", background: C.fog, borderRadius: 13, padding: 3, gap: 2 }}>
+    <div role="tablist" style={{ display: "flex", background: C.fog, borderRadius: 13, padding: 3, gap: 2 }}>
       {items.map((it) => {
         const active = value === it.value;
         const Icon = it.icon;
@@ -471,12 +513,16 @@ export function SegTabs({ items, value, onChange, strong }) {
         const ariaLabel = it.ariaLabel || (typeof label === "string" ? label : it.value);
         return (
           <button
+            type="button"
+            role="tab"
+            aria-selected={active}
             key={it.value}
             onClick={() => onChange(it.value)}
             aria-label={ariaLabel}
             title={ariaLabel}
             style={{
               flex: 1,
+              minHeight: LAYOUT.touchTarget,
               padding: label ? "8px 8px" : "8px 12px",
               borderRadius: 10,
               border: "none",
@@ -509,6 +555,26 @@ export function SegTabs({ items, value, onChange, strong }) {
   );
 }
 
+export function BackButton({ onClick, floating = false, ariaLabel = "Go back" }) {
+  const C = useColors();
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={ariaLabel}
+      style={{
+        width: LAYOUT.touchTarget, height: LAYOUT.touchTarget,
+        borderRadius: LAYOUT.pillRadius, background: floating ? C.white : C.fog,
+        border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center",
+        cursor: "pointer", boxShadow: floating ? "0 4px 14px rgba(22,24,29,.12)" : "0 1px 2px rgba(22,24,29,.04)",
+        transition: "transform .12s ease, background .12s ease", padding: 0, flexShrink: 0,
+      }}
+    >
+      <ChevronLeft aria-hidden="true" size={19} color={C.jet} style={{ marginRight: 1 }} />
+    </button>
+  );
+}
+
 export function TopBar({ title, onBack, right, border }) {
   const C = useColors();
   const { darkMode } = useApp();
@@ -522,25 +588,28 @@ export function TopBar({ title, onBack, right, border }) {
       backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)",
       borderBottom: hasBorder ? `1px solid ${C.border}` : "none",
     }}>
-      <div style={{ width: 38, display: "flex", alignItems: "center", flexShrink: 0 }}>
-        {onBack && (
-          <button
-            onClick={onBack}
-            aria-label="Go back"
-            style={{
-              width: 38, height: 38, borderRadius: 999, background: C.fog,
-              border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center",
-              cursor: "pointer", boxShadow: "0 1px 2px rgba(22,24,29,.04)",
-              transition: "transform .12s ease, background .12s ease",
-              padding: 0,
-            }}
-          >
-            <ChevronLeft size={19} color={C.jet} style={{ marginRight: 1 }} />
-          </button>
-        )}
+      <div style={{ width: LAYOUT.touchTarget, display: "flex", alignItems: "center", flexShrink: 0 }}>
+        {onBack && <BackButton onClick={onBack} />}
       </div>
-      <div style={{ fontSize: T.titleLg, fontWeight: 700, color: C.jet, letterSpacing: "-0.2px", ...fDisplay, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", padding: "0 8px", textAlign: "center", flex: 1 }}>{title}</div>
-      <div style={{ width: 38, display: "flex", justifyContent: "flex-end", alignItems: "center", flexShrink: 0 }}>{right}</div>
+      <div style={{ fontSize: T.titleLg, fontWeight: 700, color: C.jet, letterSpacing: "-0.2px", ...fDisplay, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", padding: "0 8px", textAlign: "center", flex: 1, minWidth: 0 }}>{title}</div>
+      <div style={{ minWidth: LAYOUT.touchTarget, minHeight: LAYOUT.touchTarget, display: "flex", justifyContent: "flex-end", alignItems: "center", flexShrink: 0 }}>{right}</div>
+    </div>
+  );
+}
+
+/** Fixed footer for screen-level decisions and primary actions. */
+export function BottomActionBar({ children, stack = false, style }) {
+  const C = useColors();
+  return (
+    <div style={{
+      position: "relative", zIndex: 24, flexShrink: 0,
+      padding: `12px ${LAYOUT.pagePadX}px max(${LAYOUT.ctaPadBottom}px, env(safe-area-inset-bottom))`,
+      borderTop: `1px solid ${C.border}`, background: C.white,
+      boxShadow: "0 -8px 20px rgba(22,24,29,.06)",
+      display: "flex", flexDirection: stack ? "column" : "row", alignItems: "center", gap: 10,
+      ...style,
+    }}>
+      {children}
     </div>
   );
 }
@@ -553,7 +622,7 @@ export function EmptyState({ icon: Icon, title, body, ctaLabel, onCta, large }) 
         width: large ? 72 : 52, height: large ? 72 : 52, borderRadius: large ? 22 : 16, background: large ? C.brandTint : C.fog,
         display: "flex", alignItems: "center", justifyContent: "center", margin: large ? "0 auto 18px" : "0 auto 14px",
       }}>
-        <Icon size={large ? 30 : 22} color={large ? C.brand : C.slateLight} />
+        <Icon aria-hidden="true" size={large ? 30 : 22} color={large ? C.brand : C.slateLight} />
       </div>
       <div style={{ fontSize: large ? T.display : undefined, fontWeight: 600, color: C.jet, marginBottom: large ? 10 : 4, ...fDisplay }}>{title}</div>
       <div style={{ fontSize: large ? T.bodyLg : T.body, lineHeight: large ? 1.6 : 1.5, maxWidth: large ? 300 : undefined, marginLeft: "auto", marginRight: "auto" }}>{body}</div>
@@ -572,6 +641,8 @@ export function Toast({ toast }) {
   return (
     <div
       role="status"
+      aria-live="polite"
+      aria-atomic="true"
       style={{
         position: "absolute", bottom: 100, left: 16, right: 16, background: C.jet, color: C.white,
         padding: "10px 12px", borderRadius: 16, fontSize: T.body, fontWeight: 500, display: "flex",
@@ -615,24 +686,23 @@ export function Wordmark({ size = 20, dark }) {
 
 export function BottomTabs({ items, value, onChange }) {
   const C = useColors();
-  const { darkMode } = useApp();
-
-  // Modern iOS floating island tab tokens
-  const activeColor = darkMode ? "#81C784" : "#1B5E20";
-  const inactiveColor = darkMode ? "#9CA3AF" : "#6B7280";
-  const activePillBg = darkMode ? "rgba(129, 199, 132, 0.15)" : "rgba(27, 94, 32, 0.08)";
+  const activeColor = C.brandIcon || C.brand;
+  const inactiveColor = C.slate;
+  const activePillBg = C.brandTint;
 
   return (
     <div
+      role="tablist"
+      aria-label="Primary navigation"
       style={{
         position: "absolute",
-        bottom: 12,
+        bottom: "max(12px, env(safe-area-inset-bottom))",
         left: 12,
         right: 12,
-        background: darkMode ? "rgba(13, 17, 23, 0.92)" : "rgba(255, 255, 255, 0.94)",
+        background: C.white,
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
-        border: `1px solid ${darkMode ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.08)"}`,
+        border: `1px solid ${C.border}`,
         boxShadow: "0 10px 30px -5px rgba(0, 0, 0, 0.12)",
         borderRadius: 22,
         display: "flex",
@@ -641,7 +711,7 @@ export function BottomTabs({ items, value, onChange }) {
         padding: "6px 6px",
         zIndex: 40,
         boxSizing: "border-box",
-        transition: "all 0.25s ease",
+        transition: "background .25s ease, border-color .25s ease, box-shadow .25s ease",
         animation: "clSlideUp .45s cubic-bezier(.22,1,.36,1)",
       }}
     >
@@ -651,11 +721,16 @@ export function BottomTabs({ items, value, onChange }) {
 
         return (
           <button
+            type="button"
+            role="tab"
+            aria-selected={active}
+            aria-label={it.label}
             key={it.value}
             onClick={() => onChange(it.value)}
             style={{
               flex: 1,
               minWidth: 0,
+              minHeight: 48,
               background: active ? activePillBg : "transparent",
               border: "none",
               cursor: "pointer",
@@ -666,9 +741,8 @@ export function BottomTabs({ items, value, onChange }) {
               gap: 3,
               padding: "6px 2px",
               borderRadius: 16,
-              outline: "none",
               position: "relative",
-              transition: "all 0.22s cubic-bezier(0.16, 1, 0.3, 1)",
+              transition: "background .22s cubic-bezier(0.16, 1, 0.3, 1), color .22s ease",
             }}
           >
             {it.badge ? (
@@ -680,7 +754,7 @@ export function BottomTabs({ items, value, onChange }) {
                   width: 6,
                   height: 6,
                   borderRadius: 99,
-                  background: darkMode ? "#81C784" : C.brand,
+                  background: C.brand,
                   animation: "clPulse 1.6s infinite",
                 }}
               />
@@ -695,7 +769,7 @@ export function BottomTabs({ items, value, onChange }) {
 
             <span
               style={{
-                fontSize: 10.5,
+                fontSize: T.tiny,
                 fontWeight: active ? 700 : 500,
                 color: active ? activeColor : inactiveColor,
                 whiteSpace: "nowrap",
@@ -732,32 +806,128 @@ export function Row({ label, value, bold, last }) {
   );
 }
 
-export function Field({ label, placeholder, type = "text", icon: Icon, rightIcon: RightIcon, onRight, show = true, value, onChange }) {
+export function Field({ label, placeholder, type = "text", icon: Icon, rightIcon: RightIcon, onRight, rightLabel, show = true, value, onChange, name, autoComplete, inputMode, required }) {
   const C = useColors();
+  const generatedId = React.useId();
   if (!show) return null;
+  const fieldName = name || String(label || "field").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   return (
-    <div>
-      <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>{label}</div>
-      <div className="cl-input" style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: LAYOUT.inputRadius, padding: "11px 13px", background: C.white }}>
-        {Icon && <Icon size={16} color={C.slateLight} />}
-        <input placeholder={placeholder} type={type} value={value} onChange={onChange} style={{ border: "none", outline: "none", flex: 1, fontSize: T.bodyLg, background: "transparent", color: C.jet, ...fBody }} />
-        {RightIcon && <button onClick={onRight} style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}><RightIcon size={16} color={C.slateLight} /></button>}
+    <div style={{ width: "100%", minWidth: 0 }}>
+      <label htmlFor={generatedId} style={{ display: "block", fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>{label}</label>
+      <div className="cl-input" style={{ width: "100%", minWidth: 0, display: "flex", alignItems: "center", gap: 8, minHeight: 48, boxSizing: "border-box", border: `1.5px solid ${C.border}`, borderRadius: LAYOUT.inputRadius, padding: RightIcon ? "0 4px 0 13px" : "0 13px", background: C.white }}>
+        {Icon && <Icon aria-hidden="true" size={16} color={C.slateLight} />}
+        <input id={generatedId} name={fieldName} autoComplete={autoComplete || (type === "email" ? "email" : "off")} inputMode={inputMode || (type === "tel" ? "tel" : undefined)} required={required} placeholder={placeholder} type={type} value={value} onChange={onChange} style={{ border: "none", outline: "none", flex: 1, minWidth: 0, minHeight: 44, padding: 0, fontSize: T.bodyLg, background: "transparent", color: C.jet, ...fBody }} />
+        {RightIcon && <button type="button" aria-label={rightLabel || `Show or hide ${label}`} onClick={onRight} style={{ width: 44, height: 44, padding: 0, flexShrink: 0, background: "none", border: "none", borderRadius: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: C.slateLight }}><RightIcon aria-hidden="true" size={16} /></button>}
       </div>
     </div>
   );
 }
 
-export function BottomSheet({ open, onClose, title, children, heightPct = 70 }) {
+/** Shared confirmation for irreversible or high-impact actions. */
+export function ConfirmDialog({
+  open,
+  onClose,
+  onConfirm,
+  title,
+  description,
+  confirmLabel = "Confirm",
+  cancelLabel = "Cancel",
+  icon: Icon = AlertTriangle,
+  destructive = true,
+}) {
   const C = useColors();
+
+  return (
+    <BottomSheet open={open} onClose={onClose} title={title} heightPct={42}>
+      <div>
+        {description && <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.55, paddingBottom: 14, ...fBody }}>{description}</div>}
+        <button type="button" onClick={onConfirm} style={{ width: "100%", minHeight: LAYOUT.touchTarget, display: "flex", alignItems: "center", gap: 10, padding: "0 12px", border: `1px solid ${destructive ? C.dangerBorder : C.border}`, borderRadius: LAYOUT.buttonRadius, background: destructive ? C.dangerTint : C.brandTint, color: destructive ? C.danger : C.brand, cursor: "pointer", fontSize: T.bodyLg, fontWeight: 600, ...fBody }}>
+          <Icon aria-hidden="true" size={17} />
+          {confirmLabel}
+        </button>
+        <button type="button" onClick={onClose} style={{ width: "100%", minHeight: LAYOUT.touchTarget, border: "none", background: "transparent", color: C.slate, cursor: "pointer", fontSize: T.body, fontWeight: 600, ...fBody }}>{cancelLabel}</button>
+      </div>
+    </BottomSheet>
+  );
+}
+
+export function BottomSheet({ open, onClose, title, children, footer, heightPct = 70 }) {
+  const C = useColors();
+  const dialogRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+  const titleId = React.useId();
+  onCloseRef.current = onClose;
+
+  useLayoutEffect(() => {
+    if (!open) return undefined;
+    const dialog = dialogRef.current;
+    const previousFocus = document.activeElement;
+    const phoneScreen = dialog?.closest(".cl-phone-screen");
+    const scrollPositions = Array.from(phoneScreen?.querySelectorAll("*") || [])
+      .filter(element => element.scrollTop !== 0 || element.scrollLeft !== 0)
+      .map(element => ({ element, top: element.scrollTop, left: element.scrollLeft }));
+    if (phoneScreen && (phoneScreen.scrollTop !== 0 || phoneScreen.scrollLeft !== 0)) {
+      scrollPositions.push({ element: phoneScreen, top: phoneScreen.scrollTop, left: phoneScreen.scrollLeft });
+    }
+    const restoreScroll = () => scrollPositions.forEach(({ element, top, left }) => {
+      element.scrollTop = top;
+      element.scrollLeft = left;
+    });
+    const selector = 'button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), [tabindex]:not([tabindex="-1"])';
+    const focusable = () => Array.from(dialog?.querySelectorAll(selector) || []);
+    (focusable()[0] || dialog)?.focus({ preventScroll: true });
+    restoreScroll();
+    const restoreFrame = requestAnimationFrame(restoreScroll);
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCloseRef.current?.();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const items = focusable();
+      if (!items.length) {
+        event.preventDefault();
+        dialog?.focus({ preventScroll: true });
+        return;
+      }
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      cancelAnimationFrame(restoreFrame);
+      document.removeEventListener("keydown", handleKeyDown);
+      restoreScroll();
+      previousFocus?.focus?.({ preventScroll: true });
+      restoreScroll();
+    };
+  }, [open]);
+
   if (!open) return null;
   return (
-    <div style={{ position: "absolute", inset: 0, zIndex: 95 }}>
-      <div
+    <div style={{ position: "absolute", inset: 0, zIndex: 95, overflow: "hidden", overscrollBehavior: "contain" }}>
+      <button
+        type="button"
+        aria-label="Dismiss dialog"
         onClick={onClose}
-        style={{ position: "absolute", inset: 0, background: "rgba(22,24,29,.45)", backdropFilter: "blur(3px)", WebkitBackdropFilter: "blur(3px)", animation: "clBackdropIn .2s ease" }}
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none", borderRadius: 0, background: "rgba(22,24,29,.45)", backdropFilter: "blur(3px)", WebkitBackdropFilter: "blur(3px)", animation: "clBackdropIn .2s ease", cursor: "default", touchAction: "none" }}
       />
       <div
+        ref={dialogRef}
         role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? titleId : undefined}
+        aria-label={title ? undefined : "Dialog"}
+        tabIndex={-1}
         style={{
           position: "absolute", left: 0, right: 0, bottom: 0, maxHeight: `${heightPct}%`,
           background: C.white, borderTopLeftRadius: 26, borderTopRightRadius: 26,
@@ -767,16 +937,22 @@ export function BottomSheet({ open, onClose, title, children, heightPct = 70 }) 
         }}
       >
         <button
+          type="button"
           onClick={onClose}
-          aria-label="Close"
-          style={{ display: "flex", justifyContent: "center", padding: "10px 0 4px", background: "none", border: "none", cursor: "pointer" }}
+          aria-label="Close dialog"
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: LAYOUT.touchTarget, padding: "10px 0 4px", background: "none", border: "none", cursor: "pointer" }}
         >
           <div style={{ width: 40, height: 4.5, borderRadius: 99, background: C.border }} />
         </button>
         {title && (
-          <div style={{ padding: "4px 20px 10px", fontSize: T.titleLg, fontWeight: 700, color: C.jet, letterSpacing: "-0.2px", ...fDisplay }}>{title}</div>
+          <div id={titleId} style={{ padding: "4px 20px 10px", fontSize: T.titleLg, fontWeight: 700, color: C.jet, letterSpacing: "-0.2px", ...fDisplay }}>{title}</div>
         )}
-        <div style={{ overflowY: "auto", padding: "4px 18px 28px", flex: 1 }} className="cl-hide-scrollbar">{children}</div>
+        <div style={{ overflowY: "auto", overscrollBehavior: "contain", padding: footer ? "4px 18px 24px" : "4px 18px max(28px, env(safe-area-inset-bottom))", flex: 1, minHeight: 0 }} className="cl-hide-scrollbar">{children}</div>
+        {footer && (
+          <div style={{ flexShrink: 0, padding: "12px 18px max(20px, env(safe-area-inset-bottom))", borderTop: `1px solid ${C.border}`, background: C.white, boxShadow: "0 -8px 20px rgba(22,24,29,.06)" }}>
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   );

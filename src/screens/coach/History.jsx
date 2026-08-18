@@ -78,7 +78,7 @@ export function ScreenCoachHistory({ nav, coachBookings = [], coachNotifications
         />
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: 24 }} className="cl-hide-scrollbar">
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))" }} className="cl-hide-scrollbar">
         {tab === "payments" && (
           <>
             {completed.length === 0 && (
@@ -86,7 +86,7 @@ export function ScreenCoachHistory({ nav, coachBookings = [], coachNotifications
             )}
             <div className="cl-stagger">
             {completed.map((b, i) => (
-              <Card key={b.id} onClick={() => setReceiptTarget(b)} style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center", animationDelay: `${Math.min(i, 8) * 45}ms` }}>
+              <Card key={b.id} onClick={() => nav("funds-release-status", { bookingId: b.id, role: "coach", backTo: "coach-history" })} style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center", animationDelay: `${Math.min(i, 8) * 45}ms` }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <Avatar name={getBookingClientName(withClientMeta(b)).name} size={40} />
                   <div>

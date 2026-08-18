@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
-import { Avatar, Btn, SectionLabel, Toggle, BottomSheet, Field, Chip, Card, Badge, EmptyState, TopBar, SegTabs, HandleTag } from "../../components/ui/Primitives";
+import { Avatar, Btn, SectionLabel, Toggle, BottomSheet, ConfirmDialog, Field, Chip, Card, Badge, EmptyState, TopBar, SegTabs, HandleTag } from "../../components/ui/Primitives";
 import { HandleField } from "../../components/ui/PublicIdentityFields";
 import { isValidHandle } from "../../utils/name";
 import { getBookingCoachName } from "../../utils/name";
@@ -26,10 +26,11 @@ const emptyChildDraft = {
 };
 const emptyCardDraft = { number: "", name: "", expiry: "", cvc: "" };
 
-export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCoachRole, children = [], addChild, updateChild, removeChild, bookings = [], clientPrefs, onComplete }) {
+export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, toast, addCoachRole, children = [], addChild, updateChild, removeChild, bookings = [], clientPrefs, onComplete }) {
   const { darkMode, clientIdentity, updateClientIdentity, isHandleTaken } = useApp();
   const C = darkMode ? CD : CL;
   const [sheet, setSheet] = useState(null); // which bottom sheet is open
+  const [removalTarget, setRemovalTarget] = useState(null);
   const [editingChildId, setEditingChildId] = useState(null); // null = creating new
   const [childDraft, setChildDraft] = useState(emptyChildDraft);
 
@@ -53,6 +54,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
   const deleteChild = () => {
     if (editingChildId) removeChild(editingChildId);
     toast("Profile removed");
+    setRemovalTarget(null);
     setSheet(null);
   };
 
@@ -66,6 +68,11 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
     { id: 2, brand: "Mastercard", last4: "8891", exp: "02/27", isDefault: false },
   ]);
   const removeCard = (id) => setCards((c) => c.filter((card) => card.id !== id));
+  const confirmCardRemoval = () => {
+    removeCard(removalTarget.id);
+    toast("Payment method removed");
+    setRemovalTarget(null);
+  };
   const makeDefault = (id) => setCards((c) => c.map((card) => ({ ...card, isDefault: card.id === id })));
 
   const [cardDraft, setCardDraft] = useState(emptyCardDraft);
@@ -143,13 +150,16 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
 
   const closeSheet = () => setSheet(null);
 
-  const Row2 = ({ icon: Icon, label, onClick, right }) => (
-    <button onClick={onClick} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "13px 4px", background: "none", border: "none", borderBottom: `1px solid ${C.border}`, cursor: "pointer", textAlign: "left" }}>
+  const Row2 = ({ icon: Icon, label, onClick, right }) => {
+    const Component = onClick ? "button" : "div";
+    return (
+    <Component type={onClick ? "button" : undefined} onClick={onClick} style={{ width: "100%", minHeight: 44, display: "flex", alignItems: "center", gap: 12, padding: "13px 4px", background: "none", border: "none", borderBottom: `1px solid ${C.border}`, cursor: onClick ? "pointer" : "default", textAlign: "left" }}>
       <Icon size={17} color={C.jet} />
       <span style={{ flex: 1, fontSize: T.bodyLg, color: C.jet, fontWeight: 500, ...fBody }}>{label}</span>
       {right || <ChevronRight size={16} color={C.slateLight} />}
-    </button>
-  );
+    </Component>
+    );
+  };
 
   const NotifRow = ({ label, sub, prefKey }) => (
     <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 4px", borderBottom: `1px solid ${C.border}` }}>
@@ -157,7 +167,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
         <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>{label}</div>
         {sub && <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>{sub}</div>}
       </div>
-      <Toggle on={notifPrefs[prefKey]} onClick={() => toggleNotif(prefKey)} />
+      <Toggle label={label} on={notifPrefs[prefKey]} onClick={() => toggleNotif(prefKey)} />
     </div>
   );
 
@@ -228,7 +238,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
 
         <div style={{ marginTop: 22 }}>
           <SectionLabel>Security</SectionLabel>
-          <Row2 icon={Fingerprint} label="Biometric login" right={<Toggle on={biometric} onClick={() => setBiometric((v) => !v)} />} />
+          <Row2 icon={Fingerprint} label="Biometric login" right={<Toggle label="Biometric login" on={biometric} onClick={() => setBiometric((v) => !v)} />} />
           <Row2 icon={Lock} label="Change password" onClick={() => setSheet("password")} />
         </div>
 
@@ -391,7 +401,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
         <div style={{ marginTop: 22, display: "flex", flexDirection: "column", gap: 10 }}>
           <Btn full onClick={saveChild}>{editingChildId ? "Save changes" : "Add profile"}</Btn>
           {editingChildId && (
-            <Btn full variant="danger" icon={Trash2} onClick={deleteChild}>Remove profile</Btn>
+            <Btn full variant="danger" icon={Trash2} onClick={() => setRemovalTarget({ type: "child", id: editingChildId, name: childDraft.name })}>Remove profile</Btn>
           )}
         </div>
       </BottomSheet>
@@ -454,7 +464,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
               <textarea
                 value={editDraft.goals}
                 onChange={(e) => setEditDraft((d) => ({ ...d, goals: e.target.value }))}
-                placeholder="e.g. build confidence for club trials, improve fitness, learn the basics..."
+                placeholder="e.g. build confidence for club trials, improve fitness, learn the basics…"
                 rows={3}
                 style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: T.bodyLg, color: C.jet, resize: "none", ...fBody }}
               />
@@ -516,7 +526,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
             {!card.isDefault && (
               <button onClick={() => makeDefault(card.id)} style={{ background: "none", border: "none", color: C.brand, fontSize: T.label, fontWeight: 600, cursor: "pointer", ...fBody }}>Set default</button>
             )}
-            <button onClick={() => removeCard(card.id)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 4 }}>
+            <button onClick={() => setRemovalTarget({ type: "card", id: card.id, name: `${card.brand} ending in ${card.last4}` })} aria-label={`Remove ${card.brand} ending in ${card.last4}`} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 4 }}>
               <Trash2 size={15} color={C.slateLight} />
             </button>
           </div>
@@ -603,7 +613,7 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
           Are you sure you want to log out of your account?
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <Btn full variant="dark" icon={LogOut} onClick={() => { closeSheet(); nav("splash"); }}>Log out</Btn>
+          <Btn full variant="dark" icon={LogOut} onClick={() => { closeSheet(); resetNav("splash", {}, "client"); }}>Log out</Btn>
           <Btn full variant="secondary" onClick={closeSheet}>Cancel</Btn>
         </div>
       </BottomSheet>
@@ -617,10 +627,22 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
           </div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <Btn full variant="danger" onClick={() => { closeSheet(); toast("Account deactivated"); nav("splash"); }}>Deactivate account</Btn>
+          <Btn full variant="danger" onClick={() => { closeSheet(); toast("Account deactivated"); resetNav("splash", {}, "client"); }}>Deactivate account</Btn>
           <Btn full variant="secondary" onClick={closeSheet}>Cancel</Btn>
         </div>
       </BottomSheet>
+
+      <ConfirmDialog
+        open={!!removalTarget}
+        onClose={() => setRemovalTarget(null)}
+        onConfirm={removalTarget?.type === "child" ? deleteChild : confirmCardRemoval}
+        title={removalTarget?.type === "child" ? "Remove this child profile?" : "Remove this payment method?"}
+        description={removalTarget?.type === "child"
+          ? `${removalTarget?.name || "This profile"} and their saved safety details will be removed. Existing booking records will remain in your history.`
+          : `${removalTarget?.name || "This card"} will no longer be available for future bookings.`}
+        confirmLabel={removalTarget?.type === "child" ? "Remove profile" : "Remove card"}
+        icon={Trash2}
+      />
 
     </div>
   );
@@ -630,8 +652,8 @@ export function ScreenClientProfile({ nav, biometric, setBiometric, toast, addCo
    HISTORY — full page covering both transaction history (Payments) and a
    timeline of other completed activity (Activity), so it's a single place
    to look back on the account rather than payments-only. Tapping a payment
-   row still opens the receipt as a bottom sheet — a lightweight detail
-   glance, not something worth its own page.
+   row opens the lifecycle-aware release status for completed payments and
+   keeps a lightweight receipt sheet for refunds or still-held funds.
    ========================================================================= */
 const CLIENT_ACTIVITY_ICON = { booking: Calendar, message: MessageCircle, review: Star, availability: Sparkles, promo: Percent, payment: CreditCard, verification: ShieldCheck };
 
@@ -659,7 +681,7 @@ export function ScreenClientHistory({ nav, bookings = [], clientNotifications = 
         />
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: 24 }} className="cl-hide-scrollbar">
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))" }} className="cl-hide-scrollbar">
         {tab === "payments" && (
           <>
             {paidBookings.length === 0 && (
@@ -667,12 +689,15 @@ export function ScreenClientHistory({ nav, bookings = [], clientNotifications = 
             )}
             <div className="cl-stagger">
               {paidBookings.map((b, i) => (
-                <Card key={b.id} onClick={() => setReceiptTarget(b)} style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center", animationDelay: `${Math.min(i, 8) * 45}ms` }}>
+                <Card key={b.id} onClick={() => b.paymentStatus === PAYMENT_STATUS.RELEASED
+                  ? nav("funds-release-status", { bookingId: b.id, role: "client", backTo: "client-history" })
+                  : setReceiptTarget(b)} style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center", animationDelay: `${Math.min(i, 8) * 45}ms` }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <Avatar name={(() => { const cn = getBookingCoachName(b, COACHES.find((c) => c.id === b.coachId)); return cn.name; })()} size={40} />
                   <div>
                     <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>{b.service}</div>
                     <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{b.date} · {(() => { const cn = getBookingCoachName(b, COACHES.find((c) => c.id === b.coachId)); return cn.name; })()}</div>
+                    <div style={{ marginTop: 5 }}><Badge tone={b.paymentStatus === PAYMENT_STATUS.RELEASED ? "success" : "orange"}>{b.paymentStatus === PAYMENT_STATUS.RELEASED ? "Payment released" : b.paymentStatus === PAYMENT_STATUS.HELD ? "Securely held" : "Refund update"}</Badge></div>
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>

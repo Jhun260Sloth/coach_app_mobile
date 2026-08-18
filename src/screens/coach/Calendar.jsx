@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from "react";
 import { Calendar as CalendarIcon, Trash2, Plus, Clock, ChevronLeft, ChevronRight, Ban } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
-import { Card, SectionLabel, Btn, Toggle, Chip, EmptyState, SegTabs } from "../../components/ui/Primitives";
+import { Card, SectionLabel, Btn, ConfirmDialog, Toggle, Chip, EmptyState, SegTabs, Avatar, StatusPill } from "../../components/ui/Primitives";
 import { useApp } from "../../context/AppContext";
+import { BOOKING_STATUS } from "../../data/bookings";
 
 const DAY_OPTIONS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const WEEKDAY_HEADERS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -39,7 +40,7 @@ function formatDateShort(d) {
 
 const DOW_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlocks, setAvailabilityBlocks }) {
+export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlocks, setAvailabilityBlocks, coachBookings = [] }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const timeInputStyle = {
@@ -47,7 +48,10 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
     fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", color: C.jet, background: C.white, ...fBody,
   };
   const [synced, setSynced] = useState(true);
+  const [removalTarget, setRemovalTarget] = useState(null);
+  const [section, setSection] = useState("schedule");
   const [view, setView] = useState("list");
+  const scheduledSessions = coachBookings.filter((booking) => [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.COMPLETION_PENDING].includes(booking.status));
 
   // Calendar view — month grid navigation
   const [cursor, setCursor] = useState(() => new Date());
@@ -102,6 +106,11 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
     setNewDate(""); setNewReason(""); setShowExForm(false);
   };
   const removeException = (id) => { setExceptions((arr) => arr.filter((e) => e.id !== id)); toast("Exception removed"); };
+  const confirmRemoval = () => {
+    if (removalTarget?.type === "availability") removeBlock(removalTarget.id);
+    if (removalTarget?.type === "exception") removeException(removalTarget.id);
+    setRemovalTarget(null);
+  };
 
   // Resolve a calendar date to whichever weekly availability blocks recur on
   // that day, and whether a one-off exception blocks it out entirely.
@@ -113,23 +122,55 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "18px 18px 0" }}>
-        <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, marginBottom: 14, ...fDisplay }}>Availability</div>
+        <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, marginBottom: 14, ...fDisplay }}>Calendar</div>
 
-        <div style={{ marginBottom: 16 }}>
-          <SegTabs value={view} onChange={setView} items={[{ value: "list", label: "List" }, { value: "calendar", label: "Calendar" }]} />
+        <div style={{ marginBottom: 10 }}>
+          <SegTabs value={section} onChange={setSection} items={[{ value: "schedule", label: "Schedule" }, { value: "availability", label: "Availability" }]} />
         </div>
+
+        {section === "availability" && <div style={{ marginBottom: 16 }}>
+          <SegTabs value={view} onChange={setView} items={[{ value: "list", label: "List" }, { value: "calendar", label: "Calendar" }]} />
+        </div>}
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: 116 }} className="cl-hide-scrollbar">
-        {view === "calendar" ? (
+        {section === "schedule" ? (
+          <>
+            <Card style={{ marginBottom: 16, padding: 16, background: C.jet, border: "none" }}>
+              <div style={{ fontSize: T.captionLg, color: C.onDarkMuted, ...fBody }}>Confirmed schedule</div>
+              <div style={{ fontSize: T.hero, fontWeight: 750, color: C.white, marginTop: 3, ...fDisplay }}>{scheduledSessions.length}</div>
+              <div style={{ fontSize: T.captionLg, color: C.onDark, marginTop: 2, ...fBody }}>upcoming sessions ready to deliver</div>
+            </Card>
+            <SectionLabel>Upcoming sessions</SectionLabel>
+            {scheduledSessions.length === 0 ? (
+              <EmptyState icon={CalendarIcon} title="Your schedule is clear" body="Confirmed client sessions will appear here." />
+            ) : scheduledSessions.map((booking) => (
+              <Card key={booking.id} onClick={() => nav("coach-session-detail", { id: booking.id })} style={{ marginBottom: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+                  <div style={{ width: 48, height: 50, borderRadius: 14, background: C.brandTint, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <span style={{ fontSize: T.tiny, fontWeight: 700, color: C.brand, textTransform: "uppercase", ...fBody }}>{booking.date?.split(",")[0]}</span>
+                    <span style={{ fontSize: T.title, fontWeight: 750, color: C.jet, marginTop: 1, ...fDisplay }}>{booking.date?.match(/\d+/)?.[0] || "—"}</span>
+                  </div>
+                  <Avatar name={booking.clientName} size={38} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>{booking.clientName}</div>
+                    <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{booking.service}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: T.caption, color: C.slateLight, marginTop: 4, ...fBody }}><Clock size={11} />{booking.time} · {booking.mode}</div>
+                  </div>
+                  <StatusPill status={booking.status} />
+                </div>
+              </Card>
+            ))}
+          </>
+        ) : view === "calendar" ? (
           <>
             <Card style={{ marginBottom: 16 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                <button onClick={goPrev} style={{ width: 30, height: 30, borderRadius: 10, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                <button type="button" aria-label="Previous month" onClick={goPrev} style={{ width: 44, height: 44, borderRadius: 12, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                   <ChevronLeft size={16} color={C.jet} />
                 </button>
                 <span style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...fDisplay }}>{headerLabel}</span>
-                <button onClick={goNext} style={{ width: 30, height: 30, borderRadius: 10, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                <button type="button" aria-label="Next month" onClick={goNext} style={{ width: 44, height: 44, borderRadius: 12, background: C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                   <ChevronRight size={16} color={C.jet} />
                 </button>
               </div>
@@ -214,7 +255,7 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
               <div style={{ fontSize: T.caption, color: C.slate, ...fBody }}>{synced ? "Connected — Google Calendar" : "Not connected"}</div>
             </div>
           </div>
-          <Toggle on={synced} onClick={() => { setSynced((v) => !v); toast(!synced ? "Calendar connected" : "Calendar disconnected"); }} />
+          <Toggle label="Sync with device calendar" on={synced} onClick={() => { setSynced((v) => !v); toast(!synced ? "Calendar connected" : "Calendar disconnected"); }} />
         </Card>
 
         <SectionLabel>Weekly availability</SectionLabel>
@@ -236,7 +277,7 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
                   <span style={{ fontSize: T.label, color: C.slate, ...fBody }}>{to12h(b.start)} – {to12h(b.end)}</span>
                 </div>
               </div>
-              <button onClick={() => removeBlock(b.id)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}>
+              <button onClick={() => setRemovalTarget({ type: "availability", id: b.id, label: `${b.days.join(", ")} · ${to12h(b.start)}–${to12h(b.end)}` })} aria-label="Remove availability" style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}>
                 <Trash2 size={16} color={C.slateLight} />
               </button>
             </div>
@@ -302,7 +343,7 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
                 <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{ex.date} — blocked</div>
                 <div style={{ fontSize: T.captionLg, color: C.slate, ...fBody }}>Reason: {ex.reason}</div>
               </div>
-              <button onClick={() => removeException(ex.id)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}>
+              <button onClick={() => setRemovalTarget({ type: "exception", id: ex.id, label: ex.date })} aria-label={`Remove exception for ${ex.date}`} style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}>
                 <Trash2 size={16} color={C.slateLight} />
               </button>
             </Card>
@@ -335,6 +376,17 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
           </>
         )}
       </div>
+      <ConfirmDialog
+        open={!!removalTarget}
+        onClose={() => setRemovalTarget(null)}
+        onConfirm={confirmRemoval}
+        title={removalTarget?.type === "availability" ? "Remove this availability?" : "Remove this exception?"}
+        description={removalTarget?.type === "availability"
+          ? `${removalTarget?.label || "This time slot"} will no longer be offered for new bookings.`
+          : `${removalTarget?.label || "This date"} will become available according to your weekly schedule.`}
+        confirmLabel="Remove"
+        icon={Trash2}
+      />
     </div>
   );
 }

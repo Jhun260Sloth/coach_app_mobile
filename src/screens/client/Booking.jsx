@@ -13,6 +13,7 @@ import {
   Avatar, Card, Chip, SectionLabel, Btn, TopBar, Toggle, Field, Row, RadioRow, BottomSheet,
 } from "../../components/ui/Primitives";
 import { StatusBanner, ResultOverlay } from "../../systems/StateSystem";
+import { SessionJourneyTimeline } from "../../components/booking/SessionJourneyTimeline";
 import { getPublicName } from "../../utils/name";
 import { calcAge } from "./AboutYou";
 
@@ -277,7 +278,7 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
         </Card>
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: 24 }} className="cl-hide-scrollbar">
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))" }} className="cl-hide-scrollbar">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
           <SectionLabel>Select who's coming</SectionLabel>
           <span style={{ fontSize: T.caption, fontWeight: 600, color: C.slateLight, ...fBody }}>
@@ -299,11 +300,11 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
             style={{
               width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 14,
               padding: "13px 15px", borderRadius: 16,
-              background: selfSelected ? (darkMode ? "rgba(46,125,50,0.15)" : "#F2F9F3") : C.white,
+              background: selfSelected ? C.brandTint : C.white,
               border: `1.5px solid ${selfSelected ? C.brand : C.border}`,
               opacity: atCapacity && !selfSelected ? 0.45 : 1,
               cursor: atCapacity && !selfSelected ? "not-allowed" : "pointer",
-              transition: "all 0.15s ease",
+              transition: "background .15s ease, border-color .15s ease, opacity .15s ease, box-shadow .15s ease, transform .15s ease",
               boxShadow: selfSelected ? `0 2px 8px ${darkMode ? "rgba(0,0,0,0.3)" : "rgba(46,125,50,0.08)"}` : "0 1px 3px rgba(0,0,0,0.02)",
             }}
           >
@@ -322,7 +323,7 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
                 border: `1.5px solid ${selfSelected ? C.brand : C.border}`,
                 background: selfSelected ? C.brand : "transparent",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                flexShrink: 0, transition: "all 0.15s ease",
+                flexShrink: 0, transition: "background .15s ease, border-color .15s ease",
               }}
             >
               {selfSelected && <Check size={13} color={C.white} strokeWidth={3} />}
@@ -346,11 +347,11 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
                 style={{
                   width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 14,
                   padding: "13px 15px", borderRadius: 16,
-                  background: isSelected ? (darkMode ? "rgba(46,125,50,0.15)" : "#F2F9F3") : C.white,
+                  background: isSelected ? C.brandTint : C.white,
                   border: `1.5px solid ${isSelected ? C.brand : C.border}`,
                   opacity: disabled ? 0.45 : 1,
                   cursor: disabled ? "not-allowed" : "pointer",
-                  transition: "all 0.15s ease",
+                  transition: "background .15s ease, border-color .15s ease, opacity .15s ease, box-shadow .15s ease, transform .15s ease",
                   boxShadow: isSelected ? `0 2px 8px ${darkMode ? "rgba(0,0,0,0.3)" : "rgba(46,125,50,0.08)"}` : "0 1px 3px rgba(0,0,0,0.02)",
                 }}
               >
@@ -369,7 +370,7 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
                     border: `1.5px solid ${isSelected ? C.brand : C.border}`,
                     background: isSelected ? C.brand : "transparent",
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    flexShrink: 0, transition: "all 0.15s ease",
+                    flexShrink: 0, transition: "background .15s ease, border-color .15s ease",
                   }}
                 >
                   {isSelected && <Check size={13} color={C.white} strokeWidth={3} />}
@@ -386,13 +387,13 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
             style={{
               width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
               padding: "14px 16px", borderRadius: 16,
-              background: darkMode ? "rgba(255,255,255,0.03)" : "#FAFAFA",
+              background: C.fog,
               border: `1.5px dashed ${C.border}`,
               color: atCapacity ? C.slateLight : C.brand,
               fontSize: T.bodyLg, fontWeight: 600,
               cursor: atCapacity ? "not-allowed" : "pointer",
               opacity: atCapacity ? 0.5 : 1,
-              transition: "all 0.15s ease",
+              transition: "background .15s ease, border-color .15s ease, color .15s ease, opacity .15s ease, transform .15s ease",
               ...fBody,
             }}
           >
@@ -402,7 +403,7 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
         </div>
       </div>
 
-      <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
+      <div style={{ padding: "14px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
         <Btn full disabled={!canContinue} onClick={() => nav("booking-datetime", { coachId: coach.id, packageId: pkg.id, participants, presetDate: params.presetDate, presetTime: params.presetTime })}>Continue</Btn>
       </div>
 
@@ -461,7 +462,7 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
 }
 
 export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings = [] }) {
-  const { darkMode } = useApp();
+  const { darkMode, children } = useApp();
   const C = darkMode ? CD : CL;
   const { coach, pkg } = resolveBookingCoachPkg(params, draft);
   const pub = getPublicName(coach, "public");
@@ -571,7 +572,7 @@ export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings =
                   <RepeatIcon size={15} color={C.jet} />
                   <span style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>Repeat this session</span>
                 </div>
-                <Toggle on={repeatEnabled} onClick={() => setRepeatEnabled((v) => !v)} />
+                <Toggle label="Repeat this session" on={repeatEnabled} onClick={() => setRepeatEnabled((v) => !v)} />
               </div>
 
               {repeatEnabled && (
@@ -631,7 +632,7 @@ export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings =
         )}
       </div>
 
-      <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
+      <div style={{ padding: "14px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
         <Btn
           full
           disabled={!canContinue}
@@ -646,7 +647,12 @@ export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings =
               sessionCount,
               total: totalPrice,
             });
-            nav("booking-participant-details", { coachId: coach.id, packageId: pkg.id, participants: params.participants || ["self"] });
+            const participantIds = params.participants || ["self"];
+            const includesChildProfile = participantIds.some((id) => id !== "self" && children.some((child) => child.id === id));
+            nav(
+              includesChildProfile ? "booking-participant-details" : "booking-review",
+              { coachId: coach.id, packageId: pkg.id, participants: participantIds },
+            );
           }}
         >
           Continue
@@ -656,20 +662,13 @@ export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings =
   );
 }
 
-export function ScreenBookingReview({ nav, params, draft, setDraft, toast, children = [], bookings = [], addBooking }) {
-  const { darkMode } = useApp();
+export function ScreenBookingReview({ nav, goBack, params, draft, setDraft, toast, children = [], bookings = [], addBooking }) {
+  const { darkMode, clientIdentity, clientPrefs } = useApp();
   const C = darkMode ? CD : CL;
   const d = buildFallbackDraft(params, draft);
   const pub = getPublicName(d.coach, "public");
   // Who's attending was already chosen on the previous step (ScreenBookingParticipants).
   const participants = d.participants || ["self"];
-  const [guardianName, setGuardianName] = useState("");
-  const [guardianRelationship, setGuardianRelationship] = useState("");
-  const [emergencyName, setEmergencyName] = useState("");
-  const [emergencyPhone, setEmergencyPhone] = useState("");
-  const [conditions, setConditions] = useState("");
-  const [consent, setConsent] = useState(false);
-
   const selectedChildren = children.filter((c) => participants.includes(c.id));
   // Child safety details are only relevant for participants who are actually
   // under 18 — an unset age is treated as a minor too, since these are child
@@ -680,22 +679,46 @@ export function ScreenBookingReview({ nav, params, draft, setDraft, toast, child
   };
   const minorParticipants = selectedChildren.filter(isMinor);
   const includesMinor = minorParticipants.length > 0;
-
-  // If a selected child already has guardian details on their profile (collected
-  // when the profile was set up), pull them in automatically so the guardian
-  // doesn't have to retype them here — but never clobber something they've
-  // already typed into these fields for this booking.
-  useEffect(() => {
-    const savedGuardian = minorParticipants.find((c) => c.guardianName);
-    if (savedGuardian) {
-      setGuardianName((v) => v || savedGuardian.guardianName || "");
-      setGuardianRelationship((v) => v || savedGuardian.guardianRelationship || "");
+  const accountName = `${clientIdentity?.firstName || ""} ${clientIdentity?.lastName || ""}`.trim();
+  const accountPhone = clientPrefs?.mobile || "";
+  const savedGuardianProfile = minorParticipants.find((child) => child.guardianName || child.guardianMobile);
+  const savedEmergencyProfile = minorParticipants.find((child) => child.emergencyName && child.emergencyMobile)
+    || children.find((child) => child.emergencyName && child.emergencyMobile);
+  const savedAccountEmergency = clientPrefs?.emergencyName && clientPrefs?.emergencyMobile
+    ? {
+      emergencyName: clientPrefs.emergencyName,
+      emergencyRelationship: clientPrefs.emergencyRelationship,
+      emergencyMobile: clientPrefs.emergencyMobile,
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [participants.join(",")]);
-  // Children added with full safety details (e.g. via onboarding) already carry emergency
-  // contact and medical info on their profile — only chase fresh input for the ones that don't.
-  const childrenMissingSafetyInfo = minorParticipants.filter((c) => !(c.emergencyName || c.emergencyMobile || c.medicalConditions || c.allergies || c.medicalNotes));
+    : null;
+  const participantDetails = params?.participantDetails || {};
+  const detailFromEarlierStep = minorParticipants
+    .map((child) => participantDetails[child.id])
+    .find((detail) => detail?.emergencyName || detail?.emergencyPhone || detail?.conditions || detail?.allergies);
+
+  // Medical notes alone do not count as a complete emergency contact. Only ask
+  // for a booking-level contact when at least one selected child has no complete
+  // emergency name and phone saved on their profile.
+  const childrenMissingEmergencyContact = minorParticipants.filter((child) => !(child.emergencyName && child.emergencyMobile));
+  const needsEmergencyContact = childrenMissingEmergencyContact.length > 0;
+
+  const [guardianName, setGuardianName] = useState(savedGuardianProfile?.guardianName || "");
+  const [guardianRelationship, setGuardianRelationship] = useState(savedGuardianProfile?.guardianRelationship || "");
+  const [guardianPhone, setGuardianPhone] = useState(savedGuardianProfile?.guardianMobile || "");
+  const [guardianSource, setGuardianSource] = useState(savedGuardianProfile ? "profile" : "manual");
+  const [emergencyName, setEmergencyName] = useState(detailFromEarlierStep?.emergencyName || "");
+  const [emergencyPhone, setEmergencyPhone] = useState(detailFromEarlierStep?.emergencyPhone || "");
+  const [emergencySource, setEmergencySource] = useState(detailFromEarlierStep ? "booking" : "manual");
+  const [conditions, setConditions] = useState(
+    [detailFromEarlierStep?.conditions, detailFromEarlierStep?.allergies].filter(Boolean).join(" · "),
+  );
+  const [consent, setConsent] = useState(false);
+
+  useEffect(() => {
+    if (emergencySource !== "guardian") return;
+    setEmergencyName(guardianName);
+    setEmergencyPhone(guardianPhone);
+  }, [emergencySource, guardianName, guardianPhone]);
   const participantLabel = participants.length === 0
     ? "Not selected"
     : [
@@ -707,13 +730,67 @@ export function ScreenBookingReview({ nav, params, draft, setDraft, toast, child
   const subtotal = d.pkg.price * sessionCount;
   const fee = Math.round(subtotal * CONFIG.serviceFeeRate * 100) / 100;
   const total = subtotal + fee;
-  const guardianDetailsComplete = guardianName.trim() && guardianRelationship.trim()
-    && (childrenMissingSafetyInfo.length === 0 || (emergencyName.trim() && emergencyPhone.trim()));
-  const canContinue = participants.length > 0 && (!includesMinor || (consent && guardianDetailsComplete));
+  const guardianDetailsComplete = guardianName.trim() && guardianRelationship.trim() && guardianPhone.trim();
+  const emergencyDetailsComplete = !needsEmergencyContact || (emergencyName.trim() && emergencyPhone.trim());
+  const minorDetailsComplete = guardianDetailsComplete && emergencyDetailsComplete;
+  const canContinue = participants.length > 0 && (!includesMinor || (consent && minorDetailsComplete));
+
+  const applyAccountGuardian = () => {
+    setGuardianName(accountName);
+    setGuardianRelationship("Parent or legal guardian");
+    setGuardianPhone(accountPhone);
+    setGuardianSource("account");
+  };
+
+  const applySavedGuardian = () => {
+    if (!savedGuardianProfile) return;
+    setGuardianName(savedGuardianProfile.guardianName || "");
+    setGuardianRelationship(savedGuardianProfile.guardianRelationship || "");
+    setGuardianPhone(savedGuardianProfile.guardianMobile || "");
+    setGuardianSource("profile");
+  };
+
+  const applyGuardianAsEmergency = () => {
+    setEmergencyName(guardianName);
+    setEmergencyPhone(guardianPhone);
+    setEmergencySource("guardian");
+  };
+
+  const applySavedEmergency = (contact, source) => {
+    if (!contact) return;
+    setEmergencyName(contact.emergencyName || "");
+    setEmergencyPhone(contact.emergencyMobile || "");
+    setEmergencySource(source);
+  };
+
+  const DetailChoice = ({ active, icon: Icon, title, detail, onClick, disabled }) => (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      aria-pressed={active}
+      style={{
+        width: "100%", minHeight: 52, display: "flex", alignItems: "center", gap: 10,
+        padding: "9px 11px", textAlign: "left", borderRadius: 13,
+        border: `1px solid ${active ? C.brand : C.border}`,
+        background: active ? C.brandTint : C.white,
+        cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.5 : 1,
+      }}
+    >
+      <div style={{ width: 34, height: 34, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, background: active ? C.white : C.fog }}>
+        <Icon aria-hidden="true" size={16} color={active ? C.brand : C.slate} />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: T.labelLg, fontWeight: 700, color: C.jet, ...fBody }}>{title}</div>
+        <div style={{ fontSize: T.caption, color: C.slate, lineHeight: 1.4, marginTop: 2, ...fBody }}>{detail}</div>
+      </div>
+      {active && <CheckCircle2 aria-hidden="true" size={17} color={C.brand} />}
+    </button>
+  );
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title="Review booking" onBack={() => nav("booking-datetime", { coachId: d.coach.id, packageId: d.pkg.id, participants })} />
+      <TopBar title="Review booking" onBack={() => goBack("booking-datetime", { coachId: d.coach.id, packageId: d.pkg.id, participants })} />
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
         <Card style={{ marginBottom: 14}}>
           <Row label="Coach" value={pub.name} />
@@ -745,7 +822,9 @@ export function ScreenBookingReview({ nav, params, draft, setDraft, toast, child
             </div>
 
             {minorParticipants.map((c) => {
-              const hasSavedSafetyInfo = !!(c.emergencyName || c.emergencyMobile || c.medicalConditions || c.allergies || c.medicalNotes);
+              const hasSavedEmergency = !!(c.emergencyName && c.emergencyMobile);
+              const hasSavedMedical = !!(c.medicalConditions || c.allergies || c.medicalNotes);
+              const hasSavedSafetyInfo = hasSavedEmergency || hasSavedMedical;
               const hasSavedGuardian = !!c.guardianName;
               return (
                 <div key={c.id} style={{ background: C.fog, borderRadius: 12, padding: "10px 12px", marginBottom: 10 }}>
@@ -764,13 +843,16 @@ export function ScreenBookingReview({ nav, params, draft, setDraft, toast, child
                     </>
                   )}
                   <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 8 }}>
-                    {hasSavedSafetyInfo ? (
-                      <span style={{ fontSize: T.caption, color: C.success, fontWeight: 600, ...fBody }}>Pulled from {c.name || "this"}'s profile</span>
+                    {hasSavedEmergency ? (
+                      <>
+                        <CheckCircle2 size={12} color={C.success} />
+                        <span style={{ fontSize: T.caption, color: C.success, fontWeight: 600, ...fBody }}>Complete safety contact loaded from this profile</span>
+                      </>
                     ) : (
-                      <button onClick={() => nav("client-profile")} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center", gap: 4 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                         <AlertTriangle size={12} color={C.brand} />
-                        <span style={{ fontSize: T.caption, color: C.brand, fontWeight: 600, ...fBody }}>No safety details saved on this profile yet — add them below or from Account</span>
-                      </button>
+                        <span style={{ fontSize: T.caption, color: C.brand, fontWeight: 600, ...fBody }}>{hasSavedMedical ? "Medical notes loaded; add an emergency contact below" : "No safety contact saved — choose one below"}</span>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -779,19 +861,86 @@ export function ScreenBookingReview({ nav, params, draft, setDraft, toast, child
 
             <div style={{ marginTop: 4 }}>
               <SectionLabel>Guardian details</SectionLabel>
+              <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, marginTop: -5, marginBottom: 10, ...fBody }}>
+                Use details already saved to CoachLink, or enter a different guardian for this booking.
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+                <DetailChoice
+                  active={guardianSource === "account"}
+                  icon={User}
+                  title="Use my account details"
+                  detail={`${accountName || "Account holder"}${accountPhone ? ` · ${accountPhone}` : " · Add your phone below"}`}
+                  onClick={applyAccountGuardian}
+                  disabled={!accountName}
+                />
+                {savedGuardianProfile && (
+                  <DetailChoice
+                    active={guardianSource === "profile"}
+                    icon={ShieldCheck}
+                    title="Use saved guardian"
+                    detail={`${savedGuardianProfile.guardianName || "Saved guardian"}${savedGuardianProfile.guardianRelationship ? ` · ${savedGuardianProfile.guardianRelationship}` : ""}`}
+                    onClick={applySavedGuardian}
+                  />
+                )}
+              </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <Field label="Guardian full name" placeholder="Jamie Chen" icon={User} value={guardianName} onChange={(e) => setGuardianName(e.target.value)} />
-                <Field label="Relationship to participant" placeholder="Parent" value={guardianRelationship} onChange={(e) => setGuardianRelationship(e.target.value)} />
+                <Field label="Guardian full name" name="guardian-name" autoComplete="name" placeholder="e.g. Jamie Chen" icon={User} value={guardianName} onChange={(e) => { setGuardianName(e.target.value); setGuardianSource("manual"); }} />
+                <Field label="Relationship to participant" name="guardian-relationship" placeholder="e.g. Parent or legal guardian" value={guardianRelationship} onChange={(e) => { setGuardianRelationship(e.target.value); setGuardianSource("manual"); }} />
+                <Field label="Guardian phone" name="guardian-phone" autoComplete="tel" inputMode="tel" placeholder="04XX XXX XXX" icon={Phone} type="tel" value={guardianPhone} onChange={(e) => { setGuardianPhone(e.target.value.replace(/[^0-9+\s]/g, "")); setGuardianSource("manual"); }} />
               </div>
             </div>
 
-            {childrenMissingSafetyInfo.length > 0 && (
+            {needsEmergencyContact && (
               <>
                 <div style={{ marginTop: 14 }}>
                   <SectionLabel>Emergency contact</SectionLabel>
+                  <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, marginTop: -5, marginBottom: 10, ...fBody }}>
+                    This can be the guardian or another trusted adult who can be reached during the session.
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+                    {detailFromEarlierStep && (
+                      <DetailChoice
+                        active={emergencySource === "booking"}
+                        icon={CheckCircle2}
+                        title="Use details entered earlier"
+                        detail={`${detailFromEarlierStep.emergencyName || "Booking contact"}${detailFromEarlierStep.emergencyPhone ? ` · ${detailFromEarlierStep.emergencyPhone}` : ""}`}
+                        onClick={() => {
+                          setEmergencyName(detailFromEarlierStep.emergencyName || "");
+                          setEmergencyPhone(detailFromEarlierStep.emergencyPhone || "");
+                          setEmergencySource("booking");
+                        }}
+                      />
+                    )}
+                    <DetailChoice
+                      active={emergencySource === "guardian"}
+                      icon={ShieldCheck}
+                      title="Same as guardian"
+                      detail={guardianName && guardianPhone ? `${guardianName} · ${guardianPhone}` : "Complete the guardian name and phone first"}
+                      onClick={applyGuardianAsEmergency}
+                      disabled={!guardianName.trim() || !guardianPhone.trim()}
+                    />
+                    {savedAccountEmergency && (
+                      <DetailChoice
+                        active={emergencySource === "account"}
+                        icon={Phone}
+                        title="Use account emergency contact"
+                        detail={`${savedAccountEmergency.emergencyName} · ${savedAccountEmergency.emergencyMobile}`}
+                        onClick={() => applySavedEmergency(savedAccountEmergency, "account")}
+                      />
+                    )}
+                    {savedEmergencyProfile && (
+                      <DetailChoice
+                        active={emergencySource === "profile"}
+                        icon={Users}
+                        title="Use saved family contact"
+                        detail={`${savedEmergencyProfile.emergencyName} · ${savedEmergencyProfile.emergencyMobile}`}
+                        onClick={() => applySavedEmergency(savedEmergencyProfile, "profile")}
+                      />
+                    )}
+                  </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    <Field label="Emergency contact name" placeholder="Alex Chen" icon={User} value={emergencyName} onChange={(e) => setEmergencyName(e.target.value)} />
-                    <Field label="Emergency contact phone" placeholder="04XX XXX XXX" icon={Phone} type="tel" value={emergencyPhone} onChange={(e) => setEmergencyPhone(e.target.value)} />
+                    <Field label="Emergency contact name" name="emergency-contact-name" autoComplete="name" placeholder="e.g. Alex Chen" icon={User} value={emergencyName} onChange={(e) => { setEmergencyName(e.target.value); setEmergencySource("manual"); }} />
+                    <Field label="Emergency contact phone" name="emergency-contact-phone" autoComplete="tel" inputMode="tel" placeholder="04XX XXX XXX" icon={Phone} type="tel" value={emergencyPhone} onChange={(e) => { setEmergencyPhone(e.target.value.replace(/[^0-9+\s]/g, "")); setEmergencySource("manual"); }} />
                   </div>
                 </div>
 
@@ -832,7 +981,7 @@ export function ScreenBookingReview({ nav, params, draft, setDraft, toast, child
           <Row label="Total" value={`$${total.toFixed(2)}`} bold last />
         </Card>
       </div>
-      <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
+      <div style={{ padding: "14px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
         <Btn full disabled={!canContinue} onClick={() => {
           // Fold any safety details already saved on a child's profile into the notes
           // that travel with the booking, alongside anything freshly typed above.
@@ -850,7 +999,11 @@ export function ScreenBookingReview({ nav, params, draft, setDraft, toast, child
             }).join("\n");
           const combinedConditions = [conditions.trim(), profileSafetyNotes].filter(Boolean).join("\n");
           const newId = "b" + (bookings.length + 1);
-          const finalDraft = { ...d, id: newId, total, participants: participantLabel, includesMinor, guardianName, guardianRelationship, emergencyName, emergencyPhone, conditions: combinedConditions };
+          const finalDraft = {
+            ...d, id: newId, total, participants: participantLabel, includesMinor,
+            guardianName, guardianRelationship, guardianPhone,
+            emergencyName, emergencyPhone, conditions: combinedConditions,
+          };
           setDraft(finalDraft);
           addBooking(finalDraft);
           toast("Booking request sent");
@@ -909,7 +1062,7 @@ export function ScreenPayment({ nav, params, draft, bookings = [], toast, markBo
       markBookingPaid?.(params.bookingId);
       toast("Payment confirmed");
       setResult("success");
-      setTimeout(() => nav("client-booking-detail", { id: params.bookingId }), 700);
+      setTimeout(() => nav("booking-confirmation", { bookingId: params.bookingId }), 700);
     }, 900);
   };
 
@@ -977,7 +1130,7 @@ export function ScreenPayment({ nav, params, draft, bookings = [], toast, markBo
           Use a test card that declines (simulate failure)
         </button>
       </div>
-      <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, display: "flex", gap: 10, flexShrink: 0 }}>
+      <div style={{ padding: "14px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", borderTop: `1px solid ${C.border}`, background: C.white, display: "flex", gap: 10, flexShrink: 0 }}>
         {result !== "failed" && result !== "cancelled" && (
           <button onClick={cancelPayment} disabled={busy} style={{ background: "none", border: "none", cursor: busy ? "default" : "pointer", fontSize: T.labelLg, color: C.slate, fontWeight: 600, padding: "0 4px", ...fBody }}>
             Cancel
@@ -1002,33 +1155,66 @@ export function ScreenPayment({ nav, params, draft, bookings = [], toast, markBo
   );
 }
 
-export function ScreenBookingConfirmation({ nav, params, draft, toast }) {
+export function ScreenBookingConfirmation({ nav, params, draft, bookings = [], toast }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
-  const d = buildFallbackDraft(params, draft);
+  const booking = params?.bookingId ? bookings.find((item) => item.id === params.bookingId) : null;
+  const bookingCoach = booking ? COACHES.find((coach) => coach.id === booking.coachId) : null;
+  const bookingPackage = bookingCoach?.packages.find((pkg) => pkg.name === booking.service) || bookingCoach?.packages[0];
+  const bookingDraft = booking && bookingCoach && bookingPackage ? {
+    coach: bookingCoach,
+    pkg: bookingPackage,
+    day: booking.date,
+    time: booking.time,
+    mode: booking.mode,
+    participants: booking.participants || "You",
+    total: Number(booking.price),
+  } : null;
+  const d = buildFallbackDraft(params, bookingDraft || draft);
   const pub = getPublicName(d.coach, "public");
   const [synced, setSynced] = useState(false);
   const [locShare, setLocShare] = useState(false);
+  const confirmedBooking = booking || {
+    id: "preview-confirmed",
+    status: BOOKING_STATUS.CONFIRMED,
+    paymentStatus: "held",
+    payoutStatus: "not_ready",
+    date: d.day,
+    time: d.time,
+  };
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <div style={{ padding: "18px 18px 0", textAlign: "center", marginBottom: 20 }}>
-        <div style={{ width: 60, height: 60, borderRadius: 20, background: C.successTint, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
-          <CheckCircle2 size={28} color={C.success} />
+      <div style={{ padding: "18px 22px 4px", textAlign: "center", marginBottom: 14 }}>
+        <div style={{ width: 68, height: 68, borderRadius: 23, background: C.successTint, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", boxShadow: `0 14px 28px -22px ${C.success}` }}>
+          <CheckCircle2 size={31} color={C.success} />
         </div>
-        <div style={{ fontSize: T.headingLg, fontWeight: 600, color: C.jet, ...fDisplay }}>
-          {d.coach.instantBook ? "Booking confirmed" : "Request sent"}
-        </div>
-        <div style={{ fontSize: T.body, color: C.slate, marginTop: 4, ...fBody }}>
-          {d.coach.instantBook ? `You're all set with ${pub.name}.` : `${pub.name} will respond within 24 hours.`}
+        <div style={{ fontSize: T.display, fontWeight: 750, color: C.jet, letterSpacing: "-0.35px", ...fDisplay }}>You’re officially booked</div>
+        <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.55, marginTop: 6, ...fBody }}>
+          Payment is secured and your session with {pub.name} is confirmed.
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
+      <div style={{ flex: 1, overflowY: "auto", padding: "10px 18px 24px" }} className="cl-hide-scrollbar">
         <Card style={{ marginBottom: 14 }}>
           <Row label="Service" value={d.pkg.name} />
           <Row label="When" value={`${d.day} at ${d.time}`} />
           <Row label="Location" value={d.mode} />
+          <Row label="Payment" value={`$${Number(d.total || booking?.price || 0).toFixed(2)} · secured`} />
           {d.participants && <Row label="For" value={d.participants} last />}
+        </Card>
+
+        <div style={{ marginBottom: 14 }}>
+          <SessionJourneyTimeline booking={confirmedBooking} role="client" compact />
+        </div>
+
+        <Card style={{ marginBottom: 14, background: C.successTint, borderColor: C.success }}>
+          <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+            <ShieldCheck size={18} color={C.success} style={{ flexShrink: 0 }} />
+            <div>
+              <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>Your payment stays protected</div>
+              <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, marginTop: 3, ...fBody }}>Funds are held securely and released to {pub.name.split(" ")[0]} only after session completion is confirmed.</div>
+            </div>
+          </div>
         </Card>
 
         <Card style={{ marginBottom: 10 }}>
@@ -1037,23 +1223,23 @@ export function ScreenBookingConfirmation({ nav, params, draft, toast }) {
               <Calendar size={16} color={C.jet} />
               <span style={{ fontSize: T.body, color: C.jet, fontWeight: 500, ...fBody }}>Sync to device calendar</span>
             </div>
-            <Toggle on={synced} onClick={() => { setSynced((v) => !v); toast(!synced ? "Added to your calendar" : "Removed from calendar"); }} />
+            <Toggle label="Add session to calendar" on={synced} onClick={() => { setSynced((v) => !v); toast(!synced ? "Added to your calendar" : "Removed from calendar"); }} />
           </div>
         </Card>
-        <Card style={{ marginBottom: 20 }}>
+        <Card style={{ marginBottom: 6 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <Navigation size={16} color={C.jet} />
               <span style={{ fontSize: T.body, color: C.jet, fontWeight: 500, ...fBody }}>Share live location during session</span>
             </div>
-            <Toggle on={locShare} onClick={() => setLocShare((v) => !v)} />
+            <Toggle label="Share live location for this session" on={locShare} onClick={() => setLocShare((v) => !v)} />
           </div>
         </Card>
       </div>
 
-      <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, display: "flex", flexDirection: "column", gap: 10, flexShrink: 0 }}>
-        <Btn full variant="secondary" icon={MessageCircle} onClick={() => nav("chat-thread", { name: d.coach.name, handle: d.coach.handle })}>Message {pub.name.split(" ")[0]}</Btn>
-        <Btn full onClick={() => nav("client-dashboard")}>Go to dashboard</Btn>
+      <div style={{ padding: "14px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", borderTop: `1px solid ${C.border}`, background: C.white, display: "flex", flexDirection: "column", gap: 10, flexShrink: 0 }}>
+        <Btn full onClick={() => nav("client-booking-detail", { id: booking?.id || params?.bookingId })}>View session details</Btn>
+        <Btn full variant="outline" icon={MessageCircle} onClick={() => nav("chat-thread", { name: d.coach.name, handle: d.coach.handle, bookingId: booking?.id })}>Message {pub.name.split(" ")[0]}</Btn>
       </div>
     </div>
   );
@@ -1082,7 +1268,7 @@ export function ScreenBookingRequestSent({ nav, params }) {
         </div>
       </div>
 
-      <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, display: "flex", flexDirection: "column", gap: 10, marginTop: "auto", flexShrink: 0 }}>
+      <div style={{ padding: "14px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", borderTop: `1px solid ${C.border}`, background: C.white, display: "flex", flexDirection: "column", gap: 10, marginTop: "auto", flexShrink: 0 }}>
         <Btn full icon={Home} onClick={() => nav("client-home")}>Return to home</Btn>
         <Btn full variant="secondary" icon={MessageCircle} onClick={() => nav("chat-thread", { name: coach.name, handle: coach.handle })}>Message Coach</Btn>
       </div>

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { Search, Filter, Navigation, Star, MapPin, Heart, X, LocateFixed, Calendar, MessageCircle, Sparkles, Check, Bell, Percent, CreditCard, LayoutList, Map as MapIcon } from "lucide-react";
+import { Search, SlidersHorizontal, ArrowUpDown, ChevronDown, ChevronRight, Navigation, Star, MapPin, Heart, X, LocateFixed, Calendar, MessageCircle, Sparkles, Check, LayoutList, Map as MapIcon } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 
@@ -8,7 +8,7 @@ import { Card, Chip, Badge, SegTabs, SectionLabel, Avatar, Btn, TopBar, BottomSh
 import { getPublicName } from "../../utils/name";
 
 
-import { useLiveNotifications, NotificationBellButton, StatusBanner, useUserLocation } from "../../systems/StateSystem";
+import { NotificationBellButton, StatusBanner, useUserLocation } from "../../systems/StateSystem";
 import { LocationField } from "../../components/ui/LocationField";
 import { CoachMapView } from "../../components/map/CoachMapView";
 import { haversineKm, FALLBACK_USER_LOCATION, injectMapStyles, CUSTOM_RADIUS_MIN_KM, CUSTOM_RADIUS_MAX_KM } from "../../lib/mapUtils";
@@ -22,11 +22,12 @@ const LIVE_AVAILABILITY_COACH_ID = "c2";
 // control (with presets + custom slider, same as the map) lives in Filters.
 const DEFAULT_FILTERS = { sports: [], areas: [], maxPrice: 150, minRating: 0, radiusKm: 5 };
 const NEARBY_RADIUS_PRESETS = [5, 10, 15, 25];
-
-// Same mapping ScreenNotifications uses — duplicated here since this sheet
-// renders its own condensed notification list rather than importing the
-// full screen.
-const NOTIF_ICON = { booking: Calendar, message: MessageCircle, review: Star, availability: Sparkles, promo: Percent, payment: CreditCard };
+const SORT_OPTIONS = [
+  { value: "recommended", label: "Recommended", detail: "Best overall matches for you" },
+  { value: "distance", label: "Distance", detail: "Closest coaches first" },
+  { value: "rating", label: "Highest rated", detail: "Top client ratings first" },
+  { value: "price", label: "Price: low to high", detail: "Lowest session price first" },
+];
 
 const oneLine = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
 
@@ -157,17 +158,19 @@ export function PostSignupGuideModal({ open, onClose, onFindCoaches }) {
 
   return (
     <div style={{ position: "absolute", inset: 0, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(22,24,29,.55)", animation: "clBackdropIn .18s ease" }} />
+      <button type="button" aria-label="Skip CoachLink introduction" onClick={onClose} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none", borderRadius: 0, background: "rgba(22,24,29,.55)", animation: "clBackdropIn .18s ease" }} />
       <div
         role="dialog"
+        aria-modal="true"
+        aria-label="Welcome to CoachLink"
         style={{
           position: "relative", width: 340, height: 600, maxWidth: "100%", maxHeight: "100%", background: C.white, borderRadius: 30,
           padding: "34px 28px 28px", boxSizing: "border-box", display: "flex", flexDirection: "column",
           boxShadow: "0 20px 50px rgba(0,0,0,.28)", animation: "clPopIn .22s cubic-bezier(.32,.72,0,1)",
         }}
       >
-        <button onClick={onClose} aria-label="Skip for now" style={{
-          position: "absolute", top: 16, right: 16, width: 30, height: 30, borderRadius: 99,
+        <button type="button" onClick={onClose} aria-label="Skip for now" style={{
+          position: "absolute", top: 16, right: 16, width: 44, height: 44, borderRadius: 999,
           background: C.fog, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
         }}>
           <X size={14} color={C.slate} />
@@ -314,17 +317,20 @@ export function PersonalisedRecommendationModal({ open, onClose, onSubmit }) {
   );
 }
 
-export function ScreenClientHome({ nav, favorites = [], toggleFav, filters, onFiltersChange, clientNotifications: notifications = [], setClientNotifications: setNotifications, coachAvailableNow, isFirstTimeClient, discoveryPrefs, setDiscoveryPrefs, showPostSignupGuide, setShowPostSignupGuide }) {
+export function ScreenClientHome({ nav, favorites = [], toggleFav, filters, onFiltersChange, clientNotifications: notifications = [], coachAvailableNow, isFirstTimeClient, discoveryPrefs, setDiscoveryPrefs, showPostSignupGuide, setShowPostSignupGuide }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const [view, setView] = useState("list");
   const [searchText, setSearchText] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [prefsModalOpen, setPrefsModalOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
+  const [activeSheet, setActiveSheet] = useState(null);
+  const [sortBy, setSortBy] = useState("recommended");
+  const [filterDraft, setFilterDraft] = useState(DEFAULT_FILTERS);
+  const [locationQuery, setLocationQuery] = useState("");
   // Defaults to the tightest "Nearby" (0–5 km) band; the control for changing
   // it lives in Filters, same as sport/area/price/rating.
-  const { userLocation, locating, manualLabel, requestLocation } = useUserLocation();
+  const { userLocation, locating, permissionDenied, manualLabel, requestLocation, setManualLocation } = useUserLocation();
 
   // The pulse CSS the location pill reuses is normally injected by the map
   // view — bring it in here too so it still looks right if you land on
@@ -366,6 +372,14 @@ export function ScreenClientHome({ nav, favorites = [], toggleFav, filters, onFi
   // Live distance from wherever the user actually is right now, falling back
   // to the same default point the map uses until a real fix comes in.
   const origin = userLocation || FALLBACK_USER_LOCATION;
+  const nearestLocationLabel = useMemo(() => {
+    if (manualLabel) return manualLabel;
+    const nearest = Object.entries(SUBURB_COORDS).reduce((best, [label, coords]) => {
+      const distance = haversineKm(origin, coords);
+      return !best || distance < best.distance ? { label, distance } : best;
+    }, null);
+    return nearest?.label || "Current location";
+  }, [manualLabel, permissionDenied, origin.lat, origin.lng]);
   const withDistance = useMemo(
     () => COACHES.map(c => ({ ...c, liveDistanceKm: Math.round(haversineKm(origin, { lat: c.lat, lng: c.lng }) * 10) / 10 })),
     [origin.lat, origin.lng]
@@ -384,83 +398,58 @@ export function ScreenClientHome({ nav, favorites = [], toggleFav, filters, onFi
     const matchesRating = c.rating >= (appliedFilters.minRating ?? 0);
     return matchesQuery && matchesAreas && matchesSport && matchesPrice && matchesRating;
   });
-  const filtered = searchAndAreaFiltered
-    .filter(c => radiusKm == null || c.liveDistanceKm <= radiusKm)
-    .sort((a, b) => a.liveDistanceKm - b.liveDistanceKm);
+  const filtered = useMemo(() => {
+    const matches = searchAndAreaFiltered.filter(c => radiusKm == null || c.liveDistanceKm <= radiusKm);
+    return [...matches].sort((a, b) => {
+      if (sortBy === "rating") return b.rating - a.rating || a.liveDistanceKm - b.liveDistanceKm;
+      if (sortBy === "price") return a.packages[0].price - b.packages[0].price || b.rating - a.rating;
+      if (sortBy === "distance") return a.liveDistanceKm - b.liveDistanceKm;
+      const score = coach => (coach.rating * 20) + (coach.instantBook ? 4 : 0) - coach.liveDistanceKm;
+      return score(b) - score(a);
+    });
+  }, [searchAndAreaFiltered, radiusKm, sortBy]);
   const favCoaches = COACHES.filter(c => safeFavorites.includes(c.id));
 
-  // Every filter currently applied, each individually removable — feeds both
-  // the "active filters" row on the dashboard and the badge on the Filter icon.
-  const activeFilterChips = useMemo(() => {
-    const chips = [];
-    appliedFilters.areas.forEach(a => chips.push({
-      key: `area-${a}`, label: a,
-      onRemove: () => setAppliedFilters({ ...appliedFilters, areas: appliedFilters.areas.filter(x => x !== a) }),
-    }));
-    (appliedFilters.sports || []).forEach(s => chips.push({
-      key: `sport-${s}`, label: s,
-      onRemove: () => setAppliedFilters({ ...appliedFilters, sports: appliedFilters.sports.filter(x => x !== s) }),
-    }));
+  // Count filter categories rather than every selected value, keeping the
+  // sticky control compact even when several sports or areas are selected.
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (appliedFilters.areas.length) count += 1;
+    if (appliedFilters.sports?.length) count += 1;
     const maxPrice = appliedFilters.maxPrice ?? DEFAULT_FILTERS.maxPrice;
-    if (maxPrice !== DEFAULT_FILTERS.maxPrice) chips.push({
-      key: "price", label: `Up to $${maxPrice}`,
-      onRemove: () => setAppliedFilters({ ...appliedFilters, maxPrice: DEFAULT_FILTERS.maxPrice }),
-    });
+    if (maxPrice !== DEFAULT_FILTERS.maxPrice) count += 1;
     const minRating = appliedFilters.minRating ?? 0;
-    if (minRating > 0) chips.push({
-      key: "rating", label: `${minRating}+ rating`,
-      onRemove: () => setAppliedFilters({ ...appliedFilters, minRating: 0 }),
-    });
+    if (minRating > 0) count += 1;
     const appliedRadius = appliedFilters.radiusKm ?? 5;
-    if (appliedRadius !== 5) chips.push({
-      key: "radius", label: appliedRadius == null ? "Any distance" : `${appliedRadius} km`,
-      onRemove: () => setAppliedFilters({ ...appliedFilters, radiusKm: 5 }),
-    });
-    return chips;
+    if (appliedRadius !== 5) count += 1;
+    return count;
   }, [appliedFilters]);
-  const hasActiveFilters = activeFilterChips.length > 0;
+  const hasActiveFilters = activeFilterCount > 0;
 
-  const selectSuggestion = s => { setSearchText(s); setShowSuggestions(false); };
-
-  // Same behaviour as ScreenNotifications — mark-all and per-item open/read
-  // + route to the relevant screen depending on notification type.
-  const markAllRead = () => setNotifications?.(arr => arr.map(n => ({ ...n, unread: false })));
-
-  const openNotification = (n) => {
-    setNotifications?.(arr => arr.map(x => (x.id === n.id ? { ...x, unread: false } : x)));
-    setNotifOpen(false);
-    if (n.type === "message") nav("chat-thread", { name: n.coachName, handle: COACHES.find((c) => c.name === n.coachName)?.handle });
-    else if (n.type === "availability" && n.coachId) nav("coach-profile", { id: n.coachId });
-    else if (["booking", "review", "payment"].includes(n.type)) {
-      nav(n.bookingId ? "client-booking-detail" : "client-dashboard", n.bookingId ? { id: n.bookingId } : {});
-    }
+  const openFilters = () => {
+    setFilterDraft({ ...appliedFilters, sports: [...appliedFilters.sports], areas: [...appliedFilters.areas] });
+    setActiveSheet("filters");
+  };
+  const updateDraft = patch => setFilterDraft(current => ({ ...current, ...patch }));
+  const draftPreviewCount = useMemo(() => COACHES.filter(c => {
+    const distance = haversineKm(origin, { lat: c.lat, lng: c.lng });
+    return (!filterDraft.sports?.length || filterDraft.sports.includes(c.sport))
+      && (!filterDraft.areas?.length || filterDraft.areas.some(a => c.suburb.toLowerCase().includes(a.toLowerCase())))
+      && c.packages[0].price <= (filterDraft.maxPrice ?? DEFAULT_FILTERS.maxPrice)
+      && c.rating >= (filterDraft.minRating ?? 0)
+      && (filterDraft.radiusKm == null || distance <= filterDraft.radiusKm);
+  }).length, [filterDraft, origin.lat, origin.lng]);
+  const locationSuggestions = locationQuery.trim()
+    ? ALL_SUBURBS.filter(s => s.toLowerCase().includes(locationQuery.trim().toLowerCase())).slice(0, 5)
+    : ALL_SUBURBS.slice(0, 4);
+  const chooseLocation = suburb => {
+    const coords = SUBURB_COORDS[suburb];
+    if (coords) setManualLocation(coords, suburb);
+    setLocationQuery("");
+    setActiveSheet(null);
   };
 
-  const notifSheet = (
-    <BottomSheet open={notifOpen} onClose={() => setNotifOpen(false)} title="Notifications" heightPct={72}>
-      {unreadCount > 0 && (
-        <button onClick={markAllRead} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", color: C.brand, fontSize: T.labelLg, fontWeight: 600, cursor: "pointer", marginBottom: 10, padding: "2px 0", ...fBody }}>
-          <Check size={13} /> Mark all as read
-        </button>
-      )}
-      {notifications.map(n => {
-        const Icon = NOTIF_ICON[n.type] || Bell;
-        return (
-          <button key={n.id} onClick={() => openNotification(n)} style={{ width: "100%", display: "flex", gap: 12, alignItems: "flex-start", padding: "12px 4px", background: "none", border: "none", borderBottom: `1px solid ${C.border}`, cursor: "pointer", textAlign: "left" }}>
-            <div style={{ width: 36, height: 36, borderRadius: 11, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon size={16} color={C.brandIcon || C.brandColor} /></div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-                <span style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{n.title}</span>
-                <span style={{ fontSize: T.tiny, color: C.slateLight, flexShrink: 0, ...fBody }}>{n.time}</span>
-              </div>
-              <div style={{ fontSize: T.labelLg, color: C.slate, marginTop: 3, lineHeight: 1.45, ...fBody }}>{n.body}</div>
-            </div>
-            {n.unread && <span style={{ width: 8, height: 8, borderRadius: 99, background: C.brand, flexShrink: 0, marginTop: 5 }} />}
-          </button>
-        );
-      })}
-    </BottomSheet>
-  );
+  const selectSuggestion = s => { setSearchText(s); setShowSuggestions(false); };
 
   const prefsModal = (
     <PersonalisedRecommendationModal
@@ -478,6 +467,114 @@ export function ScreenClientHome({ nav, favorites = [], toggleFav, filters, onFi
     />
   );
 
+  const sortSheet = (
+    <BottomSheet open={activeSheet === "sort"} onClose={() => setActiveSheet(null)} title="Sort coaches" heightPct={54}>
+      <div style={{ fontSize: T.body, color: C.slate, marginBottom: 8, ...fBody }}>Choose how results are ordered.</div>
+      {SORT_OPTIONS.map(option => {
+        const selected = sortBy === option.value;
+        return (
+          <button key={option.value} type="button" onClick={() => { setSortBy(option.value); setActiveSheet(null); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, textAlign: "left", padding: "13px 2px", background: "none", border: "none", borderBottom: `1px solid ${C.border}`, cursor: "pointer" }}>
+            <span aria-hidden="true" style={{ width: 21, height: 21, borderRadius: 999, border: `2px solid ${selected ? C.brand : C.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              {selected && <span style={{ width: 11, height: 11, borderRadius: 999, background: C.brand }} />}
+            </span>
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ display: "block", fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...fBody }}>{option.label}</span>
+              <span style={{ display: "block", fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{option.detail}</span>
+            </span>
+          </button>
+        );
+      })}
+    </BottomSheet>
+  );
+
+  const locationSheet = (
+    <BottomSheet open={activeSheet === "location"} onClose={() => setActiveSheet(null)} title="Choose your location" heightPct={68}>
+      <button type="button" onClick={() => { requestLocation(); setActiveSheet(null); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "13px 14px", borderRadius: 14, border: `1px solid ${C.brand}`, background: C.brandTint, color: C.brand, cursor: "pointer", textAlign: "left" }}>
+        <span style={{ width: 38, height: 38, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", background: C.white, flexShrink: 0 }}>
+          {locating ? <Spinner size={16} color={C.brand} /> : <LocateFixed size={18} />}
+        </span>
+        <span style={{ flex: 1 }}>
+          <span style={{ display: "block", fontSize: T.bodyLg, fontWeight: 700, ...fBody }}>{locating ? "Locating you…" : "Use current location"}</span>
+          <span style={{ display: "block", fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>Update nearby coach distances</span>
+        </span>
+        <ChevronRight size={17} />
+      </button>
+
+      <div style={{ position: "relative", marginTop: 16 }}>
+        <div className="cl-input" style={{ minHeight: 48, display: "flex", alignItems: "center", gap: 9, padding: "0 13px", borderRadius: 13, border: `1.5px solid ${C.border}`, background: C.white }}>
+          <Search size={16} color={C.slateLight} />
+          <input name="location-search" type="search" autoComplete="off" aria-label="Search suburb or area" value={locationQuery} onChange={e => setLocationQuery(e.target.value)} placeholder="Search suburb or area" style={{ flex: 1, minWidth: 0, minHeight: 44, padding: 0, border: "none", outline: "none", background: "transparent", fontSize: T.bodyLg, color: C.jet, ...fBody }} />
+        </div>
+      </div>
+
+      <div style={{ marginTop: 18, marginBottom: 4, fontSize: T.labelLg, fontWeight: 700, color: C.jet, ...fDisplay }}>{locationQuery ? "Matching locations" : "Popular nearby"}</div>
+      {locationSuggestions.map(suburb => (
+        <button key={suburb} type="button" onClick={() => chooseLocation(suburb)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 11, padding: "11px 2px", border: "none", borderBottom: `1px solid ${C.border}`, background: "none", color: C.jet, cursor: "pointer", textAlign: "left" }}>
+          <span style={{ width: 36, height: 36, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", background: C.fog, flexShrink: 0 }}><MapPin size={16} color={C.brand} /></span>
+          <span style={{ flex: 1, fontSize: T.bodyLg, fontWeight: 600, ...fBody }}>{suburb}</span>
+          <ChevronRight size={16} color={C.slateLight} />
+        </button>
+      ))}
+    </BottomSheet>
+  );
+
+  const filterSheet = (
+    <BottomSheet
+      open={activeSheet === "filters"}
+      onClose={() => setActiveSheet(null)}
+      title="Filters"
+      heightPct={88}
+      footer={(
+        <div style={{ display: "flex", gap: 10 }}>
+          <Btn variant="outline" onClick={() => setFilterDraft(DEFAULT_FILTERS)}>Reset</Btn>
+          <div style={{ flex: 1 }}><Btn full onClick={() => { setAppliedFilters(filterDraft); setActiveSheet(null); }}>Show {draftPreviewCount} result{draftPreviewCount === 1 ? "" : "s"}</Btn></div>
+        </div>
+      )}
+    >
+      <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.5, marginBottom: 20, ...fBody }}>Refine results without leaving Discover.</div>
+
+      <SectionLabel>Sport</SectionLabel>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden", marginBottom: 24 }}>
+        {SPORTS.map((sport, index) => {
+          const selected = filterDraft.sports?.includes(sport);
+          return (
+            <button key={sport} type="button" aria-pressed={selected} onClick={() => updateDraft({ sports: selected ? filterDraft.sports.filter(x => x !== sport) : [...(filterDraft.sports || []), sport] })} style={{ minHeight: 48, display: "flex", alignItems: "center", gap: 9, padding: "0 12px", border: "none", borderRight: index % 2 === 0 ? `1px solid ${C.border}` : "none", borderBottom: index < SPORTS.length - 2 ? `1px solid ${C.border}` : "none", background: selected ? C.brandTint : C.white, color: selected ? C.brand : C.jet, cursor: "pointer", textAlign: "left", fontSize: T.body, fontWeight: selected ? 700 : 500, ...fBody }}>
+              <span aria-hidden="true" style={{ width: 19, height: 19, borderRadius: 6, border: `1.5px solid ${selected ? C.brand : C.border}`, background: selected ? C.brand : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{selected && <Check size={12} color={C.white} />}</span>
+              {sport}
+            </button>
+          );
+        })}
+      </div>
+
+      <SectionLabel>Distance</SectionLabel>
+      <div style={{ border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden", marginBottom: 24 }}>
+        {[...NEARBY_RADIUS_PRESETS.map(km => ({ value: km, label: `Within ${km} km` })), { value: null, label: "Any distance" }].map((option, index, options) => {
+          const selected = filterDraft.radiusKm === option.value;
+          return (
+            <button key={option.label} type="button" role="radio" aria-checked={selected} onClick={() => updateDraft({ radiusKm: option.value })} style={{ width: "100%", minHeight: 48, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 14px", border: "none", borderBottom: index < options.length - 1 ? `1px solid ${C.border}` : "none", background: selected ? C.brandTint : C.white, color: C.jet, cursor: "pointer", textAlign: "left", fontSize: T.bodyLg, fontWeight: selected ? 700 : 500, ...fBody }}>
+              {option.label}
+              <span aria-hidden="true" style={{ width: 20, height: 20, borderRadius: 999, border: `2px solid ${selected ? C.brand : C.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>{selected && <span style={{ width: 10, height: 10, borderRadius: 999, background: C.brand }} />}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        <SectionLabel>Maximum price</SectionLabel>
+        <span style={{ fontSize: T.body, fontWeight: 700, color: C.brand, ...fBody }}>${filterDraft.maxPrice ?? DEFAULT_FILTERS.maxPrice}/session</span>
+      </div>
+      <input type="range" name="filter-maximum-price" aria-label={`Maximum price per session, $${filterDraft.maxPrice ?? DEFAULT_FILTERS.maxPrice}`} min="20" max="150" step="5" value={filterDraft.maxPrice ?? DEFAULT_FILTERS.maxPrice} onChange={e => updateDraft({ maxPrice: Number(e.target.value) })} style={{ width: "100%", accentColor: C.brand, margin: "0 0 26px" }} />
+
+      <SectionLabel>Minimum rating</SectionLabel>
+      <div role="radiogroup" aria-label="Minimum rating" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", padding: 3, background: C.fog, borderRadius: 13, marginBottom: 8 }}>
+        {[0, 3, 4, 4.5].map(rating => {
+          const selected = (filterDraft.minRating ?? 0) === rating;
+          return <button key={rating} type="button" role="radio" aria-checked={selected} onClick={() => updateDraft({ minRating: rating })} style={{ minHeight: 44, padding: "0 6px", border: "none", borderRadius: 10, background: selected ? C.white : "transparent", color: selected ? C.jet : C.slate, boxShadow: selected ? "0 1px 3px rgba(22,24,29,.08)" : "none", cursor: "pointer", fontSize: T.labelLg, fontWeight: selected ? 700 : 500, ...fBody }}>{rating ? `${rating}+` : "Any"}</button>;
+        })}
+      </div>
+    </BottomSheet>
+  );
+
   // First-time client, no preferences submitted yet — the Coach Listings
   // section stays empty and prompts for preferences instead of showing
   // every coach in the directory.
@@ -485,7 +582,7 @@ export function ScreenClientHome({ nav, favorites = [], toggleFav, filters, onFi
     return (
       <div style={{ height: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
         <div style={{ padding: "18px 18px 0", display: "flex", justifyContent: "flex-end" }}>
-          <NotificationBellButton count={unreadCount} onClick={() => setNotifOpen(true)} />
+          <NotificationBellButton count={unreadCount} onClick={() => nav("notifications")} />
         </div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "0 28px 40px" }}>
           <div style={{ width: 72, height: 72, borderRadius: 22, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
@@ -499,7 +596,6 @@ export function ScreenClientHome({ nav, favorites = [], toggleFav, filters, onFi
             <Btn full onClick={() => setPrefsModalOpen(true)}>Find My Coaches</Btn>
           </div>
         </div>
-        {notifSheet}
         {prefsModal}
         {guideModal}
       </div>
@@ -508,150 +604,93 @@ export function ScreenClientHome({ nav, favorites = [], toggleFav, filters, onFi
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
-      <div style={{ padding: "18px 18px 0" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div>
-            <div style={{ fontSize: T.labelLg, color: C.slate, ...fBody }}>Good morning</div>
-            <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, ...fDisplay }}>Find your coach</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4, fontSize: T.captionLg, color: C.slate, ...fBody }}>
-              {locating ? (
-                <><Spinner size={10} color={C.brand} /> Locating you…</>
-              ) : (
-                <>
-                  <span style={{ position: "relative", width: 7, height: 7, flexShrink: 0 }}>
-                    <span style={{ position: "absolute", inset: 0, borderRadius: 99, background: C.live }} />
-                    <span style={{ position: "absolute", inset: -3, borderRadius: 99, border: `1.5px solid ${C.live}`, animation: "clFixedBlink 1.8s ease-in-out infinite" }} />
-                  </span>
-                  <LocateFixed size={11} color={C.slate} /> {manualLabel ? `Using ${manualLabel}` : "Using your current location"}
-                </>
-              )}
-            </div>
-          </div>
-          <NotificationBellButton count={unreadCount} onClick={() => nav("notifications")} />
-        </div>
-
-        <div style={{ position: "relative", marginTop: 18 }}>
-          <div className="cl-input" style={{ display: "flex", alignItems: "center", gap: 10, border: `1.5px solid ${C.border}`, background: C.white, borderRadius: 13, padding: "11px 13px" }}>
-            <Search size={16} color={C.slateLight} />
-            <input value={searchText} onChange={e => { setSearchText(e.target.value); setShowSuggestions(true); }}
-              onFocus={() => setShowSuggestions(true)} onBlur={() => setTimeout(() => setShowSuggestions(false), 120)}
-              placeholder="Sport, coach name or suburb" style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: T.bodyLg, color: C.jet, ...fBody }} />
-            {searchText && <button onClick={() => setSearchText("")} style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}><X size={14} color={C.slateLight} /></button>}
-            <button onClick={() => nav("search-filters", { initialFilters: appliedFilters, onApply: setAppliedFilters })} style={{
-              position: "relative", display: "flex", alignItems: "center", justifyContent: "center",
-              width: 26, height: 26, borderRadius: 8, cursor: "pointer",
-              background: hasActiveFilters ? C.brandTint : "none", border: "none",
-            }}>
-              <Filter size={15} color={hasActiveFilters ? C.brand : C.slate} />
-              {hasActiveFilters && (
-                <span style={{ position: "absolute", top: -2, right: -2, width: 8, height: 8, borderRadius: 99, background: C.brand, border: `1.5px solid ${C.white}` }} />
-              )}
-            </button>
-          </div>
-          {showSuggestions && suggestions.length > 0 && (
-            <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, zIndex: 20, background: C.white, borderRadius: 14, border: `1px solid ${C.border}`, boxShadow: "0 8px 24px rgba(0,0,0,0.08)", overflow: "hidden" }}>
-              {suggestions.map(s => (
-                <button key={s} onMouseDown={() => selectSuggestion(s)} style={{ width: "100%", textAlign: "left", padding: "10px 14px", background: "none", border: "none", borderBottom: `1px solid ${C.border}`, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: T.body, color: C.jet, ...fBody }}>
-                  <MapPin size={13} color={C.slateLight} /> {s}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Sport category filter bar — horizontally scrollable/swipable (native touch
-            drag + momentum via cl-swipe-row) so users can browse every sport without
-            it wrapping or crowding the screen. Selecting a sport re-filters `filtered`
-            below, which drives the Coach Listings list, so listings update immediately. */}
-        <ScrollFadeRow className="cl-swipe-row" style={{ display: "flex", gap: 8, overflowX: "auto", marginTop: 14, paddingBottom: 2 }}>
-          <Chip active={!appliedFilters.sports?.length} onClick={() => setAppliedFilters({ ...appliedFilters, sports: [] })}>All sports</Chip>
-          {SPORTS.map(s => (
-            <Chip
-              key={s}
-              active={!!appliedFilters.sports?.includes(s)}
-              onClick={() => {
-                const has = appliedFilters.sports?.includes(s);
-                setAppliedFilters({ ...appliedFilters, sports: has ? appliedFilters.sports.filter(x => x !== s) : [...(appliedFilters.sports || []), s] });
-              }}
-            >{s}</Chip>
-          ))}
-        </ScrollFadeRow>
-
-        {hasActiveFilters && (
-          <div className="cl-hide-scrollbar" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "nowrap", overflowX: "auto", marginTop: 12, paddingBottom: 2 }}>
-            {activeFilterChips.map(chip => (
-              <span key={chip.key} style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0, whiteSpace: "nowrap", background: C.brandTint, color: C.brand, borderRadius: 99, padding: "4px 6px 4px 10px", fontSize: T.captionLg, fontWeight: 600, ...fBody }}>
-                {chip.label}
-                <button onClick={chip.onRemove} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 15, height: 15, borderRadius: 99, background: "none", border: "none", cursor: "pointer", padding: 0, flexShrink: 0 }}>
-                  <X size={11} color={C.brand} />
-                </button>
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", overscrollBehavior: "contain", paddingBottom: 116 }} className="cl-hide-scrollbar">
+        <div style={{ padding: "18px 18px 14px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+            <button type="button" onClick={() => setActiveSheet("location")} aria-label={`Change location, currently ${nearestLocationLabel}`} style={{ minWidth: 0, flex: 1, display: "flex", alignItems: "center", gap: 10, padding: 0, border: "none", background: "none", cursor: "pointer", textAlign: "left" }}>
+              <span style={{ width: 42, height: 42, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", background: C.brandTint, color: C.brand, flexShrink: 0 }}>
+                {locating ? <Spinner size={17} color={C.brand} /> : <MapPin size={19} />}
               </span>
-            ))}
-            {activeFilterChips.length > 1 && (
-              <button onClick={() => setAppliedFilters(DEFAULT_FILTERS)} style={{ flexShrink: 0, whiteSpace: "nowrap", background: "none", border: "none", cursor: "pointer", fontSize: T.captionLg, color: C.slateLight, textDecoration: "underline", ...fBody }}>Clear all</button>
+              <span style={{ minWidth: 0, flex: 1 }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
+                  <span style={{ fontSize: T.title, fontWeight: 800, color: C.jet, ...oneLine, ...fDisplay }}>{locating ? "Finding your location…" : nearestLocationLabel}</span>
+                  <ChevronDown size={16} color={C.slate} style={{ flexShrink: 0 }} />
+                </span>
+                <span style={{ display: "block", fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{permissionDenied && !manualLabel ? "Approximate area · tap to change" : "Tap to change location"}</span>
+              </span>
+            </button>
+            <NotificationBellButton count={unreadCount} onClick={() => nav("notifications")} />
+          </div>
+
+          <div style={{ marginTop: 20, fontSize: T.displayLg, lineHeight: 1.12, fontWeight: 700, letterSpacing: "-0.5px", color: C.jet, textWrap: "balance", ...fDisplay }}>Discover your next coach</div>
+          <div style={{ marginTop: 6, fontSize: T.body, color: C.slate, ...fBody }}>Trusted local experts for your goals.</div>
+
+          <div style={{ position: "relative", marginTop: 16 }}>
+            <div className="cl-input" style={{ minHeight: 50, display: "flex", alignItems: "center", gap: 10, border: `1.5px solid ${C.border}`, background: C.white, borderRadius: 14, padding: "0 5px 0 14px", boxShadow: "0 4px 16px rgba(22,24,29,.04)" }}>
+              <Search size={16} color={C.slateLight} aria-hidden="true" />
+              <input name="coach-search" type="search" autoComplete="off" aria-label="Search by sport, coach name, or suburb" value={searchText} onChange={e => { setSearchText(e.target.value); setShowSuggestions(true); }}
+                onFocus={() => setShowSuggestions(true)} onBlur={() => setTimeout(() => setShowSuggestions(false), 120)}
+                placeholder="Search sport, coach or suburb…" style={{ flex: 1, minWidth: 0, minHeight: 46, padding: 0, border: "none", outline: "none", background: "transparent", fontSize: T.bodyLg, color: C.jet, ...fBody }} />
+              {searchText && <button type="button" aria-label="Clear coach search" onClick={() => setSearchText("")} style={{ width: 44, height: 44, padding: 0, background: "none", border: "none", borderRadius: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={15} color={C.slateLight} aria-hidden="true" /></button>}
+            </div>
+            {showSuggestions && suggestions.length > 0 && (
+              <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, zIndex: 40, background: C.white, borderRadius: 14, border: `1px solid ${C.border}`, boxShadow: "0 8px 24px rgba(0,0,0,0.08)", overflow: "hidden" }}>
+                {suggestions.map(s => (
+                  <button key={s} type="button" onMouseDown={() => selectSuggestion(s)} style={{ width: "100%", minHeight: 44, textAlign: "left", padding: "10px 14px", background: "none", border: "none", borderBottom: `1px solid ${C.border}`, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: T.body, color: C.jet, ...fBody }}>
+                    <MapPin size={13} color={C.slateLight} aria-hidden="true" /> {s}
+                  </button>
+                ))}
+              </div>
             )}
           </div>
-        )}
+        </div>
 
-        <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-          <button
-            onClick={() => nav("package-listing")}
-            style={{
-              flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-              padding: "10px 12px", borderRadius: 12, border: `1px solid ${C.border}`, background: C.white,
-              cursor: "pointer", ...fBody,
-            }}
-          >
-            <LayoutList size={14} color={C.brand} />
-            <span style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet }}>Browse all packages</span>
+        <div style={{ position: "sticky", top: 0, zIndex: 30, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, padding: "10px 18px", background: C.white, borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, boxShadow: "0 6px 16px rgba(22,24,29,.05)" }}>
+          <button type="button" onClick={() => setActiveSheet("sort")} style={{ minWidth: 0, minHeight: 44, display: "flex", alignItems: "center", gap: 9, padding: "0 12px", borderRadius: 12, border: `1px solid ${C.border}`, background: C.white, color: C.jet, cursor: "pointer", textAlign: "left" }}>
+            <ArrowUpDown size={15} color={C.slate} aria-hidden="true" />
+            <span style={{ minWidth: 0, flex: 1 }}>
+              <span style={{ display: "block", fontSize: T.caption, color: C.slate, ...fBody }}>Sort</span>
+              <span style={{ display: "block", fontSize: T.labelLg, fontWeight: 700, ...oneLine, ...fBody }}>{SORT_OPTIONS.find(option => option.value === sortBy)?.label || "Recommended"}</span>
+            </span>
+            <ChevronDown size={13} color={C.slateLight} aria-hidden="true" />
+          </button>
+          <button type="button" aria-pressed={hasActiveFilters} onClick={openFilters} style={{ minWidth: 0, minHeight: 44, display: "flex", alignItems: "center", gap: 9, padding: "0 12px", borderRadius: 12, border: `1px solid ${hasActiveFilters ? C.brand : C.border}`, background: hasActiveFilters ? C.brandTint : C.white, color: hasActiveFilters ? C.brand : C.jet, cursor: "pointer", textAlign: "left" }}>
+            <SlidersHorizontal size={15} aria-hidden="true" />
+            <span style={{ flex: 1, fontSize: T.body, fontWeight: 700, ...fBody }}>Filters</span>
+            {hasActiveFilters && <span aria-label={`${activeFilterCount} active filter categories`} style={{ minWidth: 22, height: 22, padding: "0 6px", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: C.brand, color: C.white, fontSize: T.caption, fontWeight: 800, ...fBody }}>{activeFilterCount}</span>}
           </button>
         </div>
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 20, marginBottom: 14 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: T.body, fontWeight: 600, color: C.jet, ...fDisplay }}>
-            {view === "favorites" ? <><Heart size={13} color={C.brand} /> Your favorites</> : <><Navigation size={13} color={C.brand} /> Coaches near you</>}
-          </div>
-          <SegTabs
-            strong
-            value={view}
-            onChange={setView}
-            items={[
+        <div style={{ padding: "16px 18px 0" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: T.title, fontWeight: 700, color: C.jet, ...fDisplay }}>
+                {view === "favorites" ? <><Heart size={15} color={C.brand} /> Your favorites</> : <><Navigation size={15} color={C.brand} /> Coaches near you</>}
+              </div>
+              {view !== "favorites" && <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...oneLine, ...fBody }}>{filtered.length} match{filtered.length === 1 ? "" : "es"} near {nearestLocationLabel}</div>}
+            </div>
+            <SegTabs strong value={view} onChange={setView} items={[
               { value: "list", icon: LayoutList, ariaLabel: "List view" },
               { value: "map", icon: MapIcon, ariaLabel: "Map view" },
               { value: "favorites", icon: Heart, ariaLabel: "Favorites", fillActive: true },
-            ]}
-          />
+            ]} />
+          </div>
+
+          {view === "favorites" ? (
+            favCoaches.length === 0
+              ? <EmptyState icon={Heart} title="No favorites yet" body="Tap the heart on a coach's card or profile to save them here." />
+              : <div className="cl-stagger">{favCoaches.map((c, i) => <CoachListCard key={c.id} coach={c} style={{ animationDelay: `${Math.min(i, 8) * 45}ms` }} onOpen={() => nav("coach-profile", { id: c.id })} />)}</div>
+          ) : filtered.length === 0 ? (
+            <StatusBanner state="noResults" style={{ marginTop: 10 }} onPrimary={() => { setSearchText(""); setAppliedFilters(DEFAULT_FILTERS); }} onSecondary={() => setAppliedFilters({ ...appliedFilters, radiusKm: CUSTOM_RADIUS_MAX_KM })} secondaryLabel="Browse all coaches" />
+          ) : (
+            <div className="cl-stagger">{filtered.map((c, i) => <CoachListCard key={c.id} coach={c} unavailable={c.id === LIVE_AVAILABILITY_COACH_ID && !coachAvailableNow} style={{ animationDelay: `${Math.min(i, 8) * 45}ms` }} onOpen={() => nav("coach-profile", { id: c.id })} />)}</div>
+          )}
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: 116 }} className="cl-hide-scrollbar">
-        {view === "favorites" ? (
-          favCoaches.length === 0
-            ? <EmptyState icon={Heart} title="No favorites yet" body="Tap the heart on a coach's card or profile to save them here." />
-            : (
-              <div className="cl-stagger">
-                {favCoaches.map((c, i) => <CoachListCard key={c.id} coach={c} style={{ animationDelay: `${Math.min(i, 8) * 45}ms` }} onOpen={() => nav("coach-profile", { id: c.id })} />)}
-              </div>
-            )
-        ) : filtered.length === 0
-          ? (
-            <StatusBanner
-              state="noResults"
-              style={{ marginTop: 10 }}
-              onPrimary={() => { setSearchText(""); setAppliedFilters(DEFAULT_FILTERS); }}
-              onSecondary={() => setAppliedFilters({ ...appliedFilters, radiusKm: CUSTOM_RADIUS_MAX_KM })}
-              secondaryLabel="Browse all coaches"
-            />
-          )
-          : (
-            <div className="cl-stagger">
-              {filtered.map((c, i) => <CoachListCard key={c.id} coach={c} unavailable={c.id === LIVE_AVAILABILITY_COACH_ID && !coachAvailableNow} style={{ animationDelay: `${Math.min(i, 8) * 45}ms` }} onOpen={() => nav("coach-profile", { id: c.id })} />)}
-            </div>
-          )
-        }
-      </div>
-
-      {notifSheet}
+      {sortSheet}
+      {locationSheet}
+      {filterSheet}
 
       {view === "map" && <CoachMapView coaches={searchAndAreaFiltered} onOpen={id => nav("coach-profile", { id })} onClose={() => setView("list")} />}
     </div>
@@ -796,7 +835,7 @@ export function ScreenSearchFilters({ nav, params, userLocation, locating, permi
         </div>
 
         <SectionLabel>Max price per session — ${price}</SectionLabel>
-        <input type="range" min="20" max="150" step="5" value={price} onChange={e => setPrice(e.target.value)} style={{ width: "100%", accentColor: C.brand, marginBottom: 20 }} />
+        <input type="range" name="maximum-session-price" aria-label={`Maximum price per session, $${price}`} min="20" max="150" step="5" value={price} onChange={e => setPrice(e.target.value)} style={{ width: "100%", accentColor: C.brand, marginBottom: 20 }} />
 
         <SectionLabel>Minimum rating</SectionLabel>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
@@ -806,7 +845,7 @@ export function ScreenSearchFilters({ nav, params, userLocation, locating, permi
 
       {/* Fixed footer, outside the scroll area — result feedback lives here
           rather than as its own filter-like control up in Distance. */}
-      <div style={{ padding: "14px 18px", paddingBottom: 24, borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
+      <div style={{ padding: "14px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
         <div style={{ textAlign: "center", fontSize: T.captionLg, color: C.slate, marginBottom: 10, ...fBody }}>
           {previewCount} coach{previewCount === 1 ? "" : "es"} match{previewCount === 1 ? "es" : ""} these filters
         </div>

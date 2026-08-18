@@ -4,7 +4,7 @@ import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { TopBar, Btn } from "../../components/ui/Primitives";
 import { useApp } from "../../context/AppContext";
 
-export function ScreenCoachPayoutSetup({ nav, toast }) {
+export function ScreenCoachPayoutSetup({ nav, goBack, params, toast }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
@@ -13,10 +13,11 @@ export function ScreenCoachPayoutSetup({ nav, toast }) {
     borderRadius: 13, padding: "11px 13px", marginBottom: 16, boxSizing: "border-box", background: C.white,
   };
   const fieldInputStyle = { border: "none", outline: "none", flex: 1, fontSize: T.bodyLg, minWidth: 0, color: C.jet, ...fBody };
-  const [accountHolder, setAccountHolder] = useState("");
-  const [bankName, setBankName] = useState("");
-  const [accountNumber, setAccountNumber] = useState("");
-  const [routingNumber, setRoutingNumber] = useState("");
+  const editing = params?.mode === "edit";
+  const [accountHolder, setAccountHolder] = useState(editing ? "Noah Kelly" : "");
+  const [bankName, setBankName] = useState(editing ? "Commonwealth Bank" : "");
+  const [accountNumber, setAccountNumber] = useState(editing ? "10202210" : "");
+  const [routingNumber, setRoutingNumber] = useState(editing ? "062000" : "");
   const [taxInfo, setTaxInfo] = useState("");
 
   const canContinue = accountHolder.trim().length > 0 && bankName.trim().length > 0
@@ -24,14 +25,14 @@ export function ScreenCoachPayoutSetup({ nav, toast }) {
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title="Payout setup" onBack={() => nav("coach-availability-setup")} />
+      <TopBar title={editing ? "Payout method" : "Payout setup"} onBack={() => goBack(editing ? "coach-earnings" : "coach-availability-setup")} />
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
 
         <div style={{ fontSize: T.subtitleLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fDisplay }}>
-          Payout Setup
+          {editing ? "Update your bank account" : "Payout setup"}
         </div>
         <div style={{ fontSize: T.body, color: C.slate, marginBottom: 18, lineHeight: 1.5, ...fBody }}>
-          Add your bank account information to receive payments for completed coaching sessions.
+          {editing ? "Keep your payout details current so future earnings reach the right account." : "Add your bank account information to receive payments for completed coaching sessions."}
         </div>
 
         <div style={labelStyle}>Account holder name</div>
@@ -67,8 +68,12 @@ export function ScreenCoachPayoutSetup({ nav, toast }) {
           Only required in some regions — leave blank if it doesn't apply to you.
         </div>
 
-        <Btn full disabled={!canContinue} onClick={() => { toast("Payout details saved"); nav("coach-setup-complete"); }}>
-          Complete Setup
+        <Btn full disabled={!canContinue} onClick={() => {
+          toast(editing ? "Payout method updated" : "Payout details saved");
+          if (editing) goBack("coach-earnings");
+          else nav("coach-setup-complete");
+        }}>
+          {editing ? "Save payout method" : "Complete setup"}
         </Btn>
         {!canContinue && (
           <div style={{ fontSize: T.caption, color: C.slateLight, textAlign: "center", marginTop: 8, ...fBody }}>
