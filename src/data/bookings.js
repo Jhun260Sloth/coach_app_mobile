@@ -239,6 +239,9 @@ export const REVIEWS = [
   { id: "r1", name: "Sarah L.", handle: "sarahlin", rating: 5, text: "Isla spotted a positioning issue in my first session that nobody else had picked up on. Genuinely improved my game.", verified: true, date: "3 weeks ago" },
   { id: "r2", name: "Priya D.", handle: "priyad", rating: 5, text: "Great with my two kids — patient but pushes them just enough.", verified: true, date: "1 month ago" },
   { id: "r3", name: "Owen K.", handle: "owenk", rating: 4, text: "Solid technical feedback, sessions run a little over time but worth it.", verified: true, date: "2 months ago" },
+  { id: "r4", name: "Marcus W.", handle: "marcuswebb", rating: 5, text: "Clear session plan every week and I can feel the progress. Booking a full term.", verified: true, date: "3 months ago" },
+  { id: "r5", name: "Grace L.", handle: "graceliu", rating: 4, text: "Really good coach — just wish there were a few more evening slots available.", verified: true, date: "4 months ago" },
+  { id: "r6", name: "The Chen Family", handle: "chenfam", rating: 5, text: "Our daughter's confidence has grown so much since she started. Couldn't ask for more.", verified: true, date: "5 months ago" },
 ];
 
 export const THREADS = [
@@ -297,7 +300,7 @@ export const FAQS = {
   ],
   verification: [
     { q: "How long does verification take?", a: "Most reviews complete within 2 business days. We'll notify you the moment a decision is made — you'll also see it reflected on the verification screen." },
-    { q: "What documents do I need?", a: "A government-issued photo ID plus a selfie to match it. If you coach athletes under 18, you'll also need a Working with Children Check, and a qualification upload is required." },
+    { q: "What documents do I need?", a: "A government-issued photo ID plus a selfie to match it. If you coach athletes under 18, you'll also need a Working with Children Check, and an accreditation upload is required." },
     { q: "Why was my verification rejected?", a: "Usually a photo was unclear, expired, or didn't match your ID. You'll be told exactly which document failed — resubmit it from the verification screen and the review restarts." },
     { q: "Can I accept bookings while verification is pending?", a: "Not yet — your profile stays hidden until you're approved. You can keep setting up your services, availability and payouts in the meantime." },
   ],
@@ -314,7 +317,7 @@ export const CLIENT_NOTIFICATIONS = [
 
 export const COACH_VERIFICATION_DOCS = [
   { key: "wwcc", label: "Working with Children Check", expiresOn: "24 Aug 2026", daysLeft: 18 },
-  { key: "quals", label: "Coaching qualification renewal", expiresOn: "30 Sep 2026", daysLeft: 55 },
+  { key: "quals", label: "Accreditation renewal", expiresOn: "30 Sep 2026", daysLeft: 55 },
 ];
 
 export const COACH_NOTIFICATIONS = [
@@ -335,10 +338,10 @@ export const ADMIN_VERIFICATION_QUEUE = [
     submittedByUser: false,
   },
   {
-    id: "v2", name: "Nina Torres", sport: "Cycling", type: "Qualifications",
+    id: "v2", name: "Nina Torres", sport: "Cycling", type: "Accreditations",
     suburb: "Geelong, Melbourne", experience: "3 yrs coaching",
     documents: [
-      { key: "quals", label: "Coaching qualifications", detail: "Cycling Australia Level 2 certificate" },
+      { key: "quals", label: "Accreditations", detail: "Cycling Australia Level 2 certificate" },
     ],
     submittedByUser: false,
   },

@@ -22,7 +22,7 @@ export function ScreenNotifications({ nav, clientNotifications: notifications = 
     if (n.type === "message") nav("chat-thread", { name: n.coachName, handle: n.coachHandle });
     else if (n.type === "availability" && n.coachId) nav("coach-profile", { id: n.coachId });
     else if (n.type === "payment" && n.chargeId) {
-      nav("additional-charge-review", { chargeId: n.chargeId, role: "client" });
+      nav("additional-charge-review", { chargeId: n.chargeId, role: "client", backTo: "notifications" });
     }
     else if (["booking", "review", "payment"].includes(n.type)) {
       nav(n.bookingId ? "client-booking-detail" : "client-dashboard", n.bookingId ? { id: n.bookingId } : {});

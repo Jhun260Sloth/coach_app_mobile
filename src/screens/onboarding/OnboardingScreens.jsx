@@ -1068,7 +1068,7 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
 
         <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Get verified</div>
         <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 8, marginBottom: 18, lineHeight: 1.55, ...fBody }}>
-          {resubmitting ? "Update the two documents highlighted by our review team. Your approved selfie and qualification stay on file." : "Verification builds trust with clients and unlocks bookings. Most reviews complete within 2 business days."}
+          {resubmitting ? "Update the two documents highlighted by our review team. Your approved selfie and accreditation stay on file." : "Verification builds trust with clients and unlocks bookings. Most reviews complete within 2 business days."}
         </div>
 
         {resubmitting && (
@@ -1150,14 +1150,14 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
         )}
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
-          <div style={{ fontSize: T.labelLg, fontWeight: 700, color: C.jet, ...fDisplay }}>Coaching qualifications</div>
+          <div style={{ fontSize: T.labelLg, fontWeight: 700, color: C.jet, ...fDisplay }}>Coaching accreditations</div>
         </div>
         <div style={{ fontSize: T.captionLg, color: C.slate, marginBottom: 10, ...fBody }}>Add your coaching accreditations, First Aid, CPR or sports-specific certifications.</div>
 
         {qualifications.map((q, i) => (
           <Card key={q.id} style={{ marginBottom: 10 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-              <div style={{ fontSize: T.labelLg, fontWeight: 700, color: C.slate, ...fBody }}>Qualification {i + 1}</div>
+              <div style={{ fontSize: T.labelLg, fontWeight: 700, color: C.slate, ...fBody }}>Accreditation {i + 1}</div>
               {qualifications.length > 1 && (
                 <button onClick={() => removeQualification(q.id)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, color: C.slateLight, fontSize: T.captionLg, ...fBody }}>
                   <Trash2 size={13} /> Remove
@@ -1173,7 +1173,7 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
               </div>
             </div>
             <div style={{ marginBottom: 10 }}>
-              <div style={labelStyle}>Qualification / certificate name</div>
+              <div style={labelStyle}>Accreditation / certificate name</div>
               <input value={q.name} onChange={(e) => updateQual(q.id, { name: e.target.value })} placeholder="e.g. Tennis Australia Club Professional" style={inputStyle} />
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -1189,7 +1189,7 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
             </div>
           </Card>
         ))}
-        <Btn variant="outline" size="sm" icon={Plus} full onClick={addQualification}>Add another qualification</Btn>
+        <Btn variant="outline" size="sm" icon={Plus} full onClick={addQualification}>Add another accreditation</Btn>
 
         <div style={{ marginTop: 22, paddingBottom: 8 }}>
           <Btn full disabled={!allDone} onClick={() => {
@@ -1207,7 +1207,7 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
           </Btn>
           {!allDone && (
             <div style={{ fontSize: T.caption, color: C.slateLight, textAlign: "center", marginTop: 8, ...fBody }}>
-              Complete your ID, selfie{worksWithMinors ? ", WWCC" : ""} and qualification details to submit.
+              Complete your ID, selfie{worksWithMinors ? ", WWCC" : ""} and accreditation details to submit.
             </div>
           )}
         </div>
@@ -1230,7 +1230,7 @@ export function ScreenVerificationPending({ nav, params, verificationStatus, set
       { label: "Photo ID", detail: "Glare obscures the expiry date and the lower edge is cropped.", action: true },
       { label: "Selfie verification", detail: "Identity match confirmed.", action: false },
       { label: "Working with Children Check", detail: "The expiry date is not readable in the uploaded image.", action: true },
-      { label: "Coaching qualification", detail: "Level 2 Coaching Certificate approved.", action: false },
+      { label: "Coaching accreditation", detail: "Level 2 Coaching Certificate approved.", action: false },
     ];
     return (
       <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>

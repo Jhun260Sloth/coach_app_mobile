@@ -7,6 +7,7 @@ import { Avatar, BackButton, BottomSheet, Btn, ConfirmDialog, EmptyState, TopBar
 import { StatusBanner } from "../../systems/StateSystem";
 import { getPublicName } from "../../utils/name";
 import { clientMetaFor } from "../../data/users";
+import { BOOKING_STATUS } from "../../data/bookings";
 
 /** Privacy-safe display name for a thread participant. */
 function threadParticipantName(withName, role) {
@@ -251,7 +252,7 @@ export function ScreenMessages({ nav, role, isFirstTimeClient }) {
 
       {/* Per-thread options: pin/unpin + delete */}
       <BottomSheet open={!!optionsThread} onClose={() => setOptionsThread(null)}
-        title={optionsThread?.withName || "Conversation options"} heightPct={30}>
+        title={optionsThread?.withName || "Conversation options"} heightPct={36}>
         <div style={{ display: "flex", flexDirection: "column" }}>
           <button
             onClick={() => {
@@ -326,11 +327,15 @@ function CenteredDialog({ open, onClose, children }) {
 
 const REPORT_REASONS = ["Harassment or bullying", "Inappropriate messages", "Spam or scam", "Unsafe behaviour", "Something else"];
 
-function ConversationOptionsFlow({ otherName, onReportSubmit, onBlockConfirm, isBlocked, onUnblock, step, setStep, blockStep, setBlockStep, selectedReason, setSelectedReason, customReason, setCustomReason }) {
+function ConversationOptionsFlow({ otherName, onReportSubmit, onBlockConfirm, isBlocked, onUnblock, pendingBookingAction, step, setStep, blockStep, setBlockStep, selectedReason, setSelectedReason, customReason, setCustomReason }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const closeAll = () => { setStep(null); setBlockStep(null); setSelectedReason(null); setCustomReason(""); };
   const canSubmit = selectedReason && (selectedReason !== "Something else" || customReason.trim().length > 0);
+  const pendingActionLabel = pendingBookingAction === "decline" ? "declined" : "withdrawn";
+  const blockDescription = pendingBookingAction
+    ? `${pendingBookingAction === "decline" ? "The pending booking request" : "Your pending booking request"} will be ${pendingActionLabel}. You and ${otherName} won't be able to message or make new bookings together. You can unblock them later in settings.`
+    : `You and ${otherName} won't be able to message or make new bookings together. You can unblock them later in settings.`;
 
   return (
     <>
@@ -358,7 +363,9 @@ function ConversationOptionsFlow({ otherName, onReportSubmit, onBlockConfirm, is
               <div style={iconBox(C.dangerTint)}><Ban size={16} color={C.danger} /></div>
               <div>
                 <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.danger, ...fBody }}>Block {otherName}</div>
-                <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>They won't be able to message or book you</div>
+                <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>
+                  {pendingBookingAction ? `The pending request will be ${pendingActionLabel}` : "Stop messages and new bookings together"}
+                </div>
               </div>
             </button>
           )}
@@ -417,14 +424,18 @@ function ConversationOptionsFlow({ otherName, onReportSubmit, onBlockConfirm, is
         onClose={closeAll}
         onConfirm={() => { onBlockConfirm(); setBlockStep("success"); }}
         title={`Block ${otherName}?`}
-        description={`${otherName} won't be able to message you or book you. You can unblock them later in settings.`}
-        confirmLabel="Block"
+        description={blockDescription}
+        confirmLabel={pendingBookingAction ? `${pendingBookingAction === "decline" ? "Decline" : "Withdraw"} & block` : "Block"}
         icon={Ban}
       />
 
       {/* Block Success Dialog */}
       <CenteredDialog open={blockStep === "success"} onClose={closeAll}>
-        <SuccessPanel title={`${otherName} blocked`} body="They can no longer message you or book you." onDone={closeAll} />
+        <SuccessPanel
+          title={`${otherName} blocked`}
+          body={pendingBookingAction ? `The pending request was ${pendingActionLabel}. You can no longer message or make new bookings together.` : "You can no longer message or make new bookings together."}
+          onDone={closeAll}
+        />
       </CenteredDialog>
     </>
   );
@@ -449,7 +460,7 @@ function SuccessPanel({ title, body, onDone }) {
 
 /* ── Chat Thread Screen ────────────────────────────────────────────────── */
 
-export function ScreenChatThread({ nav, goBack, params, role, toast, offline, bookings, coachBookings }) {
+export function ScreenChatThread({ nav, goBack, params, role, toast, offline, bookings, coachBookings, respondBooking, cancelBooking }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const { isBlocked, block, unblock } = useBlockedThreads();
@@ -476,6 +487,9 @@ export function ScreenChatThread({ nav, goBack, params, role, toast, offline, bo
       .sort((a, b) => (bookingStatusPriority[a.status] ?? 9) - (bookingStatusPriority[b.status] ?? 9))[0]
     : null;
   const relatedBooking = explicitBooking || inferredBooking || null;
+  const pendingBookingAction = relatedBooking?.status === BOOKING_STATUS.PENDING
+    ? (role === "coach" ? "decline" : "withdraw")
+    : null;
   const locationUnlocked = relatedBooking
     ? (relatedBooking.status === "confirmed" || relatedBooking.status === "completed")
     : !!params?.context?.startsWith("Booking");
@@ -782,9 +796,20 @@ export function ScreenChatThread({ nav, goBack, params, role, toast, offline, bo
       <ConversationOptionsFlow
         otherName={params.name}
         isBlocked={blocked}
+        pendingBookingAction={pendingBookingAction}
         onUnblock={() => unblock(threadId)}
         onReportSubmit={() => toast?.(`Report submitted (${selectedReason === "Something else" ? customReason.trim() : selectedReason})`)}
-        onBlockConfirm={() => { block(threadId); toast?.(`${params.name} has been blocked`); }}
+        onBlockConfirm={() => {
+          if (pendingBookingAction === "decline") {
+            respondBooking?.(relatedBooking.id, BOOKING_STATUS.DECLINED);
+          } else if (pendingBookingAction === "withdraw") {
+            cancelBooking?.(relatedBooking.id);
+          }
+          block(threadId);
+          toast?.(pendingBookingAction
+            ? `Pending request ${pendingBookingAction === "decline" ? "declined" : "withdrawn"}; ${params.name} blocked`
+            : `${params.name} has been blocked`);
+        }}
         step={step} setStep={setStep}
         blockStep={blockStep} setBlockStep={setBlockStep}
         selectedReason={selectedReason} setSelectedReason={setSelectedReason}

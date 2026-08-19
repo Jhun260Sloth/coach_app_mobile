@@ -1,34 +1,24 @@
-import React, { useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
-  Camera, Edit3, Eye, EyeOff, CreditCard, Fingerprint, Lock, Shield, HelpCircle,
-  LogOut, ChevronRight, Trash2, Plus, User, ShieldCheck, BadgeCheck,
-  Wallet, Banknote, CalendarClock, Zap, Hand, Bell, MapPin, Film, Play, Image as ImageIcon, Trophy,
-  History as HistoryIcon,
+  Camera, Edit3, Eye, EyeOff, Fingerprint, Lock, Shield, HelpCircle,
+  LogOut, ChevronRight, Trash2, Plus, User,
+  Banknote, CalendarClock, Zap, Hand, Bell, MapPin, Film, Play, Image as ImageIcon,
+  Share2, Award, X, Navigation, Star, Mail, AlertTriangle,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
-import { COACHES, LANGUAGE_OPTIONS, GENDER_OPTIONS, AU_SUBURBS, SPORTS, SPORT_ICON } from "../../data/mockData";
+import { COACHES, LANGUAGE_OPTIONS, GENDER_OPTIONS, AU_SUBURBS, SPORTS, SPORT_ICON, REVIEWS } from "../../data/mockData";
 import {
-  Avatar, SectionLabel, Chip, Card, Toggle, Btn, Badge, BottomSheet, ConfirmDialog, Field,
-  SearchMultiSelect, SearchSelect, ScrollFadeRow, SegTabs, HandleTag,
+  Avatar, SectionLabel, Chip, Card, Toggle, Btn, BottomSheet, ConfirmDialog, Field,
+  SearchMultiSelect, SearchSelect, ScrollFadeRow, SegTabs, StarRow, FullscreenImageViewer,
 } from "../../components/ui/Primitives";
+import { CoachProfileHero, CoachProfileAbout } from "../../components/ui/CoachProfileSections";
 import { HandleField } from "../../components/ui/PublicIdentityFields";
 import { isValidHandle, getPublicName } from "../../utils/name";
+import { formatCoachLocation } from "../../utils/coachProfile";
 import { useApp } from "../../context/AppContext";
-import { CoverBanner } from "../client/CoachProfile";
+import { CONFIG } from "../../config";
 
 const LOCATION_OPTIONS = AU_SUBURBS.map((s) => `${s.suburb}, ${s.state}`);
-
-function SportTag({ sport }) {
-  const { darkMode } = useApp();
-  const C = darkMode ? CD : CL;
-  const Icon = SPORT_ICON[sport] || Trophy;
-  return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 999, background: C.fog, fontSize: T.captionLg, fontWeight: 600, color: C.jet, ...fBody }}>
-      <Icon size={12} color={C.brand} />
-      {sport}
-    </span>
-  );
-}
 
 function Row2({ icon: Icon, label, sub, onClick, right, danger }) {
   const { darkMode } = useApp();
@@ -54,14 +44,17 @@ function Row2({ icon: Icon, label, sub, onClick, right, danger }) {
   );
 }
 
-function OptionCard({ icon: Icon, dotColor, title, desc, selected, onClick }) {
+function OptionCard({ icon: Icon, title, desc, selected, onClick }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   return (
     <button
+      type="button"
+      role="radio"
+      aria-checked={selected}
       onClick={onClick}
       style={{
-        display: "flex", alignItems: "flex-start", gap: 12, width: "100%", textAlign: "left",
+        display: "flex", alignItems: "center", gap: 12, width: "100%", textAlign: "left",
         padding: 14, borderRadius: 16, marginBottom: 10, cursor: "pointer",
         border: `1.5px solid ${selected ? C.brand : C.border}`,
         background: selected ? C.brandTint : C.white,
@@ -73,169 +66,128 @@ function OptionCard({ icon: Icon, dotColor, title, desc, selected, onClick }) {
           <Icon size={16} color={selected ? C.brand : C.slate} />
         </div>
       )}
-      {!Icon && dotColor && (
-        <div style={{ width: 10, height: 10, borderRadius: 99, background: dotColor, flexShrink: 0, marginTop: 5 }} />
-      )}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>{title}</div>
         {desc && <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, lineHeight: 1.45, ...fBody }}>{desc}</div>}
       </div>
       <div style={{
-        width: 19, height: 19, borderRadius: 99, flexShrink: 0, marginTop: 1,
+        width: 20, height: 20, borderRadius: 99, flexShrink: 0,
         border: `1.5px solid ${selected ? C.brand : C.border}`, background: C.white,
         display: "flex", alignItems: "center", justifyContent: "center",
       }}>
-        {selected && <div style={{ width: 10, height: 10, borderRadius: 99, background: C.brand }} />}
+        {selected && <div style={{ width: 8, height: 8, borderRadius: 99, background: C.brand }} />}
       </div>
     </button>
   );
 }
 
 export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, savePackage, removePackage, biometric, setBiometric, coachMedia = [], coachAvailableNow, setCoachAvailableNow }) {
-  const { darkMode, coachOnboarding, updateCoachOnboarding, isHandleTaken } = useApp();
+  const { darkMode, coachOnboarding, coachProfile, coachBookingType, setCoachBookingType, updateCoachOnboarding, isHandleTaken } = useApp();
   const C = darkMode ? CD : CL;
-  const coach = COACHES[1];
+  const coach = coachProfile;
 
-  const CANCELLATION_POLICIES = [
-    { key: "Flexible", dotColor: C.success, desc: "Full refund up to 24 hours before the session." },
-    { key: "Moderate", dotColor: C.brand, desc: "Full refund up to 48 hours before; 50% refund after." },
-    { key: "Strict", dotColor: C.danger, desc: "Full refund up to 7 days before; no refund after that." },
+  // Specialties — surface onboarding expertise (categories, skill levels,
+  // age groups, formats) when the coach filled it in, otherwise the
+  // directory tags seeded for this coach.
+  const expertiseBits = [
+    ...(coachOnboarding.coachingCategories || []),
+    ...(coachOnboarding.skillLevels || []),
+    ...(coachOnboarding.ageGroups || []),
+    ...(coachOnboarding.coachingFormats || []),
+    ...(coachOnboarding.secondarySports || []),
   ];
-
-  function StatBox({ label, value }) {
-    return (
-      <div style={{ flex: 1, background: C.fog, borderRadius: 14, padding: "10px 12px" }}>
-        <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fDisplay }}>{value || "—"}</div>
-        <div style={{ fontSize: T.tiny, color: C.slate, marginTop: 2, ...fBody }}>{label}</div>
-      </div>
-    );
-  }
-
-  function ProfilePreview({ coach, data, packages, bookingType }) {
-    const activePackages = packages.filter((p) => p.active !== false);
-    const pub = getPublicName({
-      name: data.name || coach.name,
-      handle: data.handle,
-      namePrivacy: data.namePrivacy,
-    }, "public");
-    return (
-      <div>
-        <div style={{ margin: "-4px -20px 0", position: "relative" }}>
-          <CoverBanner sport={coach.sport} height={100} />
-          <div style={{ position: "absolute", bottom: -30, left: 20 }}>
-            {data.photo ? (
-              <img src={data.photo} alt="Profile" style={{ width: 64, height: 64, borderRadius: 64, objectFit: "cover", border: `3px solid ${C.white}`, display: "block" }} />
-            ) : (
-              <Avatar name={pub.name || coach.name} src={coach.avatar} size={64} ring />
-            )}
-          </div>
-        </div>
-        <div style={{ height: 38 }} />
-
-        <div style={{ fontSize: T.heading, fontWeight: 600, color: C.jet, ...fDisplay }}>{pub.name || coach.name}</div>
-        <HandleTag handle={pub.handle} size={12.5} color={C.slateLight} />
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
-          {(data.sports?.length ? data.sports : [coach.sport]).map((s) => <SportTag key={s} sport={s} />)}
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 8 }}>
-          <MapPin size={12.5} color={C.slateLight} />
-          <span style={{ fontSize: T.label, color: C.slate, ...fBody }}>{data.location || coach.suburb}</span>
-        </div>
-
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
-          {coach.verified.identity && <Badge tone="success" icon={ShieldCheck}>ID verified</Badge>}
-          {coach.verified.wwcc && <Badge tone="success" icon={ShieldCheck}>WWCC verified</Badge>}
-          {coach.verified.quals && <Badge tone="success" icon={BadgeCheck}>Quals checked</Badge>}
-          <Badge tone="orange">{bookingType === "instant" ? "Instant book" : "Request to book"}</Badge>
-        </div>
-
-        <div style={{ marginTop: 18 }}>
-          <SectionLabel>Bio</SectionLabel>
-          <p style={{ fontSize: T.body, color: C.slate, lineHeight: 1.6, ...fBody }}>{data.bio || "No bio added yet."}</p>
-        </div>
-
-        <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-          <StatBox label="Experience" value={data.yearsExperience ? `${data.yearsExperience} yrs` : coach.experience} />
-          <StatBox label="Languages" value={(data.languages && data.languages.length) ? data.languages.join(", ") : "English"} />
-        </div>
-
-        <div style={{ marginTop: 18 }}>
-          <SectionLabel>Services</SectionLabel>
-          {activePackages.length === 0 && (
-            <div style={{ fontSize: T.labelLg, color: C.slateLight, ...fBody }}>No active packages published yet.</div>
-          )}
-          {activePackages.map((p) => (
-            <Card key={p.id} style={{ marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
-                <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{p.name}</div>
-                <div style={{ fontSize: T.caption, color: C.slate, marginTop: 1, ...fBody }}>{p.packageType || p.type} · {p.duration || p.durationMinutes} min</div>
-              </div>
-              <div style={{ fontSize: T.subtitle, fontWeight: 700, color: C.jet, ...fDisplay }}>${p.price}</div>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const specialties = expertiseBits.length > 0 ? [...new Set(expertiseBits)].slice(0, 8) : coach.tags;
 
   const [profile, setProfile] = useState({
     photo: coachOnboarding.photo || coach.avatar,
+    coverPhoto: coachOnboarding.coverPhoto || coachMedia.find((item) => item.type === "photo")?.url || "",
     name: coachOnboarding.name || coach.name,
     handle: coachOnboarding.handle || coach.handle,
     namePrivacy: coachOnboarding.namePrivacy || coach.namePrivacy,
-    bio: coach.bio,
-    yearsExperience: (coach.experience.match(/\d+/) || [""])[0],
-    gender: "",
-    languages: ["English"],
-    sports: [coach.sport],
-    location: coach.suburb,
+    bio: coachOnboarding.bio ?? coach.bio,
+    yearsExperience: coachOnboarding.yearsExperience ?? (coach.experience.match(/\d+/) || [""])[0],
+    gender: coachOnboarding.gender || "",
+    languages: Array.isArray(coachOnboarding.languages) ? coachOnboarding.languages : ["English"],
+    sports: Array.isArray(coachOnboarding.sports) && coachOnboarding.sports.length
+      ? coachOnboarding.sports
+      : (Array.isArray(coachOnboarding.primarySports) && coachOnboarding.primarySports.length
+        ? [...coachOnboarding.primarySports, ...(coachOnboarding.secondarySports || [])]
+        : [coach.sport]),
+    location: formatCoachLocation(coachOnboarding.location, coach.suburb),
+    venue: coachOnboarding.venue ?? coach.venue,
+    travelRadiusKm: coachOnboarding.travelRadiusKm ?? coach.travelRadiusKm,
+    willingToTravel: coachOnboarding.willingToTravel ?? coach.willingToTravel,
+    accreditations: Array.isArray(coachOnboarding.accreditations) ? [...coachOnboarding.accreditations] : [...coach.accreditations],
   });
   const [draft, setDraft] = useState(null);
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewData, setPreviewData] = useState(null);
   const [handleEdited, setHandleEdited] = useState(false);
+  const [draftAccreditation, setDraftAccreditation] = useState("");
+  const [avatarOpen, setAvatarOpen] = useState(false);
   const photoInputRef = useRef(null);
+  const coverInputRef = useRef(null);
 
-  const openEditProfile = () => { setHandleEdited(false); setDraft({ ...profile }); setSheet("edit"); };
+  const openEditProfile = () => { setHandleEdited(false); setDraftAccreditation(""); setDraft({ ...profile, accreditations: [...(profile.accreditations || [])] }); setSheet("edit"); };
   const setDraftField = (patch) => setDraft((d) => ({ ...d, ...patch }));
   const onPhotoChange = (e) => {
     const file = e.target.files?.[0];
     if (file) setDraftField({ photo: URL.createObjectURL(file) });
     e.target.value = "";
   };
-  const openPreview = (data) => { setPreviewData(data); setPreviewOpen(true); };
+  const onCoverChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) setDraftField({ coverPhoto: URL.createObjectURL(file) });
+    e.target.value = "";
+  };
+  const addDraftAccreditation = () => {
+    const v = draftAccreditation.trim();
+    if (!v) return;
+    setDraftField({ accreditations: [...(draft.accreditations || []), v] });
+    setDraftAccreditation("");
+  };
+  const removeDraftAccreditation = (i) => setDraftField({ accreditations: draft.accreditations.filter((_, idx) => idx !== i) });
   const saveProfile = () => {
     if (!draft.name.trim()) { toast("Add your name first"); return; }
     if (!isValidHandle(draft.handle)) { toast("Pick a valid username — 3–24 characters"); return; }
     if (isHandleTaken(draft.handle, [coach.handle, profile.handle])) { toast("That username's taken — try another"); return; }
     if (!draft.sports || draft.sports.length === 0) { toast("Pick at least one sport you coach"); return; }
     setProfile(draft);
-    updateCoachOnboarding?.({ name: draft.name, handle: draft.handle, namePrivacy: draft.namePrivacy, photo: draft.photo });
+    updateCoachOnboarding?.({
+      name: draft.name,
+      handle: draft.handle,
+      namePrivacy: draft.namePrivacy,
+      photo: draft.photo,
+      coverPhoto: draft.coverPhoto,
+      bio: draft.bio,
+      yearsExperience: draft.yearsExperience,
+      gender: draft.gender,
+      languages: draft.languages,
+      sports: draft.sports,
+      primarySports: draft.sports.slice(0, 1),
+      secondarySports: draft.sports.slice(1),
+      location: draft.location,
+      venue: draft.venue,
+      travelRadiusKm: draft.travelRadiusKm,
+      willingToTravel: draft.willingToTravel,
+      accreditations: draft.accreditations,
+    });
     toast("Profile changes saved and published");
     setDraft(null);
     setSheet(null);
-    setPreviewOpen(false);
   };
 
-  const [bookingType, setBookingType] = useState(coach.instantBook ? "instant" : "request");
-  const [policy, setPolicy] = useState("Moderate");
+  const bookingType = coachBookingType || (coach.instantBook ? "instant" : "request");
+  const setBookingType = (value) => {
+    setCoachBookingType(value);
+    updateCoachOnboarding?.({ bookingType: value, instantBook: value === "instant" });
+  };
   const toggleActive = (pkg) => {
     const nowActive = !(pkg.active !== false);
     savePackage({ ...pkg, active: nowActive });
     toast(nowActive ? `${pkg.name} enabled` : `${pkg.name} paused — hidden from clients`);
   };
 
-  const [payout, setPayout] = useState({ accountHolder: coach.name, bankName: "Commonwealth Bank", bsb: "062-000", accountNumber: "•••• 2210" });
-  const [payoutDraft, setPayoutDraft] = useState(null);
-  const openEditPayout = () => { setPayoutDraft({ ...payout }); setSheet("payment"); };
-  const savePayout = () => {
-    if (!payoutDraft.accountHolder.trim() || !payoutDraft.accountNumber.trim()) { toast("Check your payout details and try again"); return; }
-    setPayout(payoutDraft);
-    toast("Payout method updated");
-    setSheet(null);
-  };
-
   const [notifPrefs, setNotifPrefs] = useState({
+    push: true, email: true, sms: false, whatsapp: false,
     bookingRequests: true, bookingConfirmations: true, messages: true, paymentUpdates: true,
   });
   const toggleNotif = (key) => setNotifPrefs((p) => ({ ...p, [key]: !p[key] }));
@@ -253,41 +205,102 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
   const closeSheet = () => setSheet(null);
   const [showPw, setShowPw] = useState(false);
   const [tab, setTab] = useState("profile");
+  const [deleteStep, setDeleteStep] = useState("confirm");
+  const [deleteCode, setDeleteCode] = useState(["", "", "", "", "", ""]);
+  const [deleteError, setDeleteError] = useState(false);
+  const [deleteResendSeconds, setDeleteResendSeconds] = useState(0);
+  const deleteInputsRef = useRef([]);
+  const coachEmail = coachOnboarding.email || "noah.kelly@email.com";
+
+  useEffect(() => {
+    if (deleteResendSeconds <= 0) return undefined;
+    const timer = window.setInterval(() => setDeleteResendSeconds((seconds) => Math.max(0, seconds - 1)), 1000);
+    return () => window.clearInterval(timer);
+  }, [deleteResendSeconds]);
+
+  const resetDeleteFlow = () => {
+    setDeleteStep("confirm");
+    setDeleteCode(["", "", "", "", "", ""]);
+    setDeleteError(false);
+    setDeleteResendSeconds(0);
+  };
+  const openDeleteFlow = () => {
+    resetDeleteFlow();
+    setSheet("delete");
+  };
+  const closeDeleteFlow = () => {
+    setSheet(null);
+    resetDeleteFlow();
+  };
+  const sendDeleteCode = () => {
+    if (!coachEmail) {
+      toast("Add an email before deleting your account");
+      return;
+    }
+    setDeleteStep("verify");
+    setDeleteCode(["", "", "", "", "", ""]);
+    setDeleteError(false);
+    setDeleteResendSeconds(30);
+    toast("Verification code sent");
+    window.setTimeout(() => deleteInputsRef.current[0]?.focus(), 120);
+  };
+  const setDeleteDigit = (index, value) => {
+    const digit = value.replace(/\D/g, "").slice(-1);
+    setDeleteCode((current) => current.map((item, itemIndex) => itemIndex === index ? digit : item));
+    setDeleteError(false);
+    if (digit && index < 5) deleteInputsRef.current[index + 1]?.focus();
+  };
+  const onDeleteKeyDown = (index, event) => {
+    if (event.key === "Backspace" && !deleteCode[index] && index > 0) deleteInputsRef.current[index - 1]?.focus();
+  };
+  const onDeletePaste = (event) => {
+    const digits = event.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6).split("");
+    if (!digits.length) return;
+    event.preventDefault();
+    setDeleteCode(Array.from({ length: 6 }, (_, index) => digits[index] || ""));
+    setDeleteError(false);
+    deleteInputsRef.current[Math.min(digits.length, 6) - 1]?.focus();
+  };
+  const verifyAndDelete = () => {
+    const code = deleteCode.join("");
+    if (code.length !== 6 || code === "000000") {
+      setDeleteError(true);
+      return;
+    }
+    closeDeleteFlow();
+    toast("Coach account deleted securely");
+    resetNav("splash", {}, "client");
+  };
+  const resendDeleteCode = () => {
+    setDeleteCode(["", "", "", "", "", ""]);
+    setDeleteError(false);
+    setDeleteResendSeconds(30);
+    toast("New verification code sent");
+    deleteInputsRef.current[0]?.focus();
+  };
+
+  const pubMe = getPublicName({ name: profile.name, handle: profile.handle, namePrivacy: profile.namePrivacy }, "public");
+  const heroPhoto = profile.coverPhoto || coachMedia.find((m) => m.type === "photo")?.url;
+  const aboutData = {
+    bio: profile.bio,
+    experience: profile.yearsExperience ? `${profile.yearsExperience} yrs coaching` : coach.experience,
+    languages: profile.languages,
+    specialties,
+    suburb: profile.location,
+    venue: profile.venue,
+    travelRadiusKm: profile.travelRadiusKm,
+    willingToTravel: profile.willingToTravel,
+    accreditations: profile.accreditations,
+  };
+  const handleShare = () => toast("Profile link ready to share");
+  const reviewAvg = (REVIEWS.reduce((s, r) => s + r.rating, 0) / REVIEWS.length).toFixed(1);
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "18px 18px 0" }}>
         <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, marginBottom: 18, ...fDisplay }}>My coaching profile</div>
 
-        <div style={{ display: "flex", gap: 14, marginBottom: 22 }}>
-          <Avatar name={profile.name} size={58} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <div style={{ fontSize: T.title, fontWeight: 600, color: C.jet, ...fDisplay }}>{profile.name}</div>
-              <Badge tone="neutral">Coach account</Badge>
-            </div>
-            <div style={{ marginTop: 3 }}>
-              <HandleTag handle={profile.handle} size={12} color={C.brand} />
-            </div>
-
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
-              {profile.sports.map((s) => <SportTag key={s} sport={s} />)}
-            </div>
-
-            <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 8 }}>
-              <MapPin size={12.5} color={C.slateLight} />
-              <span style={{ fontSize: T.label, color: C.slate, ...fBody }}>{profile.location}</span>
-            </div>
-
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
-              {coach.verified.identity && <Badge tone="success" icon={ShieldCheck}>ID verified</Badge>}
-              {coach.verified.wwcc && <Badge tone="success" icon={ShieldCheck}>WWCC verified</Badge>}
-              {coach.verified.quals && <Badge tone="success" icon={BadgeCheck}>Quals checked</Badge>}
-            </div>
-          </div>
-        </div>
-
-        <div style={{ marginBottom: 20 }}>
+        <div style={{ marginBottom: 6 }}>
           <SegTabs
             items={[
               { value: "profile", label: "Profile" },
@@ -300,40 +313,53 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: 116 }} className="cl-hide-scrollbar">
+      <div style={{ flex: 1, overflowY: "auto", padding: "14px 18px 0", paddingBottom: 116 }} className="cl-hide-scrollbar">
         {tab === "profile" && (
         <>
-        <SectionLabel>Profile information</SectionLabel>
-        <Card style={{ marginBottom: 10 }}>
-          <p style={{ fontSize: T.labelLg, color: C.slate, lineHeight: 1.55, margin: 0, ...fBody }}>
-            {profile.bio.length > 120 ? `${profile.bio.slice(0, 120)}…` : profile.bio}
-          </p>
-          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-            <StatBox label="Experience" value={profile.yearsExperience ? `${profile.yearsExperience} yrs` : coach.experience} />
-            <StatBox label="Languages" value={profile.languages.length ? profile.languages.join(", ") : "English"} />
-          </div>
-        </Card>
-        <div style={{ display: "flex", gap: 8, marginBottom: 22 }}>
-          <div style={{ flex: 1 }}>
-            <Btn full variant="secondary" size="sm" icon={Edit3} onClick={openEditProfile}>Edit profile</Btn>
-          </div>
-          <div style={{ flex: 1 }}>
-            <Btn full variant="outline" size="sm" icon={Eye} onClick={() => openPreview(profile)}>Preview profile</Btn>
-          </div>
-        </div>
+        <CoachProfileHero
+          coach={coach}
+          pub={pubMe}
+          heroImage={heroPhoto}
+          avatarSrc={profile.photo}
+          sport={profile.sports[0]}
+          sports={profile.sports}
+          suburb={profile.location}
+          instantBook={bookingType === "instant"}
+          coverHeight={188}
+          inset={0}
+          onAvatarClick={() => setAvatarOpen(true)}
+          overlay={
+            <button type="button" aria-label="Share coach profile" onClick={handleShare} style={{ position: "absolute", top: 12, right: 12, pointerEvents: "auto", width: 44, height: 44, borderRadius: 99, background: CL.jetSoft, opacity: 0.94, border: `1px solid ${CL.onDarkDivider}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 8px 20px rgba(0,0,0,.18)" }}>
+              <Share2 size={18} color={CL.white} />
+            </button>
+          }
+        />
 
-     {/* Available for bookings toggle */}
-        <Card style={{ marginBottom: 18, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+        {/* Available for bookings toggle */}
+        <Card style={{
+          margin: "16px 0 18px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 10,
+          background: coachAvailableNow ? C.white : C.dangerTint,
+          border: `1.5px solid ${coachAvailableNow ? C.border : C.dangerBorder}`,
+        }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-            <div style={{ width: 34, height: 34, borderRadius: 10, background: coachAvailableNow ? C.successTint : C.fog, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <span style={{ width: 9, height: 9, borderRadius: 99, background: coachAvailableNow ? C.success : C.slateLight }} />
+            <div style={{
+              width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+              background: coachAvailableNow ? C.successTint : C.dangerTint,
+              border: coachAvailableNow ? "none" : `1px solid ${C.dangerBorder}`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <span style={{ width: 9, height: 9, borderRadius: 99, background: coachAvailableNow ? C.success : C.danger }} />
             </div>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>
                 {coachAvailableNow ? "Available for bookings" : "Unavailable for bookings"}
               </div>
-              <div style={{ fontSize: T.caption, color: C.slateLight, ...fBody }}>
-                {coachAvailableNow ? "Clients can send new requests" : "Your profile shows as unavailable"}
+              <div style={{ fontSize: T.caption, color: coachAvailableNow ? C.slateLight : C.danger, ...fBody }}>
+                {coachAvailableNow ? "Clients can send new requests" : "Your profile shows as unavailable — clients can't book you"}
               </div>
             </div>
           </div>
@@ -348,7 +374,13 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
           />
         </Card>
 
+        <div style={{ display: "flex", gap: 8, margin: "16px 0 22px" }}>
+          <div style={{ flex: 1 }}>
+            <Btn full variant="secondary" size="sm" icon={Edit3} onClick={openEditProfile}>Edit profile</Btn>
+          </div>
+        </div>
 
+        <CoachProfileAbout coach={coach} data={aboutData} showCancellationPolicy={false} />
 
         <SectionLabel>Reels & photos</SectionLabel>
         {coachMedia.length === 0 ? (
@@ -356,7 +388,7 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
             No reels or photos yet — add some so athletes can see you coach.
           </div>
         ) : (
-          <ScrollFadeRow style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, marginBottom: 12 }}>
+          <div className="cl-hide-scrollbar" style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, marginBottom: 12 }}>
             {coachMedia.slice(0, 6).map((item) => {
               const isReel = item.type === "reel";
               return (
@@ -395,10 +427,28 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
               <ChevronRight size={14} color={C.slate} />
               <span style={{ fontSize: T.tiny, fontWeight: 600, color: C.slate, ...fBody }}>See all {coachMedia.length}</span>
             </button>
-          </ScrollFadeRow>
+          </div>
         )}
         <div style={{ marginBottom: 4 }}>
           <Btn full variant="outline" size="sm" icon={Film} onClick={() => nav("coach-reels")}>Manage reels & photos</Btn>
+        </div>
+
+        <div style={{ marginTop: 22 }}>
+          <SectionLabel>Reviews</SectionLabel>
+          <Card style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 14 }}>
+            <div style={{ textAlign: "center", flexShrink: 0 }}>
+              <div style={{ fontSize: T.hero, fontWeight: 700, color: C.jet, ...fDisplay }}>{reviewAvg}</div>
+              <StarRow value={parseFloat(reviewAvg)} size={11} />
+              <div style={{ fontSize: T.micro, color: C.slateLight, marginTop: 3, ...fBody }}>{REVIEWS.length} reviews</div>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>Athletes rate you {reviewAvg} / 5</div>
+              <div style={{ fontSize: T.label, color: C.slate, marginTop: 3, lineHeight: 1.5, ...fBody }}>
+                Every review comes from a verified booking. Replying publicly helps build trust.
+              </div>
+            </div>
+          </Card>
+          <Btn full variant="outline" size="sm" icon={Star} onClick={() => nav("coach-reviews")}>Manage reviews</Btn>
         </div>
         </>
         )}
@@ -434,55 +484,42 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
           <Btn variant="outline" size="sm" icon={Plus} full onClick={() => nav("coach-create-package")}>Add service package</Btn>
         </div>
 
-        <SectionLabel>Payment method</SectionLabel>
-        <Card style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 12 }} onClick={openEditPayout}>
-          <div style={{ width: 40, height: 40, borderRadius: 12, background: C.fog, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <Wallet size={17} color={C.jet} />
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>{payout.bankName}</div>
-            <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 1, ...fBody }}>Account {payout.accountNumber} · Payouts sent here</div>
-          </div>
-          <ChevronRight size={16} color={C.slateLight} />
-        </Card>
-        <Row2 icon={Banknote} label="Earnings & payouts" onClick={() => nav("coach-earnings")} />
-        <Row2 icon={HistoryIcon} label="History" onClick={() => nav("coach-history")} />
+        <Row2 icon={Banknote} label="Earnings & payouts" sub="Transactions and payout method" onClick={() => nav("coach-earnings")} />
 
         <div style={{ marginTop: 22 }}>
           <SectionLabel>Booking preferences</SectionLabel>
           <div style={{ fontSize: T.label, color: C.slate, marginTop: -6, marginBottom: 12, lineHeight: 1.5, ...fBody }}>
             Choose how athletes are able to book your services.
           </div>
-          <OptionCard
-            icon={Zap}
-            title="Instant book"
-            desc="Sessions are auto-confirmed the moment an athlete books — no approval needed."
-            selected={bookingType === "instant"}
-            onClick={() => { setBookingType("instant"); toast("Instant book enabled"); }}
-          />
-          <OptionCard
-            icon={Hand}
-            title="Request to book"
-            desc="Athletes send a request first; you review and approve each one."
-            selected={bookingType === "request"}
-            onClick={() => { setBookingType("request"); toast("Request to book enabled"); }}
-          />
+          <div role="radiogroup" aria-label="Booking preference">
+            <OptionCard
+              icon={Zap}
+              title="Instant book"
+              desc="Sessions are auto-confirmed the moment an athlete books — no approval needed."
+              selected={bookingType === "instant"}
+              onClick={() => { setBookingType("instant"); toast("Instant book enabled"); }}
+            />
+            <OptionCard
+              icon={Hand}
+              title="Request to book"
+              desc="Athletes send a request first; you review and approve each one."
+              selected={bookingType === "request"}
+              onClick={() => { setBookingType("request"); toast("Request to book enabled"); }}
+            />
+          </div>
 
           <div style={{ marginTop: 18 }}>
             <SectionLabel>Cancellation policy</SectionLabel>
-            <div style={{ fontSize: T.label, color: C.slate, marginTop: -6, marginBottom: 12, lineHeight: 1.5, ...fBody }}>
-              Sets the refund window athletes see before they book.
-            </div>
-            {CANCELLATION_POLICIES.map((cp) => (
-              <OptionCard
-                key={cp.key}
-                dotColor={cp.dotColor}
-                title={cp.key}
-                desc={cp.desc}
-                selected={policy === cp.key}
-                onClick={() => { setPolicy(cp.key); toast(`Cancellation policy set to ${cp.key}`); }}
-              />
-            ))}
+            <Card style={{ marginBottom: 12, background: C.brandTint }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                <Shield size={16} color={C.brand} style={{ marginTop: 1, flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>One policy for every coach</div>
+                  <div style={{ fontSize: T.labelLg, color: C.slate, marginTop: 3, lineHeight: 1.5, ...fBody }}>{CONFIG.cancellationPolicy}</div>
+                  <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 4, ...fBody }}>This standard CoachLink policy applies to all bookings and can't be changed per coach.</div>
+                </div>
+              </div>
+            </Card>
           </div>
         </div>
         </>
@@ -508,7 +545,7 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
         <div style={{ marginTop: 22 }}>
           <SectionLabel>Account management</SectionLabel>
           <Row2 icon={LogOut} label="Sign out" onClick={() => setSheet("signout")} />
-          <Row2 icon={Trash2} label="Delete account" danger onClick={() => setSheet("delete")} />
+          <Row2 icon={Trash2} label="Delete account" danger onClick={openDeleteFlow} />
         </div>
         </>
         )}
@@ -517,6 +554,41 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
       <BottomSheet open={sheet === "edit"} onClose={() => { setSheet(null); setDraft(null); }} title="Edit profile" heightPct={90}>
         {draft && (
           <>
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 7, ...fBody }}>Cover photo</div>
+              <button
+                type="button"
+                aria-label="Change cover photo"
+                onClick={() => coverInputRef.current?.click()}
+                style={{ width: "100%", height: 132, padding: 0, position: "relative", overflow: "hidden", borderRadius: 18, border: `1px solid ${C.border}`, background: C.fog, cursor: "pointer", display: "block" }}
+              >
+                {draft.coverPhoto ? (
+                  <img src={draft.coverPhoto} alt="Cover preview" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                ) : (
+                  <span style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <ImageIcon size={24} color={C.slateLight} />
+                  </span>
+                )}
+                <span style={{ position: "absolute", right: 10, bottom: 10, minHeight: 36, padding: "0 12px", borderRadius: 12, background: C.jet, color: C.white, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: T.labelLg, fontWeight: 600, boxShadow: "0 4px 12px rgba(22,24,29,.18)", ...fBody }}>
+                  <Camera size={14} /> Change cover
+                </span>
+              </button>
+              <input ref={coverInputRef} type="file" accept="image/*" onChange={onCoverChange} style={{ display: "none" }} />
+              <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.45, marginTop: 7, ...fBody }}>Use a wide coaching or training photo for the best profile preview.</div>
+              {coachMedia.some((item) => item.type === "photo") && (
+                <div style={{ display: "flex", gap: 8, marginTop: 10, overflowX: "auto" }} className="cl-hide-scrollbar">
+                  {coachMedia.filter((item) => item.type === "photo").map((item) => {
+                    const selected = draft.coverPhoto === item.url;
+                    return (
+                      <button key={item.id} type="button" aria-label={`Use ${item.caption || "media photo"} as cover`} aria-pressed={selected} onClick={() => setDraftField({ coverPhoto: item.url })} style={{ width: 64, height: 48, padding: 2, borderRadius: 12, border: `1.5px solid ${selected ? C.brand : C.border}`, background: selected ? C.brandTint : C.white, flexShrink: 0, cursor: "pointer" }}>
+                        <img src={item.url} alt="" style={{ width: "100%", height: "100%", borderRadius: 9, objectFit: "cover", display: "block" }} />
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 18 }}>
               <div style={{ position: "relative", width: 76, height: 76 }}>
                 {draft.photo ? (
@@ -592,12 +664,46 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
                 <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Location</div>
                 <SearchSelect options={LOCATION_OPTIONS} value={draft.location} onChange={(v) => setDraftField({ location: v })} placeholder="Search suburb or city…" />
               </div>
+
+              <div style={{ height: 1, background: C.border, margin: "4px 0" }} />
+              <SectionLabel>Venue & travel</SectionLabel>
+              <Field label="Session venue" placeholder="e.g. Fremantle Fitness Box" icon={MapPin} value={draft.venue} onChange={(e) => setDraftField({ venue: e.target.value })} />
+              <Field label="Travel radius (km)" placeholder="e.g. 5" icon={Navigation} value={String(draft.travelRadiusKm ?? "")} onChange={(e) => setDraftField({ travelRadiusKm: e.target.value.replace(/[^0-9]/g, "") })} />
+              <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "4px 0" }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>Willing to travel to athletes</div>
+                  <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>Offer sessions at your athletes' location</div>
+                </div>
+                <Toggle label="Willing to travel to athletes" on={!!draft.willingToTravel} onClick={() => setDraftField({ willingToTravel: !draft.willingToTravel })} />
+              </div>
+
+              <div style={{ height: 1, background: C.border, margin: "4px 0" }} />
+              <SectionLabel>Accreditations</SectionLabel>
+              <div>
+                <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Certifications & accreditations</div>
+                {(draft.accreditations || []).map((a, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 4px", borderBottom: `1px solid ${C.border}` }}>
+                    <Award size={15} color={C.success} style={{ flexShrink: 0 }} />
+                    <span style={{ flex: 1, minWidth: 0, fontSize: T.bodyLg, color: C.jet, ...fBody }}>{a}</span>
+                    <button type="button" aria-label={`Remove ${a}`} onClick={() => removeDraftAccreditation(i)} style={{ width: 32, height: 32, borderRadius: 10, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <X size={15} color={C.slateLight} />
+                    </button>
+                  </div>
+                ))}
+                <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                  <input
+                    value={draftAccreditation}
+                    onChange={(e) => setDraftAccreditation(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addDraftAccreditation(); } }}
+                    placeholder="e.g. CrossFit Level 2 Trainer"
+                    style={{ flex: 1, minWidth: 0, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "10px 13px", fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", background: C.white, color: C.jet, ...fBody }}
+                  />
+                  <Btn size="sm" variant="outline" icon={Plus} onClick={addDraftAccreditation}>Add</Btn>
+                </div>
+              </div>
             </div>
 
             <div style={{ marginTop: 22, display: "flex", gap: 8 }}>
-              <div style={{ flex: 1 }}>
-                <Btn full variant="outline" icon={Eye} onClick={() => openPreview(draft)}>Preview</Btn>
-              </div>
               <div style={{ flex: 1 }}>
                 <Btn full onClick={saveProfile}>Save changes</Btn>
               </div>
@@ -606,26 +712,16 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
         )}
       </BottomSheet>
 
-      <BottomSheet open={previewOpen} onClose={() => setPreviewOpen(false)} title="Profile preview" heightPct={92}>
-        {previewData && (
-          <>
-            <div style={{ fontSize: T.captionLg, color: C.slateLight, marginBottom: 10, ...fBody }}>This is how your profile will look to athletes.</div>
-            <ProfilePreview coach={coach} data={previewData} packages={coachPackages} bookingType={bookingType} />
-            <div style={{ marginTop: 20, display: "flex", gap: 8 }}>
-              <div style={{ flex: 1 }}>
-                <Btn full variant="secondary" onClick={() => setPreviewOpen(false)}>Close</Btn>
-              </div>
-              {draft && previewData === draft && (
-                <div style={{ flex: 1 }}>
-                  <Btn full onClick={saveProfile}>Save changes</Btn>
-                </div>
-              )}
-            </div>
-          </>
-        )}
-      </BottomSheet>
-
-      <BottomSheet open={sheet === "notif"} onClose={closeSheet} title="Notification preferences" heightPct={62}>
+      <BottomSheet open={sheet === "notif"} onClose={closeSheet} title="Notification preferences" heightPct={84}>
+        <SectionLabel>Channels</SectionLabel>
+        <NotifRow label="Push notifications" sub="Alerts on this device" prefKey="push" />
+        <NotifRow label="Email notifications" sub="Receipts, confirmations & digests" prefKey="email" />
+        <NotifRow label="SMS notifications" sub="Urgent day-of updates" prefKey="sms" />
+        <NotifRow label="WhatsApp notifications" sub="Urgent day-of updates" prefKey="whatsapp" />
+        <div style={{ fontSize: T.captionLg, color: C.slateLight, margin: "8px 0 16px", lineHeight: 1.5, ...fBody }}>
+          Payment receipts and booking confirmations are always sent by email.
+        </div>
+        <SectionLabel>Updates</SectionLabel>
         <NotifRow label="Booking requests" sub="New requests waiting on your response" prefKey="bookingRequests" />
         <NotifRow label="Booking confirmations" sub="When a session is confirmed" prefKey="bookingConfirmations" />
         <NotifRow label="Messages" sub="New messages from athletes" prefKey="messages" />
@@ -633,31 +729,6 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
         <div style={{ marginTop: 20 }}>
           <Btn full onClick={() => { toast("Notification preferences saved"); closeSheet(); }}>Save preferences</Btn>
         </div>
-      </BottomSheet>
-
-      <BottomSheet open={sheet === "payment"} onClose={closeSheet} title="Payment method" heightPct={64}>
-        {payoutDraft && (
-          <>
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <Field label="Account holder name" placeholder="Full name on account" icon={User} value={payoutDraft.accountHolder} onChange={(e) => setPayoutDraft((d) => ({ ...d, accountHolder: e.target.value }))} />
-              <Field label="Bank name" placeholder="e.g. Commonwealth Bank" icon={Banknote} value={payoutDraft.bankName} onChange={(e) => setPayoutDraft((d) => ({ ...d, bankName: e.target.value }))} />
-              <div style={{ display: "flex", gap: 10 }}>
-                <div style={{ flex: 1 }}>
-                  <Field label="BSB / Routing number" placeholder="062-000" value={payoutDraft.bsb} onChange={(e) => setPayoutDraft((d) => ({ ...d, bsb: e.target.value }))} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <Field label="Account number" placeholder="•••• 2210" icon={CreditCard} value={payoutDraft.accountNumber} onChange={(e) => setPayoutDraft((d) => ({ ...d, accountNumber: e.target.value }))} />
-                </div>
-              </div>
-            </div>
-            <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: 14, lineHeight: 1.5, ...fBody }}>
-              Payouts are processed by our PCI-compliant payment partner — CoachLink never stores your full account number.
-            </div>
-            <div style={{ marginTop: 20 }}>
-              <Btn full onClick={savePayout}>Save payment method</Btn>
-            </div>
-          </>
-        )}
       </BottomSheet>
 
       <BottomSheet open={sheet === "password"} onClose={closeSheet} title="Change password" heightPct={62}>
@@ -692,15 +763,80 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
         </div>
       </BottomSheet>
 
-      <ConfirmDialog
-        open={sheet === "delete"}
-        onClose={closeSheet}
-        onConfirm={() => { closeSheet(); toast("Account deleted"); resetNav("splash", {}, "client"); }}
-        title="Delete your coach account?"
-        description="Your public profile, packages and booking history will be permanently deleted. Upcoming bookings will be cancelled and athletes notified. This can't be undone."
-        confirmLabel="Delete account"
-        icon={Trash2}
-      />
+      <BottomSheet open={sheet === "delete"} onClose={closeDeleteFlow} title={deleteStep === "confirm" ? "Delete account" : "Verify deletion"} heightPct={deleteStep === "confirm" ? 58 : 68}>
+        {deleteStep === "confirm" ? (
+          <>
+            <div style={{ width: 52, height: 52, borderRadius: 16, background: C.dangerTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+              <AlertTriangle size={23} color={C.danger} />
+            </div>
+            <div style={{ fontSize: T.title, fontWeight: 700, color: C.jet, marginBottom: 7, ...fDisplay }}>Delete your coach account?</div>
+            <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.6, marginBottom: 16, ...fBody }}>
+              Your public profile, packages and coaching history will be permanently removed. Upcoming bookings will be cancelled and clients notified. This can’t be undone.
+            </div>
+            <Card style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 18, background: C.fog }}>
+              <Mail size={17} color={C.slate} style={{ flexShrink: 0, marginTop: 1 }} />
+              <div>
+                <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>Email verification required</div>
+                <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, marginTop: 3, ...fBody }}>We’ll send a six-digit code to {coachEmail} before deleting your account.</div>
+              </div>
+            </Card>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <Btn full variant="danger" icon={Mail} onClick={sendDeleteCode}>Send verification code</Btn>
+              <Btn full variant="secondary" onClick={closeDeleteFlow}>Keep my account</Btn>
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ width: 52, height: 52, borderRadius: 16, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+              <Mail size={22} color={C.brand} />
+            </div>
+            <div style={{ fontSize: T.title, fontWeight: 700, color: C.jet, ...fDisplay }}>Check your email</div>
+            <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.55, marginTop: 6, marginBottom: 18, ...fBody }}>
+              Enter the six-digit code sent to <span style={{ color: C.jet, fontWeight: 600 }}>{coachEmail}</span>.
+            </div>
+
+            {deleteError && (
+              <div role="alert" style={{ display: "flex", gap: 8, padding: "10px 12px", borderRadius: 12, border: `1px solid ${C.dangerBorder}`, background: C.dangerTint, marginBottom: 14 }}>
+                <AlertTriangle size={15} color={C.danger} style={{ flexShrink: 0, marginTop: 1 }} />
+                <span style={{ fontSize: T.labelLg, color: C.danger, lineHeight: 1.45, ...fBody }}>That code is invalid or incomplete. Check your email or request a new code.</span>
+              </div>
+            )}
+
+            <div onPaste={onDeletePaste} style={{ display: "grid", gridTemplateColumns: "repeat(6, minmax(0, 1fr))", gap: 7 }}>
+              {deleteCode.map((digit, index) => (
+                <input
+                  key={index}
+                  ref={(element) => { deleteInputsRef.current[index] = element; }}
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete={index === 0 ? "one-time-code" : "off"}
+                  aria-label={`Account deletion code digit ${index + 1} of 6`}
+                  value={digit}
+                  maxLength={1}
+                  onChange={(event) => setDeleteDigit(index, event.target.value)}
+                  onKeyDown={(event) => onDeleteKeyDown(index, event)}
+                  style={{ width: "100%", height: 52, minWidth: 0, boxSizing: "border-box", borderRadius: 13, border: `1.5px solid ${deleteError ? C.dangerBorderSoft : digit ? C.brand : C.border}`, background: C.white, color: C.jet, textAlign: "center", outline: "none", fontSize: T.heading, fontWeight: 700, ...fDisplay }}
+                />
+              ))}
+            </div>
+
+            <div style={{ minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center", marginTop: 8 }}>
+              {deleteResendSeconds > 0 ? (
+                <span style={{ fontSize: T.body, color: C.slateLight, ...fBody }}>Resend code in 0:{String(deleteResendSeconds).padStart(2, "0")}</span>
+              ) : (
+                <button type="button" onClick={resendDeleteCode} style={{ minHeight: 44, padding: "0 10px", border: "none", background: "transparent", color: C.brand, cursor: "pointer", fontSize: T.body, fontWeight: 600, ...fBody }}>Resend code</button>
+              )}
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>
+              <Btn full variant="danger" disabled={deleteCode.join("").length !== 6} onClick={verifyAndDelete}>Verify & delete account</Btn>
+              <Btn full variant="secondary" onClick={() => { setDeleteStep("confirm"); setDeleteError(false); }}>Back</Btn>
+            </div>
+          </>
+        )}
+      </BottomSheet>
+
+      <FullscreenImageViewer open={avatarOpen} onClose={() => setAvatarOpen(false)} src={profile.photo} alt="Profile photo" />
     </div>
   );
 }

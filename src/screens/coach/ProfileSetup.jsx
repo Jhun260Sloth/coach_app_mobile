@@ -118,7 +118,7 @@ export function ScreenCoachProfileSetup({ nav, toast }) {
           ))}
         </div>
 
-        <SectionLabel>Certifications</SectionLabel>
+        <SectionLabel>Accreditations</SectionLabel>
         {certs.map((c, i) => (
           <Card key={i} style={{ marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
@@ -132,7 +132,7 @@ export function ScreenCoachProfileSetup({ nav, toast }) {
         ))}
         <button onClick={() => certInputRef.current?.click()} style={{ width: "100%", border: `1.5px dashed ${C.border}`, borderRadius: 14, padding: 14, background: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", marginBottom: 18, boxSizing: "border-box" }}>
           <Upload size={15} color={C.slate} />
-          <span style={{ fontSize: T.labelLg, color: C.slate, fontWeight: 600, ...fBody }}>Upload certification (PDF or image)</span>
+          <span style={{ fontSize: T.labelLg, color: C.slate, fontWeight: 600, ...fBody }}>Upload accreditation (PDF or image)</span>
         </button>
         <input ref={certInputRef} type="file" accept=".pdf,image/*" multiple onChange={onCertsChange} style={{ display: "none" }} />
 

@@ -10,4 +10,7 @@ export const CONFIG = {
   serviceFeeRate: 0.06,
   /** Commission deducted from coach earnings (15%). */
   commissionRate: 0.15,
+  /** Single platform-wide cancellation policy shown on every coach profile and booking. */
+  cancellationPolicy:
+    "Free cancellation up to 24 hours before your session. Cancellations inside 24 hours are refunded at 50%.",
 };

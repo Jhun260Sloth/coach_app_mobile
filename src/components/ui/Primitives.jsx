@@ -1,6 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
-  ChevronLeft, Star, CheckCircle2, Search, Wifi, Battery, AlertTriangle,
+  ChevronLeft, Star, CheckCircle2, Search, Wifi, Battery, AlertTriangle, CalendarDays, List, X,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T, LAYOUT } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
@@ -555,6 +555,36 @@ export function SegTabs({ items, value, onChange, strong }) {
   );
 }
 
+export function ViewModeToggle({ value, onChange, ariaLabel = "View mode" }) {
+  const C = useColors();
+  const options = [
+    { value: "list", label: "List view", icon: List },
+    { value: "calendar", label: "Calendar view", icon: CalendarDays },
+  ];
+  return (
+    <div role="tablist" aria-label={ariaLabel} style={{ display: "inline-flex", alignItems: "center", gap: 2, padding: 3, borderRadius: 13, border: `1px solid ${C.border}`, background: C.fog, flexShrink: 0 }}>
+      {options.map((option) => {
+        const active = value === option.value;
+        const Icon = option.icon;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            aria-label={option.label}
+            title={option.label}
+            onClick={() => onChange(option.value)}
+            style={{ width: LAYOUT.touchTarget, height: LAYOUT.touchTarget, borderRadius: 10, border: "none", background: active ? C.jet : "transparent", color: active ? C.white : C.slate, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: active ? "0 2px 6px rgba(22,24,29,.14)" : "none", transition: "background .15s ease, color .15s ease, box-shadow .15s ease" }}
+          >
+            <Icon size={16} aria-hidden="true" />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function BackButton({ onClick, floating = false, ariaLabel = "Go back" }) {
   const C = useColors();
   return (
@@ -688,7 +718,10 @@ export function BottomTabs({ items, value, onChange }) {
   const C = useColors();
   const activeColor = C.brandIcon || C.brand;
   const inactiveColor = C.slate;
-  const activePillBg = C.brandTint;
+  const glassSurface = `linear-gradient(145deg, color-mix(in srgb, ${C.white} 82%, transparent), color-mix(in srgb, ${C.surface} 64%, transparent))`;
+  const glassBorder = `color-mix(in srgb, ${C.border} 62%, ${C.white})`;
+  const glassShadow = `0 14px 34px -12px color-mix(in srgb, ${C.border} 88%, transparent), inset 0 1px 0 color-mix(in srgb, ${C.white} 72%, transparent)`;
+  const activePillBg = `linear-gradient(180deg, color-mix(in srgb, ${C.brandTint} 88%, ${C.white}), color-mix(in srgb, ${C.brandTint} 70%, transparent))`;
 
   return (
     <div
@@ -699,11 +732,11 @@ export function BottomTabs({ items, value, onChange }) {
         bottom: "max(12px, env(safe-area-inset-bottom))",
         left: 12,
         right: 12,
-        background: C.white,
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        border: `1px solid ${C.border}`,
-        boxShadow: "0 10px 30px -5px rgba(0, 0, 0, 0.12)",
+        background: glassSurface,
+        backdropFilter: "blur(24px) saturate(180%)",
+        WebkitBackdropFilter: "blur(24px) saturate(180%)",
+        border: `1px solid ${glassBorder}`,
+        boxShadow: glassShadow,
         borderRadius: 22,
         display: "flex",
         alignItems: "center",
@@ -711,10 +744,17 @@ export function BottomTabs({ items, value, onChange }) {
         padding: "6px 6px",
         zIndex: 40,
         boxSizing: "border-box",
+        overflow: "hidden",
+        isolation: "isolate",
         transition: "background .25s ease, border-color .25s ease, box-shadow .25s ease",
         animation: "clSlideUp .45s cubic-bezier(.22,1,.36,1)",
       }}
     >
+      <span aria-hidden="true" style={{
+        position: "absolute", inset: 1, borderRadius: 21, pointerEvents: "none",
+        background: `linear-gradient(180deg, color-mix(in srgb, ${C.white} 34%, transparent), transparent 54%)`,
+        zIndex: 0,
+      }} />
       {items.map((it) => {
         const active = value === it.value;
         const Icon = it.icon;
@@ -742,6 +782,8 @@ export function BottomTabs({ items, value, onChange }) {
               padding: "6px 2px",
               borderRadius: 16,
               position: "relative",
+              zIndex: 1,
+              boxShadow: active ? `inset 0 1px 0 color-mix(in srgb, ${C.white} 68%, transparent), 0 4px 12px -8px color-mix(in srgb, ${C.brand} 55%, transparent)` : "none",
               transition: "background .22s cubic-bezier(0.16, 1, 0.3, 1), color .22s ease",
             }}
           >
@@ -841,7 +883,7 @@ export function ConfirmDialog({
     <BottomSheet open={open} onClose={onClose} title={title} heightPct={42}>
       <div>
         {description && <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.55, paddingBottom: 14, ...fBody }}>{description}</div>}
-        <button type="button" onClick={onConfirm} style={{ width: "100%", minHeight: LAYOUT.touchTarget, display: "flex", alignItems: "center", gap: 10, padding: "0 12px", border: `1px solid ${destructive ? C.dangerBorder : C.border}`, borderRadius: LAYOUT.buttonRadius, background: destructive ? C.dangerTint : C.brandTint, color: destructive ? C.danger : C.brand, cursor: "pointer", fontSize: T.bodyLg, fontWeight: 600, ...fBody }}>
+        <button type="button" onClick={onConfirm} style={{ width: "100%", minHeight: LAYOUT.touchTarget, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, padding: "0 12px", border: `1px solid ${destructive ? C.dangerBorder : C.border}`, borderRadius: LAYOUT.buttonRadius, background: destructive ? C.dangerTint : C.brandTint, color: destructive ? C.danger : C.brand, cursor: "pointer", fontSize: T.bodyLg, fontWeight: 600, ...fBody }}>
           <Icon aria-hidden="true" size={17} />
           {confirmLabel}
         </button>
@@ -966,6 +1008,72 @@ export function SignalBars({ color = "currentColor" }) {
       <rect x="8.5" y="3" width="2.5" height="7.5" rx="0.5" fill={color} />
       <rect x="12.5" y="0.5" width="2.5" height="10" rx="0.5" fill={color} />
     </svg>
+  );
+}
+
+/* =========================================================================
+   FullscreenImageViewer — Instagram-style lightbox for profile photos and
+   other images. Tapping the photo (or the X) closes it; Escape works too.
+   ========================================================================= */
+export function FullscreenImageViewer({ open, onClose, src, alt = "Photo" }) {
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCloseRef.current?.();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open]);
+
+  if (!open || !src) return null;
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={alt}
+      style={{
+        position: "absolute", inset: 0, zIndex: 98, overflow: "hidden",
+        background: "rgba(10,11,13,.96)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        animation: "clBackdropIn .2s ease",
+      }}
+    >
+      <button
+        type="button"
+        aria-label="Close photo"
+        onClick={onClose}
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none", background: "transparent", cursor: "zoom-out", touchAction: "none" }}
+      />
+      <img
+        src={src}
+        alt={alt}
+        onClick={onClose}
+        style={{
+          position: "relative", maxWidth: "100%", maxHeight: "100%",
+          objectFit: "contain", borderRadius: 14, cursor: "zoom-out",
+          animation: "clPopIn .22s cubic-bezier(.34,1.56,.64,1)",
+        }}
+      />
+      <button
+        type="button"
+        aria-label="Close photo"
+        onClick={onClose}
+        style={{
+          position: "absolute", top: 12, right: 12, width: 44, height: 44, borderRadius: 99,
+          background: "rgba(22,24,29,.62)", border: "1px solid rgba(255,255,255,.16)",
+          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+          backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)",
+        }}
+      >
+        <X size={18} color="#FFFFFF" />
+      </button>
+    </div>
   );
 }
 

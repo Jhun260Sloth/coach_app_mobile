@@ -469,7 +469,7 @@ export function ScreenAdditionalChargeCreate({ nav, params, coachBookings = [], 
 }
 
 export function ScreenAdditionalChargeReview({
-  nav, params, role: appRole, bookings = [], coachBookings = [], additionalCharges = [],
+  nav, goBack, params, role: appRole, bookings = [], coachBookings = [], additionalCharges = [],
   cancelAdditionalCharge, toast,
 }) {
   const { darkMode } = useApp();
@@ -483,13 +483,15 @@ export function ScreenAdditionalChargeReview({
   const paid = charge.status === ADDITIONAL_CHARGE_STATUS.PAID;
   const disputed = charge.status === ADDITIONAL_CHARGE_STATUS.DISPUTED;
   const person = role === "coach" ? booking.clientName : booking.coachName;
+  const fallbackScreen = params?.backTo || (role === "coach" ? "coach-session-detail" : "client-booking-detail");
+  const fallbackParams = params?.backParams || (["coach-session-detail", "client-booking-detail"].includes(fallbackScreen) ? { id: booking.id } : {});
   const withdraw = () => {
     if (cancelAdditionalCharge?.(charge.id)) toast?.("Payment request withdrawn");
   };
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title={role === "coach" ? "Payment request" : "Review request"} onBack={() => nav(role === "coach" ? "coach-session-detail" : "client-booking-detail", { id: booking.id })} right={<Badge tone={paid ? "success" : pending ? "orange" : "neutral"}>{paid ? "Paid" : disputed ? "Disputed" : charge.status === ADDITIONAL_CHARGE_STATUS.CANCELLED ? "Withdrawn" : "Awaiting response"}</Badge>} />
+      <TopBar title={role === "coach" ? "Payment request" : "Review request"} onBack={() => goBack(fallbackScreen, fallbackParams)} right={<Badge tone={paid ? "success" : pending ? "orange" : "neutral"}>{paid ? "Paid" : disputed ? "Disputed" : charge.status === ADDITIONAL_CHARGE_STATUS.CANCELLED ? "Withdrawn" : "Awaiting response"}</Badge>} />
       <div style={{ flex: 1, overflowY: "auto", padding: `${LAYOUT.pagePadTop}px ${LAYOUT.pagePadX}px 24px` }} className="cl-hide-scrollbar">
         <div style={{ textAlign: "center", padding: "7px 8px 20px" }}>
           <div style={{ width: 66, height: 66, borderRadius: 22, margin: "0 auto 14px", background: paid ? C.successTint : C.brandTint, display: "flex", alignItems: "center", justifyContent: "center" }}>

@@ -23,6 +23,7 @@ import {
   BottomSheet,
   Badge,
   HandleTag,
+  Toggle,
 } from "../../components/ui/Primitives";
 import { useReviewActions, DISPUTE_REASONS } from "../../systems/ReviewsSystem";
 import { useApp } from "../../context/AppContext";
@@ -44,6 +45,8 @@ export function ScreenCoachDashboard({
   verified,
   toast,
   offline,
+  coachAvailableNow,
+  setCoachAvailableNow,
 }) {
   const { darkMode, coachIdentity } = useApp();
   const C = darkMode ? CD : CL;
@@ -85,6 +88,7 @@ export function ScreenCoachDashboard({
   const commission = Math.round(grossPaid * CONFIG.commissionRate);
 
   const unreadCount = notifications.filter((n) => n.unread).length;
+  const ratingAvg = (REVIEWS.reduce((s, r) => s + r.rating, 0) / REVIEWS.length).toFixed(1);
 
   const respondWithFeedback = (id, status, message) => {
     // Guard against acting on a request that's no longer pending (already
@@ -240,6 +244,47 @@ export function ScreenCoachDashboard({
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: 116 }} className="cl-hide-scrollbar">
+        {/* Availability Status */}
+        <Card
+          style={{
+            marginTop: 14,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 10,
+            background: coachAvailableNow ? C.white : C.dangerTint,
+            border: `1.5px solid ${coachAvailableNow ? C.border : C.dangerBorder}`,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+            <div style={{
+              width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+              background: coachAvailableNow ? C.successTint : C.dangerTint,
+              border: coachAvailableNow ? "none" : `1px solid ${C.dangerBorder}`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <span style={{ width: 9, height: 9, borderRadius: 99, background: coachAvailableNow ? C.success : C.danger }} />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>
+                {coachAvailableNow ? "Available for bookings" : "Unavailable for bookings"}
+              </div>
+              <div style={{ fontSize: T.caption, color: coachAvailableNow ? C.slateLight : C.danger, ...fBody }}>
+                {coachAvailableNow ? "Clients can see and book your services" : "Clients can't book you right now"}
+              </div>
+            </div>
+          </div>
+          <Toggle
+            label="Available for bookings"
+            on={coachAvailableNow}
+            onClick={() => {
+              const next = !coachAvailableNow;
+              setCoachAvailableNow(next);
+              toast?.(next ? "You're now available for bookings" : "You're now marked unavailable");
+            }}
+          />
+        </Card>
+
         {/* Offline Status */}
         {offline && (
           <div
@@ -348,7 +393,7 @@ export function ScreenCoachDashboard({
 
           <StatMini
             label="Rating"
-            value="4.8"
+            value={ratingAvg}
             icon={Star}
           />
 
@@ -374,6 +419,8 @@ export function ScreenCoachDashboard({
           <button
             onClick={() => nav("coach-bookings")}
             style={{
+              minHeight: 44,
+              padding: "0 4px",
               background: "none",
               border: "none",
               color: C.brand,
@@ -427,28 +474,42 @@ export function ScreenCoachDashboard({
               <div
                 style={{
                   flex: 1,
+                  minWidth: 0,
                 }}
               >
                 <div
                   style={{
+                    display: "flex",
+                    alignItems: "baseline",
+                    gap: 6,
+                    minWidth: 0,
                     fontSize: T.bodyLg,
                     fontWeight: 600,
                     color: C.jet,
                     ...fDisplay,
                   }}
                 >
-                  {cn.name}
+                  <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cn.name}</span>
                   {cn.handle && <HandleTag handle={cn.handle} size={11} color={C.slateLight} />}
                 </div>
 
                 <div
                   style={{
-                    fontSize: T.label,
-                    color: C.slate,
+                    fontSize: T.body,
+                    fontWeight: 600,
+                    color: C.brand,
+                    marginTop: 2,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
                     ...fBody,
                   }}
                 >
-                  {b.service} · {b.date}, {b.time}
+                  {b.service}
+                </div>
+
+                <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 3, ...fBody }}>
+                  {b.date} · {b.time}
                 </div>
               </div>
 
@@ -468,32 +529,17 @@ export function ScreenCoachDashboard({
               style={{
                 display: "flex",
                 gap: 8,
-                marginTop: 10,
+                justifyContent: "flex-end",
+                marginTop: 12,
+                paddingTop: 10,
+                borderTop: `1px solid ${C.border}`,
                 alignItems: "center",
               }}
             >
               <Btn
                 size="sm"
-                full
-                loading={respondingId === b.id}
-                loadingText="Accepting…"
-                disabled={respondingId && respondingId !== b.id}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  respondWithFeedback(
-                    b.id,
-                    BOOKING_STATUS.AWAITING_PAYMENT,
-                    "Booking accepted"
-                  );
-                }}
-              >
-                Accept
-              </Btn>
-
-              <Btn
-                size="sm"
-                variant="ghost"
-                disabled={respondingId === b.id}
+                variant="outline"
+                disabled={!!respondingId}
                 onClick={(e) => {
                   e.stopPropagation();
                   respondWithFeedback(
@@ -504,6 +550,23 @@ export function ScreenCoachDashboard({
                 }}
               >
                 Decline
+              </Btn>
+
+              <Btn
+                size="sm"
+                loading={respondingId === b.id}
+                loadingText="Accepting…"
+                disabled={!!respondingId && respondingId !== b.id}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  respondWithFeedback(
+                    b.id,
+                    BOOKING_STATUS.AWAITING_PAYMENT,
+                    "Booking accepted"
+                  );
+                }}
+              >
+                Accept
               </Btn>
             </div>
           </Card>
@@ -616,11 +679,29 @@ export function ScreenCoachDashboard({
         {/* Recent Reviews */}
         <div
           style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
             marginTop: 18,
             marginBottom: 10,
           }}
         >
           <SectionLabel>Recent reviews</SectionLabel>
+
+          <button
+            onClick={() => nav("coach-reviews")}
+            style={{
+              background: "none",
+              border: "none",
+              color: C.brand,
+              fontSize: T.label,
+              fontWeight: 600,
+              cursor: "pointer",
+              ...fBody,
+            }}
+          >
+            See all
+          </button>
         </div>
 
         {REVIEWS.slice(0, 2).map((r) => {

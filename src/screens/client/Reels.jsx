@@ -1,21 +1,23 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { MapPin, Volume2, VolumeX } from "lucide-react";
+import { MapPin, Volume2, VolumeX, Trash2 } from "lucide-react";
 import { CL, fBody, fDisplay, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { COACHES } from "../../data/mockData";
 import { getCoachMedia } from "../../data/media";
-import { Avatar, BackButton, HandleTag } from "../../components/ui/Primitives";
+import { Avatar, BackButton, HandleTag, ConfirmDialog } from "../../components/ui/Primitives";
 import { getPublicName } from "../../utils/name";
 
 const oneLine = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
 
 /** Immersive, swipeable presentation of a coach's reels and session photos. */
 export function ScreenCoachMedia({ nav, goBack, params = {} }) {
-  const { coachMedia } = useApp();
+  const { coachMedia, coachProfile, removeMedia, toast } = useApp();
   // Reels stay intentionally cinematic in either app theme, so their media
   // chrome uses the light palette's on-dark tokens rather than inverting.
   const C = CL;
-  const coach = COACHES.find((item) => item.id === params.coachId) || COACHES[0];
+  const listedCoach = COACHES.find((item) => item.id === params.coachId) || COACHES[0];
+  const coach = listedCoach.id === COACHES[1].id ? coachProfile : listedCoach;
+  const isManaging = params.manage === true;
   const media = useMemo(
     () => (coach.id === COACHES[1].id ? coachMedia : getCoachMedia(coach.id)),
     [coach.id, coachMedia],
@@ -23,6 +25,7 @@ export function ScreenCoachMedia({ nav, goBack, params = {} }) {
   const initialIndex = Math.max(0, media.findIndex((item) => item.id === params.mediaId));
   const [activeIndex, setActiveIndex] = useState(initialIndex);
   const [muted, setMuted] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const scrollRef = useRef(null);
   const videoRefs = useRef({});
   const pub = getPublicName(coach, "public");
@@ -42,6 +45,25 @@ export function ScreenCoachMedia({ nav, goBack, params = {} }) {
       else video.pause();
     });
   }, [activeIndex]);
+
+  useEffect(() => {
+    setActiveIndex((index) => Math.min(index, Math.max(0, media.length - 1)));
+  }, [media.length]);
+
+  const confirmDelete = () => {
+    if (!deleteTarget) return;
+    const remaining = media.filter((item) => item.id !== deleteTarget.id);
+    removeMedia?.(deleteTarget.id);
+    setDeleteTarget(null);
+    toast?.(deleteTarget.type === "reel" ? "Reel removed" : "Photo removed");
+    if (!remaining.length) {
+      goBack("coach-profile-edit");
+      return;
+    }
+    const nextIndex = Math.min(activeIndex, remaining.length - 1);
+    setActiveIndex(nextIndex);
+    requestAnimationFrame(() => scrollRef.current?.children[nextIndex]?.scrollIntoView({ block: "start" }));
+  };
 
   const handleScroll = (event) => {
     const height = event.currentTarget.clientHeight;
@@ -86,6 +108,7 @@ export function ScreenCoachMedia({ nav, goBack, params = {} }) {
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "center" }}>
+                {isManaging && <MediaAction C={C} destructive label={`Delete ${item.type === "reel" ? "reel" : "photo"}`} onClick={() => setDeleteTarget(item)}><Trash2 size={20} /></MediaAction>}
                 {item.type === "reel" && <MediaAction C={C} label={muted ? "Turn sound on" : "Mute reel"} onClick={() => setMuted((value) => !value)}>{muted ? <VolumeX size={20} /> : <Volume2 size={20} />}</MediaAction>}
               </div>
             </div>
@@ -95,10 +118,20 @@ export function ScreenCoachMedia({ nav, goBack, params = {} }) {
 
       <div style={{ position: "absolute", top: 52, left: 16 }}><BackButton floating onClick={() => goBack("coach-profile")} /></div>
       <div style={{ position: "absolute", top: 60, right: 18, color: C.white, fontSize: T.label, fontWeight: 700, ...fBody }}>{activeIndex + 1} / {media.length}</div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+        title={`Delete this ${deleteTarget?.type === "reel" ? "reel" : "photo"}?`}
+        description="It will be permanently removed from your public profile. This can't be undone."
+        confirmLabel={`Delete ${deleteTarget?.type === "reel" ? "reel" : "photo"}`}
+        icon={Trash2}
+      />
     </div>
   );
 }
 
-function MediaAction({ C, label, onClick, children }) {
+function MediaAction({ C, label, onClick, destructive = false, children }) {
   return <button type="button" aria-label={label} onClick={onClick} style={{ width: 44, height: 44, padding: 0, border: `1px solid ${C.onDarkDivider}`, borderRadius: 999, background: C.jetSoft, color: C.white, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}>{children}</button>;
 }

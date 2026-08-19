@@ -12,6 +12,7 @@ import {
 } from "../../components/ui/Primitives";
 import { StatusBanner } from "../../systems/StateSystem";
 import { getPublicName } from "../../utils/name";
+import { availabilityBlocksToWeekly } from "../../utils/coachProfile";
 import {
   buildMonthGrid, sameDay, dayAvailability, slotsForDate, groupSlotsByPeriod,
   formatTimeRange12, formatFullDateFromDate, formatTime12,
@@ -30,10 +31,14 @@ const WEEKDAY_HEADERS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const PERIOD_ICONS = { Morning: Sunrise, Afternoon: Sun, Evening: Moon };
 
 export function ScreenBookingSelectDateTime({ nav, params }) {
-  const { darkMode } = useApp();
+  const { darkMode, coachProfile, coachPackages, availabilityBlocks } = useApp();
   const C = darkMode ? CD : CL;
-  const coach = COACHES.find((c) => c.id === params?.coachId) || COACHES[0];
+  const listedCoach = COACHES.find((c) => c.id === params?.coachId) || COACHES[0];
+  const coach = listedCoach.id === coachProfile?.id ? coachProfile : listedCoach;
   const pkg = coach.packages.find((p) => p.id === params?.packageId) || coach.packages[0];
+  const availability = coach.id === coachProfile?.id && availabilityBlocks?.length
+    ? availabilityBlocksToWeekly(availabilityBlocks, pkg, coachPackages)
+    : coach.availability;
   const pub = getPublicName(coach, "public");
 
   const [cursor, setCursor] = useState(() => { const d = new Date(); d.setDate(1); return d; });
@@ -54,7 +59,7 @@ export function ScreenBookingSelectDateTime({ nav, params }) {
     setSelectedTime(null);
   };
 
-  const daySlots = selectedDate ? slotsForDate(selectedDate, coach, coach.availability) : [];
+  const daySlots = selectedDate ? slotsForDate(selectedDate, coach, availability) : [];
   const grouped = groupSlotsByPeriod(daySlots);
   const duration = pkg.duration || 60;
 
@@ -90,7 +95,7 @@ export function ScreenBookingSelectDateTime({ nav, params }) {
             <div key={ri} style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 4 }}>
               {row.map((d, di) => {
                 const inRange = d.getMonth() === cursor.getMonth();
-                const state = dayAvailability(d, coach, coach.availability);
+                const state = dayAvailability(d, coach, availability);
                 const isSelected = selectedDate && sameDay(d, selectedDate);
                 const isToday = sameDay(d, today);
                 const disabled = !inRange || state === "unavailable";
@@ -1007,11 +1012,15 @@ export function ScreenBookingMessage({ nav, params, toast }) {
    ========================================================================= */
 
 export function ScreenAvailabilityCalendar({ nav, params }) {
-  const { darkMode } = useApp();
+  const { darkMode, coachProfile, coachPackages, availabilityBlocks } = useApp();
   const C = darkMode ? CD : CL;
 
-  const coach = COACHES.find((c) => c.id === params?.coachId) || COACHES[0];
+  const listedCoach = COACHES.find((c) => c.id === params?.coachId) || COACHES[0];
+  const coach = listedCoach.id === coachProfile?.id ? coachProfile : listedCoach;
   const pkg = params?.packageId ? coach.packages.find((p) => p.id === params.packageId) : null;
+  const availability = coach.id === coachProfile?.id && availabilityBlocks?.length
+    ? availabilityBlocksToWeekly(availabilityBlocks, pkg, coachPackages)
+    : coach.availability;
   const pub = getPublicName(coach, "public");
 
   const [cursor, setCursor] = useState(() => { const d = new Date(); d.setDate(1); return d; });
@@ -1032,7 +1041,7 @@ export function ScreenAvailabilityCalendar({ nav, params }) {
     setSelectedTime(null);
   };
 
-  const daySlots = selectedDate ? slotsForDate(selectedDate, coach, coach.availability) : [];
+  const daySlots = selectedDate ? slotsForDate(selectedDate, coach, availability) : [];
   const grouped = groupSlotsByPeriod(daySlots);
   const duration = pkg?.duration || 60;
 
@@ -1076,7 +1085,7 @@ export function ScreenAvailabilityCalendar({ nav, params }) {
             <div key={ri} style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 4 }}>
               {row.map((d, di) => {
                 const inRange = d.getMonth() === cursor.getMonth();
-                const state = dayAvailability(d, coach, coach.availability);
+                const state = dayAvailability(d, coach, availability);
                 const isSelected = selectedDate && sameDay(d, selectedDate);
                 const isToday = sameDay(d, today);
                 const disabled = !inRange || state === "unavailable";

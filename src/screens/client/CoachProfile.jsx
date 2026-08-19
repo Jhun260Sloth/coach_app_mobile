@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
-  ChevronLeft, ChevronRight, Heart, Share2, Star, ShieldCheck, BadgeCheck, Play, MessageCircle, CheckCircle2, Check, Trophy,
-  Clock, TrendingUp, Repeat, MapPin, Navigation, Award, Users, XCircle, Sunrise, Sun, Moon,
+  ChevronLeft, ChevronRight, Heart, Share2, Play, MessageCircle, Check, CheckCircle2,
+  Users, XCircle, Sunrise, Sun, Moon,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
-import { COACHES, REVIEWS, SPORT_ICON } from "../../data/mockData";
+import { COACHES, REVIEWS } from "../../data/mockData";
 import { getCoachMedia } from "../../data/media";
-import { Avatar, BackButton, Badge, SegTabs, SectionLabel, Card, Btn, StarRow, HandleTag } from "../../components/ui/Primitives";
+import { Avatar, BackButton, Badge, SegTabs, SectionLabel, Card, Btn, StarRow, HandleTag, FullscreenImageViewer } from "../../components/ui/Primitives";
+import { CoachProfileHero, CoachProfileAbout } from "../../components/ui/CoachProfileSections";
 import { getPublicName } from "../../utils/name";
+import { availabilityBlocksToWeekly } from "../../utils/coachProfile";
 import { StatusBanner } from "../../systems/StateSystem";
 import { useReviewActions } from "../../systems/ReviewsSystem";
 import {
@@ -17,6 +19,8 @@ import {
 
 const WEEKDAY_HEADERS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const PERIOD_ICONS = { Morning: Sunrise, Afternoon: Sun, Evening: Moon };
+
+const LIVE_AVAILABILITY_COACH_ID = "c2";
 
 // Packages don't carry their own schedule in the mock data model — only the
 // coach does. To let the calendar genuinely narrow when a package is picked,
@@ -35,33 +39,11 @@ function derivePackageAvailability(coach, pkg) {
   return out;
 }
 
-const LIVE_AVAILABILITY_COACH_ID = "c2";
-
-export function CoverBanner({ sport, image, name, height = 150, rounded = false }) {
-  const { darkMode } = useApp();
-  const C = darkMode ? CD : CL;
-  const Icon = SPORT_ICON[sport] || Trophy;
-  return (
-    <div style={{ height, position: "relative", flexShrink: 0, overflow: "hidden", borderRadius: rounded ? 24 : 0, background: `linear-gradient(145deg, ${CL.jet} 0%, ${CL.jetSoft} 58%, ${CL.slate} 100%)` }}>
-      {image ? (
-        <img src={image} alt={`${name || sport} coaching session`} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 42%", display: "block" }} />
-      ) : (
-        <>
-          <div style={{ position: "absolute", inset: 0, background: `radial-gradient(120% 90% at 15% 0%, ${C.onDarkDivider}, transparent 55%)` }} />
-          <div style={{ position: "absolute", top: -30, right: -20, width: 160, height: 100, background: C.brand, opacity: 0.9, transform: "rotate(-18deg)", clipPath: "polygon(20% 0%, 100% 0%, 80% 100%, 0% 100%)" }} />
-          <div style={{ position: "absolute", top: -30, right: 40, width: 90, height: 100, background: CL.jet, opacity: 0.55, transform: "rotate(-18deg)", clipPath: "polygon(20% 0%, 100% 0%, 80% 100%, 0% 100%)" }} />
-          <Icon size={140} color={CL.white} strokeWidth={1.1} style={{ position: "absolute", bottom: -30, left: -20, opacity: 0.14, transform: "rotate(-8deg)" }} />
-        </>
-      )}
-      <div style={{ position: "absolute", inset: 0, background: `linear-gradient(180deg, transparent 24%, ${CL.jet} 118%)`, opacity: image ? 0.9 : 0.25 }} />
-    </div>
-  );
-}
-
 export function ScreenCoachProfile({ nav, goBack, params = {}, favorites = [], toggleFav, coachAvailableNow }) {
-  const { darkMode, coachMedia, toast } = useApp();
+  const { darkMode, coachMedia, coachProfile, coachPackages, availabilityBlocks, toast } = useApp();
   const C = darkMode ? CD : CL;
-  const coach = COACHES.find((c) => c.id === (params?.id)) || COACHES[0];
+  const listedCoach = COACHES.find((c) => c.id === (params?.id)) || COACHES[0];
+  const coach = listedCoach.id === COACHES[1].id ? coachProfile : listedCoach;
   const media = coach.id === COACHES[1].id ? coachMedia : getCoachMedia(coach.id);
   const pub = getPublicName(coach, "public");
   const { getReply } = useReviewActions();
@@ -71,6 +53,7 @@ export function ScreenCoachProfile({ nav, goBack, params = {}, favorites = [], t
   const [pkgSelectedDate, setPkgSelectedDate] = useState(null);
   const [pkgSelectedTime, setPkgSelectedTime] = useState(null);
   const [reviewPage, setReviewPage] = useState(1);
+  const [avatarOpen, setAvatarOpen] = useState(false);
   const REVIEWS_PER_PAGE = 5;
   const reviewPageCount = Math.max(1, Math.ceil(REVIEWS.length / REVIEWS_PER_PAGE));
   const pagedReviews = REVIEWS.slice((reviewPage - 1) * REVIEWS_PER_PAGE, reviewPage * REVIEWS_PER_PAGE);
@@ -78,7 +61,7 @@ export function ScreenCoachProfile({ nav, goBack, params = {}, favorites = [], t
   const selectedPkg = coach.packages.find((p) => p.id === selectedPkgId) || null;
   const safeFavorites = Array.isArray(favorites) ? favorites : [];
   const fav = safeFavorites.includes(coach.id);
-  const heroImage = media.find((item) => item.type === "photo")?.url;
+  const heroImage = coach.coverPhoto || media.find((item) => item.type === "photo")?.url;
   const unavailable = coach.id === LIVE_AVAILABILITY_COACH_ID && coachAvailableNow === false;
   const handleFavourite = () => {
     toggleFav?.(coach.id);
@@ -90,7 +73,12 @@ export function ScreenCoachProfile({ nav, goBack, params = {}, favorites = [], t
   // the coach's overall (all-packages) availability when none is picked yet
   // — package-led (pick a package, see when it's on) and date-led (pick a
   // date, then see which packages are running) both work off this same state.
-  const pkgAvailability = useMemo(() => derivePackageAvailability(coach, selectedPkg), [coach, selectedPkg]);
+  const isCurrentCoach = coach.id === COACHES[1].id;
+  const pkgAvailability = useMemo(() => (
+    isCurrentCoach && availabilityBlocks?.length
+      ? availabilityBlocksToWeekly(availabilityBlocks, selectedPkg, coachPackages)
+      : derivePackageAvailability(coach, selectedPkg)
+  ), [availabilityBlocks, coachPackages, coach, isCurrentCoach, selectedPkg]);
   const pkgWeeks = useMemo(() => buildMonthGrid(pkgCursor), [pkgCursor]);
   const pkgMonthLabel = pkgCursor.toLocaleDateString(undefined, { month: "long", year: "numeric" });
   const pkgToday = new Date();
@@ -113,7 +101,9 @@ export function ScreenCoachProfile({ nav, goBack, params = {}, favorites = [], t
   useEffect(() => {
     if (pkgSelectedDate && pkgSelectedTime) {
       const compatible = coach.packages.filter((p) => (
-        p.active !== false && slotsForDate(pkgSelectedDate, coach, derivePackageAvailability(coach, p)).includes(pkgSelectedTime)
+        p.active !== false && slotsForDate(pkgSelectedDate, coach, isCurrentCoach && availabilityBlocks?.length
+          ? availabilityBlocksToWeekly(availabilityBlocks, p, coachPackages)
+          : derivePackageAvailability(coach, p)).includes(pkgSelectedTime)
       ));
       if (compatible.length === 1 && selectedPkgId !== compatible[0].id) {
         setSelectedPkgId(compatible[0].id);
@@ -121,7 +111,7 @@ export function ScreenCoachProfile({ nav, goBack, params = {}, favorites = [], t
         setSelectedPkgId(null);
       }
     }
-  }, [pkgSelectedDate, pkgSelectedTime, coach]);
+  }, [pkgSelectedDate, pkgSelectedTime, coach, isCurrentCoach, availabilityBlocks, coachPackages]);
 
   // If picking a package makes the currently-selected date/time invalid for
   // it, clear them rather than silently showing a stale selection.
@@ -138,68 +128,32 @@ export function ScreenCoachProfile({ nav, goBack, params = {}, favorites = [], t
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ flex: 1, overflowY: "auto", paddingBottom: 100 }} className="cl-hide-scrollbar">
-        <div style={{ margin: "12px 14px 0", position: "relative" }}>
-          <CoverBanner sport={coach.sport} image={heroImage} name={pub.name} height={188} rounded />
-          <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-          <div style={{ position: "absolute", top: 12, left: 12, pointerEvents: "auto" }}>
-            <BackButton floating onClick={() => goBack("client-home")} />
-          </div>
-          <div style={{ position: "absolute", top: 12, right: 12, display: "flex", gap: 8, pointerEvents: "auto" }}>
-            <button type="button" aria-label={fav ? "Remove coach from favourites" : "Add coach to favourites"} aria-pressed={fav} onClick={handleFavourite} style={{ width: 44, height: 44, borderRadius: 99, background: fav ? C.brand : CL.jetSoft, opacity: 0.94, border: `1px solid ${CL.onDarkDivider}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 8px 20px rgba(0,0,0,.18)" }}>
-              <Heart size={18} color={CL.white} fill={fav ? CL.white : "none"} />
-            </button>
-            <button type="button" aria-label="Share coach profile" onClick={handleShare} style={{ width: 44, height: 44, borderRadius: 99, background: CL.jetSoft, opacity: 0.94, border: `1px solid ${CL.onDarkDivider}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 8px 20px rgba(0,0,0,.18)" }}>
-              <Share2 size={18} color={CL.white} />
-            </button>
-          </div>
-          </div>
-        </div>
-
-        <div style={{ margin: "-34px 14px 0", padding: "0 16px 16px", position: "relative", zIndex: 2, background: C.white, border: `1px solid ${C.border}`, borderRadius: 24, boxShadow: "0 12px 32px rgba(22,24,29,.10)" }}>
-          <div style={{ height: 42 }} />
-          <div style={{ position: "absolute", top: -42, left: 16 }}>
-            <div style={{ padding: 3, borderRadius: 99, background: C.white, boxShadow: "0 6px 18px rgba(22,24,29,.14)" }}>
-              <Avatar name={pub.name} src={coach.avatar} size={76} ring />
-            </div>
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: T.headingLg, fontWeight: 700, color: C.jet, lineHeight: 1.15, ...fDisplay }}>{pub.name}</div>
-              <HandleTag handle={pub.handle} size={12.5} color={C.slateLight} />
-              <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3, fontSize: T.captionLg, color: C.slate, ...fBody }}>
-                <MapPin size={12} color={C.brand} style={{ flexShrink: 0 }} />
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{coach.sport} · {coach.suburb}</span>
-              </div>
-            </div>
-            <div style={{ flexShrink: 0, textAlign: "right", paddingTop: 2 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4, fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...fBody }}>
-                <Star size={15} fill={C.brand} color={C.brand} /> {coach.rating}
-              </div>
-              <div style={{ fontSize: T.caption, color: C.slate, marginTop: 1, ...fBody }}>{coach.reviews} reviews</div>
-            </div>
-          </div>
-
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
-            {coach.verified.identity && <Badge tone="success" icon={ShieldCheck}>ID verified</Badge>}
-            {coach.verified.wwcc && <Badge tone="success" icon={ShieldCheck}>WWCC verified</Badge>}
-            {coach.verified.quals && <Badge tone="success" icon={BadgeCheck}>Qualifications checked</Badge>}
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8, marginTop: 14 }}>
-            {[
-              { icon: Clock, label: "Response", value: coach.responseTime.replace("Usually replies within ", "") },
-              { icon: TrendingUp, label: "Acceptance", value: `${coach.acceptanceRate}%` },
-              { icon: Repeat, label: "Repeat clients", value: `${coach.repeatClientRate}%` },
-            ].map((s) => (
-              <div key={s.label} style={{ minWidth: 0, background: C.fog, border: `1px solid ${C.border}`, borderRadius: 13, padding: "10px 5px 9px", textAlign: "center" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
-                  <s.icon size={13} color={C.brand} style={{ flexShrink: 0 }} />
-                  <span style={{ fontSize: T.captionLg, fontWeight: 700, color: C.jet, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", ...fBody }}>{s.value}</span>
+        <div style={{ margin: "14px 18px 0", position: "relative" }}>
+          <CoachProfileHero
+            coach={coach}
+            pub={pub}
+            heroImage={heroImage}
+            avatarSrc={coach.avatar}
+            instantBook={coach.instantBook}
+            coverHeight={188}
+            inset={0}
+            onAvatarClick={() => setAvatarOpen(true)}
+            overlay={
+              <>
+                <div style={{ position: "absolute", top: 12, left: 12, pointerEvents: "auto" }}>
+                  <BackButton floating onClick={() => goBack("client-home")} />
                 </div>
-                <div style={{ fontSize: T.tiny, color: C.slate, marginTop: 3, lineHeight: 1.2, ...fBody }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
+                <div style={{ position: "absolute", top: 12, right: 12, display: "flex", gap: 8, pointerEvents: "auto" }}>
+                  <button type="button" aria-label={fav ? "Remove coach from favourites" : "Add coach to favourites"} aria-pressed={fav} onClick={handleFavourite} style={{ width: 44, height: 44, borderRadius: 99, background: fav ? C.brand : CL.jetSoft, opacity: 0.94, border: `1px solid ${CL.onDarkDivider}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 8px 20px rgba(0,0,0,.18)" }}>
+                    <Heart size={18} color={CL.white} fill={fav ? CL.white : "none"} />
+                  </button>
+                  <button type="button" aria-label="Share coach profile" onClick={handleShare} style={{ width: 44, height: 44, borderRadius: 99, background: CL.jetSoft, opacity: 0.94, border: `1px solid ${CL.onDarkDivider}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 8px 20px rgba(0,0,0,.18)" }}>
+                    <Share2 size={18} color={CL.white} />
+                  </button>
+                </div>
+              </>
+            }
+          />
         </div>
 
         <div style={{ padding: "0 18px" }}>
@@ -225,45 +179,7 @@ export function ScreenCoachProfile({ nav, goBack, params = {}, favorites = [], t
 
         {tab === "about" && (
           <div style={{ marginTop: 16 }}>
-            <SectionLabel>Bio</SectionLabel>
-            <p style={{ fontSize: T.bodyLg, color: C.slate, lineHeight: 1.6, marginBottom: 16, ...fBody }}>{coach.bio}</p>
-            <SectionLabel>Coaching style</SectionLabel>
-            <p style={{ fontSize: T.bodyLg, color: C.slate, lineHeight: 1.6, marginBottom: 16, ...fBody }}>{coach.style}</p>
-            <SectionLabel>Experience</SectionLabel>
-            <p style={{ fontSize: T.bodyLg, color: C.slate, marginBottom: 16, ...fBody }}>{coach.experience}</p>
-
-            <SectionLabel>Location & travel</SectionLabel>
-            <Card style={{ marginBottom: 16 }}>
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
-                <MapPin size={15} color={C.brand} style={{ marginTop: 1, flexShrink: 0 }} />
-                <div>
-                  <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{coach.venue}</div>
-                  <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 1, ...fBody }}>{coach.suburb}</div>
-                </div>
-              </div>
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                <Navigation size={15} color={C.brand} style={{ marginTop: 1, flexShrink: 0 }} />
-                <div>
-                  <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>Travels up to {coach.travelRadiusKm}km</div>
-                  <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 1, ...fBody }}>
-                    {coach.willingToTravel ? "Willing to travel to your location" : "In-venue sessions only — travel not offered"}
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            <SectionLabel>Qualifications</SectionLabel>
-            <Card style={{ marginBottom: 16 }}>
-              {coach.qualifications.map((q, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: i === coach.qualifications.length - 1 ? "none" : `1px solid ${C.border}` }}>
-                  <Award size={14} color={C.success} style={{ flexShrink: 0 }} />
-                  <span style={{ fontSize: T.body, color: C.jet, ...fBody }}>{q}</span>
-                </div>
-              ))}
-            </Card>
-
-            <SectionLabel>Cancellation policy</SectionLabel>
-            <p style={{ fontSize: T.bodyLg, color: C.slate, lineHeight: 1.6, marginBottom: 6, ...fBody }}>{coach.cancellationPolicy}</p>
+            <CoachProfileAbout coach={coach} />
           </div>
         )}
 
@@ -416,12 +332,14 @@ export function ScreenCoachProfile({ nav, goBack, params = {}, favorites = [], t
             <SectionLabel>Packages</SectionLabel>
 
             <div className="cl-stagger">
-            {coach.packages.map((p, i) => {
+              {coach.packages.map((p, i) => {
               const selected = selectedPkgId === p.id;
               const isInactive = p.active === false;
               const isTimeIncompatible = Boolean(
                 pkgSelectedDate && pkgSelectedTime &&
-                !slotsForDate(pkgSelectedDate, coach, derivePackageAvailability(coach, p)).includes(pkgSelectedTime)
+                !slotsForDate(pkgSelectedDate, coach, isCurrentCoach && availabilityBlocks?.length
+                  ? availabilityBlocksToWeekly(availabilityBlocks, p, coachPackages)
+                  : derivePackageAvailability(coach, p)).includes(pkgSelectedTime)
               );
               const pkgDisabled = isInactive || isTimeIncompatible;
 
@@ -454,14 +372,22 @@ export function ScreenCoachProfile({ nav, goBack, params = {}, favorites = [], t
                         {p.name}
                       </div>
                       <div style={{ fontSize: T.label, color: C.slate, marginTop: 3, ...fBody }}>
-                        {p.type} · {p.duration} min · {p.mode}
+                        {p.packageType || p.type} · {p.duration || p.durationMinutes} min · {p.mode || p.locationType || "In-person"}
                       </div>
+                      {p.description && (
+                        <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.45, marginTop: 6, ...fBody }}>
+                          {p.description}
+                        </div>
+                      )}
                       <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 5 }}>
                         <Users size={11.5} color={C.slateLight} />
                         <span style={{ fontSize: T.captionLg, color: C.slate, ...fBody }}>
                           {p.maxParticipants ? `Up to ${p.maxParticipants} participant${p.maxParticipants > 1 ? "s" : ""}` : "1 participant"}
                         </span>
                       </div>
+                      {p.equipment && (
+                        <div style={{ fontSize: T.caption, color: C.slateLight, marginTop: 5, ...fBody }}>Bring: {p.equipment}</div>
+                      )}
                     </div>
                     <div style={{ textAlign: "right", flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
                       <div style={{ fontSize: T.title, fontWeight: 700, color: selected ? (C.brandIcon || C.brandColor || C.brand) : C.jet, ...fDisplay }}>
@@ -602,6 +528,8 @@ export function ScreenCoachProfile({ nav, goBack, params = {}, favorites = [], t
           <MessageCircle size={18} color={C.jet} />
         </button>
       </div>
+
+      <FullscreenImageViewer open={avatarOpen} onClose={() => setAvatarOpen(false)} src={coach.avatar} alt={`${pub.name} profile photo`} />
     </div>
   );
 }

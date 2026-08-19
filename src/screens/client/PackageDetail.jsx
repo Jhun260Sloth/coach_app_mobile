@@ -5,6 +5,7 @@ import {
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { COACHES } from "../../data/mockData";
+import { CONFIG } from "../../config";
 import { Avatar, Card, SectionLabel, Btn, TopBar, HandleTag } from "../../components/ui/Primitives";
 import { getPublicName } from "../../utils/name";
 import { packageLocationLabel } from "../../components/ui/ServicePackageForm";
@@ -18,9 +19,10 @@ import { formatTimeRange12, formatFullDateFromDate } from "./Booking";
  * the client into the booking flow (Who's attending → date & time…).
  */
 export function ScreenPackageDetail({ nav, params }) {
-  const { darkMode } = useApp();
+  const { darkMode, coachProfile } = useApp();
   const C = darkMode ? CD : CL;
-  const coach = COACHES.find((c) => c.id === params.coachId) || COACHES[0];
+  const listedCoach = COACHES.find((c) => c.id === params.coachId) || COACHES[0];
+  const coach = listedCoach.id === COACHES[1].id ? coachProfile : listedCoach;
   const pub = getPublicName(coach, "public");
   const pkg = coach.packages.find((p) => p.id === params.packageId) || coach.packages[0];
   const unavailable = pkg.active === false;
@@ -59,7 +61,7 @@ export function ScreenPackageDetail({ nav, params }) {
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: T.subtitleLg, fontWeight: 700, color: C.jet, ...fDisplay }}>{pub.name}</div>
             <HandleTag handle={pub.handle} size={11} color={C.slateLight} />
-            <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>{coach.sport} · {coach.suburb}</div>
+            <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>{(coach.sports || [coach.sport]).join(", ")} · {coach.suburb}</div>
           </div>
         </Card>
 
@@ -99,7 +101,7 @@ export function ScreenPackageDetail({ nav, params }) {
 
         <div style={{ display: "flex", alignItems: "flex-start", gap: 8, background: C.fog, borderRadius: 12, padding: 12, marginTop: 16 }}>
           <Info size={14} color={C.slate} style={{ marginTop: 2, flexShrink: 0 }} />
-          <span style={{ fontSize: T.label, color: C.slate, lineHeight: 1.5, ...fBody }}>Cancellation policy: {coach.cancellationPolicy}</span>
+          <span style={{ fontSize: T.label, color: C.slate, lineHeight: 1.5, ...fBody }}>Cancellation policy: {CONFIG.cancellationPolicy}</span>
         </div>
 
         <div style={{ display: "flex", gap: 8, marginTop: 14 }}>

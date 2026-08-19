@@ -1,13 +1,13 @@
 import React, { useState, useMemo } from "react";
 import {
-  User, ClipboardList, ShieldCheck, Info, MessagesSquare, MessageCircle,
+  ClipboardList, ShieldCheck, Info, MessagesSquare, MessageCircle,
   ChevronLeft, ChevronRight, CalendarX2, BellRing, CalendarClock,
   CheckCircle2, Banknote, LifeBuoy, LockKeyhole, Scale, BadgeDollarSign,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { CLIENT_PROFILES, BOOKING_ENQUIRY_MESSAGES, CONFIG } from "../../data/mockData";
 import {
-  Avatar, BottomActionBar, Card, SegTabs, EmptyState, StatusPill, Btn, TopBar, Row, SectionLabel, Badge, HandleTag, BottomSheet,
+  Avatar, BottomActionBar, Card, SegTabs, ViewModeToggle, EmptyState, StatusPill, Btn, TopBar, Row, SectionLabel, Badge, HandleTag, BottomSheet,
 } from "../../components/ui/Primitives";
 import { useApp } from "../../context/AppContext";
 import { getBookingClientName } from "../../utils/name";
@@ -65,6 +65,11 @@ export function ScreenCoachBookings({ nav, coachBookings }) {
     : tab === "upcoming"
       ? [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.COMPLETION_PENDING].includes(b.status)
       : [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.DECLINED, BOOKING_STATUS.EXPIRED, BOOKING_STATUS.CANCELLED].includes(b.status));
+  const emptyState = {
+    pending: { title: "No booking requests", body: "New requests and payments awaiting action will appear here." },
+    upcoming: { title: "No upcoming sessions", body: "Confirmed sessions will appear here once they are booked." },
+    completed: { title: "No completed bookings", body: "Finished and closed bookings will appear here." },
+  }[tab];
   const bookingsOnDate = (d) => dated.filter((b) => b._date && sameDay(b._date, d));
 
   const weeks = calMode === "month" ? buildMonthGrid(cursor) : [Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(cursor), i))];
@@ -77,30 +82,39 @@ export function ScreenCoachBookings({ nav, coachBookings }) {
 
   const renderBookingCard = (b, i) => {
     const cn = clientNameFor(b);
+    const detailScreen = b.status === BOOKING_STATUS.PENDING
+      ? "coach-booking-detail"
+      : b.status === BOOKING_STATUS.AWAITING_PAYMENT
+        ? "booking-awaiting-payment"
+        : "coach-session-detail";
     return (
-    <Card key={b.id} style={{ marginBottom: 10, ...(i !== undefined ? { animationDelay: `${Math.min(i, 8) * 45}ms` } : {}) }} onClick={() => nav(b.status === BOOKING_STATUS.PENDING ? "coach-booking-detail" : b.status === BOOKING_STATUS.AWAITING_PAYMENT ? "booking-awaiting-payment" : "coach-session-detail", { id: b.id })}>
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", gap: 10 }}>
-          <Avatar name={cn.name} size={40} />
-          <div>
-            <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fDisplay }}>
-              {cn.name}
-              {cn.handle && <span style={{ fontWeight: 500, color: C.slateLight, marginLeft: 6, fontSize: T.label, ...fBody }}>{cn.handle}</span>}
-            </div>
-            <div style={{ fontSize: T.label, color: C.slate, ...fBody }}>{b.service}</div>
-            <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{b.date} · {b.time} · {b.mode}</div>
+    <Card
+      key={b.id}
+      ariaLabel={`Open ${b.service} booking with ${cn.name}`}
+      onClick={() => nav(detailScreen, { id: b.id })}
+      style={{ marginBottom: 12, padding: 14, boxShadow: "0 4px 16px rgba(22,24,29,.05)", ...(i !== undefined ? { animationDelay: `${Math.min(i, 8) * 45}ms` } : {}) }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <Avatar name={cn.name} size={46} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 6, minWidth: 0 }}>
+            <div style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...fDisplay }}>{cn.name}</div>
+            {cn.handle && <HandleTag handle={cn.handle} size={11.5} color={C.slateLight} />}
           </div>
+          <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: T.body, fontWeight: 600, color: C.brand, marginTop: 2, ...fBody }}>{b.service}</div>
+          <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 4, lineHeight: 1.35, ...fBody }}>{b.date} · {b.time}</div>
+          <div style={{ fontSize: T.caption, color: C.slateLight, marginTop: 2, ...fBody }}>{b.mode}</div>
         </div>
+        <ChevronRight size={17} color={C.slateLight} style={{ flexShrink: 0 }} />
+      </div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 12, paddingTop: 10, borderTop: `1px solid ${C.border}` }}>
         <StatusPill status={b.status} />
+        {b.status === BOOKING_STATUS.COMPLETED && (
+          <span style={{ fontSize: T.label, color: C.success, fontWeight: 600, textAlign: "right", ...fBody }}>
+            ${Math.round(b.price * (1 - CONFIG.commissionRate))} payout released
+          </span>
+        )}
       </div>
-      <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-        <Btn size="sm" variant="primary" full icon={User} onClick={(e) => { e.stopPropagation(); nav(b.status === BOOKING_STATUS.PENDING ? "coach-booking-detail" : b.status === BOOKING_STATUS.AWAITING_PAYMENT ? "booking-awaiting-payment" : "coach-session-detail", { id: b.id }); }}>View details</Btn>
-      </div>
-      {b.status === BOOKING_STATUS.COMPLETED && (
-        <div style={{ marginTop: 8, fontSize: T.label, color: C.success, fontWeight: 600, ...fBody }}>
-          Payout released: ${Math.round(b.price * (1 - CONFIG.commissionRate))}
-        </div>
-      )}
     </Card>
     );
   };
@@ -108,12 +122,15 @@ export function ScreenCoachBookings({ nav, coachBookings }) {
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "18px 18px 0" }}>
-        <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, marginBottom: 14, ...fDisplay }}>Bookings</div>
-        <div style={{ marginBottom: 10 }}>
-          <SegTabs value={view} onChange={setView} items={[{ value: "list", label: "List" }, { value: "calendar", label: "Calendar" }]} />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
+          <div>
+            <div style={{ fontSize: T.display, fontWeight: 700, color: C.jet, ...fDisplay }}>Bookings</div>
+            <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{view === "list" ? "Manage requests and sessions" : "View your booking schedule"}</div>
+          </div>
+          <ViewModeToggle value={view} onChange={setView} ariaLabel="Booking view" />
         </div>
         {view === "list" && (
-          <SegTabs value={tab} onChange={setTab} items={[{ value: "pending", label: "Requests" }, { value: "upcoming", label: "Upcoming" }, { value: "completed", label: "History" }]} />
+          <SegTabs value={tab} onChange={setTab} items={[{ value: "pending", label: "Requests" }, { value: "upcoming", label: "Upcoming" }, { value: "completed", label: "Completed" }]} />
         )}
         {view === "calendar" && (
           <>
@@ -130,10 +147,10 @@ export function ScreenCoachBookings({ nav, coachBookings }) {
           </>
         )}
       </div>
-      <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: 116 }} className="cl-hide-scrollbar">
+      <div style={{ flex: 1, overflowY: "auto", padding: "14px 18px 0", paddingBottom: 116 }} className="cl-hide-scrollbar">
         {view === "list" && (
           <>
-            {list.length === 0 && <EmptyState icon={ClipboardList} title="Nothing here" body="Bookings in this stage will appear here." />}
+            {list.length === 0 && <EmptyState icon={ClipboardList} title={emptyState.title} body={emptyState.body} />}
             <div className="cl-stagger">
               {list.map((b, i) => renderBookingCard(b, i))}
             </div>

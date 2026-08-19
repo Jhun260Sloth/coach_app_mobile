@@ -15,7 +15,7 @@ export function ScreenCoachReels({ nav, toast, coachMedia = [], addMedia, remove
 
   /* One tile in the reels & photos grid. Video tiles use the actual clip so
      the preview always matches what clients will watch. */
-  function MediaTile({ item, onDelete }) {
+  function MediaTile({ item, onDelete, onOpen }) {
     const isReel = item.type === "reel";
     return (
       <div style={{ position: "relative", minWidth: 0 }}>
@@ -23,8 +23,13 @@ export function ScreenCoachReels({ nav, toast, coachMedia = [], addMedia, remove
           style={{
             width: "100%", aspectRatio: "4 / 5", borderRadius: 16, overflow: "hidden", position: "relative",
             background: C.fog, border: `1px solid ${C.border}`,
-            display: "flex", alignItems: "center", justifyContent: "center",
+            display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
           }}
+          role="button"
+          tabIndex={0}
+          aria-label={`Open ${item.caption || (isReel ? "reel" : "photo")}`}
+          onClick={onOpen}
+          onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onOpen?.(); } }}
         >
           {item.url ? (
             isReel ? (
@@ -44,7 +49,7 @@ export function ScreenCoachReels({ nav, toast, coachMedia = [], addMedia, remove
           )}
           <button
             type="button"
-            onClick={onDelete}
+            onClick={(event) => { event.stopPropagation(); onDelete(); }}
             aria-label={`Remove ${item.caption || "media"}`}
             title="Remove media"
             style={{ position: "absolute", top: 6, right: 6, width: 34, height: 34, minWidth: 34, minHeight: 34, padding: 0, borderRadius: 99, background: C.white, border: `1px solid ${C.border}`, boxShadow: "0 2px 6px rgba(22,24,29,.12)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
@@ -97,7 +102,12 @@ export function ScreenCoachReels({ nav, toast, coachMedia = [], addMedia, remove
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", columnGap: 10, rowGap: 18 }}>
               {coachMedia.map((item) => (
-                <MediaTile key={item.id} item={item} onDelete={() => setDeleteTarget(item)} />
+                <MediaTile
+                  key={item.id}
+                  item={item}
+                  onDelete={() => setDeleteTarget(item)}
+                  onOpen={() => nav("coach-media", { coachId: coach.id, mediaId: item.id, manage: true })}
+                />
               ))}
             </div>
           )}

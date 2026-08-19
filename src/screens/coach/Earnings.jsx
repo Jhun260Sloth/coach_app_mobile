@@ -19,7 +19,7 @@ export function ScreenCoachEarnings({ nav, goBack, coachBookings }) {
   const net = gross - commission;
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", background: C.white }}>
-      <TopBar title="Earnings" onBack={() => goBack("coach-profile-edit")} />
+      <TopBar title="Earnings & payouts" onBack={() => goBack("coach-profile-edit")} />
 
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "16px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))" }} className="cl-hide-scrollbar">
 
@@ -50,7 +50,7 @@ export function ScreenCoachEarnings({ nav, goBack, coachBookings }) {
           <SectionLabel>Recent transactions</SectionLabel>
           {completed.length > 0 && (
             <button type="button" onClick={() => nav("coach-history")} style={{ minHeight: 44, padding: "0 4px", background: "transparent", border: "none", color: C.brand, fontWeight: 600, fontSize: T.label, cursor: "pointer", ...fBody }}>
-              View all
+              Payout history
             </button>
           )}
         </div>

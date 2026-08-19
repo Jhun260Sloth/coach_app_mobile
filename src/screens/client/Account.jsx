@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Edit3, Bell, CreditCard, Fingerprint, Lock, FileText, Shield, HelpCircle, LogOut, Users, ChevronRight,
   Mail, Phone, User, Plus, Trash2, Eye, EyeOff, AlertTriangle, Camera, MapPin, Target, Calendar, UserPlus, Download,
@@ -61,7 +61,7 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
   };
 
   const [notifPrefs, setNotifPrefs] = useState({
-    push: true, email: true, sms: false, bookingReminders: true, messages: true, promos: false,
+    push: true, email: true, sms: false, whatsapp: false, bookingReminders: true, messages: true, promos: false,
   });
   const toggleNotif = (key) => setNotifPrefs((p) => ({ ...p, [key]: !p[key] }));
 
@@ -157,6 +157,79 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
   };
 
   const [showPw, setShowPw] = useState(false);
+
+  const [deactivateStep, setDeactivateStep] = useState("confirm");
+  const [deactivationCode, setDeactivationCode] = useState(["", "", "", "", "", ""]);
+  const [deactivationError, setDeactivationError] = useState(false);
+  const [resendSeconds, setResendSeconds] = useState(0);
+  const deactivationInputsRef = useRef([]);
+
+  useEffect(() => {
+    if (resendSeconds <= 0) return undefined;
+    const timer = window.setInterval(() => setResendSeconds((seconds) => Math.max(0, seconds - 1)), 1000);
+    return () => window.clearInterval(timer);
+  }, [resendSeconds]);
+
+  const resetDeactivation = () => {
+    setDeactivateStep("confirm");
+    setDeactivationCode(["", "", "", "", "", ""]);
+    setDeactivationError(false);
+    setResendSeconds(0);
+  };
+  const openDeactivate = () => {
+    resetDeactivation();
+    setSheet("deactivate");
+  };
+  const closeDeactivate = () => {
+    setSheet(null);
+    resetDeactivation();
+  };
+  const sendDeactivationCode = () => {
+    if (!profile.email) {
+      toast("Add an email before deactivating");
+      return;
+    }
+    setDeactivateStep("verify");
+    setDeactivationCode(["", "", "", "", "", ""]);
+    setDeactivationError(false);
+    setResendSeconds(30);
+    toast("Verification code sent");
+    window.setTimeout(() => deactivationInputsRef.current[0]?.focus(), 120);
+  };
+  const setDeactivationDigit = (index, value) => {
+    const digit = value.replace(/\D/g, "").slice(-1);
+    setDeactivationCode((current) => current.map((item, itemIndex) => itemIndex === index ? digit : item));
+    setDeactivationError(false);
+    if (digit && index < 5) deactivationInputsRef.current[index + 1]?.focus();
+  };
+  const onDeactivationKeyDown = (index, event) => {
+    if (event.key === "Backspace" && !deactivationCode[index] && index > 0) deactivationInputsRef.current[index - 1]?.focus();
+  };
+  const onDeactivationPaste = (event) => {
+    const digits = event.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6).split("");
+    if (!digits.length) return;
+    event.preventDefault();
+    setDeactivationCode(Array.from({ length: 6 }, (_, index) => digits[index] || ""));
+    setDeactivationError(false);
+    deactivationInputsRef.current[Math.min(digits.length, 6) - 1]?.focus();
+  };
+  const verifyAndDeactivate = () => {
+    const code = deactivationCode.join("");
+    if (code.length !== 6 || code === "000000") {
+      setDeactivationError(true);
+      return;
+    }
+    closeDeactivate();
+    toast("Account deactivated securely");
+    resetNav("splash", {}, "client");
+  };
+  const resendDeactivationCode = () => {
+    setDeactivationCode(["", "", "", "", "", ""]);
+    setDeactivationError(false);
+    setResendSeconds(30);
+    toast("New verification code sent");
+    deactivationInputsRef.current[0]?.focus();
+  };
 
   const closeSheet = () => setSheet(null);
 
@@ -265,7 +338,7 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
 
         <div style={{ marginTop: 22 }}>
           <Row2 icon={LogOut} label="Log out" onClick={() => setSheet("logout")} />
-          <button onClick={() => setSheet("deactivate")} style={{ width: "100%", textAlign: "left", padding: "13px 4px", background: "none", border: "none", cursor: "pointer" }}>
+          <button onClick={openDeactivate} style={{ width: "100%", minHeight: 44, textAlign: "left", padding: "13px 4px", background: "none", border: "none", cursor: "pointer" }}>
             <span style={{ fontSize: T.body, color: C.danger, fontWeight: 500, ...fBody }}>Deactivate account</span>
           </button>
         </div>
@@ -521,10 +594,16 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
       </BottomSheet>
 
       {/* Notification preferences */}
-      <BottomSheet open={sheet === "notif"} onClose={closeSheet} title="Notification preferences" heightPct={70}>
+      <BottomSheet open={sheet === "notif"} onClose={closeSheet} title="Notification preferences" heightPct={84}>
+        <SectionLabel>Channels</SectionLabel>
         <NotifRow label="Push notifications" sub="Alerts on this device" prefKey="push" />
-        <NotifRow label="Email notifications" sub="Updates sent to your inbox" prefKey="email" />
-        <NotifRow label="SMS notifications" sub="Text messages for urgent updates" prefKey="sms" />
+        <NotifRow label="Email notifications" sub="Receipts, confirmations & digests" prefKey="email" />
+        <NotifRow label="SMS notifications" sub="Urgent day-of updates" prefKey="sms" />
+        <NotifRow label="WhatsApp notifications" sub="Urgent day-of updates" prefKey="whatsapp" />
+        <div style={{ fontSize: T.captionLg, color: C.slateLight, margin: "8px 0 16px", lineHeight: 1.5, ...fBody }}>
+          Payment receipts and booking confirmations are always sent by email.
+        </div>
+        <SectionLabel>Updates</SectionLabel>
         <NotifRow label="Booking reminders" sub="Reminders before your sessions" prefKey="bookingReminders" />
         <NotifRow label="Messages" sub="New messages from coaches" prefKey="messages" />
         <NotifRow label="Promotions & offers" sub="Deals and product news" prefKey="promos" />
@@ -640,18 +719,78 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
         </div>
       </BottomSheet>
 
-      {/* Deactivate account confirmation */}
-      <BottomSheet open={sheet === "deactivate"} onClose={closeSheet} title="Deactivate account" heightPct={46}>
-        <div style={{ display: "flex", gap: 10, padding: 12, background: C.warnTint, borderRadius: 14, marginBottom: 16 }}>
-          <AlertTriangle size={17} color={C.danger} style={{ flexShrink: 0, marginTop: 1 }} />
-          <div style={{ fontSize: T.labelLg, color: C.jet, lineHeight: 1.5, ...fBody }}>
-            Deactivating your account will hide your profile and cancel any upcoming bookings. This can be undone by logging back in within 30 days.
-          </div>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <Btn full variant="danger" onClick={() => { closeSheet(); toast("Account deactivated"); resetNav("splash", {}, "client"); }}>Deactivate account</Btn>
-          <Btn full variant="secondary" onClick={closeSheet}>Cancel</Btn>
-        </div>
+      {/* Secure account deactivation */}
+      <BottomSheet open={sheet === "deactivate"} onClose={closeDeactivate} title={deactivateStep === "confirm" ? "Deactivate account" : "Verify deactivation"} heightPct={deactivateStep === "confirm" ? 52 : 68}>
+        {deactivateStep === "confirm" ? (
+          <>
+            <div style={{ width: 52, height: 52, borderRadius: 16, background: C.dangerTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+              <AlertTriangle size={23} color={C.danger} />
+            </div>
+            <div style={{ fontSize: T.title, fontWeight: 700, color: C.jet, marginBottom: 7, ...fDisplay }}>Take a break from CoachLink?</div>
+            <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.6, marginBottom: 16, ...fBody }}>
+              Your profile will be hidden and upcoming bookings will be cancelled. You can restore your account by signing in again within 30 days.
+            </div>
+            <Card style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 18, background: C.fog }}>
+              <Mail size={17} color={C.slate} style={{ flexShrink: 0, marginTop: 1 }} />
+              <div>
+                <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>Email verification required</div>
+                <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, marginTop: 3, ...fBody }}>We’ll send a six-digit code to {profile.email || "your registered email"} before deactivating.</div>
+              </div>
+            </Card>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <Btn full variant="danger" icon={Mail} onClick={sendDeactivationCode}>Send verification code</Btn>
+              <Btn full variant="secondary" onClick={closeDeactivate}>Keep my account</Btn>
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ width: 52, height: 52, borderRadius: 16, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+              <Mail size={22} color={C.brand} />
+            </div>
+            <div style={{ fontSize: T.title, fontWeight: 700, color: C.jet, ...fDisplay }}>Check your email</div>
+            <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.55, marginTop: 6, marginBottom: 18, ...fBody }}>
+              Enter the six-digit code sent to <span style={{ color: C.jet, fontWeight: 600 }}>{profile.email}</span>.
+            </div>
+
+            {deactivationError && (
+              <div role="alert" style={{ display: "flex", gap: 8, padding: "10px 12px", borderRadius: 12, border: `1px solid ${C.dangerBorder}`, background: C.dangerTint, marginBottom: 14 }}>
+                <AlertTriangle size={15} color={C.danger} style={{ flexShrink: 0, marginTop: 1 }} />
+                <span style={{ fontSize: T.labelLg, color: C.danger, lineHeight: 1.45, ...fBody }}>That code is invalid or incomplete. Check the email or request a new code.</span>
+              </div>
+            )}
+
+            <div onPaste={onDeactivationPaste} style={{ display: "grid", gridTemplateColumns: "repeat(6, minmax(0, 1fr))", gap: 7 }}>
+              {deactivationCode.map((digit, index) => (
+                <input
+                  key={index}
+                  ref={(element) => { deactivationInputsRef.current[index] = element; }}
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete={index === 0 ? "one-time-code" : "off"}
+                  aria-label={`Deactivation code digit ${index + 1} of 6`}
+                  value={digit}
+                  maxLength={1}
+                  onChange={(event) => setDeactivationDigit(index, event.target.value)}
+                  onKeyDown={(event) => onDeactivationKeyDown(index, event)}
+                  style={{ width: "100%", height: 52, minWidth: 0, boxSizing: "border-box", borderRadius: 13, border: `1.5px solid ${deactivationError ? C.dangerBorderSoft : digit ? C.brand : C.border}`, background: C.white, color: C.jet, textAlign: "center", outline: "none", fontSize: T.heading, fontWeight: 700, ...fDisplay }}
+                />
+              ))}
+            </div>
+
+            <div style={{ minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center", marginTop: 8 }}>
+              {resendSeconds > 0 ? (
+                <span style={{ fontSize: T.body, color: C.slateLight, ...fBody }}>Resend code in 0:{String(resendSeconds).padStart(2, "0")}</span>
+              ) : (
+                <button type="button" onClick={resendDeactivationCode} style={{ minHeight: 44, padding: "0 10px", border: "none", background: "transparent", color: C.brand, cursor: "pointer", fontSize: T.body, fontWeight: 600, ...fBody }}>Resend code</button>
+              )}
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>
+              <Btn full variant="danger" disabled={deactivationCode.join("").length !== 6} onClick={verifyAndDeactivate}>Verify & deactivate</Btn>
+              <Btn full variant="secondary" onClick={() => { setDeactivateStep("confirm"); setDeactivationError(false); }}>Back</Btn>
+            </div>
+          </>
+        )}
       </BottomSheet>
 
       <ConfirmDialog

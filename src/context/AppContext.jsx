@@ -9,6 +9,7 @@ import { COACHES } from "../data/coaches";
 import { getCoachMedia } from "../data/media";
 import { CURRENT_CLIENT, isHandleTaken as isHandleTakenBase } from "../data/users";
 import { getPublicName, fullNameOf } from "../utils/name";
+import { formatCoachLocation, getCoachPublicProfile } from "../utils/coachProfile";
 import { useUserLocation } from "../utils/useUserLocation";
 import { applyTheme } from "../theme/theme";
 
@@ -76,6 +77,7 @@ export function AppProvider({ children }) {
   const [coachMedia, setCoachMedia] = useState(() => getCoachMedia(COACHES[1].id));
   const [availabilityBlocks, setAvailabilityBlocks] = useState(INITIAL_AVAILABILITY_BLOCKS);
   const [coachAvailableNow, setCoachAvailableNow] = useState(true);
+  const [coachBookingType, setCoachBookingType] = useState(COACHES[1].instantBook ? "instant" : "request");
 
   // ---- Admin state ----
   const [verificationQueue, setVerificationQueue] = useState(ADMIN_VERIFICATION_QUEUE);
@@ -137,6 +139,17 @@ export function AppProvider({ children }) {
     setParams(nextParams);
     setRole(nextRole);
   };
+
+  // One public profile model powers both the coach preview and the client
+  // profile. Directory data remains the fallback for coaches that are not the
+  // current signed-in coach.
+  const coachProfile = getCoachPublicProfile({
+    base: COACHES[1],
+    onboarding: coachOnboarding,
+    packages: coachPackages,
+    bookingType: coachBookingType,
+    availableNow: coachAvailableNow,
+  });
 
   const setCoachNotifications = (updater) => {
     setNotifications((all) => {
@@ -682,7 +695,7 @@ export function AppProvider({ children }) {
         name: coachOnboarding.name || "New Coach",
         sport: (coachOnboarding.primarySports && coachOnboarding.primarySports[0]) || "Coaching",
         type: documents.map((d) => d.label).join(" + "),
-        suburb: coachOnboarding.location ? `${coachOnboarding.location.suburb}, ${coachOnboarding.location.state}` : "",
+        suburb: formatCoachLocation(coachOnboarding.location),
         experience: coachOnboarding.yearsExperience || "",
         documents,
         submittedByUser: true,
@@ -745,6 +758,7 @@ export function AppProvider({ children }) {
     setCoachPackages(COACHES[1].packages);
     setAvailabilityBlocks(INITIAL_AVAILABILITY_BLOCKS);
     setCoachMedia(getCoachMedia(COACHES[1].id));
+    setCoachBookingType(COACHES[1].instantBook ? "instant" : "request");
     setIsFirstTimeClient(false);
     setDiscoveryPrefs({ seeded: true });
   };
@@ -773,9 +787,9 @@ export function AppProvider({ children }) {
     draft, setDraft,
     // Coach
     verified, verificationStatus, reachedDashboardAfterVerification, setReachedDashboardAfterVerification,
-    coachOnboarding, updateCoachOnboarding,
+    coachOnboarding, updateCoachOnboarding, coachProfile,
     coachPackages, savePackage, removePackage,
-    coachMedia, addMedia, removeMedia,
+    coachMedia, addMedia, removeMedia, coachBookingType, setCoachBookingType,
     availabilityBlocks, setAvailabilityBlocks,
     coachAvailableNow, setCoachAvailableNow,
     addCoachRole: () => setHasCoachRole(true),

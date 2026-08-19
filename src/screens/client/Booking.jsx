@@ -176,15 +176,18 @@ export function formatTimeRange12(t, durationMinutes) {
 // (screen directory, stale history, reset state). Rather than crashing on
 // missing params, fall back to the first coach in the directory and their
 // first package so the flow always has something coherent to render.
-export function resolveBookingCoachPkg(params, draft) {
-  const coach = COACHES.find((c) => c.id === (params?.coachId ?? draft?.coach?.id)) || COACHES[0];
+export function resolveBookingCoachPkg(params, draft, coachOverride) {
+  const coachId = params?.coachId ?? draft?.coach?.id;
+  const coach = coachOverride?.id === coachId
+    ? coachOverride
+    : COACHES.find((c) => c.id === coachId) || COACHES[0];
   const pkg = (coach?.packages || []).find((p) => p.id === (params?.packageId ?? draft?.pkg?.id)) || coach?.packages?.[0];
   return { coach, pkg };
 }
 
-export function buildFallbackDraft(params, draft) {
+export function buildFallbackDraft(params, draft, coachOverride) {
   if (draft && draft.coach && draft.pkg) return draft;
-  const { coach, pkg } = resolveBookingCoachPkg(params, draft);
+  const { coach, pkg } = resolveBookingCoachPkg(params, draft, coachOverride);
   return {
     coach, pkg,
     day: params?.presetDate ? formatFullDateFromDate(new Date(params.presetDate)) : "",
@@ -214,9 +217,9 @@ const emptyChildDraft = {
  * both already know who the session is for.
  */
 export function ScreenBookingParticipants({ nav, params, children = [], addChild, toast }) {
-  const { darkMode, clientIdentity } = useApp();
+  const { darkMode, clientIdentity, coachProfile } = useApp();
   const C = darkMode ? CD : CL;
-  const { coach, pkg } = resolveBookingCoachPkg(params, null);
+  const { coach, pkg } = resolveBookingCoachPkg(params, null, coachProfile);
   const pub = getPublicName(coach, "public");
   const allowsMultiple = packageAllowsMultipleParticipants(pkg);
   // The package's "Maximum participants" (set by the coach) caps how many
@@ -462,9 +465,9 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
 }
 
 export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings = [] }) {
-  const { darkMode, children } = useApp();
+  const { darkMode, children, coachProfile } = useApp();
   const C = darkMode ? CD : CL;
-  const { coach, pkg } = resolveBookingCoachPkg(params, draft);
+  const { coach, pkg } = resolveBookingCoachPkg(params, draft, coachProfile);
   const pub = getPublicName(coach, "public");
 
   // Date & time are chosen earlier in the flow (the coach's Packages tab, or
@@ -663,9 +666,9 @@ export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings =
 }
 
 export function ScreenBookingReview({ nav, goBack, params, draft, setDraft, toast, children = [], bookings = [], addBooking }) {
-  const { darkMode, clientIdentity, clientPrefs } = useApp();
+  const { darkMode, clientIdentity, clientPrefs, coachProfile } = useApp();
   const C = darkMode ? CD : CL;
-  const d = buildFallbackDraft(params, draft);
+  const d = buildFallbackDraft(params, draft, coachProfile);
   const pub = getPublicName(d.coach, "public");
   // Who's attending was already chosen on the previous step (ScreenBookingParticipants).
   const participants = d.participants || ["self"];
@@ -806,7 +809,7 @@ export function ScreenBookingReview({ nav, goBack, params, draft, setDraft, toas
 
         <Card style={{ marginBottom: 14 }}>
           <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, marginBottom: 6, ...fDisplay }}>Cancellation policy</div>
-          <div style={{ fontSize: T.labelLg, color: C.slate, lineHeight: 1.55, ...fBody }}>{d.coach.cancellationPolicy}</div>
+          <div style={{ fontSize: T.labelLg, color: C.slate, lineHeight: 1.55, ...fBody }}>{CONFIG.cancellationPolicy}</div>
         </Card>
 
         {includesMinor && (
@@ -1015,10 +1018,11 @@ export function ScreenBookingReview({ nav, goBack, params, draft, setDraft, toas
 }
 
 export function ScreenPayment({ nav, params, draft, bookings = [], toast, markBookingPaid, biometric, offline }) {
-  const { darkMode } = useApp();
+  const { darkMode, coachProfile } = useApp();
   const C = darkMode ? CD : CL;
   const booking = params?.bookingId ? bookings.find((item) => item.id === params.bookingId) : null;
-  const bookingCoach = booking ? COACHES.find((coach) => coach.id === booking.coachId) : null;
+  const bookingCoachSeed = booking ? COACHES.find((coach) => coach.id === booking.coachId) : null;
+  const bookingCoach = bookingCoachSeed?.id === coachProfile?.id ? coachProfile : bookingCoachSeed;
   const bookingPackage = bookingCoach?.packages.find((pkg) => pkg.name === booking.service) || bookingCoach?.packages[0];
   const bookingDraft = booking && bookingCoach && bookingPackage ? {
     coach: bookingCoach,
@@ -1031,7 +1035,7 @@ export function ScreenPayment({ nav, params, draft, bookings = [], toast, markBo
     sessionCount: 1,
     total: Number(booking.price),
   } : null;
-  const d = buildFallbackDraft(params, bookingDraft || draft);
+  const d = buildFallbackDraft(params, bookingDraft || draft, coachProfile);
   const pub = getPublicName(d.coach, "public");
   const [confirming, setConfirming] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -1156,10 +1160,11 @@ export function ScreenPayment({ nav, params, draft, bookings = [], toast, markBo
 }
 
 export function ScreenBookingConfirmation({ nav, params, draft, bookings = [], toast }) {
-  const { darkMode } = useApp();
+  const { darkMode, coachProfile } = useApp();
   const C = darkMode ? CD : CL;
   const booking = params?.bookingId ? bookings.find((item) => item.id === params.bookingId) : null;
-  const bookingCoach = booking ? COACHES.find((coach) => coach.id === booking.coachId) : null;
+  const bookingCoachSeed = booking ? COACHES.find((coach) => coach.id === booking.coachId) : null;
+  const bookingCoach = bookingCoachSeed?.id === coachProfile?.id ? coachProfile : bookingCoachSeed;
   const bookingPackage = bookingCoach?.packages.find((pkg) => pkg.name === booking.service) || bookingCoach?.packages[0];
   const bookingDraft = booking && bookingCoach && bookingPackage ? {
     coach: bookingCoach,
@@ -1170,7 +1175,7 @@ export function ScreenBookingConfirmation({ nav, params, draft, bookings = [], t
     participants: booking.participants || "You",
     total: Number(booking.price),
   } : null;
-  const d = buildFallbackDraft(params, bookingDraft || draft);
+  const d = buildFallbackDraft(params, bookingDraft || draft, coachProfile);
   const pub = getPublicName(d.coach, "public");
   const [synced, setSynced] = useState(false);
   const [locShare, setLocShare] = useState(false);

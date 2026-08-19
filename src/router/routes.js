@@ -44,6 +44,7 @@ import { ScreenCoachNotifications } from "../screens/coach/Notifications";
 import { ScreenCoachCalendar } from "../screens/coach/Calendar";
 import { ScreenCoachBookings, ScreenCoachBookingDetail } from "../screens/coach/Bookings";
 import { ScreenCoachProfileEdit } from "../screens/coach/ProfileEdit";
+import { ScreenCoachReviews } from "../screens/coach/CoachReviews";
 import { ScreenCoachReels } from "../screens/coach/Reels";
 import { ScreenCoachPackageForm } from "../screens/coach/PackageForm";
 import { ScreenCoachEarnings } from "../screens/coach/Earnings";
@@ -131,6 +132,7 @@ export const ROUTES = {
   "booking-awaiting-payment": ScreenCoachBookingDetail,
   "coach-session-detail": ScreenCoachBookingDetail,
   "coach-profile-edit": ScreenCoachProfileEdit,
+  "coach-reviews": ScreenCoachReviews,
   "coach-reels": ScreenCoachReels,
   "coach-create-package": ScreenCoachPackageForm,
   "coach-edit-package": ScreenCoachPackageForm,
@@ -215,7 +217,8 @@ const ROUTE_METADATA_BASE = {
   "coach-booking-detail": { title: "Coach Booking Request Detail", category: "Coach", role: "coach" },
   "booking-awaiting-payment": { title: "Coach: Waiting for Payment", category: "Coach", role: "coach" },
   "coach-session-detail": { title: "Coach Confirmed Session Detail", category: "Coach", role: "coach" },
-  "coach-profile-edit": { title: "Edit Coach Public Profile", category: "Coach", role: "coach" },
+  "coach-profile-edit": { title: "My Coaching Profile", category: "Coach", role: "coach" },
+  "coach-reviews": { title: "Coach Reviews Management", category: "Coach", role: "coach" },
   "coach-reels": { title: "Manage Video Reels & Photos", category: "Coach", role: "coach" },
   "coach-create-package": { title: "Create Service Package", category: "Coach", role: "coach" },
   "coach-edit-package": { title: "Edit Service Package", category: "Coach", role: "coach" },

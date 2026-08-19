@@ -2,14 +2,15 @@ import React, { useState, useMemo, useEffect } from "react";
 import {
   WifiOff, Calendar, ClipboardList, Heart, Download, Clock, MessageCircle, Star, CheckCircle2,
   AlertTriangle, CreditCard, ShieldCheck, LifeBuoy, Hourglass, RefreshCcw, ChevronLeft, ChevronRight, CalendarX2, CalendarDays,
-  Banknote, List as ListIcon, Scale, BadgeDollarSign,
+  Banknote, Scale, BadgeDollarSign,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T, LAYOUT } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { COACHES } from "../../data/mockData";
+import { CONFIG } from "../../config";
 import { ADDITIONAL_CHARGE_STATUS, BOOKING_STATUS, PAYMENT_STATUS } from "../../data/bookings";
 import {
-  Avatar, BottomActionBar, Card, Badge, SegTabs, SectionLabel, Btn, TopBar, EmptyState, StatusPill, Chip, BottomSheet, Row, ScrollFadeRow, HandleTag,
+  Avatar, BottomActionBar, Card, Badge, SegTabs, ViewModeToggle, SectionLabel, Btn, TopBar, EmptyState, StatusPill, Chip, BottomSheet, Row, ScrollFadeRow, HandleTag,
 } from "../../components/ui/Primitives";
 import { StatusBanner } from "../../systems/StateSystem";
 import { getBookingCoachName } from "../../utils/name";
@@ -50,9 +51,9 @@ function buildMonthGrid(cursor) {
 }
 
 /* ---- cancellation policy math (used by the Cancellation Summary sheet below) ----
-   Coach policy strings follow a "Tier — rule" format, e.g. "Moderate — free reschedule
-   up to 24h before session, 50% refund inside 24h." We read the tier keyword to pick
-   a refund rule, then compare against how many hours remain until the session. */
+   CoachLink uses one platform-wide cancellation policy for every coach: free
+   cancellation up to 24h before the session, 50% refund inside 24h. We compare
+   against how many hours remain until the session to pick the refund rule. */
 function bookingDateTime(dateStr, timeStr) {
   const d = parseBookingDate(dateStr);
   if (!d) return null;
@@ -69,26 +70,19 @@ function bookingDateTime(dateStr, timeStr) {
 }
 
 function getCancellationOutcome(booking, coach) {
-  const policyText = coach?.cancellationPolicy || "";
-  const tier = /strict/i.test(policyText) ? "strict" : /moderate/i.test(policyText) ? "moderate" : /flexible/i.test(policyText) ? "flexible" : "standard";
   const sessionAt = bookingDateTime(booking.date, booking.time);
   const hoursUntil = sessionAt ? (sessionAt.getTime() - Date.now()) / 36e5 : null;
 
   let refundPct = 1;
   let ruleLabel;
-  if (tier === "flexible") {
-    if (hoursUntil == null || hoursUntil >= 12) { refundPct = 1; ruleLabel = "Cancelled 12h+ before the session — fully refundable under this coach's flexible policy."; }
-    else { refundPct = 0; ruleLabel = "Cancelled inside the 12-hour free-cancellation window — this coach's policy makes it non-refundable."; }
-  } else if (tier === "moderate") {
-    if (hoursUntil == null || hoursUntil >= 24) { refundPct = 1; ruleLabel = "Cancelled 24h+ before the session — fully refundable under this coach's moderate policy."; }
-    else { refundPct = 0.5; ruleLabel = "Cancelled inside 24h — this coach's moderate policy refunds 50% of the session fee."; }
-  } else if (tier === "strict") {
-    if (hoursUntil == null || hoursUntil >= 48) { refundPct = 0.5; ruleLabel = "Cancelled 48h+ before the session — this coach's strict policy refunds 50% of the session fee."; }
-    else { refundPct = 0; ruleLabel = "Cancelled inside 48h — this coach's strict policy is non-refundable."; }
+  if (hoursUntil == null || hoursUntil >= 24) {
+    refundPct = 1;
+    ruleLabel = "Cancelled 24h+ before the session — fully refundable under CoachLink's cancellation policy.";
   } else {
-    refundPct = 1; ruleLabel = "Standard policy — fully refundable.";
+    refundPct = 0.5;
+    ruleLabel = "Cancelled inside 24h — CoachLink's cancellation policy refunds 50% of the session fee.";
   }
-  return { refundPct, ruleLabel, hoursUntil, tier };
+  return { refundPct, ruleLabel, hoursUntil, tier: "standard" };
 }
 
 export function ScreenClientDashboard({ nav, bookings = [], additionalCharges = [], offline, toast, cancelBooking, rescheduleBooking, isFirstTimeClient }) {
@@ -168,7 +162,7 @@ export function ScreenClientDashboard({ nav, bookings = [], additionalCharges = 
         nav={nav}
         past={[BOOKING_STATUS.COMPLETED, BOOKING_STATUS.CANCELLED, BOOKING_STATUS.DECLINED, BOOKING_STATUS.EXPIRED].includes(b.status)}
         additionalCharge={pendingAdditionalCharge}
-        onAdditionalCharge={() => nav("additional-charge-review", { chargeId: pendingAdditionalCharge?.id, role: "client" })}
+        onAdditionalCharge={() => nav("additional-charge-review", { chargeId: pendingAdditionalCharge?.id, role: "client", backTo: "client-dashboard" })}
         onReschedule={() => setRescheduleTarget(b)}
         onCancel={() => setCancelTarget(b)}
         onPay={() => nav("payment", { bookingId: b.id })}
@@ -182,37 +176,8 @@ export function ScreenClientDashboard({ nav, bookings = [], additionalCharges = 
       <div style={{ padding: "18px 18px 0" }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
           <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, ...fDisplay }}>My sessions</div>
-          {/* Compact icon toggle for List/Calendar — deliberately small, icon-only and
-              pinned to the header row so it reads as a display-mode switch, not another
-              status tab. The Pending/Upcoming/Completed tabs below stay a full-width,
-              labelled segmented control since those are the primary navigation. */}
           {!showEmptyDashboard && (
-            <div role="tablist" aria-label="View mode" style={{ display: "flex", alignItems: "center", gap: 2, background: C.fog, borderRadius: 11, padding: 3, flexShrink: 0, marginTop: 2 }}>
-              <button
-                type="button" role="tab" aria-selected={view === "list"} aria-label="List view" title="List view"
-                onClick={() => setView("list")}
-                style={{
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  width: 44, height: 44, borderRadius: 10, border: "none", cursor: "pointer",
-                  background: view === "list" ? C.jet : "transparent",
-                  boxShadow: "none", transition: "background .15s ease",
-                }}
-              >
-                <ListIcon size={14} color={view === "list" ? C.white : C.slateLight} />
-              </button>
-              <button
-                type="button" role="tab" aria-selected={view === "calendar"} aria-label="Calendar view" title="Calendar view"
-                onClick={() => setView("calendar")}
-                style={{
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  width: 44, height: 44, borderRadius: 10, border: "none", cursor: "pointer",
-                  background: view === "calendar" ? C.jet : "transparent",
-                  boxShadow: "none", transition: "background .15s ease",
-                }}
-              >
-                <Calendar size={14} color={view === "calendar" ? C.white : C.slateLight} />
-              </button>
-            </div>
+            <ViewModeToggle value={view} onChange={setView} ariaLabel="Session view" />
           )}
         </div>
         {offline && (
@@ -223,7 +188,7 @@ export function ScreenClientDashboard({ nav, bookings = [], additionalCharges = 
         {!showEmptyDashboard && view === "list" && (
           <div style={{ marginTop: 16 }}>
             <SegTabs strong value={tab} onChange={setTab} items={[
-              { value: "pending", label: "Requests" }, { value: "upcoming", label: "Upcoming" }, { value: "past", label: "History" },
+              { value: "pending", label: "Requests" }, { value: "upcoming", label: "Upcoming" }, { value: "past", label: "Completed" },
             ]} />
           </div>
         )}
@@ -446,7 +411,7 @@ function CancelSheet({ booking, onClose, onConfirm, pending }) {
       {booking && (
         <>
           <div style={{ fontSize: T.labelLg, color: C.slate, lineHeight: 1.55, marginBottom: 18, ...fBody }}>
-            Please review the cancellation outcome before confirming. Refunds and fees are calculated based on the coach's cancellation policy.
+            Please review the cancellation outcome before confirming. Refunds and fees are calculated based on CoachLink's standard cancellation policy.
           </div>
 
           <SectionLabel>Booking details</SectionLabel>
@@ -786,7 +751,7 @@ export function ScreenClientBookingDetail({ nav, goBack, params, bookings, toast
             <div>
               <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 2, ...fBody }}>Cancellation policy</div>
               <div style={{ fontSize: T.label, color: C.slate, lineHeight: 1.5, ...fBody }}>
-                {coach?.cancellationPolicy || "Cancellation terms will be confirmed with your coach."}
+                {CONFIG.cancellationPolicy}
               </div>
             </div>
           </div>
