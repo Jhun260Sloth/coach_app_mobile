@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
-import { Avatar, Btn, SectionLabel, Toggle, BottomSheet, ConfirmDialog, Field, Chip, Card, Badge, EmptyState, TopBar, SegTabs, HandleTag } from "../../components/ui/Primitives";
+import { Avatar, Btn, ScreenHeader, SectionLabel, FormSection, Toggle, BottomSheet, ConfirmDialog, Field, Chip, Card, Badge, EmptyState, TopBar, SegTabs, HandleTag } from "../../components/ui/Primitives";
 import { HandleField } from "../../components/ui/PublicIdentityFields";
 import { isValidHandle } from "../../utils/name";
 import { getBookingCoachName } from "../../utils/name";
@@ -257,7 +257,7 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "18px 18px 0" }}>
-        <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, marginBottom: 18, ...fDisplay }}>Account</div>
+        <ScreenHeader title="Account" subtitle="Profile, family and account preferences." style={{ marginBottom: 18 }} />
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 28 }}>
           <Avatar name={profile.name} src={clientIdentity.photo || clientIdentity.avatar} size={58} />
           <div>
@@ -346,65 +346,62 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
 
       {/* Child / participant profile */}
       <BottomSheet open={sheet === "child"} onClose={() => setSheet(null)} title={editingChildId ? "Edit child profile" : "Add child profile"} heightPct={90}>
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 18 }}>
-          <button
-            onClick={() => setChildDraft((d) => ({ ...d, hasPhoto: !d.hasPhoto }))}
-            style={{ position: "relative", background: "none", border: "none", cursor: "pointer" }}
-          >
-            {childDraft.hasPhoto ? <Avatar name={childDraft.name || "Child"} size={72} /> : (
-              <div style={{ width: 72, height: 72, borderRadius: 72, background: C.fog, border: `1.5px dashed ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Camera size={20} color={C.slateLight} />
+        <FormSection icon={Camera} label="Profile photo" hint="A photo helps coaches recognise your child at sessions.">
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <button
+              onClick={() => setChildDraft((d) => ({ ...d, hasPhoto: !d.hasPhoto }))}
+              style={{ position: "relative", background: "none", border: "none", cursor: "pointer" }}
+            >
+              {childDraft.hasPhoto ? <Avatar name={childDraft.name || "Child"} size={72} /> : (
+                <div style={{ width: 72, height: 72, borderRadius: 72, background: C.fog, border: `1.5px dashed ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Camera size={20} color={C.slateLight} />
+                </div>
+              )}
+              <div style={{ position: "absolute", bottom: -2, right: -2, width: 24, height: 24, borderRadius: 24, background: C.brand, border: `2px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Camera size={11} color={C.white} />
               </div>
-            )}
-            <div style={{ position: "absolute", bottom: -2, right: -2, width: 24, height: 24, borderRadius: 24, background: C.brand, border: `2px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Camera size={11} color={C.white} />
-            </div>
-          </button>
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <Field label="Child's name" placeholder="e.g. Ava" icon={User} value={childDraft.name} onChange={(e) => setChildDraft((d) => ({ ...d, name: e.target.value }))} />
-          <Field label="Age" placeholder="e.g. 9" value={childDraft.age} onChange={(e) => setChildDraft((d) => ({ ...d, age: e.target.value }))} />
-          <LocationField
-            value={childDraft.location}
-            onChange={(loc) => setChildDraft((d) => ({ ...d, location: loc }))}
-            label="Location"
-            placeholder="Search suburb or postcode…"
-          />
-        </div>
-
-        <div style={{ marginTop: 4 }}>
-          <SectionLabel>Guardian information</SectionLabel>
-          <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: -6, marginBottom: 12, lineHeight: 1.5, ...fBody }}>
-            The parent or legal guardian responsible for this participant.
+            </button>
           </div>
+        </FormSection>
+
+        <FormSection icon={User} label="About them" hint="Basic details for this participant.">
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <Field label="Child's name" placeholder="e.g. Ava" icon={User} value={childDraft.name} onChange={(e) => setChildDraft((d) => ({ ...d, name: e.target.value }))} />
+            <Field label="Age" placeholder="e.g. 9" value={childDraft.age} onChange={(e) => setChildDraft((d) => ({ ...d, age: e.target.value }))} />
+            <LocationField
+              value={childDraft.location}
+              onChange={(loc) => setChildDraft((d) => ({ ...d, location: loc }))}
+              label="Location"
+              placeholder="Search suburb or postcode…"
+            />
+          </div>
+        </FormSection>
+
+        <FormSection icon={UserCheck} label="Guardian information" hint="The parent or legal guardian responsible for this participant.">
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <Field label="Guardian name" placeholder="e.g. Jamie Chen" icon={UserCheck} value={childDraft.guardianName} onChange={(e) => setChildDraft((d) => ({ ...d, guardianName: e.target.value }))} />
             <Field label="Relationship to participant" placeholder="e.g. Parent" value={childDraft.guardianRelationship} onChange={(e) => setChildDraft((d) => ({ ...d, guardianRelationship: e.target.value }))} />
             <Field label="Mobile number" placeholder="04XX XXX XXX" icon={Phone} type="tel" value={childDraft.guardianMobile} onChange={(e) => setChildDraft((d) => ({ ...d, guardianMobile: e.target.value.replace(/[^0-9+\s]/g, "") }))} />
           </div>
-        </div>
+        </FormSection>
 
-        <div style={{ marginTop: 18 }}>
-          <SectionLabel>Sport / interests</SectionLabel>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+        <FormSection icon={Sparkles} label="Sport & interests" hint="Sports they love — helps coaches match the right sessions.">
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {SPORTS.map((s) => (
               <Chip key={s} active={childDraft.sport.includes(s)} onClick={() => toggleDraftSport(s)}>{s}</Chip>
             ))}
           </div>
-        </div>
+        </FormSection>
 
-        <div style={{ marginTop: 18 }}>
-          <SectionLabel>Skill level</SectionLabel>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+        <FormSection icon={Target} label="Skill level" hint="How experienced they are in their main sport.">
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {SKILL_LEVELS.map((lvl) => (
               <Chip key={lvl} active={childDraft.skillLevel === lvl} onClick={() => setChildDraft((d) => ({ ...d, skillLevel: lvl }))}>{lvl}</Chip>
             ))}
           </div>
-        </div>
+        </FormSection>
 
-        <div style={{ marginTop: 18 }}>
-          <SectionLabel>Coaching goals</SectionLabel>
+        <FormSection icon={Target} label="Coaching goals" hint="What they'd like to get out of coaching.">
           <div className="cl-input" style={{ display: "flex", alignItems: "flex-start", gap: 10, background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
             <Target size={16} color={C.slateLight} style={{ marginTop: 2, flexShrink: 0 }} />
             <textarea
@@ -415,10 +412,9 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
               style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: T.bodyLg, color: C.jet, resize: "none", ...fBody }}
             />
           </div>
-        </div>
+        </FormSection>
 
-        <div style={{ marginTop: 18 }}>
-          <SectionLabel>Coaching preferences</SectionLabel>
+        <FormSection icon={Users} label="Coaching preferences" hint="Any preferences that help coaches prepare for sessions.">
           <div className="cl-input" style={{ display: "flex", alignItems: "flex-start", gap: 10, background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
             <Users size={16} color={C.slateLight} style={{ marginTop: 2, flexShrink: 0 }} />
             <textarea
@@ -429,10 +425,9 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
               style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: T.bodyLg, color: C.jet, resize: "none", ...fBody }}
             />
           </div>
-        </div>
+        </FormSection>
 
-        <div style={{ marginTop: 18 }}>
-          <SectionLabel>Medical information (optional)</SectionLabel>
+        <FormSection icon={Stethoscope} label="Medical information (optional)" hint="Anything a coach should know to keep sessions safe.">
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <Field label="Medical conditions" placeholder="e.g. asthma" icon={Stethoscope} value={childDraft.medicalConditions} onChange={(e) => setChildDraft((d) => ({ ...d, medicalConditions: e.target.value }))} />
             <Field label="Allergies" placeholder="e.g. bee stings, peanuts" icon={AlertTriangle} value={childDraft.allergies} onChange={(e) => setChildDraft((d) => ({ ...d, allergies: e.target.value }))} />
@@ -447,20 +442,18 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
               />
             </div>
           </div>
-        </div>
+        </FormSection>
 
-        <div style={{ marginTop: 18 }}>
-          <SectionLabel>Emergency contact (optional)</SectionLabel>
+        <FormSection icon={Phone} label="Emergency contact (optional)" hint="Who coaches can reach if they can't get hold of you.">
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <Field label="Contact name" placeholder="e.g. Mia Chen" icon={UserCheck} value={childDraft.emergencyName} onChange={(e) => setChildDraft((d) => ({ ...d, emergencyName: e.target.value }))} />
             <Field label="Relationship" placeholder="e.g. Mother" value={childDraft.emergencyRelationship} onChange={(e) => setChildDraft((d) => ({ ...d, emergencyRelationship: e.target.value }))} />
             <Field label="Mobile number" placeholder="04XX XXX XXX" icon={Phone} type="tel" value={childDraft.emergencyMobile} onChange={(e) => setChildDraft((d) => ({ ...d, emergencyMobile: e.target.value.replace(/[^0-9+\s]/g, "") }))} />
           </div>
-        </div>
+        </FormSection>
 
         {editingChildId && (
-          <div style={{ marginTop: 18 }}>
-            <SectionLabel>Booking history</SectionLabel>
+          <FormSection icon={HistoryIcon} label="Booking history" hint="Sessions booked for this profile.">
             {(() => {
               const history = bookings.filter((b) => b.participant === childDraft.name);
               if (history.length === 0) {
@@ -478,7 +471,7 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
                 </Card>
               ));
             })()}
-          </div>
+          </FormSection>
         )}
 
         <div style={{ marginTop: 22, display: "flex", flexDirection: "column", gap: 10 }}>
@@ -495,26 +488,24 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
       <BottomSheet open={sheet === "edit"} onClose={closeSheet} title="Edit profile" heightPct={88}>
         {editDraft && (
           <>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 18 }}>
-              <div style={{ position: "relative", width: 76, height: 76 }}>
+<FormSection icon={Camera} label="Profile photo" hint="A friendly photo helps coaches recognise you at sessions.">
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <button type="button" aria-label="Change profile photo" onClick={() => profilePhotoInputRef.current?.click()} style={{ position: "relative", width: 76, height: 76, padding: 0, background: "none", border: "none", cursor: "pointer" }}>
                 {editDraft.photo ? (
                   <img src={editDraft.photo} alt="Profile" style={{ width: 76, height: 76, borderRadius: 76, objectFit: "cover", display: "block" }} />
                 ) : (
                   <Avatar name={editDraft.name || "You"} src={clientIdentity.avatar} size={76} />
                 )}
-                <button type="button" aria-label="Change profile photo" onClick={() => profilePhotoInputRef.current?.click()} style={{ position: "absolute", right: -10, bottom: -10, width: 44, height: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <span style={{ width: 28, height: 28, borderRadius: 999, background: C.brand, border: `2px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 6px rgba(22,24,29,.16)" }}><Camera size={13} color={C.white} /></span>
-                </button>
-              </div>
-              <button type="button" onClick={() => profilePhotoInputRef.current?.click()} style={{ minHeight: 44, marginTop: 5, padding: "0 10px", border: "none", background: "transparent", color: C.brand, cursor: "pointer", fontSize: T.labelLg, fontWeight: 600, ...fBody }}>Change photo</button>
+                <span aria-hidden="true" style={{ position: "absolute", right: -2, bottom: -2, width: 28, height: 28, borderRadius: 999, background: C.brand, border: `2px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 6px rgba(22,24,29,.16)" }}><Camera size={13} color={C.white} /></span>
+              </button>
               <input ref={profilePhotoInputRef} type="file" accept="image/*" onChange={onProfilePhotoChange} style={{ display: "none" }} />
+              <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: 8, ...fBody }}>Tap to change your profile photo</div>
             </div>
-            <SectionLabel>Account</SectionLabel>
-            <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 20 }}>
+          </FormSection>
+
+          <FormSection icon={User} label="Identity" hint="Your legal name stays private until a booking is confirmed.">
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <Field label="Full name" placeholder="Sarah Lin" icon={User} value={editDraft.name} onChange={(e) => setEditDraft((d) => ({ ...d, name: e.target.value }))} />
-              <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: -8, marginBottom: 2, lineHeight: 1.5, ...fBody }}>
-                Your legal name is private — coaches only see it after a confirmed booking.
-              </div>
               <HandleField
                 value={editDraft.handle}
                 onChange={(v) => { setHandleEdited(true); setEditDraft((d) => ({ ...d, handle: v })); }}
@@ -524,9 +515,10 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
               <Field label="Email" placeholder="you@email.com" icon={Mail} type="email" value={editDraft.email} onChange={(e) => setEditDraft((d) => ({ ...d, email: e.target.value }))} />
               <Field label="Mobile number" placeholder="04XX XXX XXX" icon={Phone} type="tel" value={editDraft.phone} onChange={(e) => setEditDraft((d) => ({ ...d, phone: e.target.value }))} />
             </div>
+          </FormSection>
 
-            <SectionLabel>Location</SectionLabel>
-            <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 20 }}>
+          <FormSection icon={MapPin} label="Location" hint="Only used to find coaches nearby — never shown to them.">
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <Field label="Address" placeholder="Enter your address" icon={MapPin} value={editDraft.address} onChange={(e) => setEditDraft((d) => ({ ...d, address: e.target.value }))} />
               <LocationField
                 value={editDraft.location}
@@ -535,38 +527,44 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
                 placeholder="Search suburb or postcode…"
               />
             </div>
-            <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: -10, marginBottom: 20, lineHeight: 1.5, ...fBody }}>
-              We only use this to find coaches nearby — it's never shown to coaches or other clients.
-            </div>
+          </FormSection>
 
-            <SectionLabel>Sports you're into</SectionLabel>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
-              {SPORTS.map((s) => (
-                <Chip key={s} active={editDraft.sports.includes(s)} onClick={() => toggleEditSport(s)}>{s}</Chip>
-              ))}
+          <FormSection icon={Sparkles} label="Your sport" hint="What you're into and what you'd like to work on.">
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div>
+                <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Sports you're into</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {SPORTS.map((s) => (
+                    <Chip key={s} active={editDraft.sports.includes(s)} onClick={() => toggleEditSport(s)}>{s}</Chip>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Skill level</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {SKILL_LEVELS.map((lvl) => (
+                    <Chip key={lvl} active={editDraft.skillLevel === lvl} onClick={() => setEditDraft((d) => ({ ...d, skillLevel: lvl }))}>{lvl}</Chip>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Coaching goals</div>
+                <div className="cl-input" style={{ display: "flex", alignItems: "flex-start", gap: 10, background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
+                  <Target size={16} color={C.slateLight} style={{ marginTop: 2, flexShrink: 0 }} />
+                  <textarea
+                    value={editDraft.goals}
+                    onChange={(e) => setEditDraft((d) => ({ ...d, goals: e.target.value }))}
+                    placeholder="e.g. build confidence for club trials, improve fitness, learn the basics…"
+                    rows={3}
+                    style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: T.bodyLg, color: C.jet, resize: "none", ...fBody }}
+                  />
+                </div>
+              </div>
             </div>
+          </FormSection>
 
-            <SectionLabel>Skill level</SectionLabel>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
-              {SKILL_LEVELS.map((lvl) => (
-                <Chip key={lvl} active={editDraft.skillLevel === lvl} onClick={() => setEditDraft((d) => ({ ...d, skillLevel: lvl }))}>{lvl}</Chip>
-              ))}
-            </div>
-
-            <SectionLabel>Coaching goals</SectionLabel>
-            <div className="cl-input" style={{ display: "flex", alignItems: "flex-start", gap: 10, background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", marginBottom: 20 }}>
-              <Target size={16} color={C.slateLight} style={{ marginTop: 2, flexShrink: 0 }} />
-              <textarea
-                value={editDraft.goals}
-                onChange={(e) => setEditDraft((d) => ({ ...d, goals: e.target.value }))}
-                placeholder="e.g. build confidence for club trials, improve fitness, learn the basics…"
-                rows={3}
-                style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: T.bodyLg, color: C.jet, resize: "none", ...fBody }}
-              />
-            </div>
-
-            <SectionLabel>Medical information (optional)</SectionLabel>
-            <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 20 }}>
+          <FormSection icon={Stethoscope} label="Medical information (optional)" hint="Anything a coach should know to keep sessions safe.">
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <Field label="Medical conditions" placeholder="e.g. asthma" icon={Stethoscope} value={editDraft.medicalConditions} onChange={(e) => setEditDraft((d) => ({ ...d, medicalConditions: e.target.value }))} />
               <Field label="Allergies" placeholder="e.g. bee stings, peanuts" icon={AlertTriangle} value={editDraft.allergies} onChange={(e) => setEditDraft((d) => ({ ...d, allergies: e.target.value }))} />
               <div>
@@ -580,13 +578,15 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
                 />
               </div>
             </div>
+          </FormSection>
 
-            <SectionLabel>Emergency contact (optional)</SectionLabel>
-            <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 8 }}>
+          <FormSection icon={Phone} label="Emergency contact (optional)" hint="Who coaches can reach if they can't get hold of you.">
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <Field label="Contact name" placeholder="e.g. Mia Chen" icon={UserCheck} value={editDraft.emergencyName} onChange={(e) => setEditDraft((d) => ({ ...d, emergencyName: e.target.value }))} />
               <Field label="Relationship" placeholder="e.g. Partner" value={editDraft.emergencyRelationship} onChange={(e) => setEditDraft((d) => ({ ...d, emergencyRelationship: e.target.value }))} />
               <Field label="Mobile number" placeholder="04XX XXX XXX" icon={Phone} type="tel" value={editDraft.emergencyMobile} onChange={(e) => setEditDraft((d) => ({ ...d, emergencyMobile: e.target.value.replace(/[^0-9+\s]/g, "") }))} />
             </div>
+          </FormSection>
 
             <Btn full onClick={saveProfile}>Save changes</Btn>
           </>

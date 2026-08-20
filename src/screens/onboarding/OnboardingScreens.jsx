@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import {
   Search, Users, Mail, Eye, EyeOff, Fingerprint, Check,
-  Upload, CheckCircle2, ClipboardList, Clock, Lock, Camera, MapPin, LocateFixed,
+  Upload, CheckCircle2, ClipboardList, Clock, Lock, Camera,
   Plus, Trash2, CreditCard, ScanFace, FileCheck2, Smartphone, XCircle, ChevronRight,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, LOGO_WHITE_SRC, T } from "../../theme/theme";
@@ -11,9 +11,10 @@ import {
   SearchMultiSelect, Avatar, Chip, BottomSheet, Spinner, LogoMark,
 } from "../../components/ui/Primitives";
 import { HandleField } from "../../components/ui/PublicIdentityFields";
+import { LocationField } from "../../components/ui/LocationField";
 import { isValidHandle } from "../../utils/name";
 import {
-  LANGUAGE_OPTIONS, GENDER_OPTIONS, AU_SUBURBS, SPORT_OPTIONS_FULL,
+  LANGUAGE_OPTIONS, GENDER_OPTIONS, SPORT_OPTIONS_FULL,
   COACHING_CATEGORY_OPTIONS, SKILL_LEVEL_OPTIONS, AGE_GROUP_OPTIONS,
   COACHING_EXPERIENCE_LEVELS, COACHING_FORMAT_OPTIONS, ID_TYPE_OPTIONS,
   CERTIFICATION_TYPE_OPTIONS,
@@ -785,7 +786,7 @@ export function ScreenEnableBiometric({ nav, params, toast, biometric, setBiomet
   );
 }
 
-export function ScreenCoachInfo({ nav, toast, coachOnboarding, updateCoachOnboarding }) {
+export function ScreenCoachInfo({ nav, coachOnboarding, updateCoachOnboarding }) {
   const { darkMode, isHandleTaken } = useApp();
   const C = darkMode ? CD : CL;
   const inputStyle = { width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", background: C.white, color: C.jet, ...fBody };
@@ -798,8 +799,6 @@ export function ScreenCoachInfo({ nav, toast, coachOnboarding, updateCoachOnboar
   const [yearsExperience, setYearsExperience] = useState(coachOnboarding.yearsExperience || "");
   const [gender, setGender] = useState(coachOnboarding.gender || "");
   const [languages, setLanguages] = useState(coachOnboarding.languages || []);
-  const [locationQuery, setLocationQuery] = useState("");
-  const [locationOpen, setLocationOpen] = useState(false);
   const [location, setLocation] = useState(coachOnboarding.location || null);
 
   const photoInputRef = React.useRef(null);
@@ -810,19 +809,6 @@ export function ScreenCoachInfo({ nav, toast, coachOnboarding, updateCoachOnboar
   };
 
   const experienceOptions = [...Array.from({ length: 29 }, (_, i) => `${i + 1} year${i === 0 ? "" : "s"}`), "30+ years"];
-
-  const filteredSuburbs = AU_SUBURBS.filter((s) =>
-    locationQuery.length > 0 && (
-      s.suburb.toLowerCase().includes(locationQuery.toLowerCase()) ||
-      s.postcode.includes(locationQuery)
-    )
-  ).slice(0, 6);
-
-  const pickLocation = (s) => { setLocation(s); setLocationQuery(""); setLocationOpen(false); };
-  const useCurrentLocation = () => {
-    setLocation({ suburb: "Sydney", state: "NSW", postcode: "2000" });
-    toast("Location detected");
-  };
 
   const complete = name.trim() && bio.trim() && yearsExperience && languages.length > 0 && location && isValidHandle(handle) && !isHandleTaken(handle);
 
@@ -884,53 +870,12 @@ export function ScreenCoachInfo({ nav, toast, coachOnboarding, updateCoachOnboar
             <SearchMultiSelect options={LANGUAGE_OPTIONS} value={languages} onChange={setLanguages} placeholder="Search languages…" />
           </div>
 
-          <div>
-            <div style={labelStyle}>Location</div>
-            {location ? (
-              <div style={{ border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", display: "flex", alignItems: "center", gap: 10 }}>
-                <MapPin size={16} color={C.brand} style={{ flexShrink: 0 }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{location.suburb}, {location.state}</div>
-                  <div style={{ fontSize: T.captionLg, color: C.slate, ...fBody }}>Postcode {location.postcode}</div>
-                </div>
-                <button onClick={() => setLocation(null)} style={{ background: "none", border: "none", color: C.brand, fontSize: T.label, fontWeight: 600, cursor: "pointer", ...fBody }}>Change</button>
-              </div>
-            ) : (
-              <>
-                <div style={{ position: "relative" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
-                    <Search size={15} color={C.slateLight} />
-                    <input
-                      value={locationQuery}
-                      onChange={(e) => { setLocationQuery(e.target.value); setLocationOpen(true); }}
-                      onFocus={() => setLocationOpen(true)}
-                      onBlur={() => setTimeout(() => setLocationOpen(false), 150)}
-                      placeholder="Search suburb, city or postcode…"
-                      style={{ border: "none", outline: "none", flex: 1, fontSize: T.bodyLg, minWidth: 0, ...fBody }}
-                    />
-                  </div>
-                  {locationOpen && filteredSuburbs.length > 0 && (
-                    <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.white, border: `1px solid ${C.border}`, borderRadius: 13, boxShadow: "0 10px 24px rgba(0,0,0,.10)", zIndex: 30, maxHeight: 190, overflowY: "auto" }}>
-                      {filteredSuburbs.map((s) => (
-                        <button
-                          key={`${s.suburb}-${s.postcode}`}
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => pickLocation(s)}
-                          style={{ display: "flex", justifyContent: "space-between", width: "100%", textAlign: "left", padding: "10px 13px", background: "none", border: "none", cursor: "pointer", fontSize: T.body, color: C.jet, ...fBody }}
-                        >
-                          <span>{s.suburb}, {s.state}</span>
-                          <span style={{ color: C.slateLight }}>{s.postcode}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <button onClick={useCurrentLocation} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: C.brand, fontSize: T.labelLg, fontWeight: 600, marginTop: 8, padding: 0, ...fBody }}>
-                  <LocateFixed size={14} /> Use current location
-                </button>
-              </>
-            )}
-          </div>
+          <LocationField
+            value={location}
+            onChange={setLocation}
+            label="Location"
+            placeholder="Search suburb, city or postcode…"
+          />
         </div>
 
         <div style={{ marginTop: 24 }}>

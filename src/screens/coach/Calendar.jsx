@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { Calendar as CalendarIcon, Trash2, Plus, Clock, ChevronLeft, ChevronRight, Ban } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
-import { Card, SectionLabel, Btn, ConfirmDialog, Toggle, Chip, EmptyState, SegTabs, Avatar, StatusPill } from "../../components/ui/Primitives";
+import { Card, ScreenHeader, SectionLabel, Btn, ConfirmDialog, Toggle, Chip, EmptyState, SegTabs, Avatar, StatusPill } from "../../components/ui/Primitives";
 import { useApp } from "../../context/AppContext";
 import { BOOKING_STATUS } from "../../data/bookings";
 
@@ -122,7 +122,7 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "18px 18px 0" }}>
-        <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, marginBottom: 14, ...fDisplay }}>Calendar</div>
+        <ScreenHeader title="Calendar" subtitle="Sessions and availability in one place." style={{ marginBottom: 14 }} />
 
         <div style={{ marginBottom: 10 }}>
           <SegTabs value={section} onChange={setSection} items={[{ value: "schedule", label: "Schedule" }, { value: "availability", label: "Availability" }]} />

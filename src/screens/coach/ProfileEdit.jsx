@@ -3,12 +3,12 @@ import {
   Camera, Edit3, Eye, EyeOff, Fingerprint, Lock, Shield, HelpCircle,
   LogOut, ChevronRight, Trash2, Plus, User,
   Banknote, CalendarClock, Zap, Hand, Bell, MapPin, Film, Play, Image as ImageIcon,
-  Share2, Award, X, Navigation, Star, Mail, AlertTriangle,
+  Share2, Award, X, Navigation, Star, Mail, AlertTriangle, Sparkles,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { COACHES, LANGUAGE_OPTIONS, GENDER_OPTIONS, AU_SUBURBS, SPORTS, SPORT_ICON, REVIEWS } from "../../data/mockData";
 import {
-  Avatar, SectionLabel, Chip, Card, Toggle, Btn, BottomSheet, ConfirmDialog, Field,
+  Avatar, ScreenHeader, SectionLabel, FormSection, Chip, Card, Toggle, Btn, BottomSheet, ConfirmDialog, Field,
   SearchMultiSelect, SearchSelect, ScrollFadeRow, SegTabs, StarRow, FullscreenImageViewer,
 } from "../../components/ui/Primitives";
 import { CoachProfileHero, CoachProfileAbout } from "../../components/ui/CoachProfileSections";
@@ -298,7 +298,7 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "18px 18px 0" }}>
-        <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, marginBottom: 18, ...fDisplay }}>My coaching profile</div>
+        <ScreenHeader title="My coaching profile" subtitle="What athletes see when they discover you." style={{ marginBottom: 18 }} />
 
         <div style={{ marginBottom: 6 }}>
           <SegTabs
@@ -326,7 +326,7 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
           suburb={profile.location}
           instantBook={bookingType === "instant"}
           coverHeight={188}
-          inset={0}
+          style={{ margin: "-14px -18px 0" }}
           onAvatarClick={() => setAvatarOpen(true)}
           overlay={
             <button type="button" aria-label="Share coach profile" onClick={handleShare} style={{ position: "absolute", top: 12, right: 12, pointerEvents: "auto", width: 44, height: 44, borderRadius: 99, background: CL.jetSoft, opacity: 0.94, border: `1px solid ${CL.onDarkDivider}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 8px 20px rgba(0,0,0,.18)" }}>
@@ -554,8 +554,7 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
       <BottomSheet open={sheet === "edit"} onClose={() => { setSheet(null); setDraft(null); }} title="Edit profile" heightPct={90}>
         {draft && (
           <>
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 7, ...fBody }}>Cover photo</div>
+<FormSection icon={ImageIcon} label="Photos" hint="A great cover and profile photo help you stand out.">
               <button
                 type="button"
                 aria-label="Change cover photo"
@@ -569,120 +568,110 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
                     <ImageIcon size={24} color={C.slateLight} />
                   </span>
                 )}
-                <span style={{ position: "absolute", right: 10, bottom: 10, minHeight: 36, padding: "0 12px", borderRadius: 12, background: C.jet, color: C.white, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: T.labelLg, fontWeight: 600, boxShadow: "0 4px 12px rgba(22,24,29,.18)", ...fBody }}>
-                  <Camera size={14} /> Change cover
+                <span aria-hidden="true" style={{ position: "absolute", right: 10, bottom: 10, width: 36, height: 36, borderRadius: 999, background: C.brand, border: `2px solid ${C.white}`, color: C.white, display: "inline-flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(22,24,29,.18)" }}>
+                  <Camera size={15} />
                 </span>
               </button>
               <input ref={coverInputRef} type="file" accept="image/*" onChange={onCoverChange} style={{ display: "none" }} />
-              <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.45, marginTop: 7, ...fBody }}>Use a wide coaching or training photo for the best profile preview.</div>
-              {coachMedia.some((item) => item.type === "photo") && (
-                <div style={{ display: "flex", gap: 8, marginTop: 10, overflowX: "auto" }} className="cl-hide-scrollbar">
-                  {coachMedia.filter((item) => item.type === "photo").map((item) => {
-                    const selected = draft.coverPhoto === item.url;
-                    return (
-                      <button key={item.id} type="button" aria-label={`Use ${item.caption || "media photo"} as cover`} aria-pressed={selected} onClick={() => setDraftField({ coverPhoto: item.url })} style={{ width: 64, height: 48, padding: 2, borderRadius: 12, border: `1.5px solid ${selected ? C.brand : C.border}`, background: selected ? C.brandTint : C.white, flexShrink: 0, cursor: "pointer" }}>
-                        <img src={item.url} alt="" style={{ width: "100%", height: "100%", borderRadius: 9, objectFit: "cover", display: "block" }} />
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+              <div style={{ textAlign: "center", fontSize: T.captionLg, color: C.slateLight, marginTop: 8, ...fBody }}>Tap to change your cover photo</div>
 
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 18 }}>
-              <div style={{ position: "relative", width: 76, height: 76 }}>
-                {draft.photo ? (
-                  <img src={draft.photo} alt="Profile" style={{ width: 76, height: 76, borderRadius: 76, objectFit: "cover", display: "block" }} />
-                ) : (
-                  <Avatar name={draft.name || "You"} src={coach.avatar} size={76} />
-                )}
-                <button type="button" aria-label="Change profile photo" onClick={() => photoInputRef.current?.click()} style={{ position: "absolute", bottom: -10, right: -10, width: 44, height: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <span style={{ width: 28, height: 28, borderRadius: 999, background: C.brand, border: `2px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 6px rgba(22,24,29,.16)" }}><Camera size={13} color={C.white} /></span>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 18 }}>
+                <button type="button" aria-label="Change profile photo" onClick={() => photoInputRef.current?.click()} style={{ position: "relative", width: 76, height: 76, padding: 0, background: "none", border: "none", cursor: "pointer" }}>
+                  {draft.photo ? (
+                    <img src={draft.photo} alt="Profile" style={{ width: 76, height: 76, borderRadius: 76, objectFit: "cover", display: "block" }} />
+                  ) : (
+                    <Avatar name={draft.name || "You"} src={coach.avatar} size={76} />
+                  )}
+                  <span aria-hidden="true" style={{ position: "absolute", bottom: -2, right: -2, width: 28, height: 28, borderRadius: 999, background: C.brand, border: `2px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 6px rgba(22,24,29,.16)" }}><Camera size={13} color={C.white} /></span>
                 </button>
+                <input ref={photoInputRef} type="file" accept="image/*" onChange={onPhotoChange} style={{ display: "none" }} />
+                <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: 8, ...fBody }}>Tap to change your profile photo</div>
               </div>
-              <input ref={photoInputRef} type="file" accept="image/*" onChange={onPhotoChange} style={{ display: "none" }} />
-              <button type="button" onClick={() => photoInputRef.current?.click()} style={{ minHeight: 44, marginTop: 5, padding: "0 10px", border: "none", background: "transparent", color: C.brand, cursor: "pointer", fontSize: T.labelLg, fontWeight: 600, ...fBody }}>Change photo</button>
-            </div>
+            </FormSection>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <SectionLabel>Basics</SectionLabel>
-              <Field label="Full name" placeholder="How athletes will see you" icon={User} value={draft.name} onChange={(e) => setDraftField({ name: e.target.value })} />
-              <HandleField value={draft.handle} onChange={(v) => { setHandleEdited(true); setDraftField({ handle: v }); }} isTaken={isHandleTaken(draft.handle, [coach.handle, profile.handle])} showStatus={handleEdited && draft.handle.trim() !== String(profile.handle || "").trim()} />
+            <FormSection icon={User} label="About you" hint="Your name and username — how athletes see and recognise you.">
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <Field label="Full name" placeholder="How athletes will see you" icon={User} value={draft.name} onChange={(e) => setDraftField({ name: e.target.value })} />
+                <HandleField value={draft.handle} onChange={(v) => { setHandleEdited(true); setDraftField({ handle: v }); }} isTaken={isHandleTaken(draft.handle, [coach.handle, profile.handle])} showStatus={handleEdited && draft.handle.trim() !== String(profile.handle || "").trim()} />
 
-              <div>
-                <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Bio</div>
-                <textarea
-                  value={draft.bio}
-                  onChange={(e) => setDraftField({ bio: e.target.value })}
-                  rows={4}
-                  placeholder="Tell athletes about your coaching background, philosophy and what to expect"
-                  style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, resize: "none", outline: "none", boxSizing: "border-box", background: C.white, color: C.jet, ...fBody }}
-                />
-              </div>
+                <div>
+                  <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Bio</div>
+                  <textarea
+                    value={draft.bio}
+                    onChange={(e) => setDraftField({ bio: e.target.value })}
+                    rows={4}
+                    placeholder="Tell athletes about your coaching background, philosophy and what to expect"
+                    style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, resize: "none", outline: "none", boxSizing: "border-box", background: C.white, color: C.jet, ...fBody }}
+                  />
+                </div>
 
-              <Field label="Years of coaching experience" placeholder="e.g. 6" icon={CalendarClock} value={draft.yearsExperience} onChange={(e) => setDraftField({ yearsExperience: e.target.value.replace(/[^0-9]/g, "") })} />
+                <Field label="Years of coaching experience" placeholder="e.g. 6" icon={CalendarClock} value={draft.yearsExperience} onChange={(e) => setDraftField({ yearsExperience: e.target.value.replace(/[^0-9]/g, "") })} />
 
-              <div>
-                <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Gender (optional)</div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {[...GENDER_OPTIONS, "Prefer not to say"].map((g) => (
-                    <Chip key={g} active={draft.gender === g} onClick={() => setDraftField({ gender: draft.gender === g ? "" : g })}>{g}</Chip>
-                  ))}
+                <div>
+                  <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Gender (optional)</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {[...GENDER_OPTIONS, "Prefer not to say"].map((g) => (
+                      <Chip key={g} active={draft.gender === g} onClick={() => setDraftField({ gender: draft.gender === g ? "" : g })}>{g}</Chip>
+                    ))}
+                  </div>
                 </div>
               </div>
+            </FormSection>
 
-              <div style={{ height: 1, background: C.border, margin: "4px 0" }} />
-              <SectionLabel>Profile details</SectionLabel>
-              <div>
-                <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Sports</div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {SPORTS.map((s) => {
-                    const active = draft.sports.includes(s);
-                    return (
-                      <Chip
-                        key={s}
-                        active={active}
-                        icon={SPORT_ICON[s]}
-                        onClick={() => setDraftField({ sports: active ? draft.sports.filter((x) => x !== s) : [...draft.sports, s] })}
-                      >
-                        {s}
-                      </Chip>
-                    );
-                  })}
+            <FormSection icon={Sparkles} label="Coaching profile" hint="What you coach, where you're based and the languages you speak.">
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <div>
+                  <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Sports</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {SPORTS.map((s) => {
+                      const active = draft.sports.includes(s);
+                      return (
+                        <Chip
+                          key={s}
+                          active={active}
+                          icon={SPORT_ICON[s]}
+                          onClick={() => setDraftField({ sports: active ? draft.sports.filter((x) => x !== s) : [...draft.sports, s] })}
+                        >
+                          {s}
+                        </Chip>
+                      );
+                    })}
+                  </div>
+                  {draft.sports.length === 0 && (
+                    <div style={{ fontSize: T.captionLg, color: C.danger, marginTop: 6, ...fBody }}>Pick at least one sport so athletes can find you.</div>
+                  )}
                 </div>
-                {draft.sports.length === 0 && (
-                  <div style={{ fontSize: T.captionLg, color: C.danger, marginTop: 6, ...fBody }}>Pick at least one sport so athletes can find you.</div>
-                )}
-              </div>
 
-              <div>
-                <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Languages</div>
-                <SearchMultiSelect options={LANGUAGE_OPTIONS} value={draft.languages} onChange={(v) => setDraftField({ languages: v })} placeholder="Search languages…" />
-              </div>
-
-              <div>
-                <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Location</div>
-                <SearchSelect options={LOCATION_OPTIONS} value={draft.location} onChange={(v) => setDraftField({ location: v })} placeholder="Search suburb or city…" />
-              </div>
-
-              <div style={{ height: 1, background: C.border, margin: "4px 0" }} />
-              <SectionLabel>Venue & travel</SectionLabel>
-              <Field label="Session venue" placeholder="e.g. Fremantle Fitness Box" icon={MapPin} value={draft.venue} onChange={(e) => setDraftField({ venue: e.target.value })} />
-              <Field label="Travel radius (km)" placeholder="e.g. 5" icon={Navigation} value={String(draft.travelRadiusKm ?? "")} onChange={(e) => setDraftField({ travelRadiusKm: e.target.value.replace(/[^0-9]/g, "") })} />
-              <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "4px 0" }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>Willing to travel to athletes</div>
-                  <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>Offer sessions at your athletes' location</div>
+                <div>
+                  <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Languages</div>
+                  <SearchMultiSelect options={LANGUAGE_OPTIONS} value={draft.languages} onChange={(v) => setDraftField({ languages: v })} placeholder="Search languages…" />
                 </div>
-                <Toggle label="Willing to travel to athletes" on={!!draft.willingToTravel} onClick={() => setDraftField({ willingToTravel: !draft.willingToTravel })} />
-              </div>
 
-              <div style={{ height: 1, background: C.border, margin: "4px 0" }} />
-              <SectionLabel>Accreditations</SectionLabel>
+                <div>
+                  <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Location</div>
+                  <SearchSelect options={LOCATION_OPTIONS} value={draft.location} onChange={(v) => setDraftField({ location: v })} placeholder="Search suburb or city…" />
+                </div>
+              </div>
+            </FormSection>
+
+            <FormSection icon={MapPin} label="Where you coach" hint="Your usual venue and how far you're willing to travel.">
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <Field label="Session venue" placeholder="e.g. Fremantle Fitness Box" icon={MapPin} value={draft.venue} onChange={(e) => setDraftField({ venue: e.target.value })} />
+                <Field label="Travel radius (km)" placeholder="e.g. 5" icon={Navigation} value={String(draft.travelRadiusKm ?? "")} onChange={(e) => setDraftField({ travelRadiusKm: e.target.value.replace(/[^0-9]/g, "") })} />
+                <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "4px 0" }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>Willing to travel to athletes</div>
+                    <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>Offer sessions at your athletes' location</div>
+                  </div>
+                  <Toggle label="Willing to travel to athletes" on={!!draft.willingToTravel} onClick={() => setDraftField({ willingToTravel: !draft.willingToTravel })} />
+                </div>
+              </div>
+            </FormSection>
+
+            <FormSection icon={Award} label="Accreditations" hint="Certifications and qualifications that help athletes trust you.">
               <div>
-                <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Certifications & accreditations</div>
                 {(draft.accreditations || []).map((a, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 4px", borderBottom: `1px solid ${C.border}` }}>
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 4px", borderBottom: i === (draft.accreditations || []).length - 1 ? "none" : `1px solid ${C.border}` }}>
                     <Award size={15} color={C.success} style={{ flexShrink: 0 }} />
                     <span style={{ flex: 1, minWidth: 0, fontSize: T.bodyLg, color: C.jet, ...fBody }}>{a}</span>
                     <button type="button" aria-label={`Remove ${a}`} onClick={() => removeDraftAccreditation(i)} style={{ width: 32, height: 32, borderRadius: 10, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -690,7 +679,7 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
                     </button>
                   </div>
                 ))}
-                <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
                   <input
                     value={draftAccreditation}
                     onChange={(e) => setDraftAccreditation(e.target.value)}
@@ -701,7 +690,7 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
                   <Btn size="sm" variant="outline" icon={Plus} onClick={addDraftAccreditation}>Add</Btn>
                 </div>
               </div>
-            </div>
+            </FormSection>
 
             <div style={{ marginTop: 22, display: "flex", gap: 8 }}>
               <div style={{ flex: 1 }}>

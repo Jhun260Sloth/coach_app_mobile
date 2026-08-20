@@ -1,6 +1,6 @@
 import React from "react";
 import {
-  Star, ShieldCheck, BadgeCheck, Clock, TrendingUp, Repeat, MapPin, Navigation, Award, Zap, Sparkles, Languages, Trophy,
+  Star, ShieldCheck, Clock, TrendingUp, Repeat, MapPin, Navigation, Award, Zap, Sparkles, Languages, Trophy,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
@@ -34,9 +34,9 @@ export function CoverBanner({ sport, image, name, height = 150, rounded = false 
 }
 
 /* -------------------------------------------------------------------------
-   CoachProfileHero — cover + overlapping identity card (name, handle, sport,
-   rating, verified badges, response stats). Shared verbatim between the
-   client-facing coach profile and "My coaching profile" so both match.
+   CoachProfileHero — full-width cover + seamless identity section (name,
+   handle, sport, rating, verified badges, response stats). Shared verbatim
+   between the client-facing coach profile and "My coaching profile".
    ------------------------------------------------------------------------- */
 export function CoachProfileHero({
   coach,
@@ -49,7 +49,6 @@ export function CoachProfileHero({
   suburb,
   instantBook = false,
   coverHeight = 188,
-  inset = 14,
   style,
   onAvatarClick,
 }) {
@@ -58,6 +57,11 @@ export function CoachProfileHero({
   const sportLine = sport || coach.sport;
   const suburbLine = suburb || coach.suburb;
   const sportsLine = (sports && sports.length ? sports.join(", ") : (coach.sports && coach.sports.length ? coach.sports.join(", ") : sportLine));
+  const verificationChecks = [
+    coach.verified.identity && "Identity verified",
+    coach.verified.wwcc && "WWCC verified",
+    coach.verified.quals && "Accreditations checked",
+  ].filter(Boolean);
   const stats = [
     { icon: Clock, label: "Response", value: (coach.responseTime || "").replace("Usually replies within ", "") },
     { icon: TrendingUp, label: "Acceptance", value: `${coach.acceptanceRate}%` },
@@ -66,7 +70,7 @@ export function CoachProfileHero({
   return (
     <div style={style}>
       <div style={{ position: "relative" }}>
-        <CoverBanner sport={coach.sport} image={heroImage} name={pub.name} height={coverHeight} rounded />
+        <CoverBanner sport={coach.sport} image={heroImage} name={pub.name} height={coverHeight} />
         {overlay && (
           <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
             {overlay}
@@ -74,9 +78,9 @@ export function CoachProfileHero({
         )}
       </div>
 
-      <div style={{ margin: `-34px ${inset}px 0`, padding: "0 16px 16px", position: "relative", zIndex: 2, background: C.white, border: `1px solid ${C.border}`, borderRadius: 24 }}>
+      <div style={{ marginTop: -34, padding: "0 18px 18px", position: "relative", zIndex: 2, background: C.white, borderRadius: "24px 24px 0 0" }}>
         <div style={{ height: 42 }} />
-        <div style={{ position: "absolute", top: -42, left: 16 }}>
+        <div style={{ position: "absolute", top: -42, left: 18 }}>
           <button
             type="button"
             aria-label="View profile photo full screen"
@@ -108,12 +112,22 @@ export function CoachProfileHero({
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
-          {coach.verified.identity && <Badge tone="success" icon={ShieldCheck}>ID verified</Badge>}
-          {coach.verified.wwcc && <Badge tone="success" icon={ShieldCheck}>WWCC verified</Badge>}
-          {coach.verified.quals && <Badge tone="success" icon={BadgeCheck}>Accreditations checked</Badge>}
-          {instantBook && <Badge tone="success" icon={Zap}>Instant book</Badge>}
-        </div>
+        {(verificationChecks.length > 0 || instantBook) && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12, minWidth: 0 }}>
+            {verificationChecks.length > 0 && (
+              <span
+                role="status"
+                aria-label={verificationChecks.join(", ")}
+                style={{ display: "inline-flex", alignItems: "center", gap: 5, minWidth: 0, padding: "5px 9px", borderRadius: 999, background: C.successTint, color: C.success, fontSize: T.caption, fontWeight: 700, whiteSpace: "nowrap", ...fBody }}
+              >
+                <ShieldCheck size={13} aria-hidden="true" />
+                Verified
+                <span style={{ minWidth: 16, height: 16, borderRadius: 99, background: C.white, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: T.micro, fontWeight: 800, color: C.success, ...fBody }}>{verificationChecks.length}</span>
+              </span>
+            )}
+            {instantBook && <Badge tone="success" icon={Zap} style={{ whiteSpace: "nowrap" }}>Instant book</Badge>}
+          </div>
+        )}
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8, marginTop: 14 }}>
           {stats.map((s) => (

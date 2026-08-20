@@ -7,7 +7,7 @@ import {
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { CLIENT_PROFILES, BOOKING_ENQUIRY_MESSAGES, CONFIG } from "../../data/mockData";
 import {
-  Avatar, BottomActionBar, Card, SegTabs, ViewModeToggle, EmptyState, StatusPill, Btn, TopBar, Row, SectionLabel, Badge, HandleTag, BottomSheet,
+  Avatar, BottomActionBar, Card, SegTabs, ViewModeToggle, ScreenHeader, EmptyState, StatusPill, Btn, TopBar, Row, SectionLabel, Badge, HandleTag, BottomSheet,
 } from "../../components/ui/Primitives";
 import { useApp } from "../../context/AppContext";
 import { getBookingClientName } from "../../utils/name";
@@ -122,13 +122,12 @@ export function ScreenCoachBookings({ nav, coachBookings }) {
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "18px 18px 0" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
-          <div>
-            <div style={{ fontSize: T.display, fontWeight: 700, color: C.jet, ...fDisplay }}>Bookings</div>
-            <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{view === "list" ? "Manage requests and sessions" : "View your booking schedule"}</div>
-          </div>
-          <ViewModeToggle value={view} onChange={setView} ariaLabel="Booking view" />
-        </div>
+        <ScreenHeader
+          title="Bookings"
+          subtitle={view === "list" ? "Manage requests and sessions." : "View your booking schedule."}
+          action={<ViewModeToggle value={view} onChange={setView} ariaLabel="Booking view" />}
+          style={{ marginBottom: 14 }}
+        />
         {view === "list" && (
           <SegTabs value={tab} onChange={setTab} items={[{ value: "pending", label: "Requests" }, { value: "upcoming", label: "Upcoming" }, { value: "completed", label: "Completed" }]} />
         )}

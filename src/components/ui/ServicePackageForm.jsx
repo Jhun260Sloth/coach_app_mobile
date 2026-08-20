@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { DollarSign, Users, MapPin } from "lucide-react";
+import { DollarSign, Users, MapPin, Package, Clock, SlidersHorizontal } from "lucide-react";
 import { CL, CD, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
-import { Chip, Btn, SearchSelect } from "./Primitives";
+import { Chip, Btn, SearchSelect, FormSection } from "./Primitives";
 
 export const PACKAGE_TYPE_OPTIONS = [
   "1:1 Coaching", "Group Training", "Family Sessions", "Team Program", "Skills Clinic", "Online Coaching",
@@ -154,166 +154,185 @@ export function ServicePackageForm({ initial, onSave, onCancel, saveLabel = "Add
 
   return (
     <div>
-      <div style={{ marginBottom: 14 }}>
-        <div style={labelStyle}>Service name</div>
+      <FormSection icon={Package} label="Package basics" hint="Give your service a clear name and format.">
+        <div style={{ marginBottom: 16 }}>
+          <div style={labelStyle}>Service name</div>
+          <input
+            value={pkg.name}
+            onChange={(e) => set({ name: e.target.value })}
+            placeholder="e.g. 1:1 Court Session"
+            style={inputStyle}
+          />
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <div style={labelStyle}>Package type</div>
+          <div style={{ fontSize: T.captionLg, color: C.slateLight, marginBottom: 8, marginTop: -4, ...fBody }}>
+            Select every format this service can be booked as — you can pick more than one.
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {PACKAGE_TYPE_OPTIONS.map((t) => {
+              const active = pkg.packageTypes.includes(t);
+              return (
+                <Chip
+                  key={t}
+                  active={active}
+                  onClick={() => set({
+                    packageTypes: active ? pkg.packageTypes.filter((x) => x !== t) : [...pkg.packageTypes, t],
+                  })}
+                >
+                  {t}
+                </Chip>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <div style={labelStyle}>Sport category</div>
+          <SearchSelect
+            options={SPORT_OPTIONS}
+            value={pkg.sport}
+            onChange={(v) => set({ sport: v })}
+            placeholder="Search a sport or add your own…"
+          />
+        </div>
+
+        <div>
+          <div style={labelStyle}>Description</div>
+          <textarea
+            value={pkg.description}
+            onChange={(e) => set({ description: e.target.value })}
+            rows={3}
+            placeholder="What's included, who it's for, what to expect…"
+            style={{ ...inputStyle, resize: "none" }}
+          />
+        </div>
+      </FormSection>
+
+      <FormSection icon={Clock} label="Session details" hint="How long a session runs and what it costs.">
+        <div style={{ marginBottom: 16 }}>
+          <div style={labelStyle}>Session duration</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+            {SESSION_DURATION_OPTIONS.map((d) => (
+              <Chip
+                key={d}
+                active={!pkg.useCustomDuration && pkg.sessionDuration === d}
+                onClick={() => set({ sessionDuration: d, useCustomDuration: false })}
+              >
+                {d} minutes
+              </Chip>
+            ))}
+            <Chip active={pkg.useCustomDuration} onClick={() => set({ useCustomDuration: true })}>Custom</Chip>
+          </div>
+          {pkg.useCustomDuration && (
+            <input
+              value={pkg.sessionDurationCustom}
+              onChange={(e) => set({ sessionDurationCustom: e.target.value })}
+              placeholder="e.g. 75 minutes"
+              style={inputStyle}
+            />
+          )}
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <div style={labelStyle}>Price</div>
+          <div style={fieldWrapStyle}>
+            <DollarSign size={14} color={C.slateLight} />
+            <input
+              value={pkg.price}
+              onChange={(e) => set({ price: e.target.value.replace(/[^0-9.]/g, "") })}
+              placeholder="e.g. 75"
+              inputMode="decimal"
+              style={fieldInputStyle}
+            />
+            <span style={{ fontSize: T.captionLg, color: C.slateLight, ...fBody }}>per session</span>
+          </div>
+        </div>
+
+        <div>
+          <div style={labelStyle}>Maximum participants per package</div>
+          <div style={{ fontSize: T.captionLg, color: C.slateLight, marginBottom: 8, marginTop: -4, ...fBody }}>
+            The most people who can join a single session of this specific package.
+          </div>
+          <div style={fieldWrapStyle}>
+            <Users size={14} color={C.slateLight} />
+            <input
+              value={pkg.maxParticipants}
+              onChange={(e) => set({ maxParticipants: e.target.value.replace(/[^0-9]/g, "") })}
+              placeholder="e.g. 1"
+              inputMode="numeric"
+              style={fieldInputStyle}
+            />
+            <span style={{ fontSize: T.captionLg, color: C.slateLight, ...fBody }}>max people</span>
+          </div>
+        </div>
+      </FormSection>
+
+      <FormSection icon={MapPin} label="Location & delivery" hint="Where and how this package takes place.">
+        <div style={{ marginBottom: 16 }}>
+          <div style={labelStyle}>Delivery mode</div>
+          <div style={{ fontSize: T.captionLg, color: C.slateLight, marginBottom: 8, marginTop: -4, ...fBody }}>
+            Each package can have its own location — this doesn't need to match your other packages.
+          </div>
+          <div style={{ display: "flex", gap: 8, marginBottom: 0, flexWrap: "wrap" }}>
+            {DELIVERY_MODE_OPTIONS.map((m) => (
+              <Chip
+                key={m}
+                active={pkg.deliveryMode === m}
+                onClick={() => set({ deliveryMode: m, venue: m === "In-person" ? pkg.venue : "", travelArea: m === "Come to You" ? pkg.travelArea : "" })}
+              >
+                {m}
+              </Chip>
+            ))}
+          </div>
+        </div>
+
+        {pkg.deliveryMode === "In-person" && (
+          <div>
+            <div style={labelStyle}>Venue</div>
+            <div style={fieldWrapStyle}>
+              <MapPin size={14} color={C.slateLight} />
+              <input
+                value={pkg.venue}
+                onChange={(e) => set({ venue: e.target.value })}
+                placeholder="e.g. Fitzroy Tennis Courts"
+                style={fieldInputStyle}
+              />
+            </div>
+          </div>
+        )}
+
+        {pkg.deliveryMode === "Come to You" && (
+          <div>
+            <div style={labelStyle}>Travel area (optional)</div>
+            <div style={fieldWrapStyle}>
+              <MapPin size={14} color={C.slateLight} />
+              <input
+                value={pkg.travelArea}
+                onChange={(e) => set({ travelArea: e.target.value })}
+                placeholder="e.g. Within 10km of Fitzroy"
+                style={fieldInputStyle}
+              />
+            </div>
+            <div style={{ fontSize: T.caption, color: C.slateLight, marginTop: 6, ...fBody }}>You'll travel to the client's location for this package.</div>
+          </div>
+        )}
+
+        {pkg.deliveryMode === "Online" && (
+          <div style={{ fontSize: T.captionLg, color: C.slateLight, ...fBody }}>Delivered virtually — no physical location needed.</div>
+        )}
+      </FormSection>
+
+      <FormSection icon={SlidersHorizontal} label="Extras" hint="Anything athletes should bring or prepare.">
+        <div style={labelStyle}>Equipment required (optional)</div>
         <input
-          value={pkg.name}
-          onChange={(e) => set({ name: e.target.value })}
-          placeholder="e.g. 1:1 Court Session"
+          value={pkg.equipment}
+          onChange={(e) => set({ equipment: e.target.value })}
+          placeholder="e.g. Bring your own racquet"
           style={inputStyle}
         />
-      </div>
-
-      <div style={labelStyle}>Package type</div>
-      <div style={{ fontSize: T.captionLg, color: C.slateLight, marginBottom: 8, marginTop: -6, ...fBody }}>
-        Select every format this service can be booked as — you can pick more than one.
-      </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
-        {PACKAGE_TYPE_OPTIONS.map((t) => {
-          const active = pkg.packageTypes.includes(t);
-          return (
-            <Chip
-              key={t}
-              active={active}
-              onClick={() => set({
-                packageTypes: active ? pkg.packageTypes.filter((x) => x !== t) : [...pkg.packageTypes, t],
-              })}
-            >
-              {t}
-            </Chip>
-          );
-        })}
-      </div>
-
-      <div style={labelStyle}>Sport category</div>
-      <div style={{ marginBottom: 16 }}>
-        <SearchSelect
-          options={SPORT_OPTIONS}
-          value={pkg.sport}
-          onChange={(v) => set({ sport: v })}
-          placeholder="Search a sport or add your own…"
-        />
-      </div>
-
-      <div style={labelStyle}>Description</div>
-      <textarea
-        value={pkg.description}
-        onChange={(e) => set({ description: e.target.value })}
-        rows={3}
-        placeholder="What's included, who it's for, what to expect…"
-        style={{ ...inputStyle, resize: "none", marginBottom: 16 }}
-      />
-
-      <div style={labelStyle}>Session duration</div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
-        {SESSION_DURATION_OPTIONS.map((d) => (
-          <Chip
-            key={d}
-            active={!pkg.useCustomDuration && pkg.sessionDuration === d}
-            onClick={() => set({ sessionDuration: d, useCustomDuration: false })}
-          >
-            {d} minutes
-          </Chip>
-        ))}
-        <Chip active={pkg.useCustomDuration} onClick={() => set({ useCustomDuration: true })}>Custom</Chip>
-      </div>
-      {pkg.useCustomDuration && (
-        <input
-          value={pkg.sessionDurationCustom}
-          onChange={(e) => set({ sessionDurationCustom: e.target.value })}
-          placeholder="e.g. 75 minutes"
-          style={{ ...inputStyle, marginBottom: 8 }}
-        />
-      )}
-      <div style={{ marginBottom: 8 }} />
-
-      <div style={labelStyle}>Price</div>
-      <div style={{ ...fieldWrapStyle, marginBottom: 16 }}>
-        <DollarSign size={14} color={C.slateLight} />
-        <input
-          value={pkg.price}
-          onChange={(e) => set({ price: e.target.value.replace(/[^0-9.]/g, "") })}
-          placeholder="e.g. 75"
-          inputMode="decimal"
-          style={fieldInputStyle}
-        />
-        <span style={{ fontSize: T.captionLg, color: C.slateLight, ...fBody }}>per session</span>
-      </div>
-
-      <div style={labelStyle}>Maximum participants per package</div>
-      <div style={{ fontSize: T.captionLg, color: C.slateLight, marginBottom: 8, marginTop: -6, ...fBody }}>
-        The most people who can join a single session of this specific package.
-      </div>
-      <div style={{ ...fieldWrapStyle, marginBottom: 16 }}>
-        <Users size={14} color={C.slateLight} />
-        <input
-          value={pkg.maxParticipants}
-          onChange={(e) => set({ maxParticipants: e.target.value.replace(/[^0-9]/g, "") })}
-          placeholder="e.g. 1"
-          inputMode="numeric"
-          style={fieldInputStyle}
-        />
-        <span style={{ fontSize: T.captionLg, color: C.slateLight, ...fBody }}>max people</span>
-      </div>
-
-      <div style={labelStyle}>Delivery & location</div>
-      <div style={{ fontSize: T.captionLg, color: C.slateLight, marginBottom: 8, marginTop: -6, ...fBody }}>
-        Each package can have its own location — this doesn't need to match your other packages.
-      </div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-        {DELIVERY_MODE_OPTIONS.map((m) => (
-          <Chip
-            key={m}
-            active={pkg.deliveryMode === m}
-            onClick={() => set({ deliveryMode: m, venue: m === "In-person" ? pkg.venue : "", travelArea: m === "Come to You" ? pkg.travelArea : "" })}
-          >
-            {m}
-          </Chip>
-        ))}
-      </div>
-
-      {pkg.deliveryMode === "In-person" && (
-        <div style={{ marginBottom: 16 }}>
-          <div style={labelStyle}>Venue</div>
-          <div style={fieldWrapStyle}>
-            <MapPin size={14} color={C.slateLight} />
-            <input
-              value={pkg.venue}
-              onChange={(e) => set({ venue: e.target.value })}
-              placeholder="e.g. Fitzroy Tennis Courts"
-              style={fieldInputStyle}
-            />
-          </div>
-        </div>
-      )}
-
-      {pkg.deliveryMode === "Come to You" && (
-        <div style={{ marginBottom: 16 }}>
-          <div style={labelStyle}>Travel area (optional)</div>
-          <div style={fieldWrapStyle}>
-            <MapPin size={14} color={C.slateLight} />
-            <input
-              value={pkg.travelArea}
-              onChange={(e) => set({ travelArea: e.target.value })}
-              placeholder="e.g. Within 10km of Fitzroy"
-              style={fieldInputStyle}
-            />
-          </div>
-          <div style={{ fontSize: T.caption, color: C.slateLight, marginTop: 6, ...fBody }}>You'll travel to the client's location for this package.</div>
-        </div>
-      )}
-
-      {pkg.deliveryMode === "Online" && (
-        <div style={{ fontSize: T.captionLg, color: C.slateLight, marginBottom: 16, ...fBody }}>Delivered virtually — no physical location needed.</div>
-      )}
-
-      <div style={labelStyle}>Equipment required (optional)</div>
-      <input
-        value={pkg.equipment}
-        onChange={(e) => set({ equipment: e.target.value })}
-        placeholder="e.g. Bring your own racquet"
-        style={{ ...inputStyle, marginBottom: 18 }}
-      />
+      </FormSection>
 
       <div style={{ display: "flex", gap: 8 }}>
         {onCancel && <Btn variant="outline" full onClick={onCancel}>Cancel</Btn>}

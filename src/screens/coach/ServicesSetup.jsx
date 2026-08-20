@@ -65,14 +65,12 @@ export function ScreenCoachServicesSetup({ nav, toast, savePackage, removePackag
           </Card>
         ))}
 
-        <Card style={{ marginBottom: 18 }}>
-          <SectionLabel>{services.length > 0 ? "Add another service" : "Add a service"}</SectionLabel>
-          <ServicePackageForm
-            key={services.length}
-            onSave={addService}
-            saveLabel={services.length > 0 ? "Add Another Service" : "Add Service"}
-          />
-        </Card>
+        <SectionLabel>{services.length > 0 ? "Add another service" : "Add a service"}</SectionLabel>
+        <ServicePackageForm
+          key={services.length}
+          onSave={addService}
+          saveLabel={services.length > 0 ? "Add Another Service" : "Add Service"}
+        />
 
         <Btn full disabled={!canContinue} onClick={() => { toast("Coaching services saved"); nav("coach-availability-setup"); }}>
           Continue

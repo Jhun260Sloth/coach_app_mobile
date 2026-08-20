@@ -10,7 +10,7 @@ import { COACHES } from "../../data/mockData";
 import { CONFIG } from "../../config";
 import { ADDITIONAL_CHARGE_STATUS, BOOKING_STATUS, PAYMENT_STATUS } from "../../data/bookings";
 import {
-  Avatar, BottomActionBar, Card, Badge, SegTabs, ViewModeToggle, SectionLabel, Btn, TopBar, EmptyState, StatusPill, Chip, BottomSheet, Row, ScrollFadeRow, HandleTag,
+  Avatar, BottomActionBar, Card, Badge, SegTabs, ViewModeToggle, ScreenHeader, SectionLabel, Btn, TopBar, EmptyState, StatusPill, Chip, BottomSheet, Row, ScrollFadeRow, HandleTag,
 } from "../../components/ui/Primitives";
 import { StatusBanner } from "../../systems/StateSystem";
 import { getBookingCoachName } from "../../utils/name";
@@ -174,12 +174,11 @@ export function ScreenClientDashboard({ nav, bookings = [], additionalCharges = 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
       <div style={{ padding: "18px 18px 0" }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-          <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, ...fDisplay }}>My sessions</div>
-          {!showEmptyDashboard && (
-            <ViewModeToggle value={view} onChange={setView} ariaLabel="Session view" />
-          )}
-        </div>
+        <ScreenHeader
+          title="My sessions"
+          subtitle="Requests, upcoming sessions and history."
+          action={!showEmptyDashboard && <ViewModeToggle value={view} onChange={setView} ariaLabel="Session view" />}
+        />
         {offline && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.jet, color: C.white, padding: "9px 12px", borderRadius: 12, marginTop: 12, fontSize: T.label, ...fBody }}>
             <WifiOff size={14} color={C.brand} /> You're offline — showing your last saved sessions.

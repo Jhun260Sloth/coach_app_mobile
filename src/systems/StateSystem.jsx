@@ -346,24 +346,33 @@ export function InlineStatus({ state, params, label }) {
 }
 
 /* -------------------------------------------------------------------------
-   NotificationBellButton — reusable trigger with unread-count dot
+   NotificationBellButton — reusable premium trigger with unread-count badge
    ------------------------------------------------------------------------- */
 export function NotificationBellButton({ count = 0, onClick }) {
   const C = useColors();
+  const capped = count > 9 ? "9+" : count;
   return (
-    <button type="button" aria-label={count > 0 ? `Notifications, ${count} unread` : "Notifications"} onClick={onClick} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ position: "relative" }}>
-        <Bell size={22} color={C.jet} />
-        {count > 0 && (
-          <span style={{
-            position: "absolute", top: -4, right: -6, minWidth: 15, height: 15, padding: "0 3px",
-            background: C.brand, borderRadius: 99, border: `1.5px solid ${C.white}`,
-            display: "flex", alignItems: "center", justifyContent: "center", fontSize: T.micro, fontWeight: 700, color: C.white, ...fBody,
-          }}>
-            {count}
-          </span>
-        )}
-      </div>
+    <button
+      type="button"
+      aria-label={count > 0 ? `Notifications, ${count} unread` : "Notifications"}
+      onClick={onClick}
+      style={{
+        width: 44, height: 44, flexShrink: 0, cursor: "pointer",
+        background: "none", border: "none", padding: 0,
+        display: "flex", alignItems: "center", justifyContent: "center", position: "relative",
+      }}
+    >
+      <Bell size={22} color={C.jet} strokeWidth={1.8} />
+      {count > 0 && (
+        <span style={{
+          position: "absolute", top: 2, right: 0, minWidth: 17, height: 17, padding: "0 4px",
+          boxSizing: "border-box", background: C.brand, borderRadius: 99, border: `1.5px solid ${C.white}`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: T.caption, fontWeight: 700, color: C.white, lineHeight: 1, ...fBody,
+        }}>
+          {capped}
+        </span>
+      )}
     </button>
   );
 }

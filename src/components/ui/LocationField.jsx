@@ -73,10 +73,10 @@ export function LocationField({ value, onChange, label = "Location", helper, pla
 
   return (
     <div>
-      <div style={labelStyle}>{label}</div>
+      {label && <div style={labelStyle}>{label}</div>}
 
       {value ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 12, border: `1.5px solid ${C.border}`, borderRadius: LAYOUT.inputRadius, padding: "11px 13px", background: C.white, animation: "clFadeUp .25s ease" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 64, boxSizing: "border-box", border: `1.5px solid ${C.border}`, borderRadius: LAYOUT.inputRadius, padding: "9px 13px", background: C.white, animation: "clFadeUp .25s ease" }}>
           <div style={{ width: 38, height: 38, borderRadius: 12, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <MapPin size={17} color={C.brand} />
           </div>
@@ -88,37 +88,36 @@ export function LocationField({ value, onChange, label = "Location", helper, pla
           </div>
           <button
             onClick={() => onChange?.(null)}
-            style={{ background: "none", border: "none", color: C.brand, fontSize: T.label, fontWeight: 600, cursor: "pointer", padding: 6, ...fBody }}
+            style={{ minHeight: LAYOUT.touchTarget, background: "none", border: "none", color: C.brand, fontSize: T.label, fontWeight: 600, cursor: "pointer", padding: "6px 4px", ...fBody }}
           >
             Change
           </button>
         </div>
       ) : (
         <div style={{ position: "relative" }}>
-          <div className="cl-input" style={{ display: "flex", alignItems: "center", gap: 10, border: `1.5px solid ${C.border}`, borderRadius: LAYOUT.inputRadius, padding: "0 13px", background: C.white, minHeight: 48 }}>
-            {locating ? <Spinner size={14} color={C.brand} /> : <Search size={16} color={C.slateLight} />}
+          <div className="cl-input" style={{ display: "flex", alignItems: "center", gap: 10, border: `1.5px solid ${C.border}`, borderRadius: LAYOUT.inputRadius, padding: "0 4px 0 13px", background: C.white, minHeight: 52 }}>
+            <Search size={16} color={C.slateLight} />
             <input
               value={locating ? "" : query}
               disabled={locating}
               onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
               onFocus={() => setOpen(true)}
               onBlur={() => setTimeout(() => setOpen(false), 150)}
-              placeholder={locating ? "Detecting your location…" : placeholder}
-              style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: T.bodyLg, color: C.jet, minWidth: 0, height: 46, ...fBody }}
+              placeholder={placeholder}
+              aria-label={label || "Search suburb or postcode"}
+              style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: T.bodyLg, color: C.jet, minWidth: 0, height: 52, ...fBody }}
             />
+            <div aria-hidden="true" style={{ width: 1, height: 24, background: C.border, flexShrink: 0 }} />
             <button
+              type="button"
               onClick={detect}
               onMouseDown={(e) => e.preventDefault()}
               disabled={locating}
-              style={{
-                display: "inline-flex", alignItems: "center", gap: 6, background: C.brandTint, border: "none",
-                borderRadius: 999, padding: "7px 12px", cursor: locating ? "default" : "pointer",
-                color: C.brandIcon || C.brandColor, fontSize: T.label, fontWeight: 600, whiteSpace: "nowrap",
-                opacity: locating ? 0.7 : 1, ...fBody,
-              }}
+              aria-label={locating ? "Detecting your current location" : "Detect my current location"}
+              title={locating ? "Detecting your current location" : "Detect my current location"}
+              style={{ width: LAYOUT.touchTarget, height: LAYOUT.touchTarget, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: "none", borderRadius: 12, background: C.brandTint, color: C.brandIcon || C.brand, cursor: locating ? "default" : "pointer", opacity: locating ? 0.7 : 1 }}
             >
-              {locating ? <Spinner size={12} /> : <LocateFixed size={13} />}
-              {locating ? "Detecting" : "Detect"}
+              {locating ? <Spinner size={15} color={C.brand} /> : <LocateFixed size={18} strokeWidth={2.2} />}
             </button>
           </div>
 

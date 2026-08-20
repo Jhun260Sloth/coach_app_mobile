@@ -562,7 +562,7 @@ export function ViewModeToggle({ value, onChange, ariaLabel = "View mode" }) {
     { value: "calendar", label: "Calendar view", icon: CalendarDays },
   ];
   return (
-    <div role="tablist" aria-label={ariaLabel} style={{ display: "inline-flex", alignItems: "center", gap: 2, padding: 3, borderRadius: 13, border: `1px solid ${C.border}`, background: C.fog, flexShrink: 0 }}>
+    <div role="tablist" aria-label={ariaLabel} style={{ display: "inline-flex", alignItems: "center", overflow: "hidden", borderRadius: 12, border: `1px solid ${C.border}`, background: C.fog, flexShrink: 0 }}>
       {options.map((option) => {
         const active = value === option.value;
         const Icon = option.icon;
@@ -575,9 +575,9 @@ export function ViewModeToggle({ value, onChange, ariaLabel = "View mode" }) {
             aria-label={option.label}
             title={option.label}
             onClick={() => onChange(option.value)}
-            style={{ width: LAYOUT.touchTarget, height: LAYOUT.touchTarget, borderRadius: 10, border: "none", background: active ? C.jet : "transparent", color: active ? C.white : C.slate, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: active ? "0 2px 6px rgba(22,24,29,.14)" : "none", transition: "background .15s ease, color .15s ease, box-shadow .15s ease" }}
+            style={{ width: LAYOUT.touchTarget, height: LAYOUT.touchTarget, padding: 0, borderRadius: 10, border: "none", background: active ? C.jet : "transparent", color: active ? C.white : C.slate, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: active ? "0 1px 3px rgba(22,24,29,.12)" : "none", transition: "background .15s ease, color .15s ease, box-shadow .15s ease" }}
           >
-            <Icon size={16} aria-hidden="true" />
+            <Icon size={15} strokeWidth={2.1} aria-hidden="true" />
           </button>
         );
       })}
@@ -605,23 +605,89 @@ export function BackButton({ onClick, floating = false, ariaLabel = "Go back" })
   );
 }
 
-export function TopBar({ title, onBack, right, border }) {
+const HEADER_DESCRIPTIONS = {
+  "Support": "Get help with your account, bookings and payments.",
+  "Confirm session": "Review the details before you confirm this session.",
+  "Funds status": "See how your session funds are being handled.",
+  "Payout status": "Track when your earnings will reach your account.",
+  "Payment status": "Track the status of your payment.",
+  "Report a session issue": "Tell us what happened so we can help resolve it.",
+  "Review your report": "Check the details before submitting your report.",
+  "Additional payment": "Request an approved additional payment for this session.",
+  "Client preview": "Review how this request will appear to your client.",
+  "Payment request": "Review the payment request before sending it.",
+  "Review request": "Review the details before responding.",
+  "Secure payment": "Your payment is processed securely through CoachLink.",
+  "Coaching services": "Create the sessions athletes can book with you.",
+  "Reels & photos": "Show athletes what your coaching looks like in action.",
+  "Profile setup": "Complete your profile so athletes can find and trust you.",
+  "Payout method": "Keep your payout details up to date.",
+  "Payout setup": "Add where you’d like to receive your earnings.",
+  "Notifications": "Stay up to date with activity on your account.",
+  "History": "Review your past sessions and transactions.",
+  "Earnings & payouts": "See your earnings, fees and payout activity.",
+  "Reviews": "Read feedback from the athletes you coach.",
+  "Availability setup": "Set the times athletes can book with you.",
+  "Package details": "Review the session details before booking.",
+  "Choose a time": "Pick a time that works best for you.",
+  "Add payment method": "Add a secure payment method for bookings.",
+  "Browse packages": "Compare coaching sessions and find the right fit.",
+  "Ask a question": "Send the coach a quick message before you book.",
+  "Join waitlist": "Get notified when a place becomes available.",
+  "Session prep": "Get ready for your upcoming coaching session.",
+  "Refund status": "Track the progress of your refund.",
+  "Filters": "Narrow your results to find the right coach faster.",
+  "Booking details": "Review your session, payment and booking updates.",
+  "Leave a review": "Share feedback to help other athletes choose confidently.",
+  "Who's attending?": "Choose who this coaching session is for.",
+  "Confirm Session": "Check the details before you request this session.",
+  "Review booking": "Make sure everything looks right before you book.",
+  "Payment": "Complete your booking with a secure payment.",
+  "Session details": "Review session details and coordinate next steps.",
+  "Verification review": "We’re reviewing your details before activating your profile.",
+};
+
+function headerDescriptionFor(title) {
+  if (typeof title !== "string") return "Review the details and take the next step.";
+  if (HEADER_DESCRIPTIONS[title]) return HEADER_DESCRIPTIONS[title];
+  if (title.endsWith("'s availability")) return "Browse available times and choose what works for you.";
+  return "Review the details and take the next step.";
+}
+
+export function ScreenHeader({ title, subtitle, action, style, titleStyle }) {
+  const C = useColors();
+  return (
+    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, ...style }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: T.heading, fontWeight: 700, color: C.jet, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", ...fDisplay, ...titleStyle }}>{title}</div>
+        {subtitle && <div style={{ fontSize: T.caption, color: C.slate, lineHeight: 1.3, marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", ...fBody }}>{subtitle}</div>}
+      </div>
+      {action && <div style={{ flexShrink: 0, paddingTop: 1 }}>{action}</div>}
+    </div>
+  );
+}
+
+export function TopBar({ title, subtitle, onBack, right, border }) {
   const C = useColors();
   const { darkMode } = useApp();
   const hasBorder = border !== undefined ? border : !!title;
+  const supportingCopy = title ? (subtitle || headerDescriptionFor(title)) : null;
   return (
     <div style={{
       display: "flex", alignItems: "center", justifyContent: "space-between",
-      height: LAYOUT.topBarH, padding: `0 ${LAYOUT.pagePadX}px`, boxSizing: "border-box",
+      minHeight: supportingCopy ? 64 : LAYOUT.topBarH, padding: `6px ${LAYOUT.pagePadX}px`, boxSizing: "border-box",
       position: "sticky", top: 0, zIndex: 25,
       background: darkMode ? "rgba(13,17,23,0.86)" : "rgba(255,255,255,0.86)",
       backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)",
       borderBottom: hasBorder ? `1px solid ${C.border}` : "none",
     }}>
-      <div style={{ width: LAYOUT.touchTarget, display: "flex", alignItems: "center", flexShrink: 0 }}>
-        {onBack && <BackButton onClick={onBack} />}
-      </div>
-      <div style={{ fontSize: T.titleLg, fontWeight: 700, color: C.jet, letterSpacing: "-0.2px", ...fDisplay, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", padding: "0 8px", textAlign: "center", flex: 1, minWidth: 0 }}>{title}</div>
+      {onBack && <BackButton onClick={onBack} />}
+      {title && (
+        <div style={{ flex: 1, minWidth: 0, marginLeft: onBack ? 10 : 0 }}>
+          <div style={{ fontSize: T.titleLg, fontWeight: 700, color: C.jet, letterSpacing: "-0.2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", ...fDisplay }}>{title}</div>
+          {supportingCopy && <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.35, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", ...fBody }}>{supportingCopy}</div>}
+        </div>
+      )}
       <div style={{ minWidth: LAYOUT.touchTarget, minHeight: LAYOUT.touchTarget, display: "flex", justifyContent: "flex-end", alignItems: "center", flexShrink: 0 }}>{right}</div>
     </div>
   );
@@ -833,9 +899,38 @@ export function BottomTabs({ items, value, onChange }) {
   );
 }
 
-export function SectionLabel({ children }) {
+export function SectionLabel({ children, icon: Icon, hint, style }) {
   const C = useColors();
-  return <div style={{ fontSize: T.labelLg, fontWeight: 700, color: C.jet, marginBottom: 10, ...fDisplay }}>{children}</div>;
+  return (
+    <div style={{ marginBottom: hint ? 12 : 10, ...style }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        {Icon && (
+          <span style={{ width: 24, height: 24, borderRadius: 8, flexShrink: 0, background: C.brandTint, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+            <Icon size={13} color={C.brand} />
+          </span>
+        )}
+        <span style={{ fontSize: T.labelLg, fontWeight: 700, color: C.jet, letterSpacing: "0.01em", ...fDisplay }}>{children}</span>
+      </div>
+      {hint && (
+        <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 3, lineHeight: 1.5, ...fBody }}>{hint}</div>
+      )}
+    </div>
+  );
+}
+
+/** Grouped form section — header row (optional icon + label + hint) with its
+    fields wrapped in a soft card. The shared "premium" building block for all
+    edit / setup forms across the app. */
+export function FormSection({ icon: Icon, label, hint, children, style, cardStyle }) {
+  const C = useColors();
+  return (
+    <Card style={{ marginBottom: 14, ...cardStyle }}>
+      <SectionLabel icon={Icon} hint={hint} style={{ marginBottom: hint ? 12 : 14 }}>
+        {label}
+      </SectionLabel>
+      <div style={style}>{children}</div>
+    </Card>
+  );
 }
 
 export function Row({ label, value, bold, last }) {

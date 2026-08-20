@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import {
   Phone, Camera, ShieldCheck, Plus, Users, User, CalendarDays,
-  AlertTriangle, Stethoscope, UserCheck,
+  AlertTriangle, Stethoscope, UserCheck, Sparkles, Target,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { GENDER_OPTIONS } from "../../data/mockData";
-import { Chip, SectionLabel, Btn, TopBar, Field, Card, Avatar, Badge } from "../../components/ui/Primitives";
+import { Chip, SectionLabel, FormSection, Btn, TopBar, Field, Card, Avatar, Badge } from "../../components/ui/Primitives";
 import { HandleField } from "../../components/ui/PublicIdentityFields";
 import { isValidHandle } from "../../utils/name";
 import { LocationField } from "../../components/ui/LocationField";
@@ -273,51 +273,49 @@ export function ParticipantFields({ draft, setDraft, showGuardianInfo = false })
 
   return (
     <>
-      <SectionLabel>Basic information</SectionLabel>
+      <FormSection icon={User} label="Basic information" hint="Name, date of birth and location.">
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <Field label="Participant name" placeholder="e.g. Ava Chen" icon={Users} value={draft.name} onChange={(e) => patch({ name: e.target.value })} />
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
-        <Field label="Participant name" placeholder="e.g. Ava Chen" icon={Users} value={draft.name} onChange={(e) => patch({ name: e.target.value })} />
-
-        <div>
-          <div style={labelStyle}>Date of birth</div>
-          <div className="cl-input" style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
-            <CalendarDays size={16} color={C.slateLight} />
-            <input
-              type="date"
-              name="participant-date-of-birth"
-              aria-label="Participant date of birth"
-              value={draft.dob}
-              max={new Date().toISOString().slice(0, 10)}
-              onChange={(e) => patch({ dob: e.target.value })}
-              style={{ flex: 1, border: "none", outline: "none", fontSize: T.bodyLg, color: C.jet, ...fBody }}
-            />
+          <div>
+            <div style={labelStyle}>Date of birth</div>
+            <div className="cl-input" style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
+              <CalendarDays size={16} color={C.slateLight} />
+              <input
+                type="date"
+                name="participant-date-of-birth"
+                aria-label="Participant date of birth"
+                value={draft.dob}
+                max={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => patch({ dob: e.target.value })}
+                style={{ flex: 1, border: "none", outline: "none", fontSize: T.bodyLg, color: C.jet, ...fBody }}
+              />
+            </div>
           </div>
-        </div>
 
-        <div>
-          <div style={labelStyle}>Age</div>
-          <div style={{ border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", background: C.fog }}>
-            <span style={{ fontSize: T.bodyLg, color: age !== null ? C.jet : C.slateLight, ...fBody }}>
-              {age !== null ? `${age} years old` : "Auto-calculated from date of birth"}
-            </span>
+          <div>
+            <div style={labelStyle}>Age</div>
+            <div style={{ border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", background: C.fog }}>
+              <span style={{ fontSize: T.bodyLg, color: age !== null ? C.jet : C.slateLight, ...fBody }}>
+                {age !== null ? `${age} years old` : "Auto-calculated from date of birth"}
+              </span>
+            </div>
           </div>
-        </div>
 
-        <div>
-          <div style={labelStyle}>Gender (optional)</div>
-          <select
-            name="participant-gender"
-            aria-label="Gender (optional)"
-            value={draft.gender}
-            onChange={(e) => patch({ gender: e.target.value })}
-            style={{ ...inputStyle, appearance: "auto", background: C.white, color: draft.gender ? C.jet : C.slateLight }}
-          >
-            <option value="">Prefer not to say</option>
-            {GENDER_OPTIONS.map((g) => <option key={g} value={g}>{g}</option>)}
-          </select>
-        </div>
+          <div>
+            <div style={labelStyle}>Gender (optional)</div>
+            <select
+              name="participant-gender"
+              aria-label="Gender (optional)"
+              value={draft.gender}
+              onChange={(e) => patch({ gender: e.target.value })}
+              style={{ ...inputStyle, appearance: "auto", background: C.white, color: draft.gender ? C.jet : C.slateLight }}
+            >
+              <option value="">Prefer not to say</option>
+              {GENDER_OPTIONS.map((g) => <option key={g} value={g}>{g}</option>)}
+            </select>
+          </div>
 
-        <div>
           <LocationField
             value={draft.location}
             onChange={(loc) => patch({ location: loc })}
@@ -326,62 +324,59 @@ export function ParticipantFields({ draft, setDraft, showGuardianInfo = false })
             helper="Used to find and match coaches near you."
           />
         </div>
-      </div>
+      </FormSection>
 
       {showGuardianInfo && (
-        <>
-          <SectionLabel>Guardian information</SectionLabel>
-          <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: -6, marginBottom: 12, lineHeight: 1.5, ...fBody }}>
-            The parent or legal guardian responsible for this participant. This is who coaches and CoachLink will contact about the booking.
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+        <FormSection icon={UserCheck} label="Guardian information" hint="The parent or legal guardian responsible for this participant.">
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <Field label="Guardian name" placeholder="e.g. Jamie Chen" icon={UserCheck} value={draft.guardianName} onChange={(e) => patch({ guardianName: e.target.value })} />
             <Field label="Relationship to participant" placeholder="e.g. Parent" value={draft.guardianRelationship} onChange={(e) => patch({ guardianRelationship: e.target.value })} />
             <Field label="Mobile number" placeholder="04XX XXX XXX" icon={Phone} type="tel" value={draft.guardianMobile} onChange={(e) => patch({ guardianMobile: e.target.value.replace(/[^0-9+\s]/g, "") })} />
           </div>
-        </>
+        </FormSection>
       )}
 
-      <SectionLabel>Sport interests</SectionLabel>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: extraSports.length ? 10 : 8 }}>
-        {PARTICIPANT_SPORT_EXAMPLES.map((s) => (
-          <Chip key={s} active={draft.sport.includes(s)} onClick={() => toggleSport(s)}>{s}</Chip>
-        ))}
-      </div>
-      {extraSports.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
-          {extraSports.map((s) => (
-            <Chip key={s} active onClick={() => toggleSport(s)}>{s}</Chip>
+      <FormSection icon={Sparkles} label="Sport interests" hint="Sports they love — helps coaches match the right sessions.">
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: extraSports.length ? 10 : 8 }}>
+          {PARTICIPANT_SPORT_EXAMPLES.map((s) => (
+            <Chip key={s} active={draft.sport.includes(s)} onClick={() => toggleSport(s)}>{s}</Chip>
           ))}
         </div>
-      )}
-      {addingSport ? (
-        <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-          <input
-            value={customSport}
-            onChange={(e) => setCustomSport(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomSport(); } }}
-            placeholder="Type a sport…"
-            autoFocus
-            style={{ ...inputStyle, flex: 1 }}
-          />
-          <Btn size="sm" onClick={addCustomSport}>Add</Btn>
+        {extraSports.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+            {extraSports.map((s) => (
+              <Chip key={s} active onClick={() => toggleSport(s)}>{s}</Chip>
+            ))}
+          </div>
+        )}
+        {addingSport ? (
+          <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+            <input
+              value={customSport}
+              onChange={(e) => setCustomSport(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomSport(); } }}
+              placeholder="Type a sport…"
+              autoFocus
+              style={{ ...inputStyle, flex: 1 }}
+            />
+            <Btn size="sm" onClick={addCustomSport}>Add</Btn>
+          </div>
+        ) : (
+          <button onClick={() => setAddingSport(true)} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: C.brand, fontSize: T.labelLg, fontWeight: 600, marginTop: 8, padding: 0, ...fBody }}>
+            <Plus size={14} /> Add another sport
+          </button>
+        )}
+      </FormSection>
+
+      <FormSection icon={Target} label="Skill level" hint="How experienced they are in their main sport.">
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {SKILL_LEVELS.map((lvl) => (
+            <Chip key={lvl} active={draft.skillLevel === lvl} onClick={() => patch({ skillLevel: lvl })}>{lvl}</Chip>
+          ))}
         </div>
-      ) : (
-        <button onClick={() => setAddingSport(true)} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: C.brand, fontSize: T.labelLg, fontWeight: 600, marginBottom: 20, padding: 0, ...fBody }}>
-          <Plus size={14} /> Add another sport
-        </button>
-      )}
+      </FormSection>
 
-      <SectionLabel>Skill level</SectionLabel>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
-        {SKILL_LEVELS.map((lvl) => (
-          <Chip key={lvl} active={draft.skillLevel === lvl} onClick={() => patch({ skillLevel: lvl })}>{lvl}</Chip>
-        ))}
-      </div>
-
-      <SectionLabel>Coaching goals</SectionLabel>
-      <div style={{ marginBottom: 20 }}>
+      <FormSection icon={Target} label="Coaching goals" hint="What they'd like to get out of coaching.">
         <textarea
           value={draft.goals}
           onChange={(e) => patch({ goals: e.target.value })}
@@ -389,30 +384,32 @@ export function ParticipantFields({ draft, setDraft, showGuardianInfo = false })
           rows={3}
           style={{ ...inputStyle, resize: "none" }}
         />
-      </div>
+      </FormSection>
 
-      <SectionLabel>Medical information (optional)</SectionLabel>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
-        <Field label="Medical conditions" placeholder="e.g. asthma" icon={Stethoscope} value={draft.medicalConditions} onChange={(e) => patch({ medicalConditions: e.target.value })} />
-        <Field label="Allergies" placeholder="e.g. bee stings, peanuts" icon={AlertTriangle} value={draft.allergies} onChange={(e) => patch({ allergies: e.target.value })} />
-        <div>
-          <div style={labelStyle}>Additional notes</div>
-          <textarea
-            value={draft.medicalNotes}
-            onChange={(e) => patch({ medicalNotes: e.target.value })}
-            placeholder="Anything else a coach should know"
-            rows={2}
-            style={{ ...inputStyle, resize: "none" }}
-          />
+      <FormSection icon={Stethoscope} label="Medical information (optional)" hint="Anything a coach should know to keep sessions safe.">
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <Field label="Medical conditions" placeholder="e.g. asthma" icon={Stethoscope} value={draft.medicalConditions} onChange={(e) => patch({ medicalConditions: e.target.value })} />
+          <Field label="Allergies" placeholder="e.g. bee stings, peanuts" icon={AlertTriangle} value={draft.allergies} onChange={(e) => patch({ allergies: e.target.value })} />
+          <div>
+            <div style={labelStyle}>Additional notes</div>
+            <textarea
+              value={draft.medicalNotes}
+              onChange={(e) => patch({ medicalNotes: e.target.value })}
+              placeholder="Anything else a coach should know"
+              rows={2}
+              style={{ ...inputStyle, resize: "none" }}
+            />
+          </div>
         </div>
-      </div>
+      </FormSection>
 
-      <SectionLabel>Emergency contact (optional)</SectionLabel>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 8 }}>
-        <Field label="Contact name" placeholder="e.g. Mia Chen" icon={UserCheck} value={draft.emergencyName} onChange={(e) => patch({ emergencyName: e.target.value })} />
-        <Field label="Relationship" placeholder="e.g. Mother" value={draft.emergencyRelationship} onChange={(e) => patch({ emergencyRelationship: e.target.value })} />
-        <Field label="Mobile number" placeholder="04XX XXX XXX" icon={Phone} value={draft.emergencyMobile} onChange={(e) => patch({ emergencyMobile: e.target.value.replace(/[^0-9+\s]/g, "") })} />
-      </div>
+      <FormSection icon={UserCheck} label="Emergency contact (optional)" hint="Who coaches can reach if they can't get hold of you.">
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <Field label="Contact name" placeholder="e.g. Mia Chen" icon={UserCheck} value={draft.emergencyName} onChange={(e) => patch({ emergencyName: e.target.value })} />
+          <Field label="Relationship" placeholder="e.g. Mother" value={draft.emergencyRelationship} onChange={(e) => patch({ emergencyRelationship: e.target.value })} />
+          <Field label="Mobile number" placeholder="04XX XXX XXX" icon={Phone} value={draft.emergencyMobile} onChange={(e) => patch({ emergencyMobile: e.target.value.replace(/[^0-9+\s]/g, "") })} />
+        </div>
+      </FormSection>
     </>
   );
 }

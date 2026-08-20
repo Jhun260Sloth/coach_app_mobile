@@ -4,7 +4,6 @@ import {
   Calendar,
   Star,
   Banknote,
-  Bell,
   MessageCircle,
   Check,
   CornerUpLeft,
@@ -23,9 +22,11 @@ import {
   BottomSheet,
   Badge,
   HandleTag,
+  ScreenHeader,
   Toggle,
 } from "../../components/ui/Primitives";
 import { useReviewActions, DISPUTE_REASONS } from "../../systems/ReviewsSystem";
+import { NotificationBellButton } from "../../systems/StateSystem";
 import { useApp } from "../../context/AppContext";
 import { getBookingClientName } from "../../utils/name";
 import { withClientMeta } from "../../data/users";
@@ -148,99 +149,11 @@ export function ScreenCoachDashboard({
         }}
       >
         {/* Header */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <div>
-            <div
-              style={{
-                fontSize: T.labelLg,
-                color: C.slate,
-                ...fBody,
-              }}
-            >
-              Welcome back
-            </div>
-
-            <div
-              style={{
-                fontSize: T.display,
-                fontWeight: 600,
-                color: C.jet,
-                ...fDisplay,
-              }}
-            >
-              {(coachIdentity.name || "Coach").split(" ")[0]}'s dashboard
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 14,
-            }}
-          >
-            {/* Notifications */}
-            <button
-              onClick={() => nav("coach-notifications")}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-              }}
-            >
-              <div
-                style={{
-                  position: "relative",
-                }}
-              >
-                <Bell size={22} color={C.jet} />
-
-                {unreadCount > 0 && (
-                  <span
-                    style={{
-                      position: "absolute",
-                      top: -4,
-                      right: -6,
-                      minWidth: 15,
-                      height: 15,
-                      padding: "0 3px",
-                      background: C.brand,
-                      borderRadius: 99,
-                      border: `1.5px solid ${C.white}`,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: T.micro,
-                      fontWeight: 700,
-                      color: C.white,
-                      ...fBody,
-                    }}
-                  >
-                    {unreadCount}
-                  </span>
-                )}
-              </div>
-            </button>
-
-            {/* Profile */}
-            <button
-              onClick={() => nav("coach-profile-edit")}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-              }}
-            >
-              <Avatar name={coachIdentity.name} size={40} />
-            </button>
-          </div>
-        </div>
+        <ScreenHeader
+          title={`${(coachIdentity.name || "Coach").split(" ")[0]}'s dashboard`}
+          subtitle="Bookings, messages and coaching activity."
+          action={<NotificationBellButton count={unreadCount} onClick={() => nav("coach-notifications")} />}
+        />
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: 116 }} className="cl-hide-scrollbar">

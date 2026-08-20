@@ -128,7 +128,7 @@ export function ScreenCoachProfile({ nav, goBack, params = {}, favorites = [], t
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ flex: 1, overflowY: "auto", paddingBottom: 100 }} className="cl-hide-scrollbar">
-        <div style={{ margin: "14px 18px 0", position: "relative" }}>
+        <div style={{ position: "relative" }}>
           <CoachProfileHero
             coach={coach}
             pub={pub}
@@ -136,7 +136,6 @@ export function ScreenCoachProfile({ nav, goBack, params = {}, favorites = [], t
             avatarSrc={coach.avatar}
             instantBook={coach.instantBook}
             coverHeight={188}
-            inset={0}
             onAvatarClick={() => setAvatarOpen(true)}
             overlay={
               <>
