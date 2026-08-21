@@ -1,6 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
-  ChevronLeft, Star, CheckCircle2, Search, Wifi, Battery, AlertTriangle, CalendarDays, List, X,
+  ChevronLeft, ChevronRight, Star, CheckCircle2, Search, Wifi, Battery, AlertTriangle, CalendarDays, List, X,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T, LAYOUT } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
@@ -20,6 +20,14 @@ function useColors() {
   } catch (e) {
     return CL;
   }
+}
+
+/** Brand-green asterisk marking a field/section as required. */
+export function RequiredMark() {
+  const C = useColors();
+  return (
+    <span aria-hidden="true" title="Required" style={{ color: C.brand, fontWeight: 700, marginLeft: 1 }}>*</span>
+  );
 }
 
 export function Spinner({ size = 15, color }) {
@@ -261,7 +269,7 @@ export function RadioRow({ label, selected, onClick }) {
   );
 }
 
-export function SearchMultiSelect({ options, value, onChange, placeholder = "Search…" }) {
+export function SearchMultiSelect({ options, value, onChange, placeholder = "Search…", renderOption, renderValue }) {
   const C = useColors();
   const inputId = React.useId();
   const [query, setQuery] = React.useState("");
@@ -284,7 +292,7 @@ export function SearchMultiSelect({ options, value, onChange, placeholder = "Sea
               display: "inline-flex", alignItems: "center", gap: 4, minHeight: 32, boxSizing: "border-box", padding: "4px 8px", borderRadius: LAYOUT.pillRadius,
               fontSize: T.labelLg, fontWeight: 500, border: `1px solid ${C.brand}`, background: C.brandTint, color: C.brandIcon || C.brandColor, ...fBody,
             }}>
-              {v}
+              {renderValue ? renderValue(v) : v}
               <button type="button" onClick={() => remove(v)} aria-label={`Remove ${v}`} style={{ width: 20, height: 20, minWidth: 20, minHeight: 20, flexShrink: 0, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, color: C.brandIcon || C.brandColor }}>
                 <svg width={11} height={11} viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" /></svg>
               </button>
@@ -319,7 +327,7 @@ export function SearchMultiSelect({ options, value, onChange, placeholder = "Sea
                 onClick={() => add(o)}
                 style={{ display: "block", width: "100%", minHeight: LAYOUT.touchTarget, textAlign: "left", padding: "10px 13px", background: "none", border: "none", cursor: "pointer", fontSize: T.body, color: C.jet, ...fBody }}
               >
-                {o}
+                {renderOption ? renderOption(o) : o}
               </button>
             ))}
           </div>
@@ -329,7 +337,7 @@ export function SearchMultiSelect({ options, value, onChange, placeholder = "Sea
   );
 }
 
-export function SearchSelect({ options, value, onChange, placeholder = "Search…", allowCustom = true }) {
+export function SearchSelect({ options, value, onChange, placeholder = "Search…", allowCustom = true, renderOption, renderValue }) {
   const C = useColors();
   const inputId = React.useId();
   const [query, setQuery] = React.useState("");
@@ -347,7 +355,7 @@ export function SearchSelect({ options, value, onChange, placeholder = "Search�
   if (value) {
     return (
       <div className="cl-input" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, minHeight: LAYOUT.touchTarget, boxSizing: "border-box", border: `1.5px solid ${C.border}`, borderRadius: LAYOUT.inputRadius, padding: "0 13px", background: C.white }}>
-        <span style={{ fontSize: T.bodyLg, color: C.jet, fontWeight: 500, ...fBody }}>{value}</span>
+        <span style={{ minWidth: 0, fontSize: T.bodyLg, color: C.jet, fontWeight: 500, ...fBody }}>{renderValue ? renderValue(value) : value}</span>
         <button type="button" onClick={clear} aria-label="Clear selection" style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: C.slateLight, flexShrink: 0 }}>
           <svg width={13} height={13} viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth={2.3} strokeLinecap="round" /></svg>
         </button>
@@ -383,7 +391,7 @@ export function SearchSelect({ options, value, onChange, placeholder = "Search�
               onClick={() => choose(o)}
               style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 13px", background: "none", border: "none", cursor: "pointer", fontSize: T.body, color: C.jet, ...fBody }}
             >
-              {o}
+              {renderOption ? renderOption(o) : o}
             </button>
           ))}
           {showAddCustom && (
@@ -899,7 +907,7 @@ export function BottomTabs({ items, value, onChange }) {
   );
 }
 
-export function SectionLabel({ children, icon: Icon, hint, style }) {
+export function SectionLabel({ children, icon: Icon, hint, style, required }) {
   const C = useColors();
   return (
     <div style={{ marginBottom: hint ? 12 : 10, ...style }}>
@@ -909,7 +917,7 @@ export function SectionLabel({ children, icon: Icon, hint, style }) {
             <Icon size={13} color={C.brand} />
           </span>
         )}
-        <span style={{ fontSize: T.labelLg, fontWeight: 700, color: C.jet, letterSpacing: "0.01em", ...fDisplay }}>{children}</span>
+        <span style={{ fontSize: T.labelLg, fontWeight: 700, color: C.jet, letterSpacing: "0.01em", ...fDisplay }}>{children}{required && <RequiredMark />}</span>
       </div>
       {hint && (
         <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 3, lineHeight: 1.5, ...fBody }}>{hint}</div>
@@ -921,11 +929,11 @@ export function SectionLabel({ children, icon: Icon, hint, style }) {
 /** Grouped form section — header row (optional icon + label + hint) with its
     fields wrapped in a soft card. The shared "premium" building block for all
     edit / setup forms across the app. */
-export function FormSection({ icon: Icon, label, hint, children, style, cardStyle }) {
+export function FormSection({ icon: Icon, label, hint, children, style, cardStyle, required }) {
   const C = useColors();
   return (
     <Card style={{ marginBottom: 14, ...cardStyle }}>
-      <SectionLabel icon={Icon} hint={hint} style={{ marginBottom: hint ? 12 : 14 }}>
+      <SectionLabel icon={Icon} hint={hint} required={required} style={{ marginBottom: hint ? 12 : 14 }}>
         {label}
       </SectionLabel>
       <div style={style}>{children}</div>
@@ -943,6 +951,68 @@ export function Row({ label, value, bold, last }) {
   );
 }
 
+/* -------------------------------------------------------------------------
+   SETTINGS PRIMITIVES
+   Consistent, premium list rows and grouped cards used by the client and
+   coach account/settings screens (and their sheets). Rows render inside a
+   SettingsGroup card, which supplies the outer border, radius and dividers.
+   ------------------------------------------------------------------------- */
+
+/** A single settings/menu row with a tinted icon tile, label + optional
+    sub-copy, and a chevron (or custom right control). Pass `last` to drop
+    the divider; `danger` tones the row for destructive actions. */
+export function SettingsRow({ icon: Icon, label, sub, onClick, right, danger, last, style }) {
+  const C = useColors();
+  const Component = onClick ? "button" : "div";
+  return (
+    <Component
+      type={onClick ? "button" : undefined}
+      onClick={onClick}
+      aria-label={onClick && !label ? label : undefined}
+      style={{
+        width: "100%", minHeight: 52, display: "flex", alignItems: "center", gap: 12,
+        padding: "10px 14px", boxSizing: "border-box",
+        background: "none", border: "none",
+        borderBottom: last ? "none" : `1px solid ${C.border}`,
+        cursor: onClick ? "pointer" : "default", textAlign: "left",
+        transition: "background .15s ease", ...style,
+      }}
+    >
+      {Icon && (
+        <span style={{ width: 34, height: 34, borderRadius: 11, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", background: danger ? C.dangerTint : C.fog }}>
+          <Icon size={16} color={danger ? C.danger : C.slate} />
+        </span>
+      )}
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: "block", fontSize: T.bodyLg, color: danger ? C.danger : C.jet, fontWeight: 600, lineHeight: 1.3, ...fBody }}>{label}</span>
+        {sub && <span style={{ display: "block", fontSize: T.captionLg, color: C.slate, marginTop: 2, lineHeight: 1.4, ...fBody }}>{sub}</span>}
+      </span>
+      {right !== undefined ? right : (onClick ? <ChevronRight size={16} color={C.slateLight} style={{ flexShrink: 0 }} /> : null)}
+    </Component>
+  );
+}
+
+/** Grouped settings card — renders `title` (SectionLabel) above a Card whose
+    rows share one border, radius and consistent internal dividers. */
+export function SettingsGroup({ title, children, style, cardStyle }) {
+  const C = useColors();
+  const rows = React.Children.toArray(children).filter(Boolean);
+  const wrapped = rows.map((child, index) =>
+    React.cloneElement(child, {
+      ...(child.props || {}),
+      last: index === rows.length - 1,
+    })
+  );
+  return (
+    <div style={{ marginBottom: 24, ...style }}>
+      {title && <SectionLabel style={{ marginBottom: 10 }}>{title}</SectionLabel>}
+      <Card style={{ padding: 0, borderRadius: LAYOUT.cardRadius, overflow: "hidden", ...cardStyle }}>
+        {wrapped}
+      </Card>
+    </div>
+  );
+}
+
 export function Field({ label, placeholder, type = "text", icon: Icon, rightIcon: RightIcon, onRight, rightLabel, show = true, value, onChange, name, autoComplete, inputMode, required }) {
   const C = useColors();
   const generatedId = React.useId();
@@ -950,7 +1020,7 @@ export function Field({ label, placeholder, type = "text", icon: Icon, rightIcon
   const fieldName = name || String(label || "field").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   return (
     <div style={{ width: "100%", minWidth: 0 }}>
-      <label htmlFor={generatedId} style={{ display: "block", fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>{label}</label>
+      <label htmlFor={generatedId} style={{ display: "block", fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>{label}{required && <RequiredMark />}</label>
       <div className="cl-input" style={{ width: "100%", minWidth: 0, display: "flex", alignItems: "center", gap: 8, minHeight: 48, boxSizing: "border-box", border: `1.5px solid ${C.border}`, borderRadius: LAYOUT.inputRadius, padding: RightIcon ? "0 4px 0 13px" : "0 13px", background: C.white }}>
         {Icon && <Icon aria-hidden="true" size={16} color={C.slateLight} />}
         <input id={generatedId} name={fieldName} autoComplete={autoComplete || (type === "email" ? "email" : "off")} inputMode={inputMode || (type === "tel" ? "tel" : undefined)} required={required} placeholder={placeholder} type={type} value={value} onChange={onChange} style={{ border: "none", outline: "none", flex: 1, minWidth: 0, minHeight: 44, padding: 0, fontSize: T.bodyLg, background: "transparent", color: C.jet, ...fBody }} />

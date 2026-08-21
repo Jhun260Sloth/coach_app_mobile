@@ -8,8 +8,9 @@ import { useApp } from "../../context/AppContext";
 import { COACHES } from "../../data/mockData";
 import {
   Avatar, Card, Btn, TopBar, SectionLabel, Field, Row, RadioRow, BottomSheet,
-  StepProgress, StatusPill, EmptyState, HandleTag,
+  StepProgress, StatusPill, EmptyState, HandleTag, RequiredMark,
 } from "../../components/ui/Primitives";
+import { SportBadge, SportLabel } from "../../components/ui/SportUI";
 import { StatusBanner } from "../../systems/StateSystem";
 import { getPublicName } from "../../utils/name";
 import { availabilityBlocksToWeekly } from "../../utils/coachProfile";
@@ -271,7 +272,7 @@ export function ScreenPaymentAddCard({ nav, params, toast }) {
         </div>
 
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Card number</div>
+          <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Card number<RequiredMark /></div>
           <div className="cl-input" style={{ display: "flex", alignItems: "center", gap: 10, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", background: C.white }}>
             <CreditCard size={16} color={C.slateLight} />
             <input
@@ -289,7 +290,7 @@ export function ScreenPaymentAddCard({ nav, params, toast }) {
 
         <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Expiry</div>
+            <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Expiry<RequiredMark /></div>
             <input
               value={expiry}
               onChange={(e) => setExpiry(formatExpiry(e.target.value))}
@@ -300,7 +301,7 @@ export function ScreenPaymentAddCard({ nav, params, toast }) {
             />
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>CVV</div>
+            <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>CVV<RequiredMark /></div>
             <div className="cl-input" style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", background: C.white }}>
               <Lock size={14} color={C.slateLight} />
               <input
@@ -316,7 +317,7 @@ export function ScreenPaymentAddCard({ nav, params, toast }) {
         </div>
 
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Billing postcode</div>
+          <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Billing postcode<RequiredMark /></div>
           <input
             value={postcode}
             onChange={(e) => setPostcode(e.target.value.replace(/\D/g, "").slice(0, 4))}
@@ -328,7 +329,7 @@ export function ScreenPaymentAddCard({ nav, params, toast }) {
         </div>
 
         <div style={{ marginBottom: 20 }}>
-          <Field label="Cardholder name" placeholder="As it appears on your card" value={name} onChange={(e) => setName(e.target.value)} />
+          <Field label="Cardholder name" placeholder="As it appears on your card" value={name} onChange={(e) => setName(e.target.value)} required />
         </div>
 
         <div style={{ display: "flex", alignItems: "flex-start", gap: 8, background: C.fog, borderRadius: 12, padding: 12, marginTop: 8 }}>
@@ -363,7 +364,7 @@ export function ScreenPackageListing({ nav, params }) {
     );
   }, []);
 
-  const sports = useMemo(() => [...new Set(COACHES.map((c) => c.sport))], []);
+  const sports = useMemo(() => [...new Set(allPackages.map((p) => p.sport || p.coach.sport))], [allPackages]);
   const modes = useMemo(() => [...new Set(allPackages.map((p) => p.mode))].filter(Boolean), [allPackages]);
 
   const [sportFilter, setSportFilter] = useState(params?.sport || null);
@@ -372,7 +373,7 @@ export function ScreenPackageListing({ nav, params }) {
 
   const filtered = useMemo(() => {
     let result = allPackages.filter((p) => p.active !== false);
-    if (sportFilter) result = result.filter((p) => p.coach.sport === sportFilter);
+    if (sportFilter) result = result.filter((p) => (p.sport || p.coach.sport) === sportFilter);
     if (modeFilter) result = result.filter((p) => p.mode === modeFilter);
     if (sortBy === "price-low") result.sort((a, b) => a.price - b.price);
     else if (sortBy === "price-high") result.sort((a, b) => b.price - a.price);
@@ -399,19 +400,13 @@ export function ScreenPackageListing({ nav, params }) {
             All sports
           </button>
           {sports.map((s) => (
-            <button
+            <SportBadge
               key={s}
+              sport={s}
+              selected={sportFilter === s}
               onClick={() => setSportFilter((prev) => (prev === s ? null : s))}
-              style={{
-                padding: "8px 14px", borderRadius: 999, whiteSpace: "nowrap",
-                border: `1px solid ${sportFilter === s ? C.brand : C.border}`,
-                background: sportFilter === s ? C.brandTint : C.white,
-                color: sportFilter === s ? (C.brandIcon || C.brandColor) : C.jet,
-                fontSize: T.body, fontWeight: 500, cursor: "pointer", ...fBody,
-              }}
-            >
-              {s}
-            </button>
+              compact
+            />
           ))}
         </div>
       </div>
@@ -455,9 +450,8 @@ export function ScreenPackageListing({ nav, params }) {
                     <Avatar name={pub.name} size={44} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: T.subtitle, fontWeight: 700, color: C.jet, ...fDisplay }}>{p.name}</div>
-                      <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>
-                        {pub.name} · {p.coach.sport}
-                      </div>
+                      <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>{pub.name}</div>
+                      <div style={{ marginTop: 5 }}><SportBadge sport={p.sport || p.coach.sport} compact /></div>
                       <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>
                         {p.type} · {p.duration} min · {p.mode}
                       </div>
@@ -540,7 +534,8 @@ export function ScreenPackageInquiry({ nav, params, toast }) {
           <Avatar name={pub.name} size={40} />
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...fDisplay }}>{pub.name}</div>
-            <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>{coach.sport} · {coach.suburb}</div>
+            <div style={{ marginTop: 4 }}><SportLabel sport={coach.sport} size={14} color={C.slate} style={{ fontSize: T.label, ...fBody }} /></div>
+            <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: 3, ...fBody }}>{coach.suburb}</div>
           </div>
         </Card>
 
@@ -568,7 +563,7 @@ export function ScreenPackageInquiry({ nav, params, toast }) {
           ))}
         </div>
 
-        <SectionLabel>Your message</SectionLabel>
+        <SectionLabel required>Your message</SectionLabel>
         <div className="cl-input" style={{ display: "flex", alignItems: "flex-start", gap: 10, background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
           <MessageCircle size={16} color={C.slateLight} style={{ marginTop: 2, flexShrink: 0 }} />
           <textarea
@@ -638,7 +633,8 @@ export function ScreenPackageWaitlist({ nav, params, toast }) {
             <Avatar name={pub.name} size={40} />
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...fDisplay }}>{pub.name}</div>
-              <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>{coach.sport} · {coach.suburb}</div>
+              <div style={{ marginTop: 4 }}><SportLabel sport={coach.sport} size={14} color={C.slate} style={{ fontSize: T.label, ...fBody }} /></div>
+              <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: 3, ...fBody }}>{coach.suburb}</div>
             </div>
           </div>
         </Card>
@@ -820,7 +816,7 @@ export function ScreenRefundStatus({ nav, params }) {
 
   const booking = params?.booking;
   const status = booking?.refundStatus || "processing";
-  const amount = booking?.price || 0;
+  const amount = Number(booking?.paidTotal || booking?.price || 0);
 
   const steps = [
     { label: "Cancellation submitted", done: true, time: "Just now" },
@@ -1278,8 +1274,8 @@ export function ScreenBookingParticipantDetails({ nav, params, draft, toast }) {
 
         <SectionLabel>Emergency contact</SectionLabel>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 18 }}>
-          <Field label="Contact name" placeholder="e.g. Jamie Chen" value={currentDetail.emergencyName} onChange={(e) => update("emergencyName", e.target.value)} />
-          <Field label="Contact phone" placeholder="04XX XXX XXX" type="tel" value={currentDetail.emergencyPhone} onChange={(e) => update("emergencyPhone", e.target.value.replace(/[^0-9+\s]/g, ""))} />
+          <Field label="Contact name" placeholder="e.g. Jamie Chen" value={currentDetail.emergencyName} onChange={(e) => update("emergencyName", e.target.value)} required />
+          <Field label="Contact phone" placeholder="04XX XXX XXX" type="tel" value={currentDetail.emergencyPhone} onChange={(e) => update("emergencyPhone", e.target.value.replace(/[^0-9+\s]/g, ""))} required />
         </div>
 
         <SectionLabel>Medical information (optional)</SectionLabel>

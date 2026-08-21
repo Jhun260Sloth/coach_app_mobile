@@ -1,14 +1,14 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { LocateFixed } from "lucide-react";
-import { CL, CD } from "../../theme/theme";
+import { LocateFixed, SlidersHorizontal } from "lucide-react";
+import { CL, CD, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import {
-  loadLeaflet, getMapColors, injectMapStyles, coachPinIcon, userLocationIcon, fetchRoute, haversineKm,
+  loadLeaflet, getMapColors, injectMapStyles, coachAvatarMarkerIcon, getCoachAreaPoint, userLocationIcon,
   AUSTRALIA_CENTER, AUSTRALIA_ZOOM, FALLBACK_USER_LOCATION, LOCATE_ZOOM,
-  MAP_STYLES, DEFAULT_MAP_STYLE_ID,
+  MAP_STYLES, DEFAULT_MAP_STYLE_ID, DEFAULT_COACH_AREA_RADIUS_KM,
 } from "../../lib/mapUtils";
+import { getPublicName } from "../../utils/name";
 import { MapSearchBar } from "./MapSearchBar";
-import { RadiusFilter } from "./RadiusFilter";
 import { LocationStatus } from "./LocationStatus";
 import { SelectedCoachCard } from "./SelectedCoachCard";
 import { MapStyleSwitcher } from "./MapStyleSwitcher";
@@ -18,13 +18,13 @@ import { MapStyleSwitcher } from "./MapStyleSwitcher";
  *
  * Split into this orchestrator (owns the Leaflet instance + all map state)
  * plus small, independently-memoised presentational components
- * (MapSearchBar, RadiusFilter, LocationStatus, MapStyleSwitcher, SelectedCoachCard).
+ * (MapSearchBar, LocationStatus, MapStyleSwitcher, SelectedCoachCard).
  * None of those re-render the Leaflet map itself, and the map's own effects
  * only touch the specific Leaflet layers they own — so typing in the search
- * box, dragging the radius slider, or a route fetch resolving never forces
- * Leaflet to redraw tiles or every marker, only what actually changed.
+ * box or applying shared filters never forces Leaflet to redraw tiles, only
+ * the marker layers that actually changed.
  */
-export function CoachMapView({ coaches = [], onOpen, onClose }) {
+export function CoachMapView({ coaches = [], radiusKm = null, activeFilterCount = 0, onOpenFilters, onOpen, onClose }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const colors = getMapColors(darkMode);
@@ -32,14 +32,13 @@ export function CoachMapView({ coaches = [], onOpen, onClose }) {
   const mapRef = useRef(null);
   const leafletRef = useRef(null);
   const markersRef = useRef({});
+  const areaCirclesRef = useRef({});
   const userMarkerRef = useRef(null);
-  const routeLayerRef = useRef(null);
   const radiusCircleRef = useRef(null);
   const tileLayerRef = useRef(null);
   const overlayLayerRef = useRef(null);
   const userLocationRef = useRef(null);
   const selectHandlerRef = useRef(() => {});
-  const routeReqRef = useRef(0);
   const watchIdRef = useRef(null);
   const hasAutoCenteredRef = useRef(false);
   const skipNextStyleSwapRef = useRef(true); // the init effect already lays down the initial style's tiles
@@ -51,13 +50,13 @@ export function CoachMapView({ coaches = [], onOpen, onClose }) {
   const [locating, setLocating] = useState(true);
   const [locationFixed, setLocationFixed] = useState(false);
   const [selectedCoach, setSelectedCoach] = useState(null);
-  const [routeInfo, setRouteInfo] = useState(null);
-  const [routing, setRouting] = useState(false);
-  const [radiusKm, setRadiusKm] = useState(null);
   const [mapStyleId, setMapStyleId] = useState(DEFAULT_MAP_STYLE_ID);
 
-  // Only coaches with real coordinates can be plotted on the live map.
-  const geoCoaches = useMemo(() => coaches.filter(c => typeof c.lat === "number" && typeof c.lng === "number"), [coaches]);
+  // Discovery accepts only suburb-level area points. Exact home/venue
+  // coordinates are intentionally not supported by this client map.
+  const geoCoaches = useMemo(() => coaches
+    .map(c => ({ ...c, areaPoint: getCoachAreaPoint(c) }))
+    .filter(c => c.areaPoint), [coaches]);
 
   const searchFiltered = useMemo(() => {
     if (!searchText.trim()) return geoCoaches;
@@ -65,52 +64,39 @@ export function CoachMapView({ coaches = [], onOpen, onClose }) {
     return geoCoaches.filter(c => c.suburb.toLowerCase().includes(q) || c.name.toLowerCase().includes(q) || c.sport.toLowerCase().includes(q));
   }, [geoCoaches, searchText]);
 
-  // Radius filter is applied on top of the search filter, measured from the
-  // user's live location (falls back to the default point until located).
-  const visibleCoaches = useMemo(() => {
-    if (radiusKm == null) return searchFiltered;
-    const origin = userLocation || FALLBACK_USER_LOCATION;
-    return searchFiltered.filter(c => haversineKm(origin, { lat: c.lat, lng: c.lng }) <= radiusKm);
-  }, [searchFiltered, radiusKm, userLocation]);
-  const visibleIds = visibleCoaches.map(c => c.id).join(",");
+  // The parent owns the shared filter state; this map search only narrows the
+  // already-filtered results further without creating a second filter model.
+  const visibleCoaches = searchFiltered;
+  const visibleCoachKey = visibleCoaches
+    .map(c => `${c.id}:${c.areaPoint.lat}:${c.areaPoint.lng}:${c.areaRadiusKm || DEFAULT_COACH_AREA_RADIUS_KM}:${c.liveDistanceKm ?? ""}`)
+    .join("|");
 
   const suggestions = useMemo(() => {
     if (!searchText.trim()) return [];
     const q = searchText.trim().toLowerCase();
-    return [...new Set([...coaches.map(c => c.suburb), ...coaches.map(c => c.name), ...coaches.map(c => c.sport)])]
-      .filter(s => s.toLowerCase().includes(q)).slice(0, 5);
+    const candidates = [
+      ...coaches.map(c => ({ label: c.suburb, type: "location" })),
+      ...coaches.map(c => ({ label: c.name, type: "coach" })),
+      ...coaches.map(c => ({ label: c.sport, type: "sport" })),
+    ];
+    return candidates
+      .filter((item, index) => candidates.findIndex((other) => other.label === item.label && other.type === item.type) === index)
+      .filter(item => item.label.toLowerCase().includes(q)).slice(0, 5);
   }, [coaches, searchText]);
 
-  const clearRoute = useCallback(() => {
-    if (routeLayerRef.current && mapRef.current) { mapRef.current.removeLayer(routeLayerRef.current); routeLayerRef.current = null; }
-    setRouteInfo(null);
-  }, []);
-
-  const deselectCoach = useCallback(() => { setSelectedCoach(null); clearRoute(); }, [clearRoute]);
+  const deselectCoach = useCallback(() => setSelectedCoach(null), []);
 
   // Kept in a ref (refreshed every render) so marker click handlers — bound
-  // once at marker creation — always see the current coach/route logic
+  // once at marker creation — always see the current coach-area logic
   // instead of a stale closure from whenever the marker was first added.
-  selectHandlerRef.current = async (coach) => {
-    const map = mapRef.current, L = leafletRef.current;
-    if (!map || !L) return;
+  selectHandlerRef.current = coach => {
+    const map = mapRef.current;
+    if (!map || !coach?.areaPoint) return;
     setSelectedCoach(coach);
-    setRouteInfo(null);
-    const origin = userLocationRef.current || FALLBACK_USER_LOCATION;
-    const dest = { lat: coach.lat, lng: coach.lng };
-    map.flyToBounds(L.latLngBounds([[origin.lat, origin.lng], [dest.lat, dest.lng]]), {
-      paddingTopLeft: [30, 170], paddingBottomRight: [30, 210], maxZoom: 14, duration: 0.9, easeLinearity: 0.2,
+    const safeZoom = Math.min(Math.max(map.getZoom(), 12), 14);
+    map.flyTo([coach.areaPoint.lat, coach.areaPoint.lng], safeZoom, {
+      duration: 0.75, easeLinearity: 0.2,
     });
-    const reqId = ++routeReqRef.current;
-    setRouting(true);
-    const route = await fetchRoute(origin, dest);
-    if (reqId !== routeReqRef.current) return; // a newer selection superseded this fetch
-    setRouting(false);
-    if (routeLayerRef.current) map.removeLayer(routeLayerRef.current);
-    routeLayerRef.current = L.polyline(route.points, {
-      color: C.info, weight: 5, opacity: 0.92, lineCap: "round", lineJoin: "round", className: "cl-route-glow",
-    }).addTo(map);
-    setRouteInfo(route.fallback ? null : { distanceKm: route.distanceKm, durationMin: route.durationMin });
   };
 
   // --- Init map once, tear down on unmount. No artificial loading delay —
@@ -139,8 +125,8 @@ export function CoachMapView({ coaches = [], onOpen, onClose }) {
       cancelled = true;
       if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
       markersRef.current = {};
+      areaCirclesRef.current = {};
       userMarkerRef.current = null;
-      routeLayerRef.current = null;
       radiusCircleRef.current = null;
       tileLayerRef.current = null;
       overlayLayerRef.current = null;
@@ -224,9 +210,10 @@ export function CoachMapView({ coaches = [], onOpen, onClose }) {
       radius: radiusKm * 1000, color: C.info, weight: 1.5, opacity: 0.4, fillColor: C.info, fillOpacity: 0.07,
     }).addTo(map);
     map.flyToBounds(radiusCircleRef.current.getBounds(), { padding: [40, 40], duration: 0.6 });
-  }, [ready, radiusKm]);
+  }, [ready, radiusKm, userLocation?.lat, userLocation?.lng, darkMode]);
 
-  // --- Coach pins: add/remove/re-style as the visible set or selection changes ---
+  // --- Approximate coach areas: a soft suburb-radius circle plus a profile
+  // avatar at its centre. Neither layer represents an exact venue address. ---
   useEffect(() => {
     if (!ready) return;
     const L = leafletRef.current, map = mapRef.current;
@@ -234,30 +221,56 @@ export function CoachMapView({ coaches = [], onOpen, onClose }) {
     Object.keys(markersRef.current).forEach(id => {
       if (!nextIds.has(id)) { map.removeLayer(markersRef.current[id]); delete markersRef.current[id]; }
     });
+    Object.keys(areaCirclesRef.current).forEach(id => {
+      if (!nextIds.has(id)) { map.removeLayer(areaCirclesRef.current[id]); delete areaCirclesRef.current[id]; }
+    });
     visibleCoaches.forEach(c => {
       const isSelected = selectedCoach?.id === c.id;
-      const icon = coachPinIcon(C, L, c.name, isSelected);
-      if (markersRef.current[c.id]) {
-        markersRef.current[c.id].setIcon(icon);
+      const publicName = getPublicName(c, "public").name;
+      const radiusMetres = (c.areaRadiusKm || DEFAULT_COACH_AREA_RADIUS_KM) * 1000;
+      const areaStyle = {
+        radius: radiusMetres, color: C.brand, weight: isSelected ? 2 : 1.5,
+        opacity: isSelected ? 0.75 : 0.48, fillColor: C.brand,
+        fillOpacity: isSelected ? 0.14 : 0.08, dashArray: "6 7", interactive: false,
+      };
+      if (areaCirclesRef.current[c.id]) {
+        areaCirclesRef.current[c.id].setLatLng([c.areaPoint.lat, c.areaPoint.lng]);
+        areaCirclesRef.current[c.id].setRadius(radiusMetres);
+        areaCirclesRef.current[c.id].setStyle(areaStyle);
       } else {
-        const marker = L.marker([c.lat, c.lng], { icon, zIndexOffset: 300 });
-        marker.on("click", () => selectHandlerRef.current(c));
+        areaCirclesRef.current[c.id] = L.circle([c.areaPoint.lat, c.areaPoint.lng], areaStyle).addTo(map);
+        areaCirclesRef.current[c.id].bringToBack();
+      }
+
+      const icon = coachAvatarMarkerIcon(C, L, c, isSelected);
+      if (markersRef.current[c.id]) {
+        markersRef.current[c.id].setLatLng([c.areaPoint.lat, c.areaPoint.lng]);
+        markersRef.current[c.id].setIcon(icon);
+        markersRef.current[c.id].__coachData = c;
+      } else {
+        const marker = L.marker([c.areaPoint.lat, c.areaPoint.lng], {
+          icon, zIndexOffset: 300, keyboard: true,
+          title: `${publicName} · approximate coach area`,
+          alt: `Approximate coach area for ${publicName}`,
+        });
+        marker.__coachData = c;
+        marker.on("click", () => selectHandlerRef.current(marker.__coachData));
         marker.addTo(map);
         markersRef.current[c.id] = marker;
       }
     });
-  }, [ready, visibleIds, selectedCoach?.id]);
+  }, [ready, visibleCoachKey, selectedCoach?.id, darkMode]);
 
   // --- Zoom/pan to search matches ---
   useEffect(() => {
     if (!ready || !mapRef.current || !searchText.trim()) return;
     const L = leafletRef.current, map = mapRef.current;
     if (!searchFiltered.length) return;
-    const bounds = L.latLngBounds(searchFiltered.map(c => [c.lat, c.lng]));
+    const bounds = L.latLngBounds(searchFiltered.map(c => [c.areaPoint.lat, c.areaPoint.lng]));
     map.flyToBounds(bounds, { padding: [70, 120], maxZoom: 12, duration: 0.6 });
   }, [ready, searchText]);
 
-  const selectSuggestion = useCallback(s => { setSearchText(s); setShowSuggestions(false); }, []);
+  const selectSuggestion = useCallback(s => { setSearchText(s.label); setShowSuggestions(false); }, []);
   const clearSearch = useCallback(() => setSearchText(""), []);
   const recenter = useCallback(() => {
     if (!mapRef.current) return;
@@ -266,7 +279,7 @@ export function CoachMapView({ coaches = [], onOpen, onClose }) {
   }, []);
 
   return (
-    <div style={{ position: "absolute", inset: 0, zIndex: 999, background: C.fog }}>
+    <div style={{ position: "absolute", inset: 0, zIndex: 90, background: C.fog }}>
       {/* MAP — real Leaflet + OpenStreetMap tiles, panning/zooming handled by Leaflet itself */}
       <div ref={containerRef} style={{ position: "absolute", inset: 0 }} />
 
@@ -282,18 +295,32 @@ export function CoachMapView({ coaches = [], onOpen, onClose }) {
         onSelectSuggestion={selectSuggestion}
       />
 
-      {ready && <RadiusFilter radiusKm={radiusKm} onChange={setRadiusKm} resultCount={visibleCoaches.length} />}
       {ready && <LocationStatus locating={locating} fixed={locationFixed} />}
+      {ready && (
+        <button
+          type="button"
+          aria-label="Open map filters"
+          aria-pressed={activeFilterCount > 0}
+          onClick={onOpenFilters}
+          style={{ position: "absolute", top: 78, right: 16, zIndex: 401, minWidth: 96, minHeight: 44, padding: "0 12px", borderRadius: 14, border: "none", background: activeFilterCount > 0 ? C.brandTint : C.white, color: activeFilterCount > 0 ? C.brand : C.jet, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", boxShadow: "none" }}
+        >
+          <SlidersHorizontal size={15} aria-hidden="true" />
+          <span style={{ fontSize: T.labelLg, fontWeight: 700, ...fBody }}>Filters</span>
+          {activeFilterCount > 0 && (
+            <span aria-label={`${activeFilterCount} active filter categories`} style={{ minWidth: 20, height: 20, padding: "0 5px", borderRadius: 7, background: C.brand, color: C.white, display: "flex", alignItems: "center", justifyContent: "center", fontSize: T.micro, fontWeight: 800, ...fBody }}>{activeFilterCount}</span>
+          )}
+        </button>
+      )}
 
       {/* MAP STYLE — sits directly above the Locate Me button, bottom-right */}
       {ready && <MapStyleSwitcher styleId={mapStyleId} onChange={setMapStyleId} bottom={selectedCoach ? 210 : 76} />}
 
       {/* RECENTER — bottom-right, flies back to the user's live location */}
-      <button onClick={recenter} style={{ position: "absolute", bottom: selectedCoach ? 158 : 24, right: 16, zIndex: 401, width: 44, height: 44, borderRadius: 12, background: C.white, border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "bottom .2s ease", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
+      <button type="button" aria-label="Recenter map on my location" onClick={recenter} style={{ position: "absolute", bottom: selectedCoach ? 158 : 24, right: 16, zIndex: 401, width: 44, height: 44, borderRadius: 12, background: C.white, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "bottom .2s ease", boxShadow: "none" }}>
         <LocateFixed size={19} color={C.jet} />
       </button>
 
-      <SelectedCoachCard coach={selectedCoach} routing={routing} routeInfo={routeInfo} onOpen={onOpen} onClose={deselectCoach} />
+      <SelectedCoachCard coach={selectedCoach} onOpen={onOpen} onClose={deselectCoach} />
     </div>
   );
 }

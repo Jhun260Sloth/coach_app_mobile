@@ -6,10 +6,12 @@ import {
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { GENDER_OPTIONS } from "../../data/mockData";
-import { Chip, SectionLabel, FormSection, Btn, TopBar, Field, Card, Avatar, Badge } from "../../components/ui/Primitives";
+import { Chip, SectionLabel, FormSection, Btn, TopBar, Field, Card, Avatar, Badge, RequiredMark } from "../../components/ui/Primitives";
 import { HandleField } from "../../components/ui/PublicIdentityFields";
 import { isValidHandle } from "../../utils/name";
 import { LocationField } from "../../components/ui/LocationField";
+import { SportBadge, SportSearchMultiSelect } from "../../components/ui/SportUI";
+import { POPULAR_SPORTS, SPORT_NAMES } from "../../data/sports";
 
 function StepHeader({ title, subtitle, onBack }) {
   const { darkMode } = useApp();
@@ -103,7 +105,7 @@ export function ScreenAboutYouProfile({ nav, onComplete }) {
 
         <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 16 }}>
           <div>
-            <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Mobile number</div>
+            <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Mobile number<RequiredMark /></div>
             <div className="cl-input" style={{ display: "flex", alignItems: "center", gap: 8, background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
               <Phone size={16} color={C.slateLight} />
               <input
@@ -122,11 +124,12 @@ export function ScreenAboutYouProfile({ nav, onComplete }) {
               label="Location"
               placeholder="Search suburb or postcode…"
               helper="We only use this to find coaches nearby (never shared with other users)."
+              required
             />
           </div>
 
           <div>
-            <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Date of birth</div>
+            <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Date of birth<RequiredMark /></div>
             <div className="cl-input" style={{ display: "flex", alignItems: "center", gap: 8, background: C.white, borderRadius: 13, padding: "11px 13px", border: isUnder18 ? `1.5px solid ${C.danger}` : `1.5px solid ${C.border}` }}>
               <CalendarDays size={16} color={C.slateLight} />
               <input
@@ -144,7 +147,7 @@ export function ScreenAboutYouProfile({ nav, onComplete }) {
             </div>
           </div>
 
-          <HandleField value={handle} onChange={setHandle} isTaken={isHandleTaken(handle)} />
+          <HandleField value={handle} onChange={setHandle} isTaken={isHandleTaken(handle)} required />
         </div>
 
         {isUnder18 && (
@@ -233,7 +236,6 @@ export function ScreenAccountType({ nav, params }) {
 
 /* Shared field set used by both the participant (child) setup flow and the
    "tell us about yourself" individual setup flow. */
-const PARTICIPANT_SPORT_EXAMPLES = ["Football", "Basketball", "Tennis", "Swimming", "Gymnastics"];
 export const SKILL_LEVELS = ["Beginner", "Intermediate", "Advanced", "Elite"];
 export const emptyParticipantDraft = {
   name: "", dob: "", gender: "", location: null,
@@ -254,31 +256,19 @@ export function ParticipantFields({ draft, setDraft, showGuardianInfo = false })
     fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", background: C.white, color: C.jet, ...fBody,
   };
   const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
-  const [addingSport, setAddingSport] = useState(false);
-  const [customSport, setCustomSport] = useState("");
 
   const patch = (p) => setDraft((d) => ({ ...d, ...p }));
   const age = calcAge(draft.dob);
   const toggleSport = (s) => patch({ sport: draft.sport.includes(s) ? draft.sport.filter((x) => x !== s) : [...draft.sport, s] });
-  const extraSports = draft.sport.filter((s) => !PARTICIPANT_SPORT_EXAMPLES.includes(s));
-
-  const addCustomSport = () => {
-    const trimmed = customSport.trim();
-    if (!trimmed) return;
-    if (!draft.sport.some((s) => s.toLowerCase() === trimmed.toLowerCase())) {
-      patch({ sport: [...draft.sport, trimmed] });
-    }
-    setCustomSport("");
-  };
 
   return (
     <>
       <FormSection icon={User} label="Basic information" hint="Name, date of birth and location.">
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <Field label="Participant name" placeholder="e.g. Ava Chen" icon={Users} value={draft.name} onChange={(e) => patch({ name: e.target.value })} />
+          <Field label="Participant name" placeholder="e.g. Ava Chen" icon={Users} value={draft.name} onChange={(e) => patch({ name: e.target.value })} required />
 
           <div>
-            <div style={labelStyle}>Date of birth</div>
+            <div style={labelStyle}>Date of birth<RequiredMark /></div>
             <div className="cl-input" style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
               <CalendarDays size={16} color={C.slateLight} />
               <input
@@ -329,43 +319,20 @@ export function ParticipantFields({ draft, setDraft, showGuardianInfo = false })
       {showGuardianInfo && (
         <FormSection icon={UserCheck} label="Guardian information" hint="The parent or legal guardian responsible for this participant.">
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <Field label="Guardian name" placeholder="e.g. Jamie Chen" icon={UserCheck} value={draft.guardianName} onChange={(e) => patch({ guardianName: e.target.value })} />
-            <Field label="Relationship to participant" placeholder="e.g. Parent" value={draft.guardianRelationship} onChange={(e) => patch({ guardianRelationship: e.target.value })} />
-            <Field label="Mobile number" placeholder="04XX XXX XXX" icon={Phone} type="tel" value={draft.guardianMobile} onChange={(e) => patch({ guardianMobile: e.target.value.replace(/[^0-9+\s]/g, "") })} />
+            <Field label="Guardian name" placeholder="e.g. Jamie Chen" icon={UserCheck} value={draft.guardianName} onChange={(e) => patch({ guardianName: e.target.value })} required />
+            <Field label="Relationship to participant" placeholder="e.g. Parent" value={draft.guardianRelationship} onChange={(e) => patch({ guardianRelationship: e.target.value })} required />
+            <Field label="Mobile number" placeholder="04XX XXX XXX" icon={Phone} type="tel" value={draft.guardianMobile} onChange={(e) => patch({ guardianMobile: e.target.value.replace(/[^0-9+\s]/g, "") })} required />
           </div>
         </FormSection>
       )}
 
       <FormSection icon={Sparkles} label="Sport interests" hint="Sports they love — helps coaches match the right sessions.">
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: extraSports.length ? 10 : 8 }}>
-          {PARTICIPANT_SPORT_EXAMPLES.map((s) => (
-            <Chip key={s} active={draft.sport.includes(s)} onClick={() => toggleSport(s)}>{s}</Chip>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+          {POPULAR_SPORTS.slice(0, 10).map((s) => (
+            <SportBadge key={s} sport={s} selected={draft.sport.includes(s)} onClick={() => toggleSport(s)} compact />
           ))}
         </div>
-        {extraSports.length > 0 && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
-            {extraSports.map((s) => (
-              <Chip key={s} active onClick={() => toggleSport(s)}>{s}</Chip>
-            ))}
-          </div>
-        )}
-        {addingSport ? (
-          <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
-            <input
-              value={customSport}
-              onChange={(e) => setCustomSport(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomSport(); } }}
-              placeholder="Type a sport…"
-              autoFocus
-              style={{ ...inputStyle, flex: 1 }}
-            />
-            <Btn size="sm" onClick={addCustomSport}>Add</Btn>
-          </div>
-        ) : (
-          <button onClick={() => setAddingSport(true)} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: C.brand, fontSize: T.labelLg, fontWeight: 600, marginTop: 8, padding: 0, ...fBody }}>
-            <Plus size={14} /> Add another sport
-          </button>
-        )}
+        <SportSearchMultiSelect options={SPORT_NAMES} value={draft.sport} onChange={(sport) => patch({ sport })} placeholder="Search all sports…" />
       </FormSection>
 
       <FormSection icon={Target} label="Skill level" hint="How experienced they are in their main sport.">

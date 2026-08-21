@@ -111,7 +111,7 @@ export function ScreenCoachAvailabilitySetup({ nav, toast }) {
           Configure your recurring weekly schedule. Enable the days you coach and set the time windows athletes can book.
         </div>
 
-        <SectionLabel>Weekly schedule</SectionLabel>
+        <SectionLabel required>Weekly schedule</SectionLabel>
         {DAYS.map((d) => {
           const day = availability[d.key];
           return (

@@ -1,11 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import {
-  Star, ShieldCheck, Clock, TrendingUp, Repeat, MapPin, Navigation, Award, Zap, Sparkles, Languages, Trophy,
+  Star, ShieldCheck, Clock, TrendingUp, Repeat, MapPin, Navigation, Award, Zap, Sparkles, Languages, CheckCircle2, UserCheck, Info,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
-import { SPORT_ICON } from "../../data/mockData";
-import { Avatar, Badge, SectionLabel, Card, HandleTag } from "./Primitives";
+import { Avatar, Badge, SectionLabel, Card, HandleTag, BottomSheet, Btn } from "./Primitives";
+import { SportBadge, SportIcon } from "./SportUI";
 import { CONFIG } from "../../config";
 
 /* -------------------------------------------------------------------------
@@ -15,7 +15,6 @@ import { CONFIG } from "../../config";
 export function CoverBanner({ sport, image, name, height = 150, rounded = false }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
-  const Icon = SPORT_ICON[sport] || Trophy;
   return (
     <div style={{ height, position: "relative", flexShrink: 0, overflow: "hidden", borderRadius: rounded ? 24 : 0, background: `linear-gradient(145deg, ${CL.jet} 0%, ${CL.jetSoft} 58%, ${CL.slate} 100%)` }}>
       {image ? (
@@ -25,7 +24,7 @@ export function CoverBanner({ sport, image, name, height = 150, rounded = false 
           <div style={{ position: "absolute", inset: 0, background: `radial-gradient(120% 90% at 15% 0%, ${C.onDarkDivider}, transparent 55%)` }} />
           <div style={{ position: "absolute", top: -30, right: -20, width: 160, height: 100, background: C.brand, opacity: 0.9, transform: "rotate(-18deg)", clipPath: "polygon(20% 0%, 100% 0%, 80% 100%, 0% 100%)" }} />
           <div style={{ position: "absolute", top: -30, right: 40, width: 90, height: 100, background: CL.jet, opacity: 0.55, transform: "rotate(-18deg)", clipPath: "polygon(20% 0%, 100% 0%, 80% 100%, 0% 100%)" }} />
-          <Icon size={140} color={CL.white} strokeWidth={1.1} style={{ position: "absolute", bottom: -30, left: -20, opacity: 0.14, transform: "rotate(-8deg)" }} />
+          <SportIcon sport={sport} size={140} color={CL.white} style={{ position: "absolute", bottom: -30, left: -20, opacity: 0.14, transform: "rotate(-8deg)" }} />
         </>
       )}
       <div style={{ position: "absolute", inset: 0, background: `linear-gradient(180deg, transparent 24%, ${CL.jet} 118%)`, opacity: image ? 0.9 : 0.25 }} />
@@ -54,13 +53,15 @@ export function CoachProfileHero({
 }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
+  const [verifyOpen, setVerifyOpen] = useState(false);
   const sportLine = sport || coach.sport;
   const suburbLine = suburb || coach.suburb;
-  const sportsLine = (sports && sports.length ? sports.join(", ") : (coach.sports && coach.sports.length ? coach.sports.join(", ") : sportLine));
+  const sportValues = sports && sports.length ? sports : (coach.sports && coach.sports.length ? coach.sports : [sportLine]);
+  const verifiedObj = coach.verified || {};
   const verificationChecks = [
-    coach.verified.identity && "Identity verified",
-    coach.verified.wwcc && "WWCC verified",
-    coach.verified.quals && "Accreditations checked",
+    verifiedObj.identity && "Identity verified",
+    verifiedObj.wwcc && "WWCC verified",
+    verifiedObj.quals && "Accreditations checked",
   ].filter(Boolean);
   const stats = [
     { icon: Clock, label: "Response", value: (coach.responseTime || "").replace("Usually replies within ", "") },
@@ -79,7 +80,7 @@ export function CoachProfileHero({
       </div>
 
       <div style={{ marginTop: -34, padding: "0 18px 18px", position: "relative", zIndex: 2, background: C.white, borderRadius: "24px 24px 0 0" }}>
-        <div style={{ height: 42 }} />
+        <div style={{ height: 52 }} />
         <div style={{ position: "absolute", top: -42, left: 18 }}>
           <button
             type="button"
@@ -96,38 +97,44 @@ export function CoachProfileHero({
           </button>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-          <div style={{ minWidth: 0 }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ fontSize: T.headingLg, fontWeight: 700, color: C.jet, lineHeight: 1.15, ...fDisplay }}>{pub.name}</div>
             <HandleTag handle={pub.handle} size={12.5} color={C.slateLight} />
-            <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3, fontSize: T.captionLg, color: C.slate, ...fBody }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 8 }}>
+              {sportValues.map((value) => <SportBadge key={value} sport={value} compact />)}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 6, fontSize: T.captionLg, color: C.slate, ...fBody }}>
               <MapPin size={12} color={C.brand} style={{ flexShrink: 0 }} />
-              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sportsLine} · {suburbLine}</span>
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{suburbLine}</span>
             </div>
           </div>
-          <div style={{ flexShrink: 0, textAlign: "right", paddingTop: 2 }}>
+          <div style={{ minWidth: 104, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", textAlign: "right", paddingTop: 2 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4, fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...fBody }}>
               <Star size={15} fill={C.brand} color={C.brand} /> {coach.rating}
             </div>
             <div style={{ fontSize: T.caption, color: C.slate, marginTop: 1, ...fBody }}>{coach.reviews} reviews</div>
-          </div>
-        </div>
-
-        {(verificationChecks.length > 0 || instantBook) && (
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12, minWidth: 0 }}>
+            {instantBook && <Badge tone="success" icon={Zap} style={{ marginTop: 8, whiteSpace: "nowrap" }}>Instant book</Badge>}
             {verificationChecks.length > 0 && (
-              <span
-                role="status"
-                aria-label={verificationChecks.join(", ")}
-                style={{ display: "inline-flex", alignItems: "center", gap: 5, minWidth: 0, padding: "5px 9px", borderRadius: 999, background: C.successTint, color: C.success, fontSize: T.caption, fontWeight: 700, whiteSpace: "nowrap", ...fBody }}
+              <button
+                type="button"
+                aria-label={`Verified coach with ${verificationChecks.length} checks. Tap to view verification details.`}
+                onClick={() => setVerifyOpen(true)}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 5, marginTop: 8,
+                  padding: "5px 9px", borderRadius: 999,
+                  background: C.successTint, color: C.success,
+                  border: `1px solid ${C.success}33`,
+                  cursor: "pointer",
+                  fontSize: T.caption, fontWeight: 700, whiteSpace: "nowrap", ...fBody
+                }}
               >
                 <ShieldCheck size={13} aria-hidden="true" />
                 Verified
                 <span style={{ minWidth: 16, height: 16, borderRadius: 99, background: C.white, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: T.micro, fontWeight: 800, color: C.success, ...fBody }}>{verificationChecks.length}</span>
-              </span>
+              </button>
             )}
-            {instantBook && <Badge tone="success" icon={Zap} style={{ whiteSpace: "nowrap" }}>Instant book</Badge>}
           </div>
-        )}
+        </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8, marginTop: 14 }}>
           {stats.map((s) => (
@@ -141,6 +148,108 @@ export function CoachProfileHero({
           ))}
         </div>
       </div>
+
+      <BottomSheet
+        open={verifyOpen}
+        onClose={() => setVerifyOpen(false)}
+        title="Verified credentials"
+        heightPct={78}
+        footer={<Btn full onClick={() => setVerifyOpen(false)}>Done</Btn>}
+      >
+        <div style={{ animation: "clFadeUp .2s ease" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: C.brandTint, borderRadius: 16, border: `1px solid ${C.border}`, marginBottom: 16 }}>
+            <Avatar name={pub.name} src={avatarSrc} size={44} ring />
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                <span style={{ fontSize: T.subtitle, fontWeight: 700, color: C.jet, ...fDisplay }}>{pub.name}</span>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 7px", borderRadius: 999, background: C.success, color: C.white, fontSize: T.micro, fontWeight: 700, ...fBody }}>
+                  <ShieldCheck size={11} /> {verificationChecks.length} Verified
+                </span>
+              </div>
+              <div style={{ fontSize: T.caption, color: C.slate, marginTop: 2, ...fBody }}>
+                Independently verified by CoachLink Trust &amp; Safety
+              </div>
+            </div>
+          </div>
+
+          <SectionLabel>Verification checklist</SectionLabel>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8, marginBottom: 18 }}>
+            {/* Identity */}
+            <div style={{ padding: "12px 14px", background: C.fog, borderRadius: 14, border: `1px solid ${C.border}` }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <UserCheck size={16} color={verifiedObj.identity ? C.brand : C.slate} />
+                  <span style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>Government ID</span>
+                </div>
+                <Badge tone={verifiedObj.identity ? "success" : "neutral"} icon={verifiedObj.identity ? CheckCircle2 : null}>
+                  {verifiedObj.identity ? "Verified" : "Pending"}
+                </Badge>
+              </div>
+              <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 6, lineHeight: 1.45, ...fBody }}>
+                {verifiedObj.identity
+                  ? "Government-issued photo identification verified against official records."
+                  : "Government ID verification is currently pending review."}
+              </div>
+            </div>
+
+            {/* WWCC */}
+            <div style={{ padding: "12px 14px", background: C.fog, borderRadius: 14, border: `1px solid ${C.border}` }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <ShieldCheck size={16} color={verifiedObj.wwcc ? C.brand : C.slate} />
+                  <span style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>Working with Children (WWCC)</span>
+                </div>
+                <Badge tone={verifiedObj.wwcc ? "success" : "neutral"} icon={verifiedObj.wwcc ? CheckCircle2 : null}>
+                  {verifiedObj.wwcc ? "Verified & active" : "Adult athletes only"}
+                </Badge>
+              </div>
+              <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 6, lineHeight: 1.45, ...fBody }}>
+                {verifiedObj.wwcc
+                  ? "Valid working-with-children clearance on file. Cleared for coaching minors and school-age athletes."
+                  : "WWCC is not on file. This coach is approved for coaching adult athletes (18+) only."}
+              </div>
+            </div>
+
+            {/* Qualifications / Accreditations */}
+            <div style={{ padding: "12px 14px", background: C.fog, borderRadius: 14, border: `1px solid ${C.border}` }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Award size={16} color={verifiedObj.quals ? C.brand : C.slate} />
+                  <span style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>Qualifications &amp; Accreditations</span>
+                </div>
+                <Badge tone={verifiedObj.quals ? "success" : "neutral"} icon={verifiedObj.quals ? CheckCircle2 : null}>
+                  {verifiedObj.quals ? "Verified" : "Pending"}
+                </Badge>
+              </div>
+              {coach.accreditations && coach.accreditations.length > 0 ? (
+                <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 5 }}>
+                  {coach.accreditations.map((acc, idx) => (
+                    <div key={idx} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: T.captionLg, color: C.jetSoft, ...fBody }}>
+                      <CheckCircle2 size={13} color={C.brand} style={{ flexShrink: 0 }} />
+                      <span>{acc}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 6, lineHeight: 1.45, ...fBody }}>
+                  {verifiedObj.quals ? "Sport-specific coaching licenses and certifications confirmed." : "Certifications under review."}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Trust notes */}
+          <SectionLabel>Verification notes</SectionLabel>
+          <div style={{ marginTop: 8, padding: "12px 14px", background: C.fog, borderRadius: 14, border: `1px solid ${C.border}` }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+              <Info size={15} color={C.brand} style={{ marginTop: 2, flexShrink: 0 }} />
+              <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, ...fBody }}>
+                All credentials are independently reviewed by the CoachLink Trust &amp; Safety team before coach profiles can accept bookings. Verifications are refreshed annually.
+              </div>
+            </div>
+          </div>
+        </div>
+      </BottomSheet>
     </div>
   );
 }

@@ -2,16 +2,20 @@ import React, { useEffect, useState, useRef } from "react";
 import {
   Camera, Edit3, Eye, EyeOff, Fingerprint, Lock, Shield, HelpCircle,
   LogOut, ChevronRight, Trash2, Plus, User,
-  Banknote, CalendarClock, Zap, Hand, Bell, MapPin, Film, Play, Image as ImageIcon,
+  Banknote, CalendarClock, CalendarDays, Zap, Hand, Bell, MapPin, Film, Play, Image as ImageIcon,
   Share2, Award, X, Navigation, Star, Mail, AlertTriangle, Sparkles,
+  Phone, MessageCircle, CheckCircle2,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
-import { COACHES, LANGUAGE_OPTIONS, GENDER_OPTIONS, AU_SUBURBS, SPORTS, SPORT_ICON, REVIEWS } from "../../data/mockData";
+import { COACHES, LANGUAGE_OPTIONS, GENDER_OPTIONS, AU_SUBURBS, REVIEWS } from "../../data/mockData";
 import {
   Avatar, ScreenHeader, SectionLabel, FormSection, Chip, Card, Toggle, Btn, BottomSheet, ConfirmDialog, Field,
-  SearchMultiSelect, SearchSelect, ScrollFadeRow, SegTabs, StarRow, FullscreenImageViewer,
+  SearchMultiSelect, SearchSelect, ScrollFadeRow, SegTabs, StarRow, FullscreenImageViewer, RequiredMark,
+  SettingsRow, SettingsGroup,
 } from "../../components/ui/Primitives";
 import { CoachProfileHero, CoachProfileAbout } from "../../components/ui/CoachProfileSections";
+import { SportBadge, SportLabel, SportSearchMultiSelect } from "../../components/ui/SportUI";
+import { POPULAR_SPORTS, SPORT_NAMES } from "../../data/sports";
 import { HandleField } from "../../components/ui/PublicIdentityFields";
 import { isValidHandle, getPublicName } from "../../utils/name";
 import { formatCoachLocation } from "../../utils/coachProfile";
@@ -19,30 +23,6 @@ import { useApp } from "../../context/AppContext";
 import { CONFIG } from "../../config";
 
 const LOCATION_OPTIONS = AU_SUBURBS.map((s) => `${s.suburb}, ${s.state}`);
-
-function Row2({ icon: Icon, label, sub, onClick, right, danger }) {
-  const { darkMode } = useApp();
-  const C = darkMode ? CD : CL;
-  const Component = onClick ? "button" : "div";
-  return (
-    <Component
-      type={onClick ? "button" : undefined}
-      onClick={onClick}
-      style={{
-        width: "100%", minHeight: 44, display: "flex", alignItems: "center", gap: 12, padding: "13px 4px",
-        background: "none", border: "none", borderBottom: `1px solid ${C.border}`,
-        cursor: onClick ? "pointer" : "default", textAlign: "left",
-      }}
-    >
-      <Icon size={17} color={danger ? C.danger : C.jet} />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: T.bodyLg, color: danger ? C.danger : C.jet, fontWeight: 500, ...fBody }}>{label}</div>
-        {sub && <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 1, ...fBody }}>{sub}</div>}
-      </div>
-      {right !== undefined ? right : (onClick ? <ChevronRight size={16} color={C.slateLight} /> : null)}
-    </Component>
-  );
-}
 
 function OptionCard({ icon: Icon, title, desc, selected, onClick }) {
   const { darkMode } = useApp();
@@ -190,16 +170,7 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
     push: true, email: true, sms: false, whatsapp: false,
     bookingRequests: true, bookingConfirmations: true, messages: true, paymentUpdates: true,
   });
-  const toggleNotif = (key) => setNotifPrefs((p) => ({ ...p, [key]: !p[key] }));
-  const NotifRow = ({ label, sub, prefKey }) => (
-    <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 4px", borderBottom: `1px solid ${C.border}` }}>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>{label}</div>
-        {sub && <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>{sub}</div>}
-      </div>
-      <Toggle label={label} on={notifPrefs[prefKey]} onClick={() => toggleNotif(prefKey)} />
-    </div>
-  );
+const toggleNotif = (key) => setNotifPrefs((p) => ({ ...p, [key]: !p[key] }));
 
   const [sheet, setSheet] = useState(null);
   const closeSheet = () => setSheet(null);
@@ -471,7 +442,7 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
                 <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>{p.name}</div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
                   <span style={{ fontSize: T.subtitleLg, fontWeight: 700, color: C.jet, ...fDisplay }}>${p.price}</span>
-                  <span style={{ fontSize: T.captionLg, color: C.slate, ...fBody }}>{p.sport || coach.sport}</span>
+                  <SportLabel sport={p.sport || coach.sport} size={14} color={C.slate} style={{ fontSize: T.captionLg, ...fBody }} />
                 </div>
               </div>
               <div onClick={(e) => e.stopPropagation()} style={{ flexShrink: 0 }}>
@@ -484,7 +455,11 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
           <Btn variant="outline" size="sm" icon={Plus} full onClick={() => nav("coach-create-package")}>Add service package</Btn>
         </div>
 
-        <Row2 icon={Banknote} label="Earnings & payouts" sub="Transactions and payout method" onClick={() => nav("coach-earnings")} />
+        <div style={{ marginBottom: 24 }}>
+          <SettingsGroup title="Earnings">
+            <SettingsRow icon={Banknote} label="Earnings & payouts" sub="Transactions and payout method" onClick={() => nav("coach-earnings")} />
+          </SettingsGroup>
+        </div>
 
         <div style={{ marginTop: 22 }}>
           <SectionLabel>Booking preferences</SectionLabel>
@@ -525,28 +500,29 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
         </>
         )}
 
-        {tab === "settings" && (
+{tab === "settings" && (
         <>
-        <SectionLabel>Notifications</SectionLabel>
-        <Row2 icon={Bell} label="Notification preferences" sub="Bookings, messages & payment alerts" onClick={() => setSheet("notif")} />
+        <SettingsGroup title="Notifications">
+          <SettingsRow icon={Bell} label="Notification preferences" sub="Bookings, messages & payment alerts" onClick={() => setSheet("notif")} />
+        </SettingsGroup>
 
-        <div style={{ marginTop: 22 }}>
-          <SectionLabel>Security</SectionLabel>
-          <Row2 icon={Fingerprint} label="Biometric login" right={<Toggle label="Biometric login" on={biometric} onClick={() => setBiometric((v) => !v)} />} />
-          <Row2 icon={Lock} label="Change password" onClick={() => setSheet("password")} />
-        </div>
+        <SettingsGroup title="Security">
+          <SettingsRow icon={Fingerprint} label="Biometric login" right={<Toggle label="Biometric login" on={biometric} onClick={() => setBiometric((v) => !v)} />} />
+          <SettingsRow icon={Lock} label="Change password" onClick={() => setSheet("password")} />
+        </SettingsGroup>
 
-        <div style={{ marginTop: 22 }}>
-          <SectionLabel>Privacy & support</SectionLabel>
-          <Row2 icon={Shield} label="Privacy policy" onClick={() => setSheet("privacy")} />
-          <Row2 icon={HelpCircle} label="Support centre" onClick={() => nav("support")} />
-        </div>
+        <SettingsGroup title="Privacy & support">
+          <SettingsRow icon={Shield} label="Privacy policy" onClick={() => setSheet("privacy")} />
+          <SettingsRow icon={HelpCircle} label="Support centre" onClick={() => nav("support")} />
+        </SettingsGroup>
 
-        <div style={{ marginTop: 22 }}>
-          <SectionLabel>Account management</SectionLabel>
-          <Row2 icon={LogOut} label="Sign out" onClick={() => setSheet("signout")} />
-          <Row2 icon={Trash2} label="Delete account" danger onClick={openDeleteFlow} />
-        </div>
+        <SettingsGroup title="Account">
+          <SettingsRow icon={LogOut} label="Sign out" onClick={() => setSheet("signout")} />
+        </SettingsGroup>
+
+        <SettingsGroup title="Danger zone">
+          <SettingsRow icon={Trash2} label="Delete account" danger onClick={openDeleteFlow} />
+        </SettingsGroup>
         </>
         )}
       </div>
@@ -591,8 +567,8 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
 
             <FormSection icon={User} label="About you" hint="Your name and username — how athletes see and recognise you.">
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                <Field label="Full name" placeholder="How athletes will see you" icon={User} value={draft.name} onChange={(e) => setDraftField({ name: e.target.value })} />
-                <HandleField value={draft.handle} onChange={(v) => { setHandleEdited(true); setDraftField({ handle: v }); }} isTaken={isHandleTaken(draft.handle, [coach.handle, profile.handle])} showStatus={handleEdited && draft.handle.trim() !== String(profile.handle || "").trim()} />
+                <Field label="Full name" placeholder="How athletes will see you" icon={User} value={draft.name} onChange={(e) => setDraftField({ name: e.target.value })} required />
+                <HandleField value={draft.handle} onChange={(v) => { setHandleEdited(true); setDraftField({ handle: v }); }} isTaken={isHandleTaken(draft.handle, [coach.handle, profile.handle])} showStatus={handleEdited && draft.handle.trim() !== String(profile.handle || "").trim()} required />
 
                 <div>
                   <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Bio</div>
@@ -621,22 +597,23 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
             <FormSection icon={Sparkles} label="Coaching profile" hint="What you coach, where you're based and the languages you speak.">
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 <div>
-                  <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Sports</div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                    {SPORTS.map((s) => {
+                  <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Sports<RequiredMark /></div>
+                  <div style={{ fontSize: T.captionLg, color: C.slateLight, marginBottom: 7, ...fBody }}>Popular in Australia</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 10 }}>
+                    {POPULAR_SPORTS.slice(0, 10).map((s) => {
                       const active = draft.sports.includes(s);
                       return (
-                        <Chip
+                        <SportBadge
                           key={s}
-                          active={active}
-                          icon={SPORT_ICON[s]}
+                          sport={s}
+                          selected={active}
+                          compact
                           onClick={() => setDraftField({ sports: active ? draft.sports.filter((x) => x !== s) : [...draft.sports, s] })}
-                        >
-                          {s}
-                        </Chip>
+                        />
                       );
                     })}
                   </div>
+                  <SportSearchMultiSelect options={SPORT_NAMES} value={draft.sports} onChange={(v) => setDraftField({ sports: v })} placeholder="Search all sports…" />
                   {draft.sports.length === 0 && (
                     <div style={{ fontSize: T.captionLg, color: C.danger, marginTop: 6, ...fBody }}>Pick at least one sport so athletes can find you.</div>
                   )}
@@ -702,29 +679,31 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
       </BottomSheet>
 
       <BottomSheet open={sheet === "notif"} onClose={closeSheet} title="Notification preferences" heightPct={84}>
-        <SectionLabel>Channels</SectionLabel>
-        <NotifRow label="Push notifications" sub="Alerts on this device" prefKey="push" />
-        <NotifRow label="Email notifications" sub="Receipts, confirmations & digests" prefKey="email" />
-        <NotifRow label="SMS notifications" sub="Urgent day-of updates" prefKey="sms" />
-        <NotifRow label="WhatsApp notifications" sub="Urgent day-of updates" prefKey="whatsapp" />
-        <div style={{ fontSize: T.captionLg, color: C.slateLight, margin: "8px 0 16px", lineHeight: 1.5, ...fBody }}>
+        <SettingsGroup title="Channels">
+          <SettingsRow icon={Bell} label="Push notifications" sub="Alerts on this device" right={<Toggle label="Push notifications" on={notifPrefs.push} onClick={() => toggleNotif("push")} />} />
+          <SettingsRow icon={Mail} label="Email notifications" sub="Receipts, confirmations & digests" right={<Toggle label="Email notifications" on={notifPrefs.email} onClick={() => toggleNotif("email")} />} />
+          <SettingsRow icon={Phone} label="SMS notifications" sub="Urgent day-of updates" right={<Toggle label="SMS notifications" on={notifPrefs.sms} onClick={() => toggleNotif("sms")} />} />
+          <SettingsRow icon={MessageCircle} label="WhatsApp notifications" sub="Urgent day-of updates" right={<Toggle label="WhatsApp notifications" on={notifPrefs.whatsapp} onClick={() => toggleNotif("whatsapp")} />} />
+        </SettingsGroup>
+        <div style={{ fontSize: T.captionLg, color: C.slateLight, margin: "-14px 0 24px", lineHeight: 1.5, ...fBody }}>
           Payment receipts and booking confirmations are always sent by email.
         </div>
-        <SectionLabel>Updates</SectionLabel>
-        <NotifRow label="Booking requests" sub="New requests waiting on your response" prefKey="bookingRequests" />
-        <NotifRow label="Booking confirmations" sub="When a session is confirmed" prefKey="bookingConfirmations" />
-        <NotifRow label="Messages" sub="New messages from athletes" prefKey="messages" />
-        <NotifRow label="Payment updates" sub="Payouts, receipts and earnings" prefKey="paymentUpdates" />
-        <div style={{ marginTop: 20 }}>
+        <SettingsGroup title="Updates">
+          <SettingsRow icon={CalendarDays} label="Booking requests" sub="New requests waiting on your response" right={<Toggle label="Booking requests" on={notifPrefs.bookingRequests} onClick={() => toggleNotif("bookingRequests")} />} />
+          <SettingsRow icon={CheckCircle2} label="Booking confirmations" sub="When a session is confirmed" right={<Toggle label="Booking confirmations" on={notifPrefs.bookingConfirmations} onClick={() => toggleNotif("bookingConfirmations")} />} />
+          <SettingsRow icon={MessageCircle} label="Messages" sub="New messages from athletes" right={<Toggle label="Messages" on={notifPrefs.messages} onClick={() => toggleNotif("messages")} />} />
+          <SettingsRow icon={Banknote} label="Payment updates" sub="Payouts, receipts and earnings" right={<Toggle label="Payment updates" on={notifPrefs.paymentUpdates} onClick={() => toggleNotif("paymentUpdates")} />} />
+        </SettingsGroup>
+        <div style={{ marginTop: 8 }}>
           <Btn full onClick={() => { toast("Notification preferences saved"); closeSheet(); }}>Save preferences</Btn>
         </div>
       </BottomSheet>
 
       <BottomSheet open={sheet === "password"} onClose={closeSheet} title="Change password" heightPct={62}>
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <Field label="Current password" placeholder="••••••••" icon={Lock} type={showPw ? "text" : "password"} rightIcon={showPw ? EyeOff : Eye} onRight={() => setShowPw((v) => !v)} />
-          <Field label="New password" placeholder="••••••••" icon={Lock} type={showPw ? "text" : "password"} />
-          <Field label="Confirm new password" placeholder="••••••••" icon={Lock} type={showPw ? "text" : "password"} />
+<Field label="Current password" placeholder="••••••••" icon={Lock} type={showPw ? "text" : "password"} rightIcon={showPw ? EyeOff : Eye} onRight={() => setShowPw((v) => !v)} required />
+          <Field label="New password" placeholder="••••••••" icon={Lock} type={showPw ? "text" : "password"} required />
+          <Field label="Confirm new password" placeholder="••••••••" icon={Lock} type={showPw ? "text" : "password"} required />
         </div>
         <div style={{ marginTop: 20 }}>
           <Btn full onClick={() => { toast("Password updated"); closeSheet(); }}>Update password</Btn>

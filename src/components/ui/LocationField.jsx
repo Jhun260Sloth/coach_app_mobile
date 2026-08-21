@@ -4,7 +4,7 @@ import { CL, CD, fBody, T, LAYOUT } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { AU_SUBURBS } from "../../data/mockData";
 import { haversineKm, FALLBACK_USER_LOCATION } from "../../lib/mapUtils";
-import { Spinner } from "./Primitives";
+import { Spinner, RequiredMark } from "./Primitives";
 
 const FALLBACK_SUBURB = AU_SUBURBS.find((s) => s.suburb === "Sydney" && s.postcode === "2000");
 
@@ -22,7 +22,7 @@ function nearestSuburb(lat, lng) {
 /* Shared structured location picker — { suburb, state, postcode } — used by
    coach onboarding, client setup, participant profiles and account editing.
    Includes a "use my current location" detector with a locating state. */
-export function LocationField({ value, onChange, label = "Location", helper, placeholder = "Search suburb or postcode…" }) {
+export function LocationField({ value, onChange, label = "Location", helper, placeholder = "Search suburb or postcode…", required }) {
   const { darkMode, toast } = useApp();
   const C = darkMode ? CD : CL;
   const [query, setQuery] = useState("");
@@ -73,7 +73,7 @@ export function LocationField({ value, onChange, label = "Location", helper, pla
 
   return (
     <div>
-      {label && <div style={labelStyle}>{label}</div>}
+      {label && <div style={labelStyle}>{label}{required && <RequiredMark />}</div>}
 
       {value ? (
         <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 64, boxSizing: "border-box", border: `1.5px solid ${C.border}`, borderRadius: LAYOUT.inputRadius, padding: "9px 13px", background: C.white, animation: "clFadeUp .25s ease" }}>

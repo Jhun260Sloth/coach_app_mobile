@@ -7,7 +7,8 @@ import {
 import { CL, CD, fBody, fDisplay, T, LAYOUT } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import {
-  ADDITIONAL_CHARGE_STATUS, DISPUTE_OUTCOME, DISPUTE_STATUS,
+  ADDITIONAL_CHARGE_KIND, ADDITIONAL_CHARGE_PHASE, ADDITIONAL_CHARGE_STATUS,
+  DISPUTE_OUTCOME, DISPUTE_STATUS,
 } from "../../data/bookings";
 import {
   Badge, Btn, Card, Chip, EmptyState, SectionLabel, StepProgress, Toggle, TopBar,
@@ -78,7 +79,7 @@ function SessionContext({ booking, role }) {
         <div style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.jet, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", ...fDisplay }}>{booking.service}</div>
         <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{booking.date} · {booking.time} · {person}</div>
       </div>
-      <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>${Number(booking.price).toFixed(2)}</div>
+      <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>${Number(booking.paidTotal || booking.price).toFixed(2)}</div>
     </Card>
   );
 }
@@ -394,7 +395,9 @@ export function ScreenDisputeStatus({ nav, params, role: appRole, bookings = [],
   );
 }
 
-export function ScreenAdditionalChargeCreate({ nav, params, coachBookings = [], bookings = [], createAdditionalCharge, toast }) {
+export function ScreenAdditionalChargeCreate({
+  nav, params, coachBookings = [], bookings = [], createAdditionalCharge, confirmSessionCompletion, toast,
+}) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const booking = findBooking(params?.bookingId || params?.id, bookings, coachBookings);
@@ -404,31 +407,41 @@ export function ScreenAdditionalChargeCreate({ nav, params, coachBookings = [], 
   const [note, setNote] = useState("");
   const [evidence, setEvidence] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const phase = params?.phase || ADDITIONAL_CHARGE_PHASE.COMPLETION;
 
   if (!booking) return <EmptyState icon={BadgeDollarSign} title="Session not found" body="Choose a completed session before requesting an additional payment." />;
   const canReview = Number(amount) > 0 && note.trim().length >= 12;
   const submit = () => {
     setSubmitting(true);
-    const chargeId = createAdditionalCharge?.({ bookingId: booking.id, reason, note: note.trim(), amount, evidence: evidence[0] || "No attachment" });
+    const chargeId = createAdditionalCharge?.({
+      bookingId: booking.id,
+      reason,
+      note: note.trim(),
+      amount,
+      evidence: evidence[0] || "No attachment",
+      phase,
+      kind: ADDITIONAL_CHARGE_KIND.REQUIRED,
+    });
     if (!chargeId) {
       setSubmitting(false);
       toast?.("We couldn’t send this request");
       return;
     }
-    toast?.("Payment request sent to the client");
-    window.setTimeout(() => nav("additional-charge-review", { chargeId, role: "coach", backTo: "coach-session-detail" }), 650);
+    if (phase === ADDITIONAL_CHARGE_PHASE.COMPLETION) confirmSessionCompletion?.(booking.id, "coach");
+    toast?.("Final payment sent — completion is now locked");
+    window.setTimeout(() => nav("additional-charge-review", { chargeId, role: "coach", backTo: params?.backTo || "coach-session-detail" }), 650);
   };
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title={step === 1 ? "Additional payment" : "Client preview"} onBack={() => step === 2 ? setStep(1) : nav("coach-session-detail", { id: booking.id })} />
+      <TopBar title={step === 1 ? "Final payment" : "Client preview"} onBack={() => step === 2 ? setStep(1) : nav(params?.backTo || "coach-session-detail", { id: booking.id })} />
       <div style={{ flex: 1, overflowY: "auto", padding: `${LAYOUT.pagePadTop}px ${LAYOUT.pagePadX}px 24px` }} className="cl-hide-scrollbar">
         <StepProgress step={step} total={2} label={step === 1 ? "Add the agreed cost" : "Review before sending"} />
         <div style={{ marginBottom: 18 }}><SessionContext booking={booking} role="coach" /></div>
         {step === 1 ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 19 }}>
             <div>
-              <SectionHeading hint="Only request costs the client agreed to during the session.">What is this for?</SectionHeading>
+              <SectionHeading hint="Only request a cost the client agreed to during the session.">What is this for?</SectionHeading>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
                 {CHARGE_REASONS.map((item) => <Chip key={item} active={reason === item} onClick={() => setReason(item)}>{item}</Chip>)}
               </div>
@@ -439,7 +452,7 @@ export function ScreenAdditionalChargeCreate({ nav, params, coachBookings = [], 
               <TextArea value={note} onChange={setNote} placeholder="For example: We agreed to extend the session by 20 minutes to finish the training plan…" minHeight={116} />
             </div>
             <div><SectionHeading hint="A receipt or session note makes the request easier to verify.">Receipt or evidence</SectionHeading><EvidenceUploader evidence={evidence} setEvidence={setEvidence} compact /></div>
-            <ReviewNotice>The client can approve and pay, ask you a question, or open a dispute. CoachLink never charges them automatically.</ReviewNotice>
+            <ReviewNotice>The client must pay this final amount before their completion control unlocks. CoachLink never charges them automatically.</ReviewNotice>
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>
@@ -457,7 +470,7 @@ export function ScreenAdditionalChargeCreate({ nav, params, coachBookings = [], 
                 <DetailRow label="Attachment" value={evidence.length ? "Included" : "None"} last />
               </div>
             </Card>
-            <ReviewNotice>This is exactly what the client will see. They must actively approve the payment before any funds move.</ReviewNotice>
+            <ReviewNotice>This is exactly what the client will see. Your completion confirmation is saved, but funds stay protected until they pay and confirm too.</ReviewNotice>
           </div>
         )}
       </div>
@@ -482,6 +495,7 @@ export function ScreenAdditionalChargeReview({
   const pending = charge.status === ADDITIONAL_CHARGE_STATUS.PENDING;
   const paid = charge.status === ADDITIONAL_CHARGE_STATUS.PAID;
   const disputed = charge.status === ADDITIONAL_CHARGE_STATUS.DISPUTED;
+  const finalPayment = charge.phase === ADDITIONAL_CHARGE_PHASE.COMPLETION;
   const person = role === "coach" ? booking.clientName : booking.coachName;
   const fallbackScreen = params?.backTo || (role === "coach" ? "coach-session-detail" : "client-booking-detail");
   const fallbackParams = params?.backParams || (["coach-session-detail", "client-booking-detail"].includes(fallbackScreen) ? { id: booking.id } : {});
@@ -491,20 +505,20 @@ export function ScreenAdditionalChargeReview({
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title={role === "coach" ? "Payment request" : "Review request"} onBack={() => goBack(fallbackScreen, fallbackParams)} right={<Badge tone={paid ? "success" : pending ? "orange" : "neutral"}>{paid ? "Paid" : disputed ? "Disputed" : charge.status === ADDITIONAL_CHARGE_STATUS.CANCELLED ? "Withdrawn" : "Awaiting response"}</Badge>} />
+      <TopBar title={role === "coach" ? "Payment request" : finalPayment ? "Review final payment" : "Review request"} onBack={() => goBack(fallbackScreen, fallbackParams)} right={<Badge tone={paid ? "success" : pending ? "orange" : "neutral"}>{paid ? "Paid" : disputed ? "Disputed" : charge.status === ADDITIONAL_CHARGE_STATUS.CANCELLED ? "Withdrawn" : "Awaiting response"}</Badge>} />
       <div style={{ flex: 1, overflowY: "auto", padding: `${LAYOUT.pagePadTop}px ${LAYOUT.pagePadX}px 24px` }} className="cl-hide-scrollbar">
         <div style={{ textAlign: "center", padding: "7px 8px 20px" }}>
           <div style={{ width: 66, height: 66, borderRadius: 22, margin: "0 auto 14px", background: paid ? C.successTint : C.brandTint, display: "flex", alignItems: "center", justifyContent: "center" }}>
             {paid ? <CheckCircle2 size={30} color={C.success} /> : <BadgeDollarSign size={29} color={C.brand} />}
           </div>
-          <div style={{ fontSize: T.display, fontWeight: 750, color: C.jet, ...fDisplay }}>{paid ? "Payment complete" : role === "coach" ? "Request sent to the client" : `${person} requested an additional payment`}</div>
+          <div style={{ fontSize: T.display, fontWeight: 750, color: C.jet, ...fDisplay }}>{paid ? "Payment complete" : role === "coach" ? "Request sent to the client" : `${person} requested ${finalPayment ? "a final payment" : "an additional payment"}`}</div>
           <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.6, marginTop: 7, ...fBody }}>{paid ? "The updated receipt is ready and both sides have been notified." : role === "coach" ? "They can pay, ask a question, or dispute the request. No automatic charge will occur." : "Review the explanation and evidence before you decide. You won’t be charged automatically."}</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>
           <Card style={{ padding: 18 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
               <div>
-                <div style={{ fontSize: T.captionLg, fontWeight: 700, color: C.slate, textTransform: "uppercase", letterSpacing: ".04em", ...fBody }}>Additional cost</div>
+                <div style={{ fontSize: T.captionLg, fontWeight: 700, color: C.slate, textTransform: "uppercase", letterSpacing: ".04em", ...fBody }}>{finalPayment ? "Final session cost" : "Additional cost"}</div>
                 <div style={{ fontSize: T.titleLg, fontWeight: 750, color: C.jet, marginTop: 5, ...fDisplay }}>{charge.reason}</div>
               </div>
               <div style={{ fontSize: T.hero, fontWeight: 750, color: C.jet, ...fDisplay }}>${Number(charge.amount).toFixed(2)}</div>
@@ -529,12 +543,20 @@ export function ScreenAdditionalChargeReview({
         </div>
       </div>
       <div style={{ padding: `12px ${LAYOUT.pagePadX}px 28px`, borderTop: `1px solid ${C.border}`, background: C.white, display: "flex", flexDirection: "column", gap: 9 }}>
-        {role === "client" && pending && <Btn full icon={WalletCards} onClick={() => nav("additional-charge-payment", { chargeId: charge.id, role: "client" })}>Continue to payment · ${Number(charge.amount).toFixed(2)}</Btn>}
+        {role === "client" && pending && <Btn full icon={WalletCards} onClick={() => nav("additional-charge-payment", { chargeId: charge.id, role: "client" })}>{finalPayment ? "Pay final amount" : "Continue to payment"} · ${Number(charge.amount).toFixed(2)}</Btn>}
         {role === "client" && pending && <Btn full variant="outline" icon={MessageCircle} onClick={() => nav("chat-thread", { name: booking.coachName, bookingId: booking.id, context: `Additional payment · ${booking.service}`, backTo: "additional-charge-review", backParams: { chargeId: charge.id, role } })}>Ask the coach a question</Btn>}
         {role === "client" && pending && <Btn full variant="ghost" icon={Scale} onClick={() => nav("dispute-create", { bookingId: booking.id, role: "client", category: "additional_charge", chargeId: charge.id, description: `I don’t recognise or agree with the ${charge.reason.toLowerCase()} request.`, backTo: "additional-charge-review" })}>Dispute this request</Btn>}
         {role === "coach" && pending && <Btn full icon={MessageCircle} onClick={() => nav("chat-thread", { name: booking.clientName, bookingId: booking.id, context: `Additional payment · ${booking.service}`, backTo: "additional-charge-review", backParams: { chargeId: charge.id, role } })}>Message the client</Btn>}
         {role === "coach" && pending && <Btn full variant="danger" icon={XCircle} onClick={withdraw}>Withdraw request</Btn>}
-        {(paid || disputed || charge.status === ADDITIONAL_CHARGE_STATUS.CANCELLED) && <Btn full icon={paid ? CheckCircle2 : LifeBuoy} onClick={() => paid ? nav(role === "coach" ? "coach-session-detail" : "client-booking-detail", { id: booking.id }) : nav("support", { presetTab: "contact", faqTopic: role, bookingId: booking.id, backTo: "additional-charge-review" })}>{paid ? "Done" : "Get help with this request"}</Btn>}
+        {(paid || disputed || charge.status === ADDITIONAL_CHARGE_STATUS.CANCELLED) && <Btn full icon={paid ? CheckCircle2 : LifeBuoy} onClick={() => {
+          if (!paid) {
+            nav("support", { presetTab: "contact", faqTopic: role, bookingId: booking.id, backTo: "additional-charge-review" });
+          } else if (role === "client" && charge.phase === ADDITIONAL_CHARGE_PHASE.COMPLETION) {
+            nav("session-completion", { bookingId: booking.id, role: "client", backTo: "client-booking-detail" });
+          } else {
+            nav(role === "coach" ? "coach-session-detail" : "client-booking-detail", { id: booking.id });
+          }
+        }}>{paid && role === "client" && charge.phase === ADDITIONAL_CHARGE_PHASE.COMPLETION ? "Continue to confirmation" : paid ? "Done" : "Get help with this request"}</Btn>}
       </div>
     </div>
   );
@@ -562,6 +584,7 @@ export function ScreenAdditionalChargePayment({
 
   const pending = charge.status === ADDITIONAL_CHARGE_STATUS.PENDING;
   const amount = Number(charge.amount || 0);
+  const finalPayment = charge.phase === ADDITIONAL_CHARGE_PHASE.COMPLETION;
   const confirmPayment = () => {
     if (!pending || processing) return;
     if (offline) {
@@ -577,8 +600,12 @@ export function ScreenAdditionalChargePayment({
         nav("additional-charge-review", { chargeId: charge.id, role: "client" });
         return;
       }
-      toast?.("Additional payment completed");
-      nav("additional-charge-review", { chargeId: charge.id, role: "client" });
+      toast?.("Final payment completed");
+      if (charge.phase === ADDITIONAL_CHARGE_PHASE.COMPLETION) {
+        nav("session-completion", { bookingId: booking.id, role: "client", backTo: "client-booking-detail" });
+      } else {
+        nav("additional-charge-review", { chargeId: charge.id, role: "client" });
+      }
     }, 900);
   };
 
@@ -614,13 +641,13 @@ export function ScreenAdditionalChargePayment({
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", background: C.white }}>
-      <TopBar title="Secure payment" onBack={() => nav("additional-charge-review", { chargeId: charge.id, role: "client" })} right={<Badge tone="success" icon={ShieldCheck}>Protected</Badge>} />
+      <TopBar title={finalPayment ? "Final payment" : "Secure payment"} onBack={() => nav("additional-charge-review", { chargeId: charge.id, role: "client" })} right={<Badge tone="success" icon={ShieldCheck}>Protected</Badge>} />
 
       <div style={{ flex: 1, overflowY: "auto", padding: `${LAYOUT.pagePadTop}px ${LAYOUT.pagePadX}px 24px` }} className="cl-hide-scrollbar">
         <Card style={{ padding: 18, marginBottom: 20, background: C.warnTint, borderColor: C.warnStrong }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: T.captionLg, fontWeight: 700, color: C.slate, textTransform: "uppercase", letterSpacing: ".04em", ...fBody }}>Additional payment</div>
+              <div style={{ fontSize: T.captionLg, fontWeight: 700, color: C.slate, textTransform: "uppercase", letterSpacing: ".04em", ...fBody }}>{finalPayment ? "Final session payment" : "Additional payment"}</div>
               <div style={{ fontSize: T.title, fontWeight: 700, color: C.jet, marginTop: 5, ...fDisplay }}>{charge.reason}</div>
               <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 4, lineHeight: 1.45, ...fBody }}>{booking.coachName} · {booking.service}</div>
             </div>
@@ -650,7 +677,7 @@ export function ScreenAdditionalChargePayment({
 
         <div style={{ marginTop: 22 }}><SectionLabel>Payment summary</SectionLabel></div>
         <Card>
-          <DetailRow label="Additional charge" value={`$${amount.toFixed(2)}`} />
+          <DetailRow label={finalPayment ? "Final charge" : "Additional charge"} value={`$${amount.toFixed(2)}`} />
           <DetailRow label="Processing fee" value="$0.00" />
           <DetailRow label="Total due today" value={`$${amount.toFixed(2)}`} last />
         </Card>

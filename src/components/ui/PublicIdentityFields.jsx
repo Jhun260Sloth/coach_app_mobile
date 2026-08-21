@@ -13,7 +13,7 @@ import { isValidHandle } from "../../utils/name";
    ========================================================================= */
 
 /** Username input with live validity / availability feedback. */
-export function HandleField({ value, onChange, isTaken, showStatus = true, label = "Username", placeholder = "shane22", helper }) {
+export function HandleField({ value, onChange, isTaken, showStatus = true, label = "Username", placeholder = "shane22", helper, required }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const trimmed = String(value || "").trim();
@@ -39,6 +39,7 @@ export function HandleField({ value, onChange, isTaken, showStatus = true, label
         icon={AtSign}
         value={value}
         onChange={(e) => onChange(e.target.value.toLowerCase().replace(/[^a-z0-9._]/g, ""))}
+        required={required}
       />
       {status ? (
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>

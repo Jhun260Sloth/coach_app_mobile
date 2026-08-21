@@ -16,7 +16,7 @@ function LocationStatusBase({ locating, fixed }) {
     <div style={{
       position: "absolute", top: 78, left: 16, zIndex: 401, display: "flex", alignItems: "center", gap: 6,
       background: C.white, borderRadius: 99, padding: "6px 11px", fontSize: T.captionLg, fontWeight: 600, color: C.jet,
-      boxShadow: "0 4px 12px rgba(0,0,0,0.08)", ...fBody,
+      boxShadow: "none", ...fBody,
     }}>
       {locating ? (
         <>

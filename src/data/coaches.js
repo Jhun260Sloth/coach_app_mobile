@@ -1,22 +1,16 @@
 /* =========================================================================
    COACH PROFILES & SPORT DATA
-   ========================================================================= */
-import { Users, Dumbbell, Waves, Swords, Flag, Bike } from "lucide-react";
-import { COACH_AVATARS } from "./media";
 
-export const SPORT_ICON = {
-  "Netball": Users,
-  "CrossFit": Dumbbell,
-  "Surfing": Waves,
-  "Boxing": Swords,
-  "Golf": Flag,
-  "Cycling": Bike,
-};
+   Privacy contract: discovery receives suburb-level area centres only. A
+   coach's home address or exact session venue must never be returned in this
+   directory payload; exact joining details are released after booking.
+   ========================================================================= */
+import { COACH_AVATARS } from "./media";
 
 export const COACHES = [
   {
     id: "c1", name: "Isla Ferguson", handle: "isla.netball", namePrivacy: "full", avatar: COACH_AVATARS.c1, sport: "Netball", tags: ["Shooting circle", "Game sense"],
-    suburb: "Surry Hills, Sydney", lat: -33.8846, lng: 151.2109, distanceKm: 2.1, rating: 4.9, reviews: 132,
+    suburb: "Surry Hills, Sydney", areaLat: -33.8865, areaLng: 151.2095, areaRadiusKm: 1.2, distanceKm: 2.1, rating: 4.9, reviews: 132,
     verified: { identity: true, wwcc: true, quals: true }, instantBook: true,
     experience: "8 yrs coaching",
     languages: ["English"],
@@ -36,7 +30,7 @@ export const COACHES = [
   },
   {
     id: "c2", name: "Noah Kelly", handle: "noah.kelly", namePrivacy: "initial", avatar: COACH_AVATARS.c2, sport: "CrossFit", tags: ["Metcon programming", "Injury return"],
-    suburb: "Chatswood, Sydney", lat: -33.7969, lng: 151.1830, distanceKm: 8.4, rating: 4.8, reviews: 96,
+    suburb: "Chatswood, Sydney", areaLat: -33.7969, areaLng: 151.1830, areaRadiusKm: 1.2, distanceKm: 8.4, rating: 4.8, reviews: 96,
     verified: { identity: true, wwcc: false, quals: true }, instantBook: false,
     experience: "6 yrs coaching",
     languages: ["English"],
@@ -66,7 +60,7 @@ export const COACHES = [
   },
   {
     id: "c3", name: "Ruby Hendricks", handle: "ruby.waves", namePrivacy: "initial", avatar: COACH_AVATARS.c3, sport: "Surfing", tags: ["Beginner coaching", "Wave reading"],
-    suburb: "Manly, Sydney", lat: -33.7969, lng: 151.2870, distanceKm: 9.4, rating: 5.0, reviews: 58,
+    suburb: "Manly, Sydney", areaLat: -33.7980, areaLng: 151.2885, areaRadiusKm: 1.2, distanceKm: 9.4, rating: 5.0, reviews: 58,
     verified: { identity: true, wwcc: true, quals: true }, instantBook: true,
     experience: "10 yrs coaching",
     languages: ["English", "Spanish"],
@@ -84,7 +78,7 @@ export const COACHES = [
   },
   {
     id: "c4", name: "Marcus Ude", handle: "marcus.boxes", namePrivacy: "handle", avatar: COACH_AVATARS.c4, sport: "Boxing", tags: ["Pad work", "Fitness boxing"],
-    suburb: "Glebe, Sydney", lat: -33.8795, lng: 151.1852, distanceKm: 3.4, rating: 4.7, reviews: 74,
+    suburb: "Glebe, Sydney", areaLat: -33.8795, areaLng: 151.1852, areaRadiusKm: 1.2, distanceKm: 3.4, rating: 4.7, reviews: 74,
     verified: { identity: true, wwcc: true, quals: false }, instantBook: true,
     experience: "5 yrs coaching",
     languages: ["English"],
@@ -102,7 +96,7 @@ export const COACHES = [
   },
   {
     id: "c5", name: "Chloe Dawson", handle: "chloe.swing", namePrivacy: "full", avatar: COACH_AVATARS.c5, sport: "Golf", tags: ["Short game", "Swing mechanics"],
-    suburb: "Redfern, Sydney", lat: -33.8930, lng: 151.2044, distanceKm: 3.1, rating: 4.9, reviews: 210,
+    suburb: "Redfern, Sydney", areaLat: -33.8930, areaLng: 151.2044, areaRadiusKm: 1.2, distanceKm: 3.1, rating: 4.9, reviews: 210,
     verified: { identity: true, wwcc: false, quals: true }, instantBook: true,
     experience: "9 yrs coaching",
     languages: ["English"],
@@ -121,7 +115,7 @@ export const COACHES = [
   },
   {
     id: "c6", name: "Liam O'Connor", handle: "liam.rides", namePrivacy: "initial", avatar: COACH_AVATARS.c6, sport: "Cycling", tags: ["Road racing", "Power training"],
-    suburb: "Parramatta, Sydney", lat: -33.8150, lng: 151.0011, distanceKm: 23.9, rating: 4.6, reviews: 41,
+    suburb: "Parramatta, Sydney", areaLat: -33.8150, areaLng: 151.0011, areaRadiusKm: 1.2, distanceKm: 23.9, rating: 4.6, reviews: 41,
     verified: { identity: true, wwcc: true, quals: true }, instantBook: false,
     experience: "4 yrs coaching",
     languages: ["English"],
@@ -139,15 +133,14 @@ export const COACHES = [
   },
 ];
 
-export const SPORTS = ["Netball", "CrossFit", "Surfing", "Boxing", "Golf", "Cycling", "Football", "Athletics"];
 export const ALL_SUBURBS = [...new Set(COACHES.map((c) => c.suburb))].sort();
 
 /**
- * Suburb → coordinates, derived from the coach directory itself (first coach
- * listed in each suburb). Lets "enter your location manually" resolve a typed
- * suburb to a real point for distance sorting/filtering, without a geocoding API.
+ * Suburb → approximate area centre, derived from the coach directory itself.
+ * Lets manual suburb selection support distance sorting without exposing a
+ * coach's private venue or home coordinates.
  */
 export const SUBURB_COORDS = COACHES.reduce((acc, c) => {
-  if (!acc[c.suburb]) acc[c.suburb] = { lat: c.lat, lng: c.lng };
+  if (!acc[c.suburb]) acc[c.suburb] = { lat: c.areaLat, lng: c.areaLng };
   return acc;
 }, {});

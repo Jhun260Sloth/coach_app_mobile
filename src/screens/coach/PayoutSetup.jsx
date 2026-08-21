@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { User, Landmark, Hash, FileText } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
-import { TopBar, Btn, FormSection } from "../../components/ui/Primitives";
+import { TopBar, Btn, FormSection, RequiredMark } from "../../components/ui/Primitives";
 import { useApp } from "../../context/AppContext";
 
 export function ScreenCoachPayoutSetup({ nav, goBack, params, toast }) {
@@ -38,7 +38,7 @@ export function ScreenCoachPayoutSetup({ nav, goBack, params, toast }) {
         <FormSection icon={Landmark} label="Bank details" hint="Where we'll send your earnings.">
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div>
-              <div style={labelStyle}>Account holder name</div>
+              <div style={labelStyle}>Account holder name<RequiredMark /></div>
               <div className="cl-input" style={fieldWrapStyle}>
                 <User size={16} color={C.slateLight} />
                 <input value={accountHolder} onChange={(e) => setAccountHolder(e.target.value)} placeholder="e.g. Josh Whitfield" style={fieldInputStyle} />
@@ -46,7 +46,7 @@ export function ScreenCoachPayoutSetup({ nav, goBack, params, toast }) {
             </div>
 
             <div>
-              <div style={labelStyle}>Bank name</div>
+              <div style={labelStyle}>Bank name<RequiredMark /></div>
               <div className="cl-input" style={fieldWrapStyle}>
                 <Landmark size={16} color={C.slateLight} />
                 <input value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="e.g. Commonwealth Bank" style={fieldInputStyle} />
@@ -54,7 +54,7 @@ export function ScreenCoachPayoutSetup({ nav, goBack, params, toast }) {
             </div>
 
             <div>
-              <div style={labelStyle}>Account number</div>
+              <div style={labelStyle}>Account number<RequiredMark /></div>
               <div className="cl-input" style={fieldWrapStyle}>
                 <Hash size={16} color={C.slateLight} />
                 <input value={accountNumber} onChange={(e) => setAccountNumber(e.target.value.replace(/[^0-9]/g, ""))} placeholder="e.g. 12345678" inputMode="numeric" style={fieldInputStyle} />
@@ -62,7 +62,7 @@ export function ScreenCoachPayoutSetup({ nav, goBack, params, toast }) {
             </div>
 
             <div>
-              <div style={labelStyle}>BSB / Routing number</div>
+              <div style={labelStyle}>BSB / Routing number<RequiredMark /></div>
               <div className="cl-input" style={fieldWrapStyle}>
                 <Hash size={16} color={C.slateLight} />
                 <input value={routingNumber} onChange={(e) => setRoutingNumber(e.target.value.replace(/[^0-9]/g, ""))} placeholder="e.g. 062-000" inputMode="numeric" style={fieldInputStyle} />

@@ -1,13 +1,10 @@
 import React, { useRef, useState } from "react";
-import { Camera, Plus, X, FileCheck2, Upload, FileText, Sparkles, TrendingUp, Award, Image as ImageIcon } from "lucide-react";
+import { Camera, X, FileCheck2, Upload, FileText, Sparkles, TrendingUp, Award, Image as ImageIcon } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { Avatar, FormSection, Chip, Card, Btn, TopBar } from "../../components/ui/Primitives";
-
-const SPORT_OPTIONS = [
-  "Tennis", "Strength & Conditioning", "Swimming", "Basketball", "Football",
-  "Running", "Yoga", "Boxing", "Cricket", "Golf",
-];
+import { SportBadge, SportSearchMultiSelect } from "../../components/ui/SportUI";
+import { POPULAR_SPORTS, SPORT_NAMES } from "../../data/sports";
 const EXPERIENCE_OPTIONS = ["<1 year", "1–2 years", "3–5 years", "6–9 years", "10+ years"];
 
 export function ScreenCoachProfileSetup({ nav, toast }) {
@@ -16,7 +13,6 @@ export function ScreenCoachProfileSetup({ nav, toast }) {
   const [avatar, setAvatar] = useState(null);
   const [bio, setBio] = useState("");
   const [sports, setSports] = useState([]);
-  const [customSport, setCustomSport] = useState("");
   const [experience, setExperience] = useState("");
   const [certs, setCerts] = useState([]);
   const [media, setMedia] = useState([]);
@@ -26,12 +22,6 @@ export function ScreenCoachProfileSetup({ nav, toast }) {
   const mediaInputRef = useRef(null);
 
   const toggleSport = (s) => setSports((arr) => (arr.includes(s) ? arr.filter((x) => x !== s) : [...arr, s]));
-  const addCustomSport = () => {
-    const v = customSport.trim();
-    if (v && !sports.includes(v)) setSports((arr) => [...arr, v]);
-    setCustomSport("");
-  };
-  const extraSports = sports.filter((s) => !SPORT_OPTIONS.includes(s));
 
   const onAvatarChange = (e) => {
     const file = e.target.files?.[0];
@@ -84,7 +74,7 @@ export function ScreenCoachProfileSetup({ nav, toast }) {
           </div>
         </FormSection>
 
-        <FormSection icon={FileText} label="Bio" hint="Introduce yourself and your coaching style.">
+        <FormSection icon={FileText} label="Bio" hint="Introduce yourself and your coaching style." required>
           <textarea
             value={bio}
             onChange={(e) => setBio(e.target.value)}
@@ -94,28 +84,17 @@ export function ScreenCoachProfileSetup({ nav, toast }) {
           />
         </FormSection>
 
-        <FormSection icon={Sparkles} label="Sports coached" hint="Choose every sport you coach.">
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
-            {SPORT_OPTIONS.map((s) => (
-              <Chip key={s} active={sports.includes(s)} onClick={() => toggleSport(s)}>{s}</Chip>
-            ))}
-            {extraSports.map((s) => (
-              <Chip key={s} active onClick={() => toggleSport(s)}>{s}</Chip>
+        <FormSection icon={Sparkles} label="Sports coached" hint="Choose every sport you coach." required>
+          <div style={{ fontSize: T.captionLg, color: C.slateLight, marginBottom: 8, ...fBody }}>Popular in Australia</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+            {POPULAR_SPORTS.slice(0, 10).map((sport) => (
+              <SportBadge key={sport} sport={sport} selected={sports.includes(sport)} onClick={() => toggleSport(sport)} compact />
             ))}
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <input
-              value={customSport}
-              onChange={(e) => setCustomSport(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomSport(); } }}
-              placeholder="Add another sport…"
-              style={{ flex: 1, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "10px 13px", fontSize: T.body, outline: "none", boxSizing: "border-box", ...fBody }}
-            />
-            <Btn size="sm" variant="outline" icon={Plus} onClick={addCustomSport}>Add</Btn>
-          </div>
+          <SportSearchMultiSelect options={SPORT_NAMES} value={sports} onChange={setSports} placeholder="Search all sports…" />
         </FormSection>
 
-        <FormSection icon={TrendingUp} label="Experience" hint="How long have you been coaching?">
+        <FormSection icon={TrendingUp} label="Experience" hint="How long have you been coaching?" required>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {EXPERIENCE_OPTIONS.map((e) => (
               <Chip key={e} active={experience === e} onClick={() => setExperience(e)}>{e}</Chip>

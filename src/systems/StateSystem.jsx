@@ -348,7 +348,7 @@ export function InlineStatus({ state, params, label }) {
 /* -------------------------------------------------------------------------
    NotificationBellButton — reusable premium trigger with unread-count badge
    ------------------------------------------------------------------------- */
-export function NotificationBellButton({ count = 0, onClick }) {
+export function NotificationBellButton({ count = 0, onClick, color }) {
   const C = useColors();
   const capped = count > 9 ? "9+" : count;
   return (
@@ -362,7 +362,7 @@ export function NotificationBellButton({ count = 0, onClick }) {
         display: "flex", alignItems: "center", justifyContent: "center", position: "relative",
       }}
     >
-      <Bell size={22} color={C.jet} strokeWidth={1.8} />
+      <Bell size={22} color={color || C.jet} strokeWidth={1.8} />
       {count > 0 && (
         <span style={{
           position: "absolute", top: 2, right: 0, minWidth: 17, height: 17, padding: "0 4px",

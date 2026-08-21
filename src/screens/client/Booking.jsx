@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { COACHES, CONFIG } from "../../data/mockData";
-import { BOOKING_STATUS } from "../../data/bookings";
+import {
+  ADDITIONAL_CHARGE_KIND, ADDITIONAL_CHARGE_PHASE, ADDITIONAL_CHARGE_STATUS, BOOKING_STATUS,
+} from "../../data/bookings";
 
 import {
   Fingerprint, CreditCard, CheckCircle2, Check, Plus, Lock, Calendar, Navigation, MessageCircle,
@@ -10,7 +12,7 @@ import {
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import {
-  Avatar, Card, Chip, SectionLabel, Btn, TopBar, Toggle, Field, Row, RadioRow, BottomSheet,
+  Avatar, Card, CheckboxRow, Chip, SectionLabel, Btn, TopBar, Toggle, Field, Row, RadioRow, BottomSheet, RequiredMark,
 } from "../../components/ui/Primitives";
 import { StatusBanner, ResultOverlay } from "../../systems/StateSystem";
 import { SessionJourneyTimeline } from "../../components/booking/SessionJourneyTimeline";
@@ -283,7 +285,7 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
 
       <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))" }} className="cl-hide-scrollbar">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-          <SectionLabel>Select who's coming</SectionLabel>
+          <SectionLabel required>Select who's coming</SectionLabel>
           <span style={{ fontSize: T.caption, fontWeight: 600, color: C.slateLight, ...fBody }}>
             {participants.length}/{maxParticipants} max
           </span>
@@ -436,7 +438,7 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <Field label="Child's name" placeholder="e.g. Ava" icon={User} value={childDraft.name} onChange={(e) => setChildDraft((d) => ({ ...d, name: e.target.value }))} />
+          <Field label="Child's name" placeholder="e.g. Ava" icon={User} value={childDraft.name} onChange={(e) => setChildDraft((d) => ({ ...d, name: e.target.value }))} required />
           <div>
             <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Date of birth</div>
             <div className="cl-input" style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", background: C.white }}>
@@ -715,6 +717,7 @@ export function ScreenBookingReview({ nav, goBack, params, draft, setDraft, toas
   const [conditions, setConditions] = useState(
     [detailFromEarlierStep?.conditions, detailFromEarlierStep?.allergies].filter(Boolean).join(" · "),
   );
+  const [bookingNotes, setBookingNotes] = useState(d.bookingNotes || "");
   const [consent, setConsent] = useState(false);
 
   useEffect(() => {
@@ -887,9 +890,9 @@ export function ScreenBookingReview({ nav, goBack, params, draft, setDraft, toas
                 )}
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <Field label="Guardian full name" name="guardian-name" autoComplete="name" placeholder="e.g. Jamie Chen" icon={User} value={guardianName} onChange={(e) => { setGuardianName(e.target.value); setGuardianSource("manual"); }} />
-                <Field label="Relationship to participant" name="guardian-relationship" placeholder="e.g. Parent or legal guardian" value={guardianRelationship} onChange={(e) => { setGuardianRelationship(e.target.value); setGuardianSource("manual"); }} />
-                <Field label="Guardian phone" name="guardian-phone" autoComplete="tel" inputMode="tel" placeholder="04XX XXX XXX" icon={Phone} type="tel" value={guardianPhone} onChange={(e) => { setGuardianPhone(e.target.value.replace(/[^0-9+\s]/g, "")); setGuardianSource("manual"); }} />
+<Field label="Guardian full name" name="guardian-name" autoComplete="name" placeholder="e.g. Jamie Chen" icon={User} value={guardianName} onChange={(e) => { setGuardianName(e.target.value); setGuardianSource("manual"); }} required />
+                <Field label="Relationship to participant" name="guardian-relationship" placeholder="e.g. Parent or legal guardian" value={guardianRelationship} onChange={(e) => { setGuardianRelationship(e.target.value); setGuardianSource("manual"); }} required />
+                <Field label="Guardian phone" name="guardian-phone" autoComplete="tel" inputMode="tel" placeholder="04XX XXX XXX" icon={Phone} type="tel" value={guardianPhone} onChange={(e) => { setGuardianPhone(e.target.value.replace(/[^0-9+\s]/g, "")); setGuardianSource("manual"); }} required />
               </div>
             </div>
 
@@ -942,8 +945,8 @@ export function ScreenBookingReview({ nav, goBack, params, draft, setDraft, toas
                     )}
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    <Field label="Emergency contact name" name="emergency-contact-name" autoComplete="name" placeholder="e.g. Alex Chen" icon={User} value={emergencyName} onChange={(e) => { setEmergencyName(e.target.value); setEmergencySource("manual"); }} />
-                    <Field label="Emergency contact phone" name="emergency-contact-phone" autoComplete="tel" inputMode="tel" placeholder="04XX XXX XXX" icon={Phone} type="tel" value={emergencyPhone} onChange={(e) => { setEmergencyPhone(e.target.value.replace(/[^0-9+\s]/g, "")); setEmergencySource("manual"); }} />
+<Field label="Emergency contact name" name="emergency-contact-name" autoComplete="name" placeholder="e.g. Alex Chen" icon={User} value={emergencyName} onChange={(e) => { setEmergencyName(e.target.value); setEmergencySource("manual"); }} required />
+                    <Field label="Emergency contact phone" name="emergency-contact-phone" autoComplete="tel" inputMode="tel" placeholder="04XX XXX XXX" icon={Phone} type="tel" value={emergencyPhone} onChange={(e) => { setEmergencyPhone(e.target.value.replace(/[^0-9+\s]/g, "")); setEmergencySource("manual"); }} required />
                   </div>
                 </div>
 
@@ -972,11 +975,47 @@ export function ScreenBookingReview({ nav, goBack, params, draft, setDraft, toas
                 <div style={{ width: 18, height: 18, borderRadius: 5, border: `1.5px solid ${consent ? C.brand : C.border}`, background: consent ? C.brand : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
                   {consent && <CheckCircle2 size={12} color={C.white} />}
                 </div>
-                <span style={{ fontSize: T.label, color: C.jet, lineHeight: 1.5, ...fBody }}>I confirm I am the parent or legal guardian and consent to this booking, including CoachLink's handling of the participant's data.</span>
+                <span style={{ fontSize: T.label, color: C.jet, lineHeight: 1.5, ...fBody }}>I confirm I am the parent or legal guardian and consent to this booking, including CoachLink's handling of the participant's data.<RequiredMark /></span>
               </button>
             </div>
           </Card>
         )}
+
+        <div style={{ marginBottom: 14 }}>
+          <SectionLabel
+            icon={MessageCircle}
+            hint={`Optional · Share a goal, accessibility need, or anything ${pub.name.split(" ")[0]} should know before the session.`}
+          >
+            Message for your coach
+          </SectionLabel>
+          <div
+            className="cl-input"
+            style={{
+              display: "flex", alignItems: "flex-start", gap: 10,
+              minHeight: 104, padding: "12px 13px", borderRadius: 13,
+              border: `1.5px solid ${C.border}`, background: C.white,
+            }}
+          >
+            <MessageCircle aria-hidden="true" size={17} color={C.slateLight} style={{ marginTop: 2, flexShrink: 0 }} />
+            <textarea
+              aria-label="Message for your coach"
+              name="booking-notes"
+              value={bookingNotes}
+              onChange={(event) => setBookingNotes(event.target.value)}
+              placeholder="e.g. I’d like to focus on footwork and shooting technique."
+              maxLength={500}
+              rows={4}
+              style={{
+                flex: 1, minHeight: 78, padding: 0, border: "none", outline: "none",
+                resize: "none", background: "transparent", color: C.jet,
+                fontSize: T.bodyLg, lineHeight: 1.5, ...fBody,
+              }}
+            />
+          </div>
+          <div style={{ marginTop: 6, textAlign: "right", fontSize: T.caption, color: C.slateLight, ...fBody }}>
+            {bookingNotes.length}/500
+          </div>
+        </div>
 
         <Card>
           <Row label={sessionCount > 1 ? `Session (×${sessionCount})` : "Session"} value={`$${d.pkg.price.toFixed(2)}${sessionCount > 1 ? ` × ${sessionCount} = $${subtotal.toFixed(2)}` : ""}`} />
@@ -1000,15 +1039,19 @@ export function ScreenBookingReview({ nav, goBack, params, draft, setDraft, toas
               }
               return `${c.name || "Participant"} — ${bits.join("; ")}`;
             }).join("\n");
-          const combinedConditions = [conditions.trim(), profileSafetyNotes].filter(Boolean).join("\n");
-          const newId = "b" + (bookings.length + 1);
+          const safetyNotes = [conditions.trim(), profileSafetyNotes].filter(Boolean).join("\n");
           const finalDraft = {
-            ...d, id: newId, total, participants: participantLabel, includesMinor,
+            ...d, total, participants: participantLabel, includesMinor,
             guardianName, guardianRelationship, guardianPhone,
-            emergencyName, emergencyPhone, conditions: combinedConditions,
+            emergencyName, emergencyPhone,
+            bookingNotes: bookingNotes.trim(), safetyNotes,
           };
           setDraft(finalDraft);
-          addBooking(finalDraft);
+          const newId = addBooking(finalDraft);
+          if (!newId) {
+            toast("Could not create this booking. Please try again.");
+            return;
+          }
           toast("Booking request sent");
           nav("booking-request-sent", { id: newId, coachName: d.coach.name });
         }}>Submit request</Btn>
@@ -1017,7 +1060,7 @@ export function ScreenBookingReview({ nav, goBack, params, draft, setDraft, toas
   );
 }
 
-export function ScreenPayment({ nav, params, draft, bookings = [], toast, markBookingPaid, biometric, offline }) {
+export function ScreenPayment({ nav, params, draft, bookings = [], additionalCharges = [], toast, markBookingPaid, biometric, offline }) {
   const { darkMode, coachProfile } = useApp();
   const C = darkMode ? CD : CL;
   const booking = params?.bookingId ? bookings.find((item) => item.id === params.bookingId) : null;
@@ -1033,14 +1076,31 @@ export function ScreenPayment({ nav, params, draft, bookings = [], toast, markBo
     participants: booking.participants || "You",
     repeat: { freq: "once" },
     sessionCount: 1,
-    total: Number(booking.price),
+    total: Number(booking.paidTotal || booking.price),
   } : null;
   const d = buildFallbackDraft(params, bookingDraft || draft, coachProfile);
   const pub = getPublicName(d.coach, "public");
   const [confirming, setConfirming] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [result, setResult] = useState(null); // null | "success" | "failed" | "cancelled"
+  const [selectedOptionalIds, setSelectedOptionalIds] = useState([]);
   const busy = confirming || processing || result === "success";
+  const acceptanceCharges = booking ? additionalCharges.filter((charge) => (
+    charge.bookingId === booking.id
+    && charge.phase === ADDITIONAL_CHARGE_PHASE.ACCEPTANCE
+    && charge.status === ADDITIONAL_CHARGE_STATUS.PENDING
+  )) : [];
+  const requiredCharges = acceptanceCharges.filter((charge) => charge.kind === ADDITIONAL_CHARGE_KIND.REQUIRED);
+  const optionalCharges = acceptanceCharges.filter((charge) => charge.kind === ADDITIONAL_CHARGE_KIND.OPTIONAL);
+  const requiredChargeTotal = requiredCharges.reduce((sum, charge) => sum + Number(charge.amount || 0), 0);
+  const selectedOptionalTotal = optionalCharges
+    .filter((charge) => selectedOptionalIds.includes(charge.id))
+    .reduce((sum, charge) => sum + Number(charge.amount || 0), 0);
+  const basePrice = Number(booking?.price ?? d.total ?? 0);
+  const paymentTotal = basePrice + requiredChargeTotal + selectedOptionalTotal;
+  const toggleOptional = (id) => setSelectedOptionalIds((ids) => (
+    ids.includes(id) ? ids.filter((item) => item !== id) : [...ids, id]
+  ));
 
   const pay = (forceFail = false) => {
     if (busy) return;
@@ -1063,7 +1123,7 @@ export function ScreenPayment({ nav, params, draft, bookings = [], toast, markBo
         setResult("failed");
         return;
       }
-      markBookingPaid?.(params.bookingId);
+      markBookingPaid?.(params.bookingId, selectedOptionalIds);
       toast("Payment confirmed");
       setResult("success");
       setTimeout(() => nav("booking-confirmation", { bookingId: params.bookingId }), 700);
@@ -1077,7 +1137,7 @@ export function ScreenPayment({ nav, params, draft, bookings = [], toast, markBo
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
-      <TopBar title="Payment" onBack={() => nav("client-booking-detail", { id: params?.bookingId })} />
+      <TopBar title="Review & pay" onBack={() => nav("client-booking-detail", { id: params?.bookingId })} />
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
         {offline && (
           <div style={{ marginBottom: 16 }}>
@@ -1100,7 +1160,36 @@ export function ScreenPayment({ nav, params, draft, bookings = [], toast, markBo
             <StatusBanner state="paymentCancelled" onPrimary={() => setResult(null)} primaryLabel="Resume payment" />
           </div>
         )}
-        <Btn full variant="dark" disabled={busy || offline} onClick={() => pay(false)}>Pay ${d.total.toFixed(2)} with  Pay</Btn>
+        <Card style={{ marginBottom: 18, padding: 16, background: C.brandTint, borderColor: C.brand }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
+            <div>
+              <div style={{ fontSize: T.captionLg, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".04em", color: C.brand, ...fBody }}>Booking payment</div>
+              <div style={{ fontSize: T.titleLg, fontWeight: 760, color: C.jet, marginTop: 4, ...fDisplay }}>{booking?.service || d.pkg.name}</div>
+              <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 3, ...fBody }}>{booking?.date || d.day} · {booking?.time || d.time}</div>
+            </div>
+            <div style={{ fontSize: T.headingLg, fontWeight: 800, color: C.jet, ...fDisplay }}>${paymentTotal.toFixed(2)}</div>
+          </div>
+          <Row label="Package" value={`$${basePrice.toFixed(2)}`} />
+          {requiredCharges.map((charge) => <Row key={charge.id} label={charge.reason} value={`$${Number(charge.amount).toFixed(2)}`} />)}
+          <Row label="Required today" value={`$${(basePrice + requiredChargeTotal).toFixed(2)}`} bold last />
+        </Card>
+
+        {optionalCharges.length > 0 && (
+          <div style={{ marginBottom: 20 }}>
+            <SectionLabel>Optional add-ons</SectionLabel>
+            <Card style={{ padding: "6px 14px" }}>
+              {optionalCharges.map((charge, index) => (
+                <div key={charge.id} style={{ padding: "6px 0", borderBottom: index < optionalCharges.length - 1 ? `1px solid ${C.border}` : "none" }}>
+                  <CheckboxRow label={`${charge.reason} · $${Number(charge.amount).toFixed(2)}`} checked={selectedOptionalIds.includes(charge.id)} onClick={() => toggleOptional(charge.id)} />
+                  <div style={{ padding: "0 0 8px 29px", marginTop: -5, fontSize: T.captionLg, color: C.slate, lineHeight: 1.45, ...fBody }}>{charge.note}</div>
+                </div>
+              ))}
+            </Card>
+            <div style={{ marginTop: 7, fontSize: T.caption, color: C.slateLight, lineHeight: 1.45, ...fBody }}>Optional items are off by default. Choose only what you want.</div>
+          </div>
+        )}
+
+        <Btn full variant="dark" disabled={busy || offline} onClick={() => pay(false)}>Pay ${paymentTotal.toFixed(2)} with Pay</Btn>
         <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "16px 0" }}>
           <div style={{ flex: 1, height: 1, background: C.border }} /><span style={{ fontSize: T.captionLg, color: C.slateLight, ...fBody }}>or pay by card</span><div style={{ flex: 1, height: 1, background: C.border }} />
         </div>
@@ -1119,7 +1208,10 @@ export function ScreenPayment({ nav, params, draft, bookings = [], toast, markBo
         </div>
 
         <Card style={{ marginTop: 20 }}>
-          <Row label="Total due today" value={`$${d.total.toFixed(2)}`} bold last />
+          <Row label="Package" value={`$${basePrice.toFixed(2)}`} />
+          {requiredChargeTotal > 0 && <Row label="Required costs" value={`$${requiredChargeTotal.toFixed(2)}`} />}
+          {selectedOptionalTotal > 0 && <Row label="Selected add-ons" value={`$${selectedOptionalTotal.toFixed(2)}`} />}
+          <Row label="Total due today" value={`$${paymentTotal.toFixed(2)}`} bold last />
         </Card>
         <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginTop: 14 }}>
           <Lock size={13} color={C.slateLight} style={{ marginTop: 2, flexShrink: 0 }} />
@@ -1141,7 +1233,7 @@ export function ScreenPayment({ nav, params, draft, bookings = [], toast, markBo
           </button>
         )}
         <div style={{ flex: 1 }}>
-          <Btn full loading={processing} loadingText="Processing payment…" disabled={(busy && !processing) || offline} onClick={() => pay(false)}>Pay & confirm booking</Btn>
+          <Btn full loading={processing} loadingText="Processing payment…" disabled={(busy && !processing) || offline} onClick={() => pay(false)}>Pay ${paymentTotal.toFixed(2)} & confirm</Btn>
         </div>
       </div>
 
@@ -1173,7 +1265,7 @@ export function ScreenBookingConfirmation({ nav, params, draft, bookings = [], t
     time: booking.time,
     mode: booking.mode,
     participants: booking.participants || "You",
-    total: Number(booking.price),
+    total: Number(booking.paidTotal || booking.price),
   } : null;
   const d = buildFallbackDraft(params, bookingDraft || draft, coachProfile);
   const pub = getPublicName(d.coach, "public");

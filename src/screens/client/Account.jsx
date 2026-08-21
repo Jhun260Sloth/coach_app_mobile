@@ -7,11 +7,13 @@ import {
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
-import { Avatar, Btn, ScreenHeader, SectionLabel, FormSection, Toggle, BottomSheet, ConfirmDialog, Field, Chip, Card, Badge, EmptyState, TopBar, SegTabs, HandleTag } from "../../components/ui/Primitives";
+import { Avatar, Btn, ScreenHeader, SectionLabel, FormSection, Toggle, BottomSheet, ConfirmDialog, Field, Chip, Card, Badge, EmptyState, TopBar, SegTabs, HandleTag, RequiredMark, SettingsRow, SettingsGroup } from "../../components/ui/Primitives";
 import { HandleField } from "../../components/ui/PublicIdentityFields";
 import { isValidHandle } from "../../utils/name";
 import { getBookingCoachName } from "../../utils/name";
-import { SPORTS, CLIENT_NOTIFICATIONS, COACHES } from "../../data/mockData";
+import { CLIENT_NOTIFICATIONS, COACHES } from "../../data/mockData";
+import { POPULAR_SPORTS, SPORT_NAMES } from "../../data/sports";
+import { SportBadge, SportSearchMultiSelect } from "../../components/ui/SportUI";
 import { PAYMENT_STATUS } from "../../data/bookings";
 import { ReceiptSheet } from "./Dashboard";
 import { SKILL_LEVELS } from "./AboutYou";
@@ -231,57 +233,32 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
     deactivationInputsRef.current[0]?.focus();
   };
 
-  const closeSheet = () => setSheet(null);
-
-  const Row2 = ({ icon: Icon, label, onClick, right }) => {
-    const Component = onClick ? "button" : "div";
-    return (
-    <Component type={onClick ? "button" : undefined} onClick={onClick} style={{ width: "100%", minHeight: 44, display: "flex", alignItems: "center", gap: 12, padding: "13px 4px", background: "none", border: "none", borderBottom: `1px solid ${C.border}`, cursor: onClick ? "pointer" : "default", textAlign: "left" }}>
-      <Icon size={17} color={C.jet} />
-      <span style={{ flex: 1, fontSize: T.bodyLg, color: C.jet, fontWeight: 500, ...fBody }}>{label}</span>
-      {right || <ChevronRight size={16} color={C.slateLight} />}
-    </Component>
-    );
-  };
-
-  const NotifRow = ({ label, sub, prefKey }) => (
-    <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 4px", borderBottom: `1px solid ${C.border}` }}>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>{label}</div>
-        {sub && <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>{sub}</div>}
-      </div>
-      <Toggle label={label} on={notifPrefs[prefKey]} onClick={() => toggleNotif(prefKey)} />
-    </div>
-  );
+const closeSheet = () => setSheet(null);
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "18px 18px 0" }}>
         <ScreenHeader title="Account" subtitle="Profile, family and account preferences." style={{ marginBottom: 18 }} />
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 28 }}>
-          <Avatar name={profile.name} src={clientIdentity.photo || clientIdentity.avatar} size={58} />
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ fontSize: T.title, fontWeight: 600, color: C.jet, ...fDisplay }}>{profile.name}</div>
-              <Badge tone="neutral">Client account</Badge>
-            </div>
-            <div style={{ fontSize: T.labelLg, color: C.slate, marginTop: 2, ...fBody }}>{profile.email}</div>
-            <div style={{ marginTop: 3 }}><HandleTag handle={clientIdentity.handle} size={12} color={C.brand} /></div>
-          </div>
-        </div>
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: 116 }} className="cl-hide-scrollbar">
 
-        <div style={{ marginTop: 32 }}>
-          <SectionLabel>Family</SectionLabel>
-          <div style={{ fontSize: T.label, color: C.slate, marginTop: -6, marginBottom: 12, lineHeight: 1.5, ...fBody }}>
-            Separate profiles for each child.
+        {/* Profile summary — scrolls with the page */}
+        <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "6px 0 26px" }}>
+          <Avatar name={profile.name} src={clientIdentity.photo || clientIdentity.avatar} size={58} />
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: T.title, fontWeight: 600, color: C.jet, ...fDisplay }}>{profile.name}</div>
+            <div style={{ fontSize: T.labelLg, color: C.slate, marginTop: 2, ...fBody }}>{profile.email}</div>
+            <div style={{ marginTop: 3 }}><HandleTag handle={clientIdentity.handle} size={12} color={C.brand} /></div>
           </div>
+        </div>
+
+        {/* Family */}
+        <div style={{ marginBottom: 24 }}>
+          <SectionLabel style={{ marginBottom: 10 }}>Family</SectionLabel>
           <div className="cl-stagger">
           {children.map((child, i) => {
             const ageLabel = child.age ? `Age ${child.age}` : "Age not set";
-            const sportLabel = child.sport?.length ? child.sport.join(", ") : "Sport not set";
             return (
               <button
                 key={child.id}
@@ -297,51 +274,49 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
                 <Avatar name={child.name || "Child"} size={40} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>{child.name || "Unnamed profile"}</div>
-                  <div style={{ fontSize: T.label, color: C.slate, marginTop: 1, ...fBody }}>
-                    {ageLabel} · {sportLabel}
-                  </div>
+                  <div style={{ fontSize: T.label, color: C.slate, marginTop: 1, ...fBody }}>{ageLabel}</div>
+                  {child.sport?.length ? (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 5 }}>
+                      {child.sport.slice(0, 2).map((sport) => <SportBadge key={sport} sport={sport} compact />)}
+                      {child.sport.length > 2 && <Badge tone="neutral">+{child.sport.length - 2}</Badge>}
+                    </div>
+                  ) : <div style={{ fontSize: T.caption, color: C.slateLight, marginTop: 3, ...fBody }}>Sport not set</div>}
                 </div>
                 <ChevronRight size={16} color={C.slateLight} style={{ flexShrink: 0 }} />
               </button>
             );
           })}
           </div>
-          <div style={{ marginTop: 12 }}>
+          <div style={{ marginTop: 10 }}>
             <Btn full variant="secondary" icon={UserPlus} onClick={openNewChild}>Add a child profile</Btn>
           </div>
         </div>
 
-        <div style={{ marginTop: 22 }}>
-          <SectionLabel>Profile</SectionLabel>
-          <Row2 icon={Edit3} label="Edit profile" onClick={openEditProfile} />
-          <Row2 icon={Bell} label="Notification preferences" onClick={() => setSheet("notif")} />
-          <Row2 icon={CreditCard} label="Payment methods" onClick={() => setSheet("payment")} />
-          <Row2 icon={HistoryIcon} label="History" onClick={() => nav("client-history")} />
-        </div>
+        <SettingsGroup title="Profile">
+          <SettingsRow icon={Edit3} label="Edit profile" onClick={openEditProfile} />
+          <SettingsRow icon={Bell} label="Notification preferences" onClick={() => setSheet("notif")} />
+          <SettingsRow icon={CreditCard} label="Payment methods" onClick={() => setSheet("payment")} />
+          <SettingsRow icon={HistoryIcon} label="History" onClick={() => nav("client-history")} />
+        </SettingsGroup>
 
-        <div style={{ marginTop: 22 }}>
-          <SectionLabel>Security</SectionLabel>
-          <Row2 icon={Fingerprint} label="Biometric login" right={<Toggle label="Biometric login" on={biometric} onClick={() => setBiometric((v) => !v)} />} />
-          <Row2 icon={Lock} label="Change password" onClick={() => setSheet("password")} />
-        </div>
+        <SettingsGroup title="Security">
+          <SettingsRow icon={Fingerprint} label="Biometric login" right={<Toggle label="Biometric login" on={biometric} onClick={() => setBiometric((v) => !v)} />} />
+          <SettingsRow icon={Lock} label="Change password" onClick={() => setSheet("password")} />
+        </SettingsGroup>
 
-        <div style={{ marginTop: 22 }}>
-          <SectionLabel>Privacy</SectionLabel>
-          <Row2 icon={FileText} label="Export my data" onClick={() => toast("We'll email your data export shortly")} />
-          <Row2 icon={Shield} label="Privacy policy" onClick={() => setSheet("privacy")} />
-        </div>
+        <SettingsGroup title="Privacy">
+          <SettingsRow icon={FileText} label="Export my data" onClick={() => toast("We'll email your data export shortly")} />
+          <SettingsRow icon={Shield} label="Privacy policy" onClick={() => setSheet("privacy")} />
+        </SettingsGroup>
 
-        <div style={{ marginTop: 22 }}>
-          <SectionLabel>Support</SectionLabel>
-          <Row2 icon={HelpCircle} label="Help & FAQs" onClick={() => nav("support")} />
-        </div>
+        <SettingsGroup title="Support">
+          <SettingsRow icon={HelpCircle} label="Help & FAQs" onClick={() => nav("support")} />
+        </SettingsGroup>
 
-        <div style={{ marginTop: 22 }}>
-          <Row2 icon={LogOut} label="Log out" onClick={() => setSheet("logout")} />
-          <button onClick={openDeactivate} style={{ width: "100%", minHeight: 44, textAlign: "left", padding: "13px 4px", background: "none", border: "none", cursor: "pointer" }}>
-            <span style={{ fontSize: T.body, color: C.danger, fontWeight: 500, ...fBody }}>Deactivate account</span>
-          </button>
-        </div>
+        <SettingsGroup title="Session">
+          <SettingsRow icon={LogOut} label="Log out" onClick={() => setSheet("logout")} />
+          <SettingsRow icon={AlertTriangle} label="Deactivate account" danger onClick={openDeactivate} />
+        </SettingsGroup>
       </div>
 
       {/* Child / participant profile */}
@@ -366,7 +341,7 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
 
         <FormSection icon={User} label="About them" hint="Basic details for this participant.">
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <Field label="Child's name" placeholder="e.g. Ava" icon={User} value={childDraft.name} onChange={(e) => setChildDraft((d) => ({ ...d, name: e.target.value }))} />
+            <Field label="Child's name" placeholder="e.g. Ava" icon={User} value={childDraft.name} onChange={(e) => setChildDraft((d) => ({ ...d, name: e.target.value }))} required />
             <Field label="Age" placeholder="e.g. 9" value={childDraft.age} onChange={(e) => setChildDraft((d) => ({ ...d, age: e.target.value }))} />
             <LocationField
               value={childDraft.location}
@@ -387,9 +362,12 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
 
         <FormSection icon={Sparkles} label="Sport & interests" hint="Sports they love — helps coaches match the right sessions.">
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {SPORTS.map((s) => (
-              <Chip key={s} active={childDraft.sport.includes(s)} onClick={() => toggleDraftSport(s)}>{s}</Chip>
+            {POPULAR_SPORTS.slice(0, 10).map((s) => (
+              <SportBadge key={s} sport={s} selected={childDraft.sport.includes(s)} onClick={() => toggleDraftSport(s)} compact />
             ))}
+          </div>
+          <div style={{ marginTop: 10 }}>
+            <SportSearchMultiSelect options={SPORT_NAMES} value={childDraft.sport} onChange={(sport) => setChildDraft((d) => ({ ...d, sport }))} placeholder="Search all sports…" />
           </div>
         </FormSection>
 
@@ -505,12 +483,13 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
 
           <FormSection icon={User} label="Identity" hint="Your legal name stays private until a booking is confirmed.">
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <Field label="Full name" placeholder="Sarah Lin" icon={User} value={editDraft.name} onChange={(e) => setEditDraft((d) => ({ ...d, name: e.target.value }))} />
+              <Field label="Full name" placeholder="Sarah Lin" icon={User} value={editDraft.name} onChange={(e) => setEditDraft((d) => ({ ...d, name: e.target.value }))} required />
               <HandleField
                 value={editDraft.handle}
                 onChange={(v) => { setHandleEdited(true); setEditDraft((d) => ({ ...d, handle: v })); }}
                 isTaken={isHandleTaken(editDraft.handle)}
                 showStatus={handleEdited && editDraft.handle.trim() !== String(clientIdentity.handle || "").trim()}
+                required
               />
               <Field label="Email" placeholder="you@email.com" icon={Mail} type="email" value={editDraft.email} onChange={(e) => setEditDraft((d) => ({ ...d, email: e.target.value }))} />
               <Field label="Mobile number" placeholder="04XX XXX XXX" icon={Phone} type="tel" value={editDraft.phone} onChange={(e) => setEditDraft((d) => ({ ...d, phone: e.target.value }))} />
@@ -534,9 +513,12 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
               <div>
                 <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Sports you're into</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {SPORTS.map((s) => (
-                    <Chip key={s} active={editDraft.sports.includes(s)} onClick={() => toggleEditSport(s)}>{s}</Chip>
+                  {POPULAR_SPORTS.slice(0, 10).map((s) => (
+                    <SportBadge key={s} sport={s} selected={editDraft.sports.includes(s)} onClick={() => toggleEditSport(s)} compact />
                   ))}
+                </div>
+                <div style={{ marginTop: 10 }}>
+                  <SportSearchMultiSelect options={SPORT_NAMES} value={editDraft.sports} onChange={(sports) => setEditDraft((d) => ({ ...d, sports }))} placeholder="Search all sports…" />
                 </div>
               </div>
               <div>
@@ -593,47 +575,50 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
         )}
       </BottomSheet>
 
-      {/* Notification preferences */}
+{/* Notification preferences */}
       <BottomSheet open={sheet === "notif"} onClose={closeSheet} title="Notification preferences" heightPct={84}>
-        <SectionLabel>Channels</SectionLabel>
-        <NotifRow label="Push notifications" sub="Alerts on this device" prefKey="push" />
-        <NotifRow label="Email notifications" sub="Receipts, confirmations & digests" prefKey="email" />
-        <NotifRow label="SMS notifications" sub="Urgent day-of updates" prefKey="sms" />
-        <NotifRow label="WhatsApp notifications" sub="Urgent day-of updates" prefKey="whatsapp" />
-        <div style={{ fontSize: T.captionLg, color: C.slateLight, margin: "8px 0 16px", lineHeight: 1.5, ...fBody }}>
+        <SettingsGroup title="Channels">
+          <SettingsRow icon={Bell} label="Push notifications" sub="Alerts on this device" right={<Toggle label="Push notifications" on={notifPrefs.push} onClick={() => toggleNotif("push")} />} />
+          <SettingsRow icon={Mail} label="Email notifications" sub="Receipts, confirmations & digests" right={<Toggle label="Email notifications" on={notifPrefs.email} onClick={() => toggleNotif("email")} />} />
+          <SettingsRow icon={Phone} label="SMS notifications" sub="Urgent day-of updates" right={<Toggle label="SMS notifications" on={notifPrefs.sms} onClick={() => toggleNotif("sms")} />} />
+          <SettingsRow icon={MessageCircle} label="WhatsApp notifications" sub="Urgent day-of updates" right={<Toggle label="WhatsApp notifications" on={notifPrefs.whatsapp} onClick={() => toggleNotif("whatsapp")} />} />
+        </SettingsGroup>
+        <div style={{ fontSize: T.captionLg, color: C.slateLight, margin: "-14px 0 24px", lineHeight: 1.5, ...fBody }}>
           Payment receipts and booking confirmations are always sent by email.
         </div>
-        <SectionLabel>Updates</SectionLabel>
-        <NotifRow label="Booking reminders" sub="Reminders before your sessions" prefKey="bookingReminders" />
-        <NotifRow label="Messages" sub="New messages from coaches" prefKey="messages" />
-        <NotifRow label="Promotions & offers" sub="Deals and product news" prefKey="promos" />
-        <div style={{ marginTop: 20 }}>
+        <SettingsGroup title="Updates">
+          <SettingsRow icon={CalendarDays} label="Booking reminders" sub="Reminders before your sessions" right={<Toggle label="Booking reminders" on={notifPrefs.bookingReminders} onClick={() => toggleNotif("bookingReminders")} />} />
+          <SettingsRow icon={MessageCircle} label="Messages" sub="New messages from coaches" right={<Toggle label="Messages" on={notifPrefs.messages} onClick={() => toggleNotif("messages")} />} />
+          <SettingsRow icon={Sparkles} label="Promotions & offers" sub="Deals and product news" right={<Toggle label="Promotions & offers" on={notifPrefs.promos} onClick={() => toggleNotif("promos")} />} />
+        </SettingsGroup>
+        <div style={{ marginTop: 8 }}>
           <Btn full onClick={() => { toast("Notification preferences saved"); closeSheet(); }}>Save preferences</Btn>
         </div>
       </BottomSheet>
 
       {/* Payment methods */}
       <BottomSheet open={sheet === "payment"} onClose={closeSheet} title="Payment methods" heightPct={70}>
-        <div className="cl-stagger">
-        {cards.map((card, i) => (
-          <div key={card.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 4px", borderBottom: `1px solid ${C.border}`, animationDelay: `${Math.min(i, 8) * 45}ms` }}>
-            <div style={{ width: 40, height: 28, borderRadius: 6, background: C.fog, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <CreditCard size={15} color={C.jet} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>{card.brand} •••• {card.last4}</div>
-              <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>Expires {card.exp}{card.isDefault ? " · Default" : ""}</div>
-            </div>
-            {!card.isDefault && (
-              <button onClick={() => makeDefault(card.id)} style={{ background: "none", border: "none", color: C.brand, fontSize: T.label, fontWeight: 600, cursor: "pointer", ...fBody }}>Set default</button>
-            )}
-            <button onClick={() => setRemovalTarget({ type: "card", id: card.id, name: `${card.brand} ending in ${card.last4}` })} aria-label={`Remove ${card.brand} ending in ${card.last4}`} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 4 }}>
-              <Trash2 size={15} color={C.slateLight} />
-            </button>
-          </div>
-        ))}
-        </div>
-        <div style={{ marginTop: 18 }}>
+        <SettingsGroup>
+          {cards.map((card) => (
+            <SettingsRow
+              key={card.id}
+              icon={CardIcon}
+              label={`${card.brand} •••• ${card.last4}`}
+              sub={`Expires ${card.exp}${card.isDefault ? " · Default" : ""}`}
+              right={(
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  {!card.isDefault && (
+                    <button onClick={() => makeDefault(card.id)} style={{ background: "none", border: "none", color: C.brand, fontSize: T.label, fontWeight: 600, cursor: "pointer", flexShrink: 0, ...fBody }}>Set default</button>
+                  )}
+                  <button onClick={() => setRemovalTarget({ type: "card", id: card.id, name: `${card.brand} ending in ${card.last4}` })} aria-label={`Remove ${card.brand} ending in ${card.last4}`} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 4, flexShrink: 0 }}>
+                    <Trash2 size={15} color={C.slateLight} />
+                  </button>
+                </div>
+              )}
+            />
+          ))}
+        </SettingsGroup>
+        <div style={{ marginTop: 16 }}>
           <Btn full variant="secondary" icon={Plus} onClick={openAddCard}>Add payment method</Btn>
         </div>
       </BottomSheet>
@@ -647,6 +632,7 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
             icon={CardIcon}
             value={cardDraft.number}
             onChange={(e) => setCardDraft((d) => ({ ...d, number: e.target.value.replace(/[^\d\s]/g, "") }))}
+            required
           />
           <Field
             label="Name on card"
@@ -654,6 +640,7 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
             icon={User}
             value={cardDraft.name}
             onChange={(e) => setCardDraft((d) => ({ ...d, name: e.target.value }))}
+            required
           />
           <div style={{ display: "flex", gap: 10 }}>
             <div style={{ flex: 1 }}>
@@ -663,6 +650,7 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
                 icon={CalendarDays}
                 value={cardDraft.expiry}
                 onChange={(e) => setCardDraft((d) => ({ ...d, expiry: e.target.value.replace(/[^\d/]/g, "") }))}
+                required
               />
             </div>
             <div style={{ flex: 1 }}>
@@ -672,6 +660,7 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
                 icon={Lock}
                 value={cardDraft.cvc}
                 onChange={(e) => setCardDraft((d) => ({ ...d, cvc: e.target.value.replace(/\D/g, "").slice(0, 4) }))}
+                required
               />
             </div>
           </div>
@@ -687,9 +676,9 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
       {/* Change password */}
       <BottomSheet open={sheet === "password"} onClose={closeSheet} title="Change password" heightPct={62}>
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <Field label="Current password" placeholder="••••••••" icon={Lock} type={showPw ? "text" : "password"} rightIcon={showPw ? EyeOff : Eye} onRight={() => setShowPw((v) => !v)} />
-          <Field label="New password" placeholder="••••••••" icon={Lock} type={showPw ? "text" : "password"} />
-          <Field label="Confirm new password" placeholder="••••••••" icon={Lock} type={showPw ? "text" : "password"} />
+          <Field label="Current password" placeholder="••••••••" icon={Lock} type={showPw ? "text" : "password"} rightIcon={showPw ? EyeOff : Eye} onRight={() => setShowPw((v) => !v)} required />
+          <Field label="New password" placeholder="••••••••" icon={Lock} type={showPw ? "text" : "password"} required />
+          <Field label="Confirm new password" placeholder="••••••••" icon={Lock} type={showPw ? "text" : "password"} required />
         </div>
         <div style={{ marginTop: 20 }}>
           <Btn full onClick={() => { toast("Password updated"); closeSheet(); }}>Update password</Btn>
@@ -862,7 +851,7 @@ export function ScreenClientHistory({ nav, bookings = [], clientNotifications = 
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ fontSize: T.subtitle, fontWeight: 700, color: b.status === "cancelled" ? C.slateLight : C.jet, ...fDisplay }}>${b.price}</div>
+                  <div style={{ fontSize: T.subtitle, fontWeight: 700, color: b.status === "cancelled" ? C.slateLight : C.jet, ...fDisplay }}>${Number(b.paidTotal || b.price || 0).toFixed(2)}</div>
                   <ChevronRight size={16} color={C.slateLight} />
                 </div>
               </Card>

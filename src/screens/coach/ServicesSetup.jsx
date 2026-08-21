@@ -4,6 +4,7 @@ import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { SectionLabel, Card, Btn, ConfirmDialog, TopBar } from "../../components/ui/Primitives";
 import { ServicePackageForm, packageSummary, packageFormToRecord } from "../../components/ui/ServicePackageForm";
+import { SportBadge } from "../../components/ui/SportUI";
 
 let svcIdCounter = 1;
 
@@ -47,6 +48,7 @@ export function ScreenCoachServicesSetup({ nav, toast, savePackage, removePackag
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: T.subtitle, fontWeight: 600, color: C.jet, ...fDisplay }}>{s.name}</div>
+                <div style={{ marginTop: 6 }}><SportBadge sport={s.sport} compact /></div>
                 <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{packageSummary(s)}</div>
                 {s.venue && (
                   <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: 2, ...fBody }}>{s.venue}</div>
@@ -65,7 +67,7 @@ export function ScreenCoachServicesSetup({ nav, toast, savePackage, removePackag
           </Card>
         ))}
 
-        <SectionLabel>{services.length > 0 ? "Add another service" : "Add a service"}</SectionLabel>
+        <SectionLabel required>{services.length > 0 ? "Add another service" : "Add a service"}</SectionLabel>
         <ServicePackageForm
           key={services.length}
           onSave={addService}

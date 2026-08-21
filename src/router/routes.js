@@ -19,7 +19,7 @@ import {
 } from "../screens/client/AboutYou";
 
 // Client
-import { ScreenClientHome, ScreenSearchFilters } from "../screens/client/Discovery";
+import { ScreenClientHome } from "../screens/client/Discovery";
 import { ScreenNotifications } from "../screens/client/Notifications";
 import { ScreenCoachProfile } from "../screens/client/CoachProfile";
 import { ScreenCoachMedia } from "../screens/client/Reels";
@@ -43,6 +43,7 @@ import { ScreenCoachDashboard } from "../screens/coach/CoachDashboard";
 import { ScreenCoachNotifications } from "../screens/coach/Notifications";
 import { ScreenCoachCalendar } from "../screens/coach/Calendar";
 import { ScreenCoachBookings, ScreenCoachBookingDetail } from "../screens/coach/Bookings";
+import { ScreenCoachAcceptBooking } from "../screens/coach/AcceptBooking";
 import { ScreenCoachProfileEdit } from "../screens/coach/ProfileEdit";
 import { ScreenCoachReviews } from "../screens/coach/CoachReviews";
 import { ScreenCoachReels } from "../screens/coach/Reels";
@@ -92,7 +93,6 @@ export const ROUTES = {
   // Client
   "client-home": ScreenClientHome,
   "notifications": ScreenNotifications,
-  "search-filters": ScreenSearchFilters,
   "coach-profile": ScreenCoachProfile,
   "coach-media": ScreenCoachMedia,
   "package-detail": ScreenPackageDetail,
@@ -129,6 +129,7 @@ export const ROUTES = {
   "coach-calendar": ScreenCoachCalendar,
   "coach-bookings": ScreenCoachBookings,
   "coach-booking-detail": ScreenCoachBookingDetail,
+  "coach-accept-booking": ScreenCoachAcceptBooking,
   "booking-awaiting-payment": ScreenCoachBookingDetail,
   "coach-session-detail": ScreenCoachBookingDetail,
   "coach-profile-edit": ScreenCoachProfileEdit,
@@ -143,6 +144,7 @@ export const ROUTES = {
   // Shared
   "chat-thread": ScreenChatThread,
   "session-completion": ScreenSessionCompletion,
+  "coach-session-completion": ScreenSessionCompletion,
   "funds-release-status": ScreenFundsReleaseStatus,
   "dispute-create": ScreenDisputeCreate,
   "dispute-status": ScreenDisputeStatus,
@@ -178,7 +180,6 @@ const ROUTE_METADATA_BASE = {
   // Client Flow
   "client-home": { title: "Client Discover Home", category: "Client", role: "client" },
   "notifications": { title: "Notifications Log", category: "Client", role: "client" },
-  "search-filters": { title: "Search & Filters", category: "Client", role: "client" },
   "coach-profile": { title: "Coach Profile Detail", category: "Client", role: "client" },
   "coach-media": { title: "Coach Reels & Media", category: "Client", role: "client" },
   "package-detail": { title: "Package Detail", category: "Client", role: "client" },
@@ -202,7 +203,7 @@ const ROUTE_METADATA_BASE = {
   "client-booking-detail": { title: "Client Booking Detail", category: "Client", role: "client" },
   "leave-review": { title: "Leave Review & Rating", category: "Client", role: "client" },
   "client-messages": { title: "Client Messages Inbox", category: "Client", role: "client" },
-  "client-profile": { title: "Client Account Profile", category: "Client", role: "client" },
+  "client-profile": { title: "Account", category: "Client", role: "client" },
   "client-history": { title: "Client Payment & Session History", category: "Client", role: "client" },
 
   // Coach Flow
@@ -224,17 +225,19 @@ const ROUTE_METADATA_BASE = {
   "coach-edit-package": { title: "Edit Service Package", category: "Coach", role: "coach" },
   "coach-earnings": { title: "Earnings & Payout Analytics", category: "Coach", role: "coach" },
   "coach-history": { title: "Completed Sessions History", category: "Coach", role: "coach" },
+  "coach-accept-booking": { title: "Accept Booking & Set Payment", category: "Coach", role: "coach" },
   "coach-messages": { title: "Coach Messages Inbox", category: "Coach", role: "coach" },
 
   // Shared
   "chat-thread": { title: "Interactive Chat Thread", category: "Shared", role: "client" },
   "session-completion": { title: "Shared Session Completion", category: "Shared", role: "client" },
+  "coach-session-completion": { title: "Coach: Finish Session", category: "Coach", role: "coach" },
   "funds-release-status": { title: "Shared Funds Release Status", category: "Shared", role: "client" },
   "dispute-create": { title: "Report a Session Issue", category: "Shared", role: "client" },
   "dispute-status": { title: "Case Tracking & No-show Outcome", category: "Shared", role: "client" },
-  "additional-charge-create": { title: "Coach: Request Additional Payment", category: "Coach", role: "coach" },
-  "additional-charge-payment": { title: "Client: Pay Additional Charge", category: "Client", role: "client" },
-  "additional-charge-review": { title: "Client: Review Additional Payment", category: "Client", role: "client" },
+  "additional-charge-create": { title: "Coach: Add Final Payment", category: "Coach", role: "coach" },
+  "additional-charge-payment": { title: "Client: Pay Final Charge", category: "Client", role: "client" },
+  "additional-charge-review": { title: "Client: Review Final Payment", category: "Client", role: "client" },
   "support": { title: "Help & Support Center", category: "Shared", role: "client" },
 };
 
@@ -290,16 +293,18 @@ const ROUTE_DEMO_PARAMS = {
   "client-booking-detail": { id: "b5" },
   "leave-review": { bookingId: "b3", name: "Ruby Hendricks" },
   "coach-booking-detail": { id: "cb2" },
+  "coach-accept-booking": { id: "b2" },
   "booking-awaiting-payment": { id: "cb5" },
   "coach-session-detail": { id: "s1" },
   "coach-edit-package": { id: "p1" },
   "chat-thread": { threadId: "t1", name: "Isla Ferguson", handle: "isla.netball", context: "Booking · Wed, 19 Aug", bookingId: "b1" },
   "session-completion": { bookingId: "s1", role: "client", backTo: "client-booking-detail" },
+  "coach-session-completion": { bookingId: "cb1", role: "coach", backTo: "coach-session-detail" },
   "funds-release-status": { bookingId: "b3", role: "client", backTo: "client-history" },
   "verification-rejected": { variant: "rejected" },
   "dispute-create": { bookingId: "s1", role: "client", category: "session_not_delivered", backTo: "client-booking-detail" },
   "dispute-status": { caseId: "case-102", role: "client", backTo: "client-history" },
-  "additional-charge-create": { bookingId: "cb10", role: "coach" },
+  "additional-charge-create": { bookingId: "cb1", role: "coach", phase: "completion", backTo: "coach-session-detail" },
   "additional-charge-payment": { chargeId: "charge-101", role: "client" },
   "additional-charge-review": { chargeId: "charge-101", role: "client" },
   "support": { presetTab: "faq", faqTopic: "client", backTo: "client-home" },

@@ -1,12 +1,15 @@
 import React, { useState } from "react";
 import {
-  AlertTriangle, ArrowRight, Banknote, CalendarDays, CheckCircle2,
-  Clock3, Landmark, LifeBuoy, ShieldCheck, Star, WalletCards,
+  AlertTriangle, ArrowRight, BadgeDollarSign, Banknote, CalendarDays, CheckCircle2,
+  Clock3, Landmark, LifeBuoy, LockKeyhole, Plus, ShieldCheck, Star, WalletCards,
 } from "lucide-react";
 import { CL, CD, T, fBody, fDisplay, LAYOUT } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { CONFIG } from "../../config";
-import { BOOKING_STATUS, PAYMENT_STATUS, PAYOUT_STATUS } from "../../data/bookings";
+import {
+  ADDITIONAL_CHARGE_KIND, ADDITIONAL_CHARGE_PHASE, ADDITIONAL_CHARGE_STATUS,
+  BOOKING_STATUS, PAYMENT_STATUS, PAYOUT_STATUS,
+} from "../../data/bookings";
 import { Avatar, Badge, Btn, Card, EmptyState, Row, StatusPill, TopBar } from "../../components/ui/Primitives";
 import { SessionJourneyTimeline } from "../../components/booking/SessionJourneyTimeline";
 
@@ -38,13 +41,14 @@ function SessionSummary({ booking, role }) {
 }
 
 export function ScreenSessionCompletion({
-  nav, params, role: appRole, bookings = [], coachBookings = [], confirmSessionCompletion, toast,
+  nav, params, role: appRole, bookings = [], coachBookings = [], additionalCharges = [], confirmSessionCompletion, toast,
 }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const role = params?.role || appRole || "client";
   const booking = findBooking(params?.bookingId, role, bookings, coachBookings);
   const [submitting, setSubmitting] = useState(false);
+  const [coachChoice, setCoachChoice] = useState(null);
 
   if (!booking) {
     return (
@@ -56,7 +60,20 @@ export function ScreenSessionCompletion({
   }
 
   const backTo = params?.backTo || (role === "coach" ? "coach-session-detail" : "client-booking-detail");
-  const canConfirm = [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.COMPLETION_PENDING].includes(booking.status);
+  const finalCharge = additionalCharges.find((charge) => (
+    charge.bookingId === booking.id
+    && charge.phase === ADDITIONAL_CHARGE_PHASE.COMPLETION
+    && charge.kind === ADDITIONAL_CHARGE_KIND.REQUIRED
+    && charge.status !== ADDITIONAL_CHARGE_STATUS.CANCELLED
+  ));
+  const finalPaymentDue = finalCharge?.status === ADDITIONAL_CHARGE_STATUS.PENDING;
+  const completionConfirmations = booking.completionConfirmations || (booking.completionConfirmedBy ? [booking.completionConfirmedBy] : []);
+  const otherRole = role === "coach" ? "client" : "coach";
+  const otherConfirmed = completionConfirmations.includes(otherRole);
+  const currentRoleConfirmed = completionConfirmations.includes(role);
+  const canConfirm = [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.COMPLETION_PENDING].includes(booking.status)
+    && !currentRoleConfirmed
+    && !(role === "client" && (finalPaymentDue || !completionConfirmations.includes("coach")));
   const handleComplete = () => {
     if (submitting || !canConfirm) return;
     setSubmitting(true);
@@ -66,42 +83,113 @@ export function ScreenSessionCompletion({
       toast?.("This session cannot be completed yet");
       return;
     }
-    toast?.("Session confirmed complete");
-    window.setTimeout(() => nav("funds-release-status", { bookingId: booking.id, role, backTo }), 1150);
+    if (otherConfirmed) {
+      toast?.("Both sides confirmed — releasing funds");
+      window.setTimeout(() => nav("funds-release-status", { bookingId: booking.id, role, backTo }), 1150);
+    } else {
+      toast?.(`${role === "coach" ? "Coach" : "Client"} confirmation saved`);
+      window.setTimeout(() => nav(backTo, { id: booking.id }), 550);
+    }
   };
+
+  const chooseCard = (value, icon, title, detail) => {
+    const Icon = icon;
+    const selected = coachChoice === value;
+    return (
+      <button
+        type="button"
+        role="radio"
+        aria-checked={selected}
+        onClick={() => setCoachChoice(value)}
+        style={{
+          width: "100%", minHeight: 82, padding: 14, borderRadius: 16,
+          border: `1.5px solid ${selected ? C.brand : C.border}`,
+          background: selected ? C.brandTint : C.white, cursor: "pointer",
+          display: "flex", gap: 12, alignItems: "flex-start", textAlign: "left",
+        }}
+      >
+        <span style={{ width: 40, height: 40, borderRadius: 13, background: selected ? C.brand : C.fog, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Icon size={19} color={selected ? C.white : C.brand} />
+        </span>
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span style={{ display: "block", fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>{title}</span>
+          <span style={{ display: "block", marginTop: 3, fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, ...fBody }}>{detail}</span>
+        </span>
+        <span style={{ width: 20, height: 20, borderRadius: 99, border: `1.5px solid ${selected ? C.brand : C.border}`, display: "flex", alignItems: "center", justifyContent: "center", marginTop: 2, flexShrink: 0 }}>
+          {selected && <span style={{ width: 10, height: 10, borderRadius: 99, background: C.brand }} />}
+        </span>
+      </button>
+    );
+  };
+
+  const coachAddCharge = () => nav("additional-charge-create", {
+    bookingId: booking.id,
+    role: "coach",
+    phase: ADDITIONAL_CHARGE_PHASE.COMPLETION,
+    backTo,
+  });
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", background: C.white }}>
-      <TopBar title="Confirm session" onBack={() => nav(backTo, role === "coach" ? { id: booking.id } : { id: booking.id })} />
+      <TopBar title={role === "coach" ? "Finish session" : "Confirm session"} onBack={() => nav(backTo, { id: booking.id })} />
       <div style={{ flex: 1, overflowY: "auto", padding: `14px ${LAYOUT.pagePadX}px 26px` }} className="cl-hide-scrollbar">
         <div style={{ textAlign: "center", padding: "5px 12px 22px" }}>
           <div style={{
             width: 66, height: 66, borderRadius: 22, background: C.brandTint, margin: "0 auto 14px",
-            display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 12px 24px -18px ${C.brand}`,
+            display: "flex", alignItems: "center", justifyContent: "center",
           }}>
-            <CheckCircle2 size={31} color={C.brand} strokeWidth={2} />
+            {role === "coach" ? <BadgeDollarSign size={30} color={C.brand} strokeWidth={2} /> : finalPaymentDue ? <LockKeyhole size={29} color={C.brand} strokeWidth={2} /> : <CheckCircle2 size={31} color={C.brand} strokeWidth={2} />}
           </div>
           <div style={{ fontSize: T.display, fontWeight: 750, color: C.jet, letterSpacing: "-0.35px", ...fDisplay }}>
-            Did this session take place?
+            {role === "coach"
+              ? finalPaymentDue ? "Waiting for final payment" : "Any final charges?"
+              : finalPaymentDue ? "One final payment is due" : !completionConfirmations.includes("coach") ? "Waiting for your coach" : "Did this session take place?"}
           </div>
           <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.55, marginTop: 7, ...fBody }}>
-            Confirm only after the session has finished and you’re happy the service was delivered.
+            {role === "coach"
+              ? finalPaymentDue
+                ? "The client must pay the agreed final amount before they can confirm the session."
+                : "Confirm there are no extra agreed costs, or add one before you mark your side complete."
+              : finalPaymentDue
+                ? "Review and pay the coach’s final request. Completion stays locked until payment succeeds."
+                : !completionConfirmations.includes("coach")
+                  ? "Your coach needs to finish their session review before your completion control unlocks."
+                  : "Confirm only after the session has finished and you’re happy the service was delivered."}
           </div>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <SessionSummary booking={booking} role={role} />
+
+          {finalCharge && (
+            <Card style={{ background: finalPaymentDue ? C.warnTint : C.successTint, borderColor: finalPaymentDue ? C.warnStrong : C.success }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 11 }}>
+                <div style={{ width: 38, height: 38, borderRadius: 12, background: C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><BadgeDollarSign size={18} color={finalPaymentDue ? C.warnStrong : C.success} /></div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                    <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>{finalCharge.reason}</div>
+                    <div style={{ fontSize: T.body, fontWeight: 800, color: C.jet, ...fDisplay }}>${Number(finalCharge.amount).toFixed(2)}</div>
+                  </div>
+                  <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, marginTop: 4, ...fBody }}>{finalPaymentDue ? "Payment required before client confirmation" : "Paid securely and linked to this session"}</div>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {role === "coach" && !finalPaymentDue && !currentRoleConfirmed && (
+            <div role="radiogroup" aria-label="Final payment choice" style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+              {chooseCard("none", CheckCircle2, "No final charge", "Mark your side complete now. The client will receive a confirmation prompt.")}
+              {chooseCard("charge", Plus, "Add a final charge", "For an agreed extension, equipment, venue cost, or another documented extra.")}
+            </div>
+          )}
+
           <SessionJourneyTimeline booking={booking} role={role} compact />
           <Card style={{ background: C.successTint, borderColor: C.success }}>
             <div style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
               <ShieldCheck size={19} color={C.success} style={{ flexShrink: 0 }} />
               <div>
-                <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>What happens next</div>
-                <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.55, marginTop: 4, ...fBody }}>
-                  {role === "coach"
-                    ? "CoachLink will release your net payout and notify the client. Bank processing usually takes 2–3 business days."
-                    : `CoachLink will release the secure $${Number(booking.price).toFixed(2)} payment to your coach and save this session to your history.`}
-                </div>
+                <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>Protected until both confirm</div>
+                <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.55, marginTop: 4, ...fBody }}>CoachLink releases the secured payment only after final charges are paid and both coach and client confirm completion.</div>
               </div>
             </div>
           </Card>
@@ -109,9 +197,13 @@ export function ScreenSessionCompletion({
       </div>
 
       <div style={{ padding: `12px ${LAYOUT.pagePadX}px max(${LAYOUT.ctaPadBottom}px, env(safe-area-inset-bottom))`, borderTop: `1px solid ${C.border}`, background: C.white, display: "flex", flexDirection: "column", gap: 9 }}>
-        <Btn full loading={submitting} loadingText="Releasing funds…" disabled={!canConfirm} icon={CheckCircle2} onClick={handleComplete}>
-          Yes, session completed
-        </Btn>
+        {role === "coach" && finalPaymentDue && <Btn full disabled icon={LockKeyhole}>Waiting for client payment</Btn>}
+        {role === "coach" && finalPaymentDue && <Btn full variant="outline" icon={BadgeDollarSign} onClick={() => nav("additional-charge-review", { chargeId: finalCharge.id, role: "coach", backTo })}>View final payment</Btn>}
+        {role === "coach" && !finalPaymentDue && !currentRoleConfirmed && coachChoice === "charge" && <Btn full icon={Plus} onClick={coachAddCharge}>Add final charge</Btn>}
+        {role === "coach" && !finalPaymentDue && !currentRoleConfirmed && coachChoice !== "charge" && <Btn full loading={submitting} loadingText="Saving confirmation…" disabled={!canConfirm || coachChoice !== "none"} icon={CheckCircle2} onClick={handleComplete}>{coachChoice === "none" ? "No final charge — confirm" : "Choose an option to continue"}</Btn>}
+        {role === "coach" && currentRoleConfirmed && <Btn full disabled icon={Clock3}>Waiting for client confirmation</Btn>}
+        {role === "client" && finalPaymentDue && <Btn full icon={WalletCards} onClick={() => nav("additional-charge-payment", { chargeId: finalCharge.id, role: "client" })}>Pay final ${Number(finalCharge.amount).toFixed(2)}</Btn>}
+        {role === "client" && !finalPaymentDue && <Btn full loading={submitting} loadingText="Saving confirmation…" disabled={!canConfirm} icon={CheckCircle2} onClick={handleComplete}>{currentRoleConfirmed ? "Confirmation saved" : completionConfirmations.includes("coach") ? "Yes, session completed" : "Waiting for coach to finish"}</Btn>}
         <Btn full variant="outline" icon={AlertTriangle} onClick={() => nav("dispute-create", {
           bookingId: booking.id,
           role,
@@ -125,7 +217,7 @@ export function ScreenSessionCompletion({
   );
 }
 
-export function ScreenFundsReleaseStatus({ nav, params, role: appRole, bookings = [], coachBookings = [] }) {
+export function ScreenFundsReleaseStatus({ nav, params, role: appRole, bookings = [], coachBookings = [], additionalCharges = [] }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const role = params?.role || appRole || "client";
@@ -142,7 +234,12 @@ export function ScreenFundsReleaseStatus({ nav, params, role: appRole, bookings 
 
   const released = booking.payoutStatus === PAYOUT_STATUS.RELEASED || booking.paymentStatus === PAYMENT_STATUS.RELEASED;
   const processing = booking.payoutStatus === PAYOUT_STATUS.PROCESSING;
-  const gross = Number(booking.price || 0);
+  const paidFinalTotal = additionalCharges
+    .filter((charge) => charge.bookingId === booking.id && charge.phase === ADDITIONAL_CHARGE_PHASE.COMPLETION && charge.status === ADDITIONAL_CHARGE_STATUS.PAID)
+    .reduce((sum, charge) => sum + Number(charge.amount || 0), 0);
+  const gross = booking.paidTotal != null
+    ? Number(booking.paidTotal)
+    : Number(booking.price || 0) + paidFinalTotal;
   const commission = gross * CONFIG.commissionRate;
   const net = gross - commission;
   const person = role === "coach" ? booking.clientName : booking.coachName;

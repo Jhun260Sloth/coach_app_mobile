@@ -7,6 +7,7 @@ import { useApp } from "../../context/AppContext";
 import { COACHES } from "../../data/mockData";
 import { CONFIG } from "../../config";
 import { Avatar, Card, SectionLabel, Btn, TopBar, HandleTag } from "../../components/ui/Primitives";
+import { SportBadge } from "../../components/ui/SportUI";
 import { getPublicName } from "../../utils/name";
 import { packageLocationLabel } from "../../components/ui/ServicePackageForm";
 import { formatTimeRange12, formatFullDateFromDate } from "./Booking";
@@ -37,14 +38,21 @@ export function ScreenPackageDetail({ nav, params }) {
   // date-led calendar flow), show the exact session time as a start–end
   // range rather than just the duration in the abstract.
   const presetDateObj = params.presetDate ? new Date(params.presetDate) : null;
-  const timeLabel = params.presetTime
-    ? `${formatTimeRange12(params.presetTime, pkg.duration)}${presetDateObj ? ` · ${formatFullDateFromDate(presetDateObj)}` : ""}`
-    : null;
+  const selectedDateLabel = presetDateObj ? formatFullDateFromDate(presetDateObj) : null;
+  const selectedTimeLabel = params.presetTime ? formatTimeRange12(params.presetTime, pkg.duration) : null;
+  const hasSelectedSession = Boolean(selectedDateLabel && selectedTimeLabel);
+  const changeSchedule = () => nav("coach-profile", {
+    id: coach.id,
+    tab: "packages",
+    packageId: pkg.id,
+    openSchedule: true,
+    presetDate: params.presetDate,
+    presetTime: params.presetTime,
+  });
 
   const rows = [
     { icon: Tag, label: "Package type", value: typeLabel },
     { icon: Clock, label: "Duration", value: durationLabel },
-    ...(timeLabel ? [{ icon: Clock, label: "Time", value: timeLabel }] : []),
     { icon: DollarSign, label: "Price", value: `$${pkg.price} per session` },
     { icon: Users, label: "Max participants", value: pkg.maxParticipants ? `Up to ${pkg.maxParticipants}` : "1" },
     { icon: MapPin, label: "Mode & location", value: `${pkg.mode || pkg.locationType || "In-person"} · ${locationLabel}` },
@@ -53,7 +61,7 @@ export function ScreenPackageDetail({ nav, params }) {
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title="Package details" onBack={() => nav("coach-profile", { id: coach.id })} />
+      <TopBar title="Package details" onBack={() => nav("coach-profile", { id: coach.id, tab: "packages" })} />
 
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 100px" }} className="cl-hide-scrollbar">
         <Card style={{ marginBottom: 16, display: "flex", gap: 12, alignItems: "center", border: `1px solid ${C.border}` }}>
@@ -61,12 +69,16 @@ export function ScreenPackageDetail({ nav, params }) {
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: T.subtitleLg, fontWeight: 700, color: C.jet, ...fDisplay }}>{pub.name}</div>
             <HandleTag handle={pub.handle} size={11} color={C.slateLight} />
-            <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>{(coach.sports || [coach.sport]).join(", ")} · {coach.suburb}</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 5 }}>
+              {(coach.sports || [coach.sport]).map((sport) => <SportBadge key={sport} sport={sport} compact />)}
+            </div>
+            <div style={{ fontSize: T.label, color: C.slate, marginTop: 5, ...fBody }}>{coach.suburb}</div>
           </div>
         </Card>
 
         <div style={{ marginBottom: 4 }}>
           <div style={{ fontSize: T.heading, fontWeight: 700, color: C.jet, ...fDisplay }}>{pkg.name}</div>
+          <div style={{ marginTop: 8 }}><SportBadge sport={pkg.sport || coach.sport} compact /></div>
           <div style={{ fontSize: T.headingLg, fontWeight: 800, color: C.jet, marginTop: 4, ...fDisplay }}>${pkg.price}</div>
         </div>
 
@@ -74,6 +86,27 @@ export function ScreenPackageDetail({ nav, params }) {
           <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.fog, borderRadius: 12, padding: 12, marginTop: 12 }}>
             <XCircle size={15} color={C.slateLight} />
             <span style={{ fontSize: T.labelLg, color: C.slate, fontWeight: 600, ...fBody }}>This package isn't currently accepting new bookings.</span>
+          </div>
+        )}
+
+        {hasSelectedSession && (
+          <div style={{ marginTop: 16 }}>
+            <SectionLabel>Your selected session</SectionLabel>
+            <Card style={{ marginTop: 8, padding: 14, background: C.brandTint, border: `1px solid ${C.border}` }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                <div style={{ width: 42, height: 42, flexShrink: 0, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", background: C.white, border: `1px solid ${C.border}` }}>
+                  <CalendarDays size={19} color={C.brand} aria-hidden="true" />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: T.subtitle, fontWeight: 700, color: C.jet, ...fDisplay }}>{selectedDateLabel}</div>
+                  <div style={{ marginTop: 3, fontSize: T.body, color: C.slate, ...fBody }}>{selectedTimeLabel}</div>
+                  <div style={{ marginTop: 3, fontSize: T.caption, color: C.slateLight, ...fBody }}>{durationLabel} session · {pkg.mode || pkg.locationType || "In-person"}</div>
+                </div>
+              </div>
+              <div style={{ marginTop: 12 }}>
+                <Btn full size="sm" variant="outline" icon={CalendarDays} onClick={changeSchedule}>Change date & time</Btn>
+              </div>
+            </Card>
           </div>
         )}
 
@@ -105,28 +138,14 @@ export function ScreenPackageDetail({ nav, params }) {
         </div>
 
         <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-          <button
-            onClick={() => nav("package-inquiry", { coachId: coach.id, packageId: pkg.id })}
-            style={{
-              flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-              padding: "10px 12px", borderRadius: 12, border: `1px solid ${C.border}`, background: C.white,
-              cursor: "pointer", ...fBody,
-            }}
-          >
-            <MessageCircle size={14} color={C.jet} />
-            <span style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet }}>Ask a question</span>
-          </button>
-          <button
-            onClick={() => nav("availability-calendar", { coachId: coach.id, packageId: pkg.id })}
-            style={{
-              flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-              padding: "10px 12px", borderRadius: 12, border: `1px solid ${C.border}`, background: C.white,
-              cursor: "pointer", ...fBody,
-            }}
-          >
-            <CalendarDays size={14} color={C.jet} />
-            <span style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet }}>Check availability</span>
-          </button>
+          <div style={{ flex: 1 }}>
+            <Btn size="sm" full variant="outline" icon={MessageCircle} onClick={() => nav("package-inquiry", { coachId: coach.id, packageId: pkg.id })}>Ask a question</Btn>
+          </div>
+          {!hasSelectedSession ? (
+            <div style={{ flex: 1 }}>
+              <Btn size="sm" full variant="outline" icon={CalendarDays} onClick={changeSchedule}>Choose a time</Btn>
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -143,9 +162,12 @@ export function ScreenPackageDetail({ nav, params }) {
         ) : (
           <Btn
             full
-            onClick={() => nav("booking-participants", { coachId: coach.id, packageId: pkg.id, presetDate: params.presetDate, presetTime: params.presetTime })}
+            icon={hasSelectedSession ? Users : CalendarDays}
+            onClick={hasSelectedSession
+              ? () => nav("booking-participants", { coachId: coach.id, packageId: pkg.id, presetDate: params.presetDate, presetTime: params.presetTime })
+              : changeSchedule}
           >
-            Continue
+            {hasSelectedSession ? "Continue to attendees" : "Choose date & time"}
           </Btn>
         )}
       </div>

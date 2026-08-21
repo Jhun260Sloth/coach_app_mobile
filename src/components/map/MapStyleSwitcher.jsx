@@ -19,7 +19,7 @@ function MapStyleSwitcherBase({ styleId, onChange, bottom }) {
         <div style={{
           position: "absolute", bottom: 52, right: 0, width: 236,
           background: C.white, borderRadius: 14, padding: 6,
-          boxShadow: "0 8px 24px rgba(0,0,0,0.16)", border: `1px solid ${C.border}`,
+          boxShadow: "none", border: `1px solid ${C.border}`,
           maxHeight: 320, overflowY: "auto",
         }}>
           <div style={{ padding: "6px 8px 8px", fontSize: T.caption, fontWeight: 700, color: C.slate, textTransform: "uppercase", letterSpacing: 0.4, ...fBody }}>
@@ -53,7 +53,7 @@ function MapStyleSwitcherBase({ styleId, onChange, bottom }) {
         style={{
           width: 44, height: 44, borderRadius: 12, background: C.white,
           border: `1px solid ${open ? C.brand : C.border}`, display: "flex", alignItems: "center",
-          justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+          justifyContent: "center", cursor: "pointer", boxShadow: "none",
         }}
         title={`Map style: ${current.label}`}
       >

@@ -1,3 +1,5 @@
+import { SPORT_NAMES } from "./sports";
+
 /* =========================================================================
    FORM OPTION LISTS
    -------------------------------------------------------------------------
@@ -43,13 +45,7 @@ export const AU_SUBURBS = [
   { suburb: "Darwin", state: "NT", postcode: "0800", lat: -12.4634, lng: 130.8456 },
 ];
 
-export const SPORT_OPTIONS_FULL = [
-  "Tennis", "Swimming", "Basketball", "Strength & Conditioning", "Football",
-  "Yoga", "Rock Climbing", "Athletics", "Netball", "AFL", "Rugby League",
-  "Rugby Union", "Cricket", "Golf", "Boxing", "Cycling", "Running",
-  "Pilates", "Triathlon", "Surfing", "Volleyball", "Table Tennis",
-  "Badminton", "Martial Arts", "CrossFit", "Gymnastics", "Hockey", "Squash",
-];
+export const SPORT_OPTIONS_FULL = SPORT_NAMES;
 
 export const COACHING_CATEGORY_OPTIONS = [
   "1-on-1 private coaching", "Small group sessions", "Team coaching",

@@ -10,7 +10,10 @@ const NOTIF_ICON = { booking: Calendar, message: MessageCircle, review: Star, av
 // breathe (full list, no clipped height) and a natural place to grow into
 // per-notification detail/management later, instead of being squeezed into
 // a sheet meant for quick glances.
-export function ScreenNotifications({ nav, clientNotifications: notifications = [], setClientNotifications: setNotifications }) {
+export function ScreenNotifications({
+  nav, clientNotifications: notifications = [], setClientNotifications: setNotifications,
+  bookings = [], toast,
+}) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const unreadCount = notifications.filter((n) => n.unread).length;
@@ -25,7 +28,13 @@ export function ScreenNotifications({ nav, clientNotifications: notifications = 
       nav("additional-charge-review", { chargeId: n.chargeId, role: "client", backTo: "notifications" });
     }
     else if (["booking", "review", "payment"].includes(n.type)) {
-      nav(n.bookingId ? "client-booking-detail" : "client-dashboard", n.bookingId ? { id: n.bookingId } : {});
+      const bookingExists = n.bookingId && bookings.some((booking) => booking.id === n.bookingId);
+      if (n.bookingId && !bookingExists) {
+        toast?.("This booking update is no longer available");
+        nav("client-dashboard");
+        return;
+      }
+      nav(bookingExists ? "client-booking-detail" : "client-dashboard", bookingExists ? { id: n.bookingId } : {});
     }
   };
 

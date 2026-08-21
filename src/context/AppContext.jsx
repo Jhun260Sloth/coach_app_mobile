@@ -3,7 +3,8 @@ import {
   INITIAL_BOOKINGS, COACH_BOOKINGS, ADMIN_VERIFICATION_QUEUE, ADMIN_DISPUTES,
   INITIAL_AVAILABILITY_BLOCKS, BOOKING_STATUS, PAYMENT_STATUS, PAYOUT_STATUS,
   SESSION_DISPUTES, ADDITIONAL_CHARGES, DISPUTE_STATUS, DISPUTE_OUTCOME,
-  ADDITIONAL_CHARGE_STATUS, CLIENT_NOTIFICATIONS, COACH_NOTIFICATIONS,
+  ADDITIONAL_CHARGE_STATUS, ADDITIONAL_CHARGE_PHASE, ADDITIONAL_CHARGE_KIND,
+  CLIENT_NOTIFICATIONS, COACH_NOTIFICATIONS,
 } from "../data/bookings";
 import { COACHES } from "../data/coaches";
 import { getCoachMedia } from "../data/media";
@@ -21,6 +22,14 @@ import { applyTheme } from "../theme/theme";
    ========================================================================= */
 
 const AppContext = createContext(null);
+
+const getNextBookingNumber = () => {
+  const seededIds = [...INITIAL_BOOKINGS, ...COACH_BOOKINGS]
+    .map((booking) => /^b(\d+)$/.exec(String(booking.id || ""))?.[1])
+    .filter(Boolean)
+    .map(Number);
+  return Math.max(0, ...seededIds) + 1;
+};
 
 const seedNotifications = () => [
   ...CLIENT_NOTIFICATIONS.map((notification) => ({ ...notification, audience: "client" })),
@@ -66,6 +75,7 @@ export function AppProvider({ children }) {
   const [sessionDisputes, setSessionDisputes] = useState(SESSION_DISPUTES);
   const [additionalCharges, setAdditionalCharges] = useState(ADDITIONAL_CHARGES);
   const [draft, setDraft] = useState(null);
+  const nextBookingNumberRef = useRef(getNextBookingNumber());
 
   // ---- Coach state ----
   const [verified, setVerified] = useState(false);
@@ -150,6 +160,14 @@ export function AppProvider({ children }) {
     bookingType: coachBookingType,
     availableNow: coachAvailableNow,
   });
+
+  const getBookingCoachPublicIdentity = (booking) => {
+    const listedCoach = COACHES.find((coach) => coach.id === booking?.coachId);
+    const bookingCoach = listedCoach?.id === coachProfile.id
+      ? coachProfile
+      : listedCoach || { ...coachIdentity, name: booking?.coachName || coachIdentity.name };
+    return getPublicName(bookingCoach, "public");
+  };
 
   const setCoachNotifications = (updater) => {
     setNotifications((all) => {
@@ -250,53 +268,58 @@ export function AppProvider({ children }) {
 
   // ---- Booking actions ----
   const addBooking = (d) => {
-    const id = d.id || ("b" + (bookings.length + 1));
+    if (!d?.coach?.id || !d?.pkg?.name) return null;
+
+    const id = d.id || `b${nextBookingNumberRef.current++}`;
     const coachId = d.coach.id;
     const clientFull = fullNameOf(clientIdentity);
     const clientPub = getPublicName(clientIdentity, "public");
     const who = clientPub.handle ? `${clientPub.name} (${clientPub.handle})` : clientPub.name;
-    setBookings((b) => [
-      {
-        id, coachId, coachName: d.coach.name, clientName: clientFull,
-        clientHandle: clientIdentity.handle, clientPrivacy: clientIdentity.namePrivacy,
-        service: d.pkg.name, date: d.day, time: d.time, mode: d.mode,
-        status: BOOKING_STATUS.PENDING, paymentStatus: PAYMENT_STATUS.NOT_REQUESTED,
-        payoutStatus: PAYOUT_STATUS.NOT_READY,
-        price: d.total, reviewed: false,
-        participants: d.participants || "You", notes: d.conditions || "",
-        includesMinor: !!d.includesMinor,
-        guardianName: d.guardianName || "",
-        guardianRelationship: d.guardianRelationship || "",
-        guardianPhone: d.guardianPhone || "",
-        emergencyName: d.emergencyName || "",
-        emergencyPhone: d.emergencyPhone || "",
-      },
-      ...b,
+    const sharedBooking = {
+      id,
+      coachId,
+      coachName: d.coach.name,
+      clientName: clientFull,
+      clientHandle: clientIdentity.handle,
+      clientPrivacy: clientIdentity.namePrivacy,
+      service: d.pkg.name,
+      date: d.day,
+      time: d.time,
+      mode: d.mode,
+      status: BOOKING_STATUS.PENDING,
+      paymentStatus: PAYMENT_STATUS.NOT_REQUESTED,
+      payoutStatus: PAYOUT_STATUS.NOT_READY,
+      price: Number(d.total || d.pkg.price || 0),
+      participants: d.participants || "You",
+      notes: d.bookingNotes || "",
+      safetyNotes: d.safetyNotes || d.conditions || "",
+      includesMinor: !!d.includesMinor,
+      guardianName: d.guardianName || "",
+      guardianRelationship: d.guardianRelationship || "",
+      guardianPhone: d.guardianPhone || "",
+      emergencyName: d.emergencyName || "",
+      emergencyPhone: d.emergencyPhone || "",
+      createdAt: "Just now",
+    };
+
+    // The prototype renders both sides of the same marketplace transaction in
+    // one app session. Keep a shared ID and payload in each role's collection
+    // so client Requests, coach Requests and notifications always agree.
+    setBookings((items) => [
+      { ...sharedBooking, reviewed: false },
+      ...items.filter((booking) => booking.id !== id),
     ]);
-    if (coachId === "c2") {
-      setCoachBookings((cb) => [
-        {
-          id, clientName: clientFull,
-          clientHandle: clientIdentity.handle, clientPrivacy: clientIdentity.namePrivacy,
-          service: d.pkg.name, date: d.day,
-          time: d.time, mode: d.mode, status: BOOKING_STATUS.PENDING,
-          paymentStatus: PAYMENT_STATUS.NOT_REQUESTED, payoutStatus: PAYOUT_STATUS.NOT_READY, price: d.total,
-          notes: d.conditions || "",
-          includesMinor: !!d.includesMinor,
-          guardianName: d.guardianName || "",
-          guardianRelationship: d.guardianRelationship || "",
-          guardianPhone: d.guardianPhone || "",
-          emergencyName: d.emergencyName || "",
-          emergencyPhone: d.emergencyPhone || "",
-        },
-        ...cb,
-      ]);
-    }
+    setCoachBookings((items) => [
+      sharedBooking,
+      ...items.filter((booking) => booking.id !== id),
+    ]);
+    setIsFirstTimeClient(false);
     pushNotification({
       audience: "coach", type: "booking", title: "New booking request",
       body: `${who} requested a ${d.pkg.name} for ${d.day}, ${d.time}.`,
       bookingId: id,
     });
+    return id;
   };
 
   const cancelBooking = (id) => {
@@ -305,6 +328,7 @@ export function AppProvider({ children }) {
     if (!target || [BOOKING_STATUS.CANCELLED, BOOKING_STATUS.DECLINED, BOOKING_STATUS.EXPIRED].includes(target.status)) return;
 
     const wasPaid = [PAYMENT_STATUS.HELD, PAYMENT_STATUS.RELEASED].includes(target.paymentStatus);
+    const refundableTotal = Number(target.paidTotal || target.price || 0);
     const cancellationPatch = {
       status: BOOKING_STATUS.CANCELLED,
       ...(wasPaid
@@ -340,10 +364,10 @@ export function AppProvider({ children }) {
           audience: "client",
           type: "payment",
           title: "Refund complete",
-          body: `$${Number(target.price).toFixed(2)} was returned to your original payment method.`,
+        body: `$${refundableTotal.toFixed(2)} was returned to your original payment method.`,
           bookingId: id,
         });
-        toast(`$${Number(target.price).toFixed(2)} refunded`);
+        toast(`$${refundableTotal.toFixed(2)} refunded`);
       }, 1400);
     }
   };
@@ -367,24 +391,45 @@ export function AppProvider({ children }) {
     });
   };
 
-  const markBookingPaid = (id) => {
+  const markBookingPaid = (id, selectedOptionalChargeIds = []) => {
     const target = bookings.find((booking) => booking.id === id)
       || coachBookings.find((booking) => booking.id === id);
     if (!target || target.status !== BOOKING_STATUS.AWAITING_PAYMENT) return false;
+
+    const selectedOptional = new Set(selectedOptionalChargeIds);
+    const acceptanceCharges = additionalCharges.filter((charge) => (
+      charge.bookingId === id
+      && charge.phase === ADDITIONAL_CHARGE_PHASE.ACCEPTANCE
+      && charge.status === ADDITIONAL_CHARGE_STATUS.PENDING
+    ));
+    const paidCharges = acceptanceCharges.filter((charge) => (
+      charge.kind === ADDITIONAL_CHARGE_KIND.REQUIRED || selectedOptional.has(charge.id)
+    ));
+    const chargeTotal = paidCharges.reduce((sum, charge) => sum + Number(charge.amount || 0), 0);
+    const paidTotal = Number(target.price || 0) + chargeTotal;
 
     const paymentPatch = {
       status: BOOKING_STATUS.CONFIRMED,
       paymentStatus: PAYMENT_STATUS.HELD,
       payoutStatus: PAYOUT_STATUS.NOT_READY,
       paidAt: "Just now",
+      acceptanceChargeTotal: chargeTotal,
+      paidTotal,
     };
+    setAdditionalCharges((items) => items.map((charge) => {
+      if (charge.bookingId !== id || charge.phase !== ADDITIONAL_CHARGE_PHASE.ACCEPTANCE || charge.status !== ADDITIONAL_CHARGE_STATUS.PENDING) return charge;
+      const selected = charge.kind === ADDITIONAL_CHARGE_KIND.REQUIRED || selectedOptional.has(charge.id);
+      return selected
+        ? { ...charge, status: ADDITIONAL_CHARGE_STATUS.PAID, selected: true, paidAt: "Just now" }
+        : { ...charge, status: ADDITIONAL_CHARGE_STATUS.DECLINED, selected: false, decidedAt: "Just now" };
+    }));
     setBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...paymentPatch } : booking)));
     setCoachBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...paymentPatch } : booking)));
     pushNotification({
       audience: "coach",
       type: "payment",
       title: "Payment received",
-      body: `Payment of $${Number(target.price).toFixed(2)} received for ${target.service}. The session is now confirmed.`,
+      body: `Payment of $${paidTotal.toFixed(2)} received for ${target.service}. The session is now confirmed.`,
       bookingId: id,
     });
     return true;
@@ -410,7 +455,7 @@ export function AppProvider({ children }) {
     };
     setCoachBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...responsePatch } : booking)));
     setBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...responsePatch } : booking)));
-    const coachPub = getPublicName(coachIdentity, "public");
+    const coachPub = getBookingCoachPublicIdentity(target);
     if (nextStatus === BOOKING_STATUS.AWAITING_PAYMENT) {
       pushNotification({
         audience: "client", type: "payment", title: "Send your payment",
@@ -421,6 +466,78 @@ export function AppProvider({ children }) {
       pushNotification({
         audience: "client", type: "booking", title: "Booking declined",
         body: `${coachPub.name} declined your ${target.service} request for ${target.date}.`,
+        bookingId: id,
+      });
+    }
+    return true;
+  };
+
+  const acceptBookingWithCharges = (id, charges = []) => {
+    const coachBooking = coachBookings.find((booking) => booking.id === id);
+    const target = coachBooking
+      || bookings.find((booking) => booking.id === id);
+    if (!target || target.status !== BOOKING_STATUS.PENDING) return false;
+
+    const currentClientName = fullNameOf(clientIdentity).trim().toLowerCase();
+    const requestClientName = String(target.clientName || "").trim().toLowerCase();
+    const belongsToSignedInClient = requestClientName === currentClientName;
+    const hasClientBooking = bookings.some((booking) => booking.id === id);
+
+    // Older prototype records may exist only in the coach queue. Hydrate a
+    // matching client copy before acceptance so details and notifications use
+    // one shared booking ID across both roles.
+    if (coachBooking && !hasClientBooking && belongsToSignedInClient) {
+      setBookings((items) => [{
+        ...coachBooking,
+        id,
+        coachId: coachBooking.coachId || COACHES[1].id,
+        coachName: coachBooking.coachName || coachIdentity.name,
+        reviewed: false,
+        participants: coachBooking.participants || "You",
+      }, ...items]);
+    }
+
+    const normalisedCharges = charges
+      .map((charge, index) => ({
+        id: `charge-${Date.now()}-${index}`,
+        bookingId: id,
+        reason: String(charge.reason || "Additional cost").trim(),
+        note: String(charge.note || "Added by the coach when accepting this booking.").trim(),
+        amount: Number(charge.amount || 0),
+        phase: ADDITIONAL_CHARGE_PHASE.ACCEPTANCE,
+        kind: charge.kind === ADDITIONAL_CHARGE_KIND.OPTIONAL
+          ? ADDITIONAL_CHARGE_KIND.OPTIONAL
+          : ADDITIONAL_CHARGE_KIND.REQUIRED,
+        evidence: "Included with booking acceptance",
+        status: ADDITIONAL_CHARGE_STATUS.PENDING,
+        createdAt: "Just now",
+        dueAt: charge.kind === ADDITIONAL_CHARGE_KIND.OPTIONAL ? "Choose at checkout" : "Pay with your booking",
+      }))
+      .filter((charge) => charge.reason && charge.amount > 0);
+
+    const responsePatch = {
+      status: BOOKING_STATUS.AWAITING_PAYMENT,
+      paymentStatus: PAYMENT_STATUS.DUE,
+      payoutStatus: PAYOUT_STATUS.NOT_READY,
+      acceptedAt: "Just now",
+      paymentDeadline: "Tomorrow, 6:00pm",
+      paymentReminderSent: false,
+    };
+    if (normalisedCharges.length) setAdditionalCharges((items) => [...normalisedCharges, ...items]);
+    setCoachBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...responsePatch } : booking)));
+    setBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...responsePatch } : booking)));
+
+    const requiredTotal = normalisedCharges
+      .filter((charge) => charge.kind === ADDITIONAL_CHARGE_KIND.REQUIRED)
+      .reduce((sum, charge) => sum + charge.amount, 0);
+    const optionalCount = normalisedCharges.filter((charge) => charge.kind === ADDITIONAL_CHARGE_KIND.OPTIONAL).length;
+    const coachPub = getBookingCoachPublicIdentity(target);
+    if (hasClientBooking || belongsToSignedInClient) {
+      pushNotification({
+        audience: "client",
+        type: "payment",
+        title: "Booking accepted — review payment",
+        body: `${coachPub.name} accepted ${target.service}. $${(Number(target.price || 0) + requiredTotal).toFixed(2)} is required${optionalCount ? `, with ${optionalCount} optional add-on${optionalCount === 1 ? "" : "s"}` : ""}.`,
         bookingId: id,
       });
     }
@@ -473,12 +590,26 @@ export function AppProvider({ children }) {
       || bookings.find((booking) => booking.id === id)
       || coachBookings.find((booking) => booking.id === id);
     if (!target || ![BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.COMPLETION_PENDING].includes(target.status)) return false;
+    const unpaidFinalCharge = additionalCharges.some((charge) => (
+      charge.bookingId === id
+      && charge.phase === ADDITIONAL_CHARGE_PHASE.COMPLETION
+      && charge.kind === ADDITIONAL_CHARGE_KIND.REQUIRED
+      && charge.status === ADDITIONAL_CHARGE_STATUS.PENDING
+    ));
+    if (actorRole === "client" && unpaidFinalCharge) return false;
+
+    const previousConfirmations = target.completionConfirmations
+      || (target.completionConfirmedBy ? [target.completionConfirmedBy] : []);
+    if (actorRole === "client" && !previousConfirmations.includes("coach")) return false;
+    const completionConfirmations = Array.from(new Set([...previousConfirmations, actorRole]));
+    const bothConfirmed = completionConfirmations.includes("coach") && completionConfirmations.includes("client");
 
     const completionPatch = {
       status: BOOKING_STATUS.COMPLETION_PENDING,
       paymentStatus: PAYMENT_STATUS.HELD,
-      payoutStatus: PAYOUT_STATUS.PROCESSING,
+      payoutStatus: bothConfirmed ? PAYOUT_STATUS.PROCESSING : PAYOUT_STATUS.NOT_READY,
       completionConfirmedBy: actorRole,
+      completionConfirmations,
       completionConfirmedAt: "Just now",
     };
     setCoachBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...completionPatch } : booking)));
@@ -486,11 +617,14 @@ export function AppProvider({ children }) {
     pushNotification({
       audience: actorRole === "coach" ? "client" : "coach",
       type: "booking",
-      title: "Session completion confirmed",
-      body: `${target.service} on ${target.date} was confirmed complete. Funds are now being released.`,
+      title: bothConfirmed ? "Session completion agreed" : "Completion confirmation needed",
+      body: bothConfirmed
+        ? `${target.service} on ${target.date} was confirmed by both sides. Funds are now being released.`
+        : `${actorRole === "coach" ? "Your coach" : "Your client"} confirmed ${target.service} is complete. Please confirm from your session details.`,
       bookingId: id,
     });
 
+    if (!bothConfirmed) return true;
     setTimeout(() => {
       const releasePatch = {
         status: BOOKING_STATUS.COMPLETED,
@@ -613,7 +747,11 @@ export function AppProvider({ children }) {
     return true;
   };
 
-  const createAdditionalCharge = ({ bookingId, reason, note, amount, evidence }) => {
+  const createAdditionalCharge = ({
+    bookingId, reason, note, amount, evidence,
+    phase = ADDITIONAL_CHARGE_PHASE.COMPLETION,
+    kind = ADDITIONAL_CHARGE_KIND.REQUIRED,
+  }) => {
     const coachBooking = coachBookings.find((booking) => booking.id === bookingId);
     const target = coachBooking || bookings.find((booking) => booking.id === bookingId);
     if (!target) return null;
@@ -635,12 +773,20 @@ export function AppProvider({ children }) {
     const id = `charge-${Date.now()}`;
     setAdditionalCharges((items) => [{
       id, bookingId, reason, note, amount: Number(amount || 0), evidence,
+      phase,
+      kind,
       status: ADDITIONAL_CHARGE_STATUS.PENDING,
-      createdAt: "Just now", dueAt: "Respond within 48 hours",
+      createdAt: "Just now",
+      dueAt: phase === ADDITIONAL_CHARGE_PHASE.COMPLETION
+        ? "Pay before confirming completion"
+        : kind === ADDITIONAL_CHARGE_KIND.OPTIONAL ? "Choose at checkout" : "Pay with your booking",
     }, ...items]);
     pushNotification({
-      audience: "client", type: "payment", title: "Additional payment requested",
-      body: `${target.coachName || coachIdentity.name} requested $${Number(amount || 0).toFixed(2)} for ${reason.toLowerCase()}.`,
+      audience: "client", type: "payment",
+      title: phase === ADDITIONAL_CHARGE_PHASE.COMPLETION ? "Final payment required" : "Booking cost updated",
+      body: phase === ADDITIONAL_CHARGE_PHASE.COMPLETION
+        ? `${target.coachName || coachIdentity.name} added a final $${Number(amount || 0).toFixed(2)} payment for ${reason.toLowerCase()}. Pay it before confirming completion.`
+        : `${target.coachName || coachIdentity.name} added $${Number(amount || 0).toFixed(2)} for ${reason.toLowerCase()}.`,
       bookingId, chargeId: id,
     });
     return id;
@@ -649,11 +795,19 @@ export function AppProvider({ children }) {
   const payAdditionalCharge = (id) => {
     const charge = additionalCharges.find((item) => item.id === id);
     if (!charge || charge.status !== ADDITIONAL_CHARGE_STATUS.PENDING) return false;
+    if (charge.phase === ADDITIONAL_CHARGE_PHASE.ACCEPTANCE) return false;
+    const target = bookings.find((booking) => booking.id === charge.bookingId)
+      || coachBookings.find((booking) => booking.id === charge.bookingId);
+    const finalChargeTotal = Number(target?.finalChargeTotal || 0) + Number(charge.amount || 0);
+    const paidTotal = Number(target?.paidTotal || target?.price || 0) + Number(charge.amount || 0);
     setAdditionalCharges((items) => items.map((item) => (
       item.id === id ? { ...item, status: ADDITIONAL_CHARGE_STATUS.PAID, paidAt: "Just now" } : item
     )));
-    pushNotification({ audience: "coach", type: "payment", title: "Additional payment received", body: `$${Number(charge.amount).toFixed(2)} has been paid and added to your payout.`, bookingId: charge.bookingId, chargeId: charge.id });
-    pushNotification({ audience: "client", type: "payment", title: "Additional payment complete", body: `$${Number(charge.amount).toFixed(2)} was paid securely. Your receipt is ready.`, bookingId: charge.bookingId, chargeId: charge.id });
+    const paymentPatch = { finalChargeTotal, paidTotal };
+    setBookings((items) => items.map((booking) => (booking.id === charge.bookingId ? { ...booking, ...paymentPatch } : booking)));
+    setCoachBookings((items) => items.map((booking) => (booking.id === charge.bookingId ? { ...booking, ...paymentPatch } : booking)));
+    pushNotification({ audience: "coach", type: "payment", title: "Final payment received", body: `$${Number(charge.amount).toFixed(2)} has been paid and added to your payout.`, bookingId: charge.bookingId, chargeId: charge.id });
+    pushNotification({ audience: "client", type: "payment", title: "Final payment complete", body: `$${Number(charge.amount).toFixed(2)} was paid securely. Your receipt is ready.`, bookingId: charge.bookingId, chargeId: charge.id });
     return true;
   };
 
@@ -759,6 +913,7 @@ export function AppProvider({ children }) {
     setAvailabilityBlocks(INITIAL_AVAILABILITY_BLOCKS);
     setCoachMedia(getCoachMedia(COACHES[1].id));
     setCoachBookingType(COACHES[1].instantBook ? "instant" : "request");
+    nextBookingNumberRef.current = getNextBookingNumber();
     setIsFirstTimeClient(false);
     setDiscoveryPrefs({ seeded: true });
   };
@@ -779,7 +934,7 @@ export function AppProvider({ children }) {
     filters: clientFilters, onFiltersChange: setClientFilters,
     // Bookings
     bookings, setBookings, coachBookings, setCoachBookings,
-    addBooking, cancelBooking, rescheduleBooking, markBookingPaid, respondBooking,
+    addBooking, cancelBooking, rescheduleBooking, markBookingPaid, respondBooking, acceptBookingWithCharges,
     sendPaymentReminder, expireAwaitingPayment, confirmSessionCompletion,
     sessionDisputes, createSessionDispute, resolveSessionDispute,
     additionalCharges, createAdditionalCharge, payAdditionalCharge,

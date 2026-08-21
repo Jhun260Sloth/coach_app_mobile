@@ -16,7 +16,7 @@ export const LEAFLET_JS_URL = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
 export const AUSTRALIA_CENTER = [-25.2744, 133.7751];
 export const AUSTRALIA_ZOOM = 4;
 // Fallback "you are here" point (Sydney CBD) used whenever the browser denies
-// or lacks geolocation, so the blue dot + routing + radius filter always have
+// or lacks geolocation, so the blue dot + radius filter always have
 // somewhere to sit.
 export const FALLBACK_USER_LOCATION = { lat: -33.8688, lng: 151.2093 };
 // Zoom level used the first time we auto-centre on the user's real location.
@@ -26,6 +26,7 @@ export const LOCATE_ZOOM = 13;
 export const RADIUS_PRESETS_KM = [5, 10];
 export const CUSTOM_RADIUS_MIN_KM = 1;
 export const CUSTOM_RADIUS_MAX_KM = 50;
+export const DEFAULT_COACH_AREA_RADIUS_KM = 1.2;
 
 /* =========================================================================
    MAP STYLES — base tile layers the user can switch between. All are free,
@@ -152,20 +153,21 @@ export function injectMapStyles(C = CL) {
     .cl-user-dot-wrap { width: 20px; height: 20px; position: relative; }
     .cl-user-dot-wrap::before { content: ""; position: absolute; inset: -16px; border-radius: 50%; background: rgba(59,130,246,.38); animation: clLocatePulse 2.2s ease-out infinite; }
     .cl-user-dot-wrap::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: #3B82F6; border: 3px solid ${C.white}; box-shadow: 0 1px 5px rgba(0,0,0,.35); }
-    .cl-coach-pin { position: relative; width: 30px; height: 38px; cursor: pointer; }
-    .cl-coach-pin .cl-pin-tag { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 4px; background: ${C.jet}; color: ${C.white}; font-size: 11px; font-weight: 700; padding: 5px 9px; border-radius: 10px; white-space: nowrap; max-width: 120px; overflow: hidden; text-overflow: ellipsis; font-family: 'Inter', sans-serif; box-shadow: 0 2px 6px rgba(0,0,0,.18); }
-    .cl-coach-pin.selected .cl-pin-tag { background: ${C.brand}; color: ${C.jet}; }
-    .cl-coach-pin .cl-pin-svg { filter: drop-shadow(0 2px 3px rgba(0,0,0,.28)); transition: transform .12s ease; }
-    .cl-coach-pin.selected .cl-pin-svg { transform: scale(1.12); }
+    .cl-coach-avatar-marker { position: relative; box-sizing: border-box; width: 52px; height: 52px; padding: 3px; border-radius: 50%; background: var(--cl-marker-surface); border: 2px solid var(--cl-marker-ring); box-shadow: none; cursor: pointer; transition: transform .16s ease; }
+    .cl-coach-avatar-marker::before { content: ""; position: absolute; inset: -8px; border-radius: 50%; border: 1.5px solid var(--cl-marker-ring); background: var(--cl-marker-ring); opacity: .12; }
+    .cl-coach-avatar-marker:hover, .cl-coach-avatar-marker.selected { transform: scale(1.1); box-shadow: none; }
+    .cl-coach-avatar-marker.selected { border-width: 3px; }
+    .cl-coach-avatar-marker.selected::before { inset: -10px; opacity: .18; }
+    .cl-coach-avatar-shell { position: relative; z-index: 1; width: 100%; height: 100%; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: var(--cl-marker-tint); color: var(--cl-marker-ink); font: 700 15px/1 'Outfit', sans-serif; }
+    .cl-coach-avatar-shell img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .leaflet-top.leaflet-right { top: 132px !important; }
     .cl-hide-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
     .cl-hide-scrollbar::-webkit-scrollbar { display: none; }
-    .leaflet-control-zoom { border: none !important; border-radius: 12px !important; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,.1) !important; margin-right: 16px !important; }
+    .leaflet-control-zoom { border: none !important; border-radius: 12px !important; overflow: hidden; box-shadow: none !important; margin-right: 16px !important; }
     .leaflet-control-zoom a { width: 34px !important; height: 34px !important; line-height: 34px !important; color: ${C.jet} !important; }
     .leaflet-control-zoom a:first-child { border-bottom: 1px solid ${C.border} !important; }
     .leaflet-touch .leaflet-bar { border: none; }
     .leaflet-popup-content-wrapper, .leaflet-popup-tip { display: none; }
-    .cl-route-glow { filter: drop-shadow(0 1px 3px rgba(37,99,235,.35)); }
     .leaflet-container { font-family: 'Inter', sans-serif; background: #F4F5F7; }
   `;
   document.head.appendChild(style);
@@ -175,18 +177,22 @@ export function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
 }
 
-export function coachPinIcon(C, L, name, selected) {
-  const fill = selected ? C.jet : C.brand;
+export function getCoachAreaPoint(coach) {
+  if (typeof coach?.areaLat !== "number" || typeof coach?.areaLng !== "number") return null;
+  return { lat: coach.areaLat, lng: coach.areaLng };
+}
+
+export function coachAvatarMarkerIcon(C, L, coach, selected) {
+  const initial = escapeHtml((coach?.name || "C").trim().charAt(0).toUpperCase() || "C");
+  const avatar = coach?.avatar
+    ? `<img src="${escapeHtml(coach.avatar)}" alt="" draggable="false" />`
+    : initial;
   const html = `
-    <div class="cl-coach-pin${selected ? " selected" : ""}">
-      <div class="cl-pin-tag">${escapeHtml(name)}</div>
-      <svg class="cl-pin-svg" width="30" height="38" viewBox="0 0 30 38" xmlns="http://www.w3.org/2000/svg">
-        <path d="M15 37C15 37 27 23.5 27 14C27 6.8 21.2 1 15 1C8.8 1 3 6.8 3 14C3 23.5 15 37 15 37Z"
-          fill="${fill}" stroke="#FFFFFF" stroke-width="3"/>
-        <circle cx="15" cy="14" r="5" fill="#FFFFFF"/>
-      </svg>
+    <div class="cl-coach-avatar-marker${selected ? " selected" : ""}"
+      style="--cl-marker-ring:${C.brand};--cl-marker-surface:${C.white};--cl-marker-tint:${C.brandTint};--cl-marker-ink:${C.brandIcon}">
+      <div class="cl-coach-avatar-shell">${avatar}</div>
     </div>`;
-  return L.divIcon({ className: "", html, iconSize: [30, 38], iconAnchor: [15, 36] });
+  return L.divIcon({ className: "", html, iconSize: [52, 52], iconAnchor: [26, 26] });
 }
 
 export function userLocationIcon(L) {
@@ -196,26 +202,6 @@ export function userLocationIcon(L) {
     iconSize: [20, 20],
     iconAnchor: [10, 10],
   });
-}
-
-// Real road-following route via OSRM's free public routing API (no key needed).
-// Falls back to a straight line if the request fails, so selection still works offline.
-export async function fetchRoute(from, to) {
-  try {
-    const url = `https://router.project-osrm.org/route/v1/driving/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error("routing failed");
-    const data = await res.json();
-    const route = data.routes && data.routes[0];
-    if (!route) throw new Error("no route");
-    return {
-      points: route.geometry.coordinates.map(([lng, lat]) => [lat, lng]),
-      distanceKm: route.distance / 1000,
-      durationMin: route.duration / 60,
-    };
-  } catch {
-    return { points: [[from.lat, from.lng], [to.lat, to.lng]], distanceKm: null, durationMin: null, fallback: true };
-  }
 }
 
 // Great-circle distance in km — used for the radius filter (fast, no network call).

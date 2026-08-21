@@ -2,18 +2,15 @@ import React, { useState } from "react";
 import { DollarSign, Users, MapPin, Package, Clock, SlidersHorizontal } from "lucide-react";
 import { CL, CD, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
-import { Chip, Btn, SearchSelect, FormSection } from "./Primitives";
+import { Chip, Btn, FormSection, RequiredMark } from "./Primitives";
+import { SportSearchSelect } from "./SportUI";
+import { SPORT_NAMES } from "../../data/sports";
 
 export const PACKAGE_TYPE_OPTIONS = [
   "1:1 Coaching", "Group Training", "Family Sessions", "Team Program", "Skills Clinic", "Online Coaching",
   "Private Lesson", "Bootcamp", "Holiday Camp", "Assessment", "Workshop", "Squad Training",
 ];
-// Small set of quick-pick sports shown by default in the searchable Sport
-// Category field below. Coaches aren't limited to this list — they can search
-// a broader range or add any sport that isn't already listed.
-export const SPORT_OPTIONS = [
-  "Tennis", "Strength & Conditioning", "Swimming", "Basketball", "Football", "Yoga",
-];
+export const SPORT_OPTIONS = SPORT_NAMES;
 export const SESSION_DURATION_OPTIONS = [30, 45, 60, 90, 120];
 // "Come to You" means the coach travels to the client's location, so no
 // fixed venue is required — only an optional travel area/radius note.
@@ -62,7 +59,7 @@ export function packageLocationLabel(pkg) {
 export function packageSummary(pkg) {
   const duration = pkg.useCustomDuration ? pkg.sessionDurationCustom : `${pkg.sessionDuration} min`;
   const parts = [
-    (pkg.packageTypes || []).join(" + "), pkg.sport, duration,
+    (pkg.packageTypes || []).join(" + "), duration,
     pkg.price !== "" ? `$${pkg.price}` : null,
     pkg.maxParticipants !== "" ? `max ${pkg.maxParticipants}` : null,
     pkg.deliveryMode ? packageLocationLabel(pkg) : null,
@@ -156,7 +153,7 @@ export function ServicePackageForm({ initial, onSave, onCancel, saveLabel = "Add
     <div>
       <FormSection icon={Package} label="Package basics" hint="Give your service a clear name and format.">
         <div style={{ marginBottom: 16 }}>
-          <div style={labelStyle}>Service name</div>
+          <div style={labelStyle}>Service name<RequiredMark /></div>
           <input
             value={pkg.name}
             onChange={(e) => set({ name: e.target.value })}
@@ -166,7 +163,7 @@ export function ServicePackageForm({ initial, onSave, onCancel, saveLabel = "Add
         </div>
 
         <div style={{ marginBottom: 16 }}>
-          <div style={labelStyle}>Package type</div>
+          <div style={labelStyle}>Package type<RequiredMark /></div>
           <div style={{ fontSize: T.captionLg, color: C.slateLight, marginBottom: 8, marginTop: -4, ...fBody }}>
             Select every format this service can be booked as — you can pick more than one.
           </div>
@@ -189,8 +186,8 @@ export function ServicePackageForm({ initial, onSave, onCancel, saveLabel = "Add
         </div>
 
         <div style={{ marginBottom: 16 }}>
-          <div style={labelStyle}>Sport category</div>
-          <SearchSelect
+          <div style={labelStyle}>Sport category<RequiredMark /></div>
+          <SportSearchSelect
             options={SPORT_OPTIONS}
             value={pkg.sport}
             onChange={(v) => set({ sport: v })}
@@ -212,7 +209,7 @@ export function ServicePackageForm({ initial, onSave, onCancel, saveLabel = "Add
 
       <FormSection icon={Clock} label="Session details" hint="How long a session runs and what it costs.">
         <div style={{ marginBottom: 16 }}>
-          <div style={labelStyle}>Session duration</div>
+          <div style={labelStyle}>Session duration<RequiredMark /></div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
             {SESSION_DURATION_OPTIONS.map((d) => (
               <Chip
@@ -236,7 +233,7 @@ export function ServicePackageForm({ initial, onSave, onCancel, saveLabel = "Add
         </div>
 
         <div style={{ marginBottom: 16 }}>
-          <div style={labelStyle}>Price</div>
+          <div style={labelStyle}>Price<RequiredMark /></div>
           <div style={fieldWrapStyle}>
             <DollarSign size={14} color={C.slateLight} />
             <input
@@ -251,7 +248,7 @@ export function ServicePackageForm({ initial, onSave, onCancel, saveLabel = "Add
         </div>
 
         <div>
-          <div style={labelStyle}>Maximum participants per package</div>
+          <div style={labelStyle}>Maximum participants per package<RequiredMark /></div>
           <div style={{ fontSize: T.captionLg, color: C.slateLight, marginBottom: 8, marginTop: -4, ...fBody }}>
             The most people who can join a single session of this specific package.
           </div>
@@ -271,7 +268,7 @@ export function ServicePackageForm({ initial, onSave, onCancel, saveLabel = "Add
 
       <FormSection icon={MapPin} label="Location & delivery" hint="Where and how this package takes place.">
         <div style={{ marginBottom: 16 }}>
-          <div style={labelStyle}>Delivery mode</div>
+          <div style={labelStyle}>Delivery mode<RequiredMark /></div>
           <div style={{ fontSize: T.captionLg, color: C.slateLight, marginBottom: 8, marginTop: -4, ...fBody }}>
             Each package can have its own location — this doesn't need to match your other packages.
           </div>
@@ -290,7 +287,7 @@ export function ServicePackageForm({ initial, onSave, onCancel, saveLabel = "Add
 
         {pkg.deliveryMode === "In-person" && (
           <div>
-            <div style={labelStyle}>Venue</div>
+            <div style={labelStyle}>Venue<RequiredMark /></div>
             <div style={fieldWrapStyle}>
               <MapPin size={14} color={C.slateLight} />
               <input

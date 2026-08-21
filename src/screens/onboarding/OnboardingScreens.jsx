@@ -8,8 +8,9 @@ import { CL, CD, fDisplay, fBody, LOGO_WHITE_SRC, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import {
   Btn, Card, Badge, Toggle, TopBar, Field, CheckboxRow, RadioRow,
-  SearchMultiSelect, Avatar, Chip, BottomSheet, Spinner, LogoMark,
+  SearchMultiSelect, Avatar, Chip, BottomSheet, Spinner, LogoMark, RequiredMark,
 } from "../../components/ui/Primitives";
+import { SportSearchMultiSelect } from "../../components/ui/SportUI";
 import { HandleField } from "../../components/ui/PublicIdentityFields";
 import { LocationField } from "../../components/ui/LocationField";
 import { isValidHandle } from "../../utils/name";
@@ -28,7 +29,7 @@ function AppleIcon({ size = 16, color = "currentColor" }) {
   );
 }
 
-function SelectField({ label, value, onChange, options, placeholder = "Select…" }) {
+function SelectField({ label, value, onChange, options, placeholder = "Select…", required }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const fieldId = React.useId();
@@ -36,7 +37,7 @@ function SelectField({ label, value, onChange, options, placeholder = "Select…
   const labelStyle = { fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody };
   return (
     <div>
-      <label htmlFor={fieldId} style={{ ...labelStyle, display: "block" }}>{label}</label>
+      <label htmlFor={fieldId} style={{ ...labelStyle, display: "block" }}>{label}{required && <RequiredMark />}</label>
       <select
         id={fieldId}
         name={String(label).toLowerCase().replace(/[^a-z0-9]+/g, "-")}
@@ -358,16 +359,16 @@ export function ScreenAuth({ nav, resetNav, params, role, toast, biometric, upda
        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {mode === "signup" && (
           <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 10, width: "100%", minWidth: 0 }}>
-            <Field label="First name" name="given-name" autoComplete="given-name" placeholder="Josh" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-            <Field label="Last name" name="family-name" autoComplete="family-name" placeholder="Whitfield" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+            <Field label="First name" name="given-name" autoComplete="given-name" placeholder="Josh" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
+            <Field label="Last name" name="family-name" autoComplete="family-name" placeholder="Whitfield" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
           </div>
         )}
 
-        <Field label="Email address" name="email" autoComplete="email" type="email" inputMode="email" placeholder="you@email.com" icon={Mail} value={email} onChange={(e) => setEmail(e.target.value)} />
-        <Field label="Password" name="password" autoComplete={mode === "signup" ? "new-password" : "current-password"} placeholder="••••••••" type={showPw ? "text" : "password"} rightIcon={showPw ? EyeOff : Eye} onRight={() => setShowPw((s) => !s)} value={password} onChange={(e) => setPassword(e.target.value)} />
+        <Field label="Email address" name="email" autoComplete="email" type="email" inputMode="email" placeholder="you@email.com" icon={Mail} value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <Field label="Password" name="password" autoComplete={mode === "signup" ? "new-password" : "current-password"} placeholder="••••••••" type={showPw ? "text" : "password"} rightIcon={showPw ? EyeOff : Eye} onRight={() => setShowPw((s) => !s)} value={password} onChange={(e) => setPassword(e.target.value)} required />
         {mode === "signup" && (
           <div>
-            <Field label="Confirm password" name="confirm-password" autoComplete="new-password" placeholder="••••••••" type={showConfirmPw ? "text" : "password"} rightIcon={showConfirmPw ? EyeOff : Eye} onRight={() => setShowConfirmPw((s) => !s)} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+            <Field label="Confirm password" name="confirm-password" autoComplete="new-password" placeholder="••••••••" type={showConfirmPw ? "text" : "password"} rightIcon={showConfirmPw ? EyeOff : Eye} onRight={() => setShowConfirmPw((s) => !s)} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
             {confirmPassword.length > 0 && !passwordsMatch && (
               <div style={{ fontSize: T.captionLg, color: C.danger, marginTop: 6, ...fBody }}>Passwords don't match</div>
             )}
@@ -391,6 +392,7 @@ export function ScreenAuth({ nav, resetNav, params, role, toast, biometric, upda
           <span style={{ fontSize: T.labelLg, color: C.jet, lineHeight: 1.5, ...fBody }}>
             I agree to the{" "}
             <span onClick={(e) => { e.stopPropagation(); setShowTerms(true); }} style={{ color: C.brand, fontWeight: 600, textDecoration: "underline" }}>Terms & Conditions</span>
+            <RequiredMark />
           </span>
         </button>
       )}
@@ -466,7 +468,7 @@ export function ScreenForgotPassword({ nav, params, role, toast }) {
       <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 6, marginBottom: 24, lineHeight: 1.55, ...fBody }}>
         Enter the email on your {effectiveRole === "coach" ? "coach" : "client"} account and we'll send you a 6-digit code to reset it.
       </div>
-      <Field label="Email address" placeholder="you@email.com" icon={Mail} value={email} onChange={(e) => setEmail(e.target.value)} />
+      <Field label="Email address" placeholder="you@email.com" icon={Mail} value={email} onChange={(e) => setEmail(e.target.value)} required />
       <div style={{ marginTop: 22 }}>
         <Btn full disabled={!canSubmit} loading={sending} loadingText="Sending…" onClick={submit}>Send reset code</Btn>
       </div>
@@ -506,7 +508,7 @@ export function ScreenResetCode({ nav, params, toast }) {
       <div style={{ width: 52, height: 52, borderRadius: 16, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
         <Smartphone size={22} color={C.brand} />
       </div>
-      <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Enter the code</div>
+      <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Enter the code<RequiredMark /></div>
       <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 6, marginBottom: 26, lineHeight: 1.55, ...fBody }}>
         We sent a 6-digit code to <span style={{ color: C.jet, fontWeight: 600 }}>{email || "your email"}</span>.
       </div>
@@ -573,9 +575,9 @@ export function ScreenResetPassword({ nav, params, toast }) {
         Choose a new password for your account.
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <Field label="New password" placeholder="••••••••" type={showPw ? "text" : "password"} rightIcon={showPw ? EyeOff : Eye} onRight={() => setShowPw((s) => !s)} value={password} onChange={(e) => setPassword(e.target.value)} />
+        <Field label="New password" placeholder="••••••••" type={showPw ? "text" : "password"} rightIcon={showPw ? EyeOff : Eye} onRight={() => setShowPw((s) => !s)} value={password} onChange={(e) => setPassword(e.target.value)} required />
         <div>
-          <Field label="Confirm new password" placeholder="••••••••" type={showConfirm ? "text" : "password"} rightIcon={showConfirm ? EyeOff : Eye} onRight={() => setShowConfirm((s) => !s)} value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+          <Field label="Confirm new password" placeholder="••••••••" type={showConfirm ? "text" : "password"} rightIcon={showConfirm ? EyeOff : Eye} onRight={() => setShowConfirm((s) => !s)} value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
           {confirm.length > 0 && !match && (
             <div style={{ fontSize: T.captionLg, color: C.danger, marginTop: 6, ...fBody }}>Passwords don't match</div>
           )}
@@ -673,7 +675,7 @@ export function ScreenVerifyEmail({ nav, params, toast, role }) {
             <div style={{ width: 52, height: 52, borderRadius: 16, background: phase === "error" ? C.dangerTint : C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
               {phase === "error" ? <XCircle size={22} color={C.danger} /> : <Mail size={22} color={C.brand} />}
             </div>
-            <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Verify your email</div>
+            <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Verify your email<RequiredMark /></div>
             <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 6, marginBottom: 24, lineHeight: 1.55, ...fBody }}>
               We've sent a verification code to <span style={{ color: C.jet, fontWeight: 600 }}>{email}</span>. Enter it below to activate your account.
             </div>
@@ -843,15 +845,15 @@ export function ScreenCoachInfo({ nav, coachOnboarding, updateCoachOnboarding })
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <div>
-            <div style={labelStyle}>Full name</div>
+<div>
+            <div style={labelStyle}>Full name<RequiredMark /></div>
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="How clients will see you" style={inputStyle} />
           </div>
 
-          <HandleField value={handle} onChange={setHandle} isTaken={isHandleTaken(handle)} />
+          <HandleField value={handle} onChange={setHandle} isTaken={isHandleTaken(handle)} required />
 
           <div>
-            <div style={labelStyle}>Bio</div>
+            <div style={labelStyle}>Bio<RequiredMark /></div>
             <textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
@@ -861,12 +863,12 @@ export function ScreenCoachInfo({ nav, coachOnboarding, updateCoachOnboarding })
             />
           </div>
 
-          <SelectField label="Years of coaching experience" value={yearsExperience} onChange={setYearsExperience} options={experienceOptions} placeholder="Select years of experience" />
+          <SelectField label="Years of coaching experience" value={yearsExperience} onChange={setYearsExperience} options={experienceOptions} placeholder="Select years of experience" required />
 
           <SelectField label="Gender (optional)" value={gender} onChange={setGender} options={GENDER_OPTIONS} placeholder="Prefer not to say" />
 
           <div>
-            <div style={labelStyle}>Languages spoken</div>
+            <div style={labelStyle}>Languages spoken<RequiredMark /></div>
             <SearchMultiSelect options={LANGUAGE_OPTIONS} value={languages} onChange={setLanguages} placeholder="Search languages…" />
           </div>
 
@@ -875,6 +877,7 @@ export function ScreenCoachInfo({ nav, coachOnboarding, updateCoachOnboarding })
             onChange={setLocation}
             label="Location"
             placeholder="Search suburb, city or postcode…"
+            required
           />
         </div>
 
@@ -920,15 +923,15 @@ export function ScreenCoachExpertise({ nav, coachOnboarding, updateCoachOnboardi
           Help clients find you by sharing the sports, formats and skill levels you coach.
         </div>
 
-        <div style={{ marginBottom: 4, fontSize: T.title, fontWeight: 700, color: C.jet, ...fDisplay }}>Primary sport</div>
+        <div style={{ marginBottom: 4, fontSize: T.title, fontWeight: 700, color: C.jet, ...fDisplay }}>Primary sport<RequiredMark /></div>
         <div style={{ fontSize: T.captionLg, color: C.slate, marginBottom: 8, ...fBody }}>Select the main sport or discipline you specialise in.</div>
-        <SearchMultiSelect options={SPORT_OPTIONS_FULL} value={primarySports} onChange={setPrimarySports} placeholder="Search sports…" />
+        <SportSearchMultiSelect options={SPORT_OPTIONS_FULL} value={primarySports} onChange={setPrimarySports} placeholder="Search sports…" />
 
         <div style={{ marginTop: 20, marginBottom: 4, fontSize: T.title, fontWeight: 700, color: C.jet, ...fDisplay }}>Secondary sports (optional)</div>
         <div style={{ fontSize: T.captionLg, color: C.slate, marginBottom: 8, ...fBody }}>Add any additional sports or disciplines you coach.</div>
-        <SearchMultiSelect options={SPORT_OPTIONS_FULL.filter((s) => !primarySports.includes(s))} value={secondarySports} onChange={setSecondarySports} placeholder="Search sports…" />
+        <SportSearchMultiSelect options={SPORT_OPTIONS_FULL.filter((s) => !primarySports.includes(s))} value={secondarySports} onChange={setSecondarySports} placeholder="Search sports…" />
 
-        <div style={{ marginTop: 22, marginBottom: 2, fontSize: T.title, fontWeight: 700, color: C.jet, ...fDisplay }}>Coaching categories</div>
+        <div style={{ marginTop: 22, marginBottom: 2, fontSize: T.title, fontWeight: 700, color: C.jet, ...fDisplay }}>Coaching categories<RequiredMark /></div>
         <div style={{ fontSize: T.captionLg, color: C.slate, marginBottom: 4, ...fBody }}>Select all coaching services you provide.</div>
         <div>
           {COACHING_CATEGORY_OPTIONS.map((c) => (
@@ -936,7 +939,7 @@ export function ScreenCoachExpertise({ nav, coachOnboarding, updateCoachOnboardi
           ))}
         </div>
 
-        <div style={{ marginTop: 18, marginBottom: 2, fontSize: T.subtitleLg, fontWeight: 700, color: C.jet, ...fDisplay }}>Athlete skill levels</div>
+        <div style={{ marginTop: 18, marginBottom: 2, fontSize: T.subtitleLg, fontWeight: 700, color: C.jet, ...fDisplay }}>Athlete skill levels<RequiredMark /></div>
         <div style={{ fontSize: T.captionLg, color: C.slate, marginBottom: 4, ...fBody }}>Select the experience levels you coach.</div>
         <div>
           {SKILL_LEVEL_OPTIONS.map((s) => (
@@ -944,7 +947,7 @@ export function ScreenCoachExpertise({ nav, coachOnboarding, updateCoachOnboardi
           ))}
         </div>
 
-        <div style={{ marginTop: 18, marginBottom: 2, fontSize: T.subtitleLg, fontWeight: 700, color: C.jet, ...fDisplay }}>Age groups</div>
+        <div style={{ marginTop: 18, marginBottom: 2, fontSize: T.subtitleLg, fontWeight: 700, color: C.jet, ...fDisplay }}>Age groups<RequiredMark /></div>
         <div style={{ fontSize: T.captionLg, color: C.slate, marginBottom: 4, ...fBody }}>Select the age groups you work with.</div>
         <div>
           {AGE_GROUP_OPTIONS.map((a) => (
@@ -952,7 +955,7 @@ export function ScreenCoachExpertise({ nav, coachOnboarding, updateCoachOnboardi
           ))}
         </div>
 
-        <div style={{ marginTop: 18, marginBottom: 2, fontSize: T.labelLg, fontWeight: 700, color: C.jet, ...fDisplay }}>Coaching experience</div>
+        <div style={{ marginTop: 18, marginBottom: 2, fontSize: T.labelLg, fontWeight: 700, color: C.jet, ...fDisplay }}>Coaching experience<RequiredMark /></div>
         <div style={{ fontSize: T.captionLg, color: C.slate, marginBottom: 4, ...fBody }}>Specify your level of coaching experience.</div>
         <div>
           {COACHING_EXPERIENCE_LEVELS.map((l) => (
@@ -960,7 +963,7 @@ export function ScreenCoachExpertise({ nav, coachOnboarding, updateCoachOnboardi
           ))}
         </div>
 
-        <div style={{ marginTop: 18, marginBottom: 2, fontSize: T.labelLg, fontWeight: 700, color: C.jet, ...fDisplay }}>Preferred coaching format</div>
+        <div style={{ marginTop: 18, marginBottom: 2, fontSize: T.labelLg, fontWeight: 700, color: C.jet, ...fDisplay }}>Preferred coaching format<RequiredMark /></div>
         <div style={{ fontSize: T.captionLg, color: C.slate, marginBottom: 4, ...fBody }}>Select how you deliver coaching sessions.</div>
         <div style={{ marginBottom: 8 }}>
           {COACHING_FORMAT_OPTIONS.map((f) => (
@@ -1028,7 +1031,7 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
           </Card>
         )}
 
-        <div style={{ fontSize: T.labelLg, fontWeight: 700, color: C.jet, marginBottom: 8, ...fDisplay }}>Government-issued photo ID</div>
+        <div style={{ fontSize: T.labelLg, fontWeight: 700, color: C.jet, marginBottom: 8, ...fDisplay }}>Government-issued photo ID<RequiredMark /></div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
           {ID_TYPE_OPTIONS.map((t) => (
             <Chip key={t} active={idType === t} onClick={() => { setIdType(t); setIdUploaded(false); }}>{t}</Chip>
@@ -1050,7 +1053,7 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
           </div>
         </Card>
 
-        <div style={{ fontSize: T.labelLg, fontWeight: 700, color: C.jet, marginBottom: 8, ...fDisplay }}>Selfie verification</div>
+        <div style={{ fontSize: T.labelLg, fontWeight: 700, color: C.jet, marginBottom: 8, ...fDisplay }}>Selfie verification<RequiredMark /></div>
         <Card style={{ marginBottom: 18 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div style={{ display: "flex", gap: 10, alignItems: "center", minWidth: 0 }}>
@@ -1079,15 +1082,15 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
         {worksWithMinors && (
           <Card style={{ marginBottom: 18 }}>
             <div style={{ marginBottom: 12 }}>
-              <div style={labelStyle}>WWCC number</div>
+              <div style={labelStyle}>WWCC number<RequiredMark /></div>
               <input value={wwccNumber} onChange={(e) => setWwccNumber(e.target.value)} placeholder="e.g. WWC1234567E" style={inputStyle} />
             </div>
             <div style={{ marginBottom: 12 }}>
-              <div style={labelStyle}>Expiry date</div>
+              <div style={labelStyle}>Expiry date<RequiredMark /></div>
               <input type="date" value={wwccExpiry} onChange={(e) => setWwccExpiry(e.target.value)} style={inputStyle} />
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div style={{ fontSize: T.labelLg, color: C.slate, ...fBody }}>WWCC certificate</div>
+              <div style={{ fontSize: T.labelLg, color: C.slate, ...fBody }}>WWCC certificate<RequiredMark /></div>
               {wwccUploaded ? <Badge tone="success" icon={CheckCircle2}>Uploaded</Badge> :
                 <Btn size="sm" variant="secondary" icon={Upload} onClick={() => setWwccUploaded(true)}>Upload</Btn>}
             </div>
@@ -1095,7 +1098,7 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
         )}
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
-          <div style={{ fontSize: T.labelLg, fontWeight: 700, color: C.jet, ...fDisplay }}>Coaching accreditations</div>
+          <div style={{ fontSize: T.labelLg, fontWeight: 700, color: C.jet, ...fDisplay }}>Coaching accreditations<RequiredMark /></div>
         </div>
         <div style={{ fontSize: T.captionLg, color: C.slate, marginBottom: 10, ...fBody }}>Add your coaching accreditations, First Aid, CPR or sports-specific certifications.</div>
 
@@ -1110,7 +1113,7 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
               )}
             </div>
             <div style={{ marginBottom: 10 }}>
-              <div style={labelStyle}>Certificate type</div>
+              <div style={labelStyle}>Certificate type<RequiredMark /></div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {CERTIFICATION_TYPE_OPTIONS.map((t) => (
                   <Chip key={t} active={q.type === t} onClick={() => updateQual(q.id, { type: t })}>{t}</Chip>
@@ -1118,7 +1121,7 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
               </div>
             </div>
             <div style={{ marginBottom: 10 }}>
-              <div style={labelStyle}>Accreditation / certificate name</div>
+              <div style={labelStyle}>Accreditation / certificate name<RequiredMark /></div>
               <input value={q.name} onChange={(e) => updateQual(q.id, { name: e.target.value })} placeholder="e.g. Tennis Australia Club Professional" style={inputStyle} />
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>

@@ -12,7 +12,9 @@ import {
 import { useApp } from "../../context/AppContext";
 import { getBookingClientName } from "../../utils/name";
 import { withClientMeta } from "../../data/users";
-import { BOOKING_STATUS } from "../../data/bookings";
+import {
+  ADDITIONAL_CHARGE_KIND, ADDITIONAL_CHARGE_PHASE, ADDITIONAL_CHARGE_STATUS, BOOKING_STATUS,
+} from "../../data/bookings";
 import { PaymentDeadlineCard, SessionJourneyTimeline } from "../../components/booking/SessionJourneyTimeline";
 
 /** Name the coach should see for a booking's client — privacy-safe until the
@@ -217,7 +219,21 @@ export function ScreenCoachBookingDetail({
   );
 
   const relatedCase = sessionDisputes.find((item) => item.bookingId === booking.id);
-  const relatedCharge = additionalCharges.find((item) => item.bookingId === booking.id && item.status !== "cancelled");
+  const acceptanceCharges = additionalCharges.filter((item) => (
+    item.bookingId === booking.id
+    && item.phase === ADDITIONAL_CHARGE_PHASE.ACCEPTANCE
+    && ![ADDITIONAL_CHARGE_STATUS.CANCELLED, ADDITIONAL_CHARGE_STATUS.DECLINED].includes(item.status)
+  ));
+  const completionCharge = additionalCharges.find((item) => (
+    item.bookingId === booking.id
+    && item.phase === ADDITIONAL_CHARGE_PHASE.COMPLETION
+    && item.status !== ADDITIONAL_CHARGE_STATUS.CANCELLED
+  ));
+  const requiredAcceptanceTotal = acceptanceCharges
+    .filter((item) => item.kind === ADDITIONAL_CHARGE_KIND.REQUIRED)
+    .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const completionConfirmations = booking.completionConfirmations || (booking.completionConfirmedBy ? [booking.completionConfirmedBy] : []);
+  const coachConfirmedCompletion = completionConfirmations.includes("coach");
 
   const titleByStatus = {
     [BOOKING_STATUS.PENDING]: "Booking request",
@@ -312,6 +328,18 @@ export function ScreenCoachBookingDetail({
                 <Btn size="sm" variant="outline" icon={MessageCircle} ariaLabel={`Message ${cn.name}`} title={`Message ${cn.name}`} onClick={() => nav("chat-thread", { name: booking.clientName, bookingId: booking.id, backTo: detailRoute, backParams: { id: booking.id } })} />
               </div>
             </PaymentDeadlineCard>
+            {acceptanceCharges.length > 0 && (
+              <Card style={{ marginTop: 10, padding: 14, background: C.brandTint, borderColor: C.brand }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 8 }}>
+                  <div>
+                    <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>Payment sent for review</div>
+                    <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 3, ...fBody }}>{acceptanceCharges.filter((item) => item.kind === ADDITIONAL_CHARGE_KIND.REQUIRED).length} required · {acceptanceCharges.filter((item) => item.kind === ADDITIONAL_CHARGE_KIND.OPTIONAL).length} optional</div>
+                  </div>
+                  <div style={{ fontSize: T.title, fontWeight: 780, color: C.jet, ...fDisplay }}>${(Number(booking.price) + requiredAcceptanceTotal).toFixed(2)}</div>
+                </div>
+                <div style={{ fontSize: T.caption, color: C.slateLight, lineHeight: 1.45, ...fBody }}>Optional add-ons are added only if the client selects them.</div>
+              </Card>
+            )}
           </div>
         )}
 
@@ -319,7 +347,7 @@ export function ScreenCoachBookingDetail({
           <Card style={{ marginBottom: 14, display: "flex", gap: 11, alignItems: "flex-start", background: C.successTint, borderColor: C.success }}>
             <LockKeyhole size={18} color={C.success} style={{ flexShrink: 0 }} />
             <div>
-              <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>${Number(booking.price).toFixed(2)} secured</div>
+              <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>${Number(booking.paidTotal || booking.price).toFixed(2)} secured</div>
               <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, marginTop: 3, ...fBody }}>Payment is held by CoachLink and releases after the session is confirmed complete.</div>
             </div>
           </Card>
@@ -331,7 +359,13 @@ export function ScreenCoachBookingDetail({
           <Row label="Date" value={booking.date} />
           <Row label="Time" value={booking.time} />
           <Row label="Mode" value={booking.mode} />
-          <Row label="Session value" value={`$${Number(booking.price).toFixed(2)}`} bold last />
+          {booking.paidTotal ? (
+            <>
+              <Row label="Package price" value={`$${Number(booking.price).toFixed(2)}`} />
+              {Number(booking.acceptanceChargeTotal || 0) > 0 && <Row label="Accepted extras" value={`$${Number(booking.acceptanceChargeTotal).toFixed(2)}`} />}
+              <Row label="Session value" value={`$${Number(booking.paidTotal).toFixed(2)}`} bold last />
+            </>
+          ) : <Row label="Session value" value={`$${Number(booking.price).toFixed(2)}`} bold last />}
         </Card>
 
         <div style={{ marginBottom: 14 }}>
@@ -346,19 +380,29 @@ export function ScreenCoachBookingDetail({
           </Card>
         )}
 
-        {relatedCharge && (
-          <Card style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 11 }} onClick={() => nav("additional-charge-review", { chargeId: relatedCharge.id, role: "coach", backTo: detailRoute })}>
+        {completionCharge && (
+          <Card style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 11 }} onClick={() => nav("additional-charge-review", { chargeId: completionCharge.id, role: "coach", backTo: detailRoute })}>
             <div style={{ width: 38, height: 38, borderRadius: 12, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><BadgeDollarSign size={18} color={C.brand} /></div>
-            <div style={{ flex: 1 }}><div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>Additional payment · ${Number(relatedCharge.amount).toFixed(2)}</div><div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{relatedCharge.reason} · {relatedCharge.status.replace("_", " ")}</div></div>
+            <div style={{ flex: 1 }}><div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>Final payment · ${Number(completionCharge.amount).toFixed(2)}</div><div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{completionCharge.reason} · {completionCharge.status === ADDITIONAL_CHARGE_STATUS.PENDING ? "Waiting for client" : completionCharge.status.replace("_", " ")}</div></div>
             <ChevronRight size={16} color={C.slateLight} />
           </Card>
         )}
 
         {booking.notes && (
           <>
-            <SectionLabel>Client notes</SectionLabel>
+            <SectionLabel>Message from client</SectionLabel>
             <Card style={{ marginBottom: 14 }}>
               <p style={{ margin: 0, fontSize: T.body, color: C.slate, lineHeight: 1.6, whiteSpace: "pre-line", ...fBody }}>{booking.notes}</p>
+            </Card>
+          </>
+        )}
+
+        {booking.safetyNotes && (
+          <>
+            <SectionLabel>Health & safety information</SectionLabel>
+            <Card style={{ marginBottom: 14, display: "flex", alignItems: "flex-start", gap: 10, background: C.warnTint }}>
+              <ShieldCheck size={17} color={C.warnStrong} style={{ flexShrink: 0, marginTop: 1 }} />
+              <p style={{ margin: 0, fontSize: T.body, color: C.jet, lineHeight: 1.6, whiteSpace: "pre-line", ...fBody }}>{booking.safetyNotes}</p>
             </Card>
           </>
         )}
@@ -378,7 +422,6 @@ export function ScreenCoachBookingDetail({
         {booking.status === BOOKING_STATUS.COMPLETED && (
           <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
             <Btn full icon={Banknote} onClick={() => nav("funds-release-status", { bookingId: booking.id, role: "coach", backTo: "coach-session-detail" })}>View payout release</Btn>
-            <Btn full variant="outline" icon={BadgeDollarSign} onClick={() => nav("additional-charge-create", { bookingId: booking.id, role: "coach" })}>Request additional payment</Btn>
             {!relatedCase && <Btn full variant="ghost" icon={Scale} onClick={() => nav("dispute-create", { bookingId: booking.id, role: "coach", category: "client_no_show", backTo: "coach-session-detail" })}>Report a session issue</Btn>}
           </div>
         )}
@@ -394,7 +437,7 @@ export function ScreenCoachBookingDetail({
         <BottomActionBar>
           <Btn variant="ghost" loading={responding === BOOKING_STATUS.DECLINED} loadingText="Declining…" disabled={responding === BOOKING_STATUS.AWAITING_PAYMENT} onClick={() => respond(BOOKING_STATUS.DECLINED)}>Decline</Btn>
           <div style={{ flex: 1 }}>
-            <Btn full loading={responding === BOOKING_STATUS.AWAITING_PAYMENT} loadingText="Accepting…" disabled={responding === BOOKING_STATUS.DECLINED} onClick={() => respond(BOOKING_STATUS.AWAITING_PAYMENT)}>Accept & request payment</Btn>
+            <Btn full disabled={responding === BOOKING_STATUS.DECLINED} onClick={() => nav("coach-accept-booking", { id: booking.id })}>Review & accept</Btn>
           </div>
         </BottomActionBar>
       )}
@@ -408,7 +451,7 @@ export function ScreenCoachBookingDetail({
       {[BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.COMPLETION_PENDING].includes(booking.status) && (
         <BottomActionBar>
           <Btn variant="outline" icon={CalendarClock} ariaLabel="Reschedule session" title="Reschedule session" onClick={() => setRescheduleOpen(true)} />
-          <Btn full icon={CheckCircle2} onClick={() => nav("session-completion", { bookingId: booking.id, role: "coach", backTo: "coach-session-detail" })}>Confirm session completed</Btn>
+          <Btn full disabled={coachConfirmedCompletion} icon={CheckCircle2} onClick={() => nav("coach-session-completion", { bookingId: booking.id, role: "coach", backTo: "coach-session-detail" })}>{coachConfirmedCompletion ? "Waiting for client confirmation" : "Finish session"}</Btn>
         </BottomActionBar>
       )}
 

@@ -14,7 +14,11 @@ export { initials, hashColor } from "../utils/avatar";
 export { CONFIG } from "../config";
 
 // --- Coaches & sport data ---
-export { COACHES, SPORT_ICON, SPORTS, ALL_SUBURBS, SUBURB_COORDS } from "./coaches";
+export { COACHES, ALL_SUBURBS, SUBURB_COORDS } from "./coaches";
+export {
+  SPORT_CATALOG, SPORT_NAMES, POPULAR_SPORTS,
+  getSportDefinition, getSportLabel, getSportIconPath,
+} from "./sports";
 export { COACH_AVATARS, PROFILE_AVATARS, DEFAULT_COACH_MEDIA, getCoachMedia } from "./media";
 
 // --- Form option lists ---

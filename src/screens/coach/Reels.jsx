@@ -1,9 +1,19 @@
 import React, { useRef, useState } from "react";
-import { UploadCloud, Play, Image as ImageIcon, Trash2, Film, Camera } from "lucide-react";
+import { UploadCloud, Play, Image as ImageIcon, Trash2, Film, Camera, Info, Check } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
-import { COACHES, SPORTS } from "../../data/mockData";
-import { TopBar, Btn, Chip, Field, BottomSheet, ConfirmDialog, EmptyState } from "../../components/ui/Primitives";
+import { COACHES } from "../../data/mockData";
+import { TopBar, Btn, Field, BottomSheet, ConfirmDialog, EmptyState } from "../../components/ui/Primitives";
+import { SportSearchSelect } from "../../components/ui/SportUI";
 import { useApp } from "../../context/AppContext";
+
+const UPLOAD_GUIDELINES = [
+  "Upload only content you own or have permission to use.",
+  "Reels should run 15–30 seconds and never exceed 60 seconds.",
+  "Vertical 9:16 format at 1080 × 1920 px is recommended.",
+  "Keep uploads relevant and appropriate — no offensive, misleading, unsafe or confidential material.",
+  "Get consent from anyone featured, including a parent or guardian for anyone under 18.",
+  "Uploaded content appears publicly on your profile and may be reviewed or removed if it breaches our Community Guidelines or Terms of Use.",
+];
 
 export function ScreenCoachReels({ nav, toast, coachMedia = [], addMedia, removeMedia }) {
   const { darkMode } = useApp();
@@ -12,6 +22,7 @@ export function ScreenCoachReels({ nav, toast, coachMedia = [], addMedia, remove
   const fileInputRef = useRef(null);
   const [pendingUpload, setPendingUpload] = useState(null); // { url, type, caption, sport }
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [showGuidelines, setShowGuidelines] = useState(false);
 
   /* One tile in the reels & photos grid. Video tiles use the actual clip so
      the preview always matches what clients will watch. */
@@ -89,8 +100,19 @@ export function ScreenCoachReels({ nav, toast, coachMedia = [], addMedia, remove
       <TopBar title="Reels & photos" onBack={() => nav("coach-profile-edit")} />
 
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
-        <div style={{ fontSize: T.labelLg, color: C.slate, marginBottom: 16, lineHeight: 1.5, ...fBody }}>
-          Show athletes what a session with you looks like. Reels and photos appear on your public profile in the order you add them.
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 16 }}>
+          <div style={{ flex: 1, fontSize: T.labelLg, color: C.slate, lineHeight: 1.5, ...fBody }}>
+            Show athletes what a session with you looks like. Reels and photos appear on your public profile in the order you add them.
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowGuidelines(true)}
+            aria-label="Upload guidelines"
+            title="Upload guidelines"
+            style={{ width: 34, height: 34, minWidth: 34, padding: 0, borderRadius: 99, border: `1px solid ${C.border}`, background: C.white, color: C.slateLight, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+          >
+            <Info size={15} />
+          </button>
         </div>
 
         <input ref={fileInputRef} type="file" accept="image/*,video/*" onChange={onFileChange} style={{ display: "none" }} />
@@ -139,11 +161,7 @@ export function ScreenCoachReels({ nav, toast, coachMedia = [], addMedia, remove
 
               <div>
                 <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Sport</div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {SPORTS.map((s) => (
-                    <Chip key={s} active={pendingUpload.sport === s} onClick={() => setPendingUpload((d) => ({ ...d, sport: s }))}>{s}</Chip>
-                  ))}
-                </div>
+                <SportSearchSelect value={pendingUpload.sport} onChange={(sport) => setPendingUpload((d) => ({ ...d, sport }))} placeholder="Search a sport…" />
               </div>
             </div>
 
@@ -152,6 +170,17 @@ export function ScreenCoachReels({ nav, toast, coachMedia = [], addMedia, remove
             </div>
           </>
         )}
+      </BottomSheet>
+
+      <BottomSheet open={showGuidelines} onClose={() => setShowGuidelines(false)} title="Upload guidelines" heightPct={65}>
+        <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.7, ...fBody }}>
+          {UPLOAD_GUIDELINES.map((g, i) => (
+            <div key={i} style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+              <Check size={14} color={C.brand} style={{ flexShrink: 0, marginTop: 2 }} />
+              <span>{g}</span>
+            </div>
+          ))}
+        </div>
       </BottomSheet>
 
       <ConfirmDialog

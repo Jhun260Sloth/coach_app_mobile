@@ -14,7 +14,7 @@ export function ScreenCoachEarnings({ nav, goBack, coachBookings }) {
   const completed = coachBookings.filter((b) => b.status === BOOKING_STATUS.COMPLETED);
   const released = completed.filter((b) => b.payoutStatus === PAYOUT_STATUS.RELEASED);
   const processing = coachBookings.filter((b) => b.payoutStatus === PAYOUT_STATUS.PROCESSING);
-  const gross = released.reduce((s, b) => s + b.price, 0);
+  const gross = released.reduce((s, b) => s + Number(b.paidTotal || b.price || 0), 0);
   const commission = Math.round(gross * CONFIG.commissionRate);
   const net = gross - commission;
   return (
@@ -66,7 +66,7 @@ export function ScreenCoachEarnings({ nav, goBack, coachBookings }) {
               <div style={{ marginTop: 5 }}><Badge tone={b.payoutStatus === PAYOUT_STATUS.RELEASED ? "success" : "orange"}>{b.payoutStatus === PAYOUT_STATUS.RELEASED ? "Payout released" : "Processing"}</Badge></div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.success, ...fDisplay }}>+${Math.round(b.price * (1 - CONFIG.commissionRate))}</span>
+              <span style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.success, ...fDisplay }}>+${Math.round(Number(b.paidTotal || b.price || 0) * (1 - CONFIG.commissionRate))}</span>
               <ChevronRight size={14} color={C.slateLight} />
             </div>
           </Card>

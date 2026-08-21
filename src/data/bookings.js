@@ -50,8 +50,19 @@ export const DISPUTE_OUTCOME = Object.freeze({
 export const ADDITIONAL_CHARGE_STATUS = Object.freeze({
   PENDING: "pending",
   PAID: "paid",
+  DECLINED: "declined",
   DISPUTED: "disputed",
   CANCELLED: "cancelled",
+});
+
+export const ADDITIONAL_CHARGE_PHASE = Object.freeze({
+  ACCEPTANCE: "acceptance",
+  COMPLETION: "completion",
+});
+
+export const ADDITIONAL_CHARGE_KIND = Object.freeze({
+  REQUIRED: "required",
+  OPTIONAL: "optional",
 });
 
 export const BOOKING_LIFECYCLE = Object.freeze({
@@ -116,7 +127,7 @@ export const INITIAL_BOOKINGS = [
   { id: "b7", coachId: "c6", coachName: "Liam O'Connor", clientName: "Sarah Lin", service: "Small Group Ride", date: "Thu, 14 Aug", time: "5:30pm", mode: "In-person", status: "pending", price: 42, reviewed: false, participants: "You", notes: "" },
 
   // Upcoming — confirmed and on the calendar
-  { id: "s1", coachId: "c2", coachName: "Noah Kelly", clientName: "Sarah Lin", clientHandle: "sarahlin", service: "1:1 Programming Session", date: "Thu, 20 Aug", time: "6:00am", mode: "In-person", status: "confirmed", price: 65, reviewed: false, participants: "You", notes: "Focus on clean return-to-training technique." },
+  { id: "s1", coachId: "c2", coachName: "Noah Kelly", clientName: "Sarah Lin", clientHandle: "sarahlin", service: "1:1 Programming Session", date: "Thu, 20 Aug", time: "6:00am", mode: "In-person", status: "completion_pending", paymentStatus: "held", payoutStatus: "not_ready", completionConfirmedBy: "coach", completionConfirmations: ["coach"], price: 65, reviewed: false, participants: "You", notes: "Focus on clean return-to-training technique." },
   { id: "b1", coachId: "c1", coachName: "Isla Ferguson", clientName: "Sarah Lin", service: "1:1 Court Session", date: "Tue, 22 Jul", time: "4:00pm", mode: "In-person", status: "confirmed", price: 72, reviewed: false, participants: "You", notes: "" },
   { id: "b8", coachId: "c3", coachName: "Ruby Hendricks", clientName: "Sarah Lin", service: "1:1 Beach Session", date: "Thu, 6 Aug", time: "7:00am", mode: "In-person", status: "confirmed", price: 65, reviewed: false, participants: "You", notes: "" },
   { id: "b9", coachId: "c4", coachName: "Marcus Ude", clientName: "Sarah Lin", service: "1:1 Pad Session", date: "Sat, 8 Aug", time: "10:00am", mode: "In-person", status: "confirmed", price: 68, reviewed: false, participants: "You", notes: "" },
@@ -145,13 +156,14 @@ export const INITIAL_AVAILABILITY_BLOCKS = [
 
 export const COACH_BOOKINGS = [
   // Pending — awaiting the coach's accept/decline
+  { id: "b2", coachId: "c2", coachName: "Noah Kelly", clientName: "Sarah Lin", clientHandle: "sarahlin", service: "1:1 Programming Session", date: "Fri, 25 Jul", time: "6:00am", mode: "In-person", status: "pending", paymentStatus: "not_requested", payoutStatus: "not_ready", price: 65, participants: "You", notes: "Coming back from a shoulder injury — cleared for light training, will bring physio notes." },
   { id: "cb2", clientName: "Marcus Webb", service: "Junior Group (max 4)", date: "Wed, 23 Jul", time: "5:00pm", mode: "In-person", status: "pending", price: 30, notes: "First session for his son, age 9." },
   { id: "cb3", clientName: "The Chen Family (u18)", service: "1:1 Court Session", date: "Sat, 26 Jul", time: "9:00am", mode: "In-person", status: "pending", price: 72, notes: "Booking for two children, guardian consent provided at checkout." },
   { id: "cb5", clientName: "Aiden Cross", service: "1:1 Court Session", date: "Fri, 21 Aug", time: "6:30am", mode: "In-person", status: "awaiting_payment", paymentDeadline: "Tomorrow, 6:00pm", paymentReminderSent: false, price: 72, notes: "" },
   { id: "cb6", clientName: "Grace Liu", service: "Junior Group (max 4)", date: "Thu, 30 Jul", time: "4:30pm", mode: "In-person", status: "pending", price: 30, notes: "Wants to try group coaching for the first time." },
 
   // Upcoming — confirmed and on the calendar
-  { id: "s1", coachId: "c2", coachName: "Noah Kelly", clientName: "Sarah Lin", clientHandle: "sarahlin", service: "1:1 Programming Session", date: "Thu, 20 Aug", time: "6:00am", mode: "In-person", status: "confirmed", price: 65, notes: "Focus on clean return-to-training technique." },
+  { id: "s1", coachId: "c2", coachName: "Noah Kelly", clientName: "Sarah Lin", clientHandle: "sarahlin", service: "1:1 Programming Session", date: "Thu, 20 Aug", time: "6:00am", mode: "In-person", status: "completion_pending", paymentStatus: "held", payoutStatus: "not_ready", completionConfirmedBy: "coach", completionConfirmations: ["coach"], price: 65, notes: "Focus on clean return-to-training technique." },
   { id: "cb1", clientName: "Sarah Lin", service: "1:1 Court Session", date: "Tue, 22 Jul", time: "4:00pm", mode: "In-person", status: "confirmed", price: 72, notes: "" },
   { id: "cb7", clientName: "Ravi Patel", service: "1:1 Court Session", date: "Tue, 29 Jul", time: "7:00am", mode: "In-person", status: "confirmed", price: 72, notes: "" },
   { id: "cb8", clientName: "Owen King", service: "1:1 Court Session", date: "Fri, 1 Aug", time: "5:30pm", mode: "In-person", status: "confirmed", price: 72, notes: "" },
@@ -229,9 +241,37 @@ export const ADDITIONAL_CHARGES = [
     note: "We agreed in chat to extend the programming session by 20 minutes to finish the return-to-training plan.",
     amount: 18,
     evidence: "Session extension note · 1 attachment",
+    phase: ADDITIONAL_CHARGE_PHASE.COMPLETION,
+    kind: ADDITIONAL_CHARGE_KIND.REQUIRED,
     status: ADDITIONAL_CHARGE_STATUS.PENDING,
     createdAt: "Today, 8:12am",
-    dueAt: "Respond by 20 Aug, 6:00pm",
+    dueAt: "Pay before confirming completion",
+  },
+  {
+    id: "charge-201",
+    bookingId: "b5",
+    reason: "Indoor court hire",
+    note: "This venue fee is required for the group clinic and is charged at cost.",
+    amount: 8,
+    evidence: "Included with booking acceptance",
+    phase: ADDITIONAL_CHARGE_PHASE.ACCEPTANCE,
+    kind: ADDITIONAL_CHARGE_KIND.REQUIRED,
+    status: ADDITIONAL_CHARGE_STATUS.PENDING,
+    createdAt: "Today, 9:04am",
+    dueAt: "Pay with your booking",
+  },
+  {
+    id: "charge-202",
+    bookingId: "b5",
+    reason: "Video technique review",
+    note: "Optional: receive a short annotated video recap after the clinic.",
+    amount: 15,
+    evidence: "Optional package add-on",
+    phase: ADDITIONAL_CHARGE_PHASE.ACCEPTANCE,
+    kind: ADDITIONAL_CHARGE_KIND.OPTIONAL,
+    status: ADDITIONAL_CHARGE_STATUS.PENDING,
+    createdAt: "Today, 9:04am",
+    dueAt: "Choose at checkout",
   },
 ];
 
