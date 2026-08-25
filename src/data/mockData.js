@@ -19,7 +19,7 @@ export {
   SPORT_CATALOG, SPORT_NAMES, POPULAR_SPORTS,
   getSportDefinition, getSportLabel, getSportIconPath,
 } from "./sports";
-export { COACH_AVATARS, PROFILE_AVATARS, DEFAULT_COACH_MEDIA, getCoachMedia } from "./media";
+export { COACH_AVATARS, PROFILE_AVATARS, DEFAULT_COACH_MEDIA, getCoachMedia, PROMO_BANNERS } from "./media";
 
 // --- Form option lists ---
 export {

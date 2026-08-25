@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { haptic } from "../../utils/haptics";
 import {
   ArrowRight, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Clock,
   Heart, MapPin, MessageCircle, Play, Share2, ShieldCheck,
-  Sparkles, Users, Wrench, CheckCircle2,
+  Sparkles, Users, Wrench, CheckCircle2, Star,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
@@ -10,7 +11,7 @@ import { COACHES, REVIEWS } from "../../data/mockData";
 import { getCoachMedia } from "../../data/media";
 import {
   Avatar, BackButton, Badge, BottomSheet, SegTabs, SectionLabel, Card, Btn,
-  StarRow, HandleTag, FullscreenImageViewer, StepProgress,
+  HandleTag, FullscreenImageViewer, StepProgress,
 } from "../../components/ui/Primitives";
 import { CoachProfileHero, CoachProfileAbout } from "../../components/ui/CoachProfileSections";
 import { SportIcon } from "../../components/ui/SportUI";
@@ -340,6 +341,7 @@ export function ScreenCoachProfile({ nav, goBack, params = {}, favorites = [], t
   const heroImage = coach.coverPhoto || media.find((item) => item.type === "photo")?.url;
   const unavailable = coach.id === LIVE_AVAILABILITY_COACH_ID && coachAvailableNow === false;
   const handleFavourite = () => {
+    haptic(8);
     toggleFav?.(coach.id);
     toast?.(fav ? "Removed from saved coaches" : "Coach saved to favourites");
   };
@@ -427,20 +429,7 @@ export function ScreenCoachProfile({ nav, goBack, params = {}, favorites = [], t
 
         {tab === "packages" && (
           <div style={{ marginTop: 16 }}>
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 16 }}>
-              <div>
-                <h2 style={{ margin: 0, fontSize: T.heading, fontWeight: 800, color: C.jet, ...fDisplay }}>Choose how you’d like to train</h2>
-                <p style={{ margin: "5px 0 0", maxWidth: 250, fontSize: T.labelLg, color: C.slate, lineHeight: 1.5, ...fBody }}>
-                  Explore every option first. You’ll choose a date after selecting a package.
-                </p>
-              </div>
-              <div style={{ flexShrink: 0, padding: "8px 10px", borderRadius: 12, background: C.brandTint, textAlign: "right" }}>
-                <div style={{ fontSize: T.tiny, color: C.slate, ...fBody }}>From</div>
-                <div style={{ fontSize: T.title, fontWeight: 800, color: C.brand, ...fDisplay }}>{startingPrice != null ? `$${startingPrice}` : "—"}</div>
-              </div>
-            </div>
-
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
               <Badge tone="success" icon={ShieldCheck}>{activePackages.length} available</Badge>
               <span style={{ fontSize: T.captionLg, color: C.slateLight, ...fBody }}>Tap a package to see everything included</span>
             </div>
@@ -521,7 +510,10 @@ export function ScreenCoachProfile({ nav, goBack, params = {}, favorites = [], t
                         <div style={{ fontSize: T.caption, color: C.slateLight, ...fBody }}>{r.date}</div>
                       </div>
                     </div>
-                    <StarRow value={r.rating} />
+                    <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: T.labelLg, fontWeight: 700, color: C.jet, ...fBody }}>
+                      <Star size={12} fill={C.brand} color={C.brand} />
+                      {r.rating.toFixed(1)}
+                    </span>
                   </div>
                   <p style={{ fontSize: T.body, color: C.slate, marginTop: 8, lineHeight: 1.55, ...fBody }}>{r.text}</p>
                   {r.verified && <Badge tone="neutral" icon={CheckCircle2}>Verified booking</Badge>}

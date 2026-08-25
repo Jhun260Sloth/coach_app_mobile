@@ -9,6 +9,7 @@ import { useApp } from "../../context/AppContext";
 import {
   Btn, Card, Badge, Toggle, TopBar, Field, CheckboxRow, RadioRow,
   SearchMultiSelect, Avatar, Chip, BottomSheet, Spinner, LogoMark, RequiredMark,
+  PasswordRequirements, passwordValid,
 } from "../../components/ui/Primitives";
 import { SportSearchMultiSelect } from "../../components/ui/SportUI";
 import { HandleField } from "../../components/ui/PublicIdentityFields";
@@ -310,7 +311,7 @@ export function ScreenAuth({ nav, resetNav, params, role, toast, biometric, upda
   const passwordsMatch = password.length > 0 && password === confirmPassword;
   const canSubmit = mode === "login"
     ? true
-    : firstName.trim() && lastName.trim() && email.trim() && password.length >= 6 && passwordsMatch && agree;
+    : firstName.trim() && lastName.trim() && email.trim() && passwordValid(password) && passwordsMatch && agree;
   const homeScreen = role === "coach" ? "coach-dashboard" : "client-home";
 
   const proceedAfterAuth = (method) => {
@@ -367,7 +368,8 @@ export function ScreenAuth({ nav, resetNav, params, role, toast, biometric, upda
         <Field label="Email address" name="email" autoComplete="email" type="email" inputMode="email" placeholder="you@email.com" icon={Mail} value={email} onChange={(e) => setEmail(e.target.value)} required />
         <Field label="Password" name="password" autoComplete={mode === "signup" ? "new-password" : "current-password"} placeholder="••••••••" type={showPw ? "text" : "password"} rightIcon={showPw ? EyeOff : Eye} onRight={() => setShowPw((s) => !s)} value={password} onChange={(e) => setPassword(e.target.value)} required />
         {mode === "signup" && (
-          <div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <PasswordRequirements password={password} style={{ marginTop: -4 }} />
             <Field label="Confirm password" name="confirm-password" autoComplete="new-password" placeholder="••••••••" type={showConfirmPw ? "text" : "password"} rightIcon={showConfirmPw ? EyeOff : Eye} onRight={() => setShowConfirmPw((s) => !s)} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
             {confirmPassword.length > 0 && !passwordsMatch && (
               <div style={{ fontSize: T.captionLg, color: C.danger, marginTop: 6, ...fBody }}>Passwords don't match</div>
@@ -555,7 +557,7 @@ export function ScreenResetPassword({ nav, params, toast }) {
   const [showPw, setShowPw] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const match = password.length > 0 && password === confirm;
-  const canSubmit = password.length >= 6 && match;
+  const canSubmit = passwordValid(password) && match;
 
   const submit = () => {
     if (!canSubmit) return;
@@ -576,13 +578,11 @@ export function ScreenResetPassword({ nav, params, toast }) {
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <Field label="New password" placeholder="••••••••" type={showPw ? "text" : "password"} rightIcon={showPw ? EyeOff : Eye} onRight={() => setShowPw((s) => !s)} value={password} onChange={(e) => setPassword(e.target.value)} required />
+        <PasswordRequirements password={password} style={{ marginTop: -4 }} />
         <div>
           <Field label="Confirm new password" placeholder="••••••••" type={showConfirm ? "text" : "password"} rightIcon={showConfirm ? EyeOff : Eye} onRight={() => setShowConfirm((s) => !s)} value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
           {confirm.length > 0 && !match && (
             <div style={{ fontSize: T.captionLg, color: C.danger, marginTop: 6, ...fBody }}>Passwords don't match</div>
-          )}
-          {password.length > 0 && password.length < 6 && (
-            <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: 6, ...fBody }}>Use at least 6 characters</div>
           )}
         </div>
       </div>

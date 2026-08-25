@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
-import { Avatar, Btn, ScreenHeader, SectionLabel, FormSection, Toggle, BottomSheet, ConfirmDialog, Field, Chip, Card, Badge, EmptyState, TopBar, SegTabs, HandleTag, RequiredMark, SettingsRow, SettingsGroup } from "../../components/ui/Primitives";
+import { Avatar, Btn, ScreenHeader, SectionLabel, FormSection, Toggle, BottomSheet, ConfirmDialog, Field, Chip, Card, Badge, EmptyState, TopBar, SegTabs, HandleTag, RequiredMark, SettingsRow, SettingsGroup, PasswordRequirements, passwordValid } from "../../components/ui/Primitives";
 import { HandleField } from "../../components/ui/PublicIdentityFields";
 import { isValidHandle } from "../../utils/name";
 import { getBookingCoachName } from "../../utils/name";
@@ -159,6 +159,9 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
   };
 
   const [showPw, setShowPw] = useState(false);
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const pwdOk = passwordValid(newPw) && newPw === confirmPw;
 
   const [deactivateStep, setDeactivateStep] = useState("confirm");
   const [deactivationCode, setDeactivationCode] = useState(["", "", "", "", "", ""]);
@@ -677,11 +680,14 @@ const closeSheet = () => setSheet(null);
       <BottomSheet open={sheet === "password"} onClose={closeSheet} title="Change password" heightPct={62}>
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <Field label="Current password" placeholder="••••••••" icon={Lock} type={showPw ? "text" : "password"} rightIcon={showPw ? EyeOff : Eye} onRight={() => setShowPw((v) => !v)} required />
-          <Field label="New password" placeholder="••••••••" icon={Lock} type={showPw ? "text" : "password"} required />
-          <Field label="Confirm new password" placeholder="••••••••" icon={Lock} type={showPw ? "text" : "password"} required />
+          <div>
+            <Field label="New password" placeholder="••••••••" icon={Lock} type={showPw ? "text" : "password"} value={newPw} onChange={(e) => setNewPw(e.target.value)} required />
+            <PasswordRequirements password={newPw} style={{ marginTop: 8 }} />
+          </div>
+          <Field label="Confirm new password" placeholder="••••••••" icon={Lock} type={showPw ? "text" : "password"} value={confirmPw} onChange={(e) => setConfirmPw(e.target.value)} required />
         </div>
         <div style={{ marginTop: 20 }}>
-          <Btn full onClick={() => { toast("Password updated"); closeSheet(); }}>Update password</Btn>
+          <Btn full disabled={!pwdOk} onClick={() => { toast("Password updated"); setNewPw(""); setConfirmPw(""); closeSheet(); }}>Update password</Btn>
         </div>
       </BottomSheet>
 

@@ -182,14 +182,11 @@ export function ScreenMessages({ nav, role, isFirstTimeClient }) {
               </div>
 
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-                  <span style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
-                    {pinned && <Pin size={11} color={C.brand} style={{ flexShrink: 0 }} fill={C.brand} />}
-                    <span style={{ fontSize: T.subtitle, fontWeight: 600, color: blocked ? C.slate : C.jet, ...fDisplay, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {participantName}
-                    </span>
+                <div style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
+                  {pinned && <Pin size={11} color={C.brand} style={{ flexShrink: 0 }} fill={C.brand} />}
+                  <span style={{ fontSize: T.subtitle, fontWeight: 600, color: blocked ? C.slate : C.jet, ...fDisplay, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {participantName}
                   </span>
-                  <span style={{ fontSize: T.caption, color: C.slateLight, ...fBody, flexShrink: 0 }}>{t.time}</span>
                 </div>
                 {blocked ? (
                   <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3, fontSize: T.labelLg, color: C.slateLight, fontWeight: 500, ...fBody }}>
@@ -210,24 +207,29 @@ export function ScreenMessages({ nav, role, isFirstTimeClient }) {
                 )}
               </div>
 
-              {!blocked && t.unread > 0 && (
-                <span style={{
-                  width: 18, height: 18, borderRadius: 99, background: C.brand,
-                  color: C.white, fontSize: T.micro, fontWeight: 700,
-                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                }}>
-                  {t.unread}
-                </span>
-              )}
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0, alignSelf: "stretch" }}>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "center", gap: 5 }}>
+                  <span style={{ fontSize: T.caption, color: C.slateLight, ...fBody }}>{t.time}</span>
+                  {!blocked && t.unread > 0 && (
+                    <span style={{
+                      width: 18, height: 18, borderRadius: 99, background: C.brand,
+                      color: C.white, fontSize: T.micro, fontWeight: 700,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      {t.unread}
+                    </span>
+                  )}
+                </div>
 
-              <button
-                type="button"
-                aria-label={`Conversation options for ${participantName}`}
-                onClick={(e) => { e.stopPropagation(); setOptionsThread(t); }}
-                style={{ width: LAYOUT.touchTarget, height: LAYOUT.touchTarget, background: "transparent", border: "none", borderRadius: LAYOUT.pillRadius, cursor: "pointer", padding: 0, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginLeft: 2 }}
-              >
-                <MoreVertical size={16} color={C.slateLight} />
-              </button>
+                <button
+                  type="button"
+                  aria-label={`Conversation options for ${participantName}`}
+                  onClick={(e) => { e.stopPropagation(); setOptionsThread(t); }}
+                  style={{ width: 28, height: 28, minWidth: 28, minHeight: 28, padding: 0, background: "transparent", border: "none", borderRadius: LAYOUT.pillRadius, cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}
+                >
+                  <MoreVertical size={16} color={C.slateLight} />
+                </button>
+              </div>
             </div>
           );
         })}
@@ -283,7 +285,6 @@ export function ScreenMessages({ nav, role, isFirstTimeClient }) {
               <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>Removes it from your messages</div>
             </div>
           </button>
-          <button onClick={() => setOptionsThread(null)} style={cancelBtn(C)}>Cancel</button>
         </div>
       </BottomSheet>
 
@@ -749,19 +750,19 @@ export function ScreenChatThread({ nav, goBack, params, role, toast, offline, bo
       ) : (
         <div style={{ width: "100%", minWidth: 0, boxSizing: "border-box", padding: "8px 12px", paddingBottom: "max(24px, env(safe-area-inset-bottom))", display: "flex", alignItems: "center", gap: 6, borderTop: `1px solid ${C.border}`, background: C.white, overflow: "hidden", flexShrink: 0 }}>
           <input ref={fileInputRef} type="file" accept="image/*,application/pdf,video/*" onChange={handleAttachmentPick} style={{ display: "none" }} />
-          <button type="button" aria-label="Attach a file" onClick={() => fileInputRef.current?.click()} style={{ width: LAYOUT.touchTarget, height: LAYOUT.touchTarget, padding: 0, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", borderRadius: LAYOUT.pillRadius, cursor: "pointer" }}><Paperclip size={19} color={C.slate} /></button>
-          <button
-            type="button"
-            aria-label={locationUnlocked ? "Share your location" : "Location sharing is available after confirmation"}
-            onClick={() => setLocationSheet(true)}
-            title={locationUnlocked ? "Share your location" : "Available once the booking is confirmed"}
-            style={{ width: LAYOUT.touchTarget, height: LAYOUT.touchTarget, padding: 0, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", borderRadius: LAYOUT.pillRadius, cursor: "pointer", opacity: locationUnlocked ? 1 : 0.4 }}
-          >
-            <MapPin size={19} color={C.slate} />
-          </button>
-          <div className="cl-input" style={{ flex: "1 1 0", minWidth: 0, height: LAYOUT.touchTarget, boxSizing: "border-box", display: "flex", alignItems: "center", border: `1.5px solid ${C.border}`, borderRadius: LAYOUT.inputRadius, padding: "0 12px", background: C.white }}>
+          <div className="cl-input" style={{ flex: "1 1 0", minWidth: 0, height: LAYOUT.touchTarget, boxSizing: "border-box", display: "flex", alignItems: "center", border: `1.5px solid ${C.border}`, borderRadius: LAYOUT.inputRadius, padding: "0 4px 0 12px", background: C.white }}>
             <input name="message" autoComplete="off" aria-label="Message" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && send()}
-              placeholder="Write a message…" style={{ width: "100%", minWidth: 0, border: "none", outline: "none", background: "transparent", fontSize: T.bodyLg, color: C.jet, ...fBody }} />
+              placeholder="Write a message…" style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", fontSize: T.bodyLg, color: C.jet, ...fBody }} />
+            <button type="button" aria-label="Attach a file" onClick={() => fileInputRef.current?.click()} style={{ width: 36, height: 36, padding: 0, marginLeft: 2, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", borderRadius: LAYOUT.pillRadius, cursor: "pointer" }}><Paperclip size={19} color={C.slate} /></button>
+            <button
+              type="button"
+              aria-label={locationUnlocked ? "Share your location" : "Location sharing is available after confirmation"}
+              onClick={() => setLocationSheet(true)}
+              title={locationUnlocked ? "Share your location" : "Available once the booking is confirmed"}
+              style={{ width: 36, height: 36, padding: 0, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", borderRadius: LAYOUT.pillRadius, cursor: "pointer", opacity: locationUnlocked ? 1 : 0.4 }}
+            >
+              <MapPin size={19} color={C.slate} />
+            </button>
           </div>
           <button type="button" aria-label="Send message" disabled={!input.trim()} onClick={send} style={{ width: LAYOUT.touchTarget, height: LAYOUT.touchTarget, padding: 0, borderRadius: LAYOUT.pillRadius, background: input.trim() ? C.brand : C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: input.trim() ? "pointer" : "default", flexShrink: 0, transition: "background .15s ease" }}>
             <Send size={16} color={input.trim() ? C.white : C.slateLight} />

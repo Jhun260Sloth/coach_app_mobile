@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { haptic } from "../../utils/haptics";
 import {
   AlertTriangle, ArrowRight, BadgeDollarSign, Banknote, CalendarDays, CheckCircle2,
   Clock3, Landmark, LifeBuoy, LockKeyhole, Plus, ShieldCheck, Star, WalletCards,
@@ -76,6 +77,7 @@ export function ScreenSessionCompletion({
     && !(role === "client" && (finalPaymentDue || !completionConfirmations.includes("coach")));
   const handleComplete = () => {
     if (submitting || !canConfirm) return;
+    haptic(12);
     setSubmitting(true);
     const accepted = confirmSessionCompletion?.(booking.id, role);
     if (!accepted) {

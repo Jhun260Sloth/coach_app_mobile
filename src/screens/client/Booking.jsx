@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { haptic } from "../../utils/haptics";
 import { COACHES, CONFIG } from "../../data/mockData";
 import {
   ADDITIONAL_CHARGE_KIND, ADDITIONAL_CHARGE_PHASE, ADDITIONAL_CHARGE_STATUS, BOOKING_STATUS,
@@ -228,7 +229,10 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
   // people the client can add to a single booking of this package.
   const maxParticipants = pkg.maxParticipants || (allowsMultiple ? 99 : 1);
 
-  const [participants, setParticipants] = useState(["self"]);
+  const initialParticipants = Array.isArray(params?.participants) && params.participants.length
+    ? params.participants
+    : ["self"];
+  const [participants, setParticipants] = useState(initialParticipants);
   const toggleParticipant = (key) => setParticipants((p) => {
     if (!allowsMultiple) return p.includes(key) ? p : [key]; // 1:1 single selection acts like a radio button
     if (p.includes(key)) return p.filter((x) => x !== key);
@@ -471,6 +475,24 @@ export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings =
   const C = darkMode ? CD : CL;
   const { coach, pkg } = resolveBookingCoachPkg(params, draft, coachProfile);
   const pub = getPublicName(coach, "public");
+  const participantIds = Array.isArray(params?.participants) && params.participants.length
+    ? params.participants
+    : ["self"];
+  const participantNames = participantIds.map((id) => {
+    if (id === "self") return "You";
+    return children.find((child) => String(child.id) === String(id))?.name || "Participant";
+  });
+  const participantSummary = participantNames.length > 2
+    ? `${participantNames.slice(0, 2).join(", ")} +${participantNames.length - 2}`
+    : participantNames.join(" and ");
+
+  const changeParticipant = () => nav("booking-participants", {
+    coachId: coach.id,
+    packageId: pkg.id,
+    participants: participantIds,
+    presetDate: params.presetDate,
+    presetTime: params.presetTime,
+  });
 
   // Date & time are chosen earlier in the flow (the coach's Packages tab, or
   // the package details screen) and simply arrive here as params — this
@@ -518,7 +540,7 @@ export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings =
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title="Confirm Session" onBack={() => nav("booking-participants", { coachId: coach.id, packageId: pkg.id, participants: params.participants })} />
+      <TopBar title="Confirm Session" onBack={changeParticipant} />
 
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
         <div style={{ fontSize: T.labelLg, color: C.slate, lineHeight: 1.5, marginBottom: 18, ...fBody }}>
@@ -544,6 +566,26 @@ export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings =
           )}
         </Card>
 
+        <div
+          role="note"
+          aria-label={`Booking participants: ${participantSummary}`}
+          style={{
+            display: "flex", alignItems: "center", gap: 10, marginBottom: 18, padding: "11px 12px",
+            borderRadius: 14, border: `1px solid ${C.border}`, background: C.fog,
+          }}
+        >
+          <div style={{ width: 34, height: 34, borderRadius: 11, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <Users size={16} color={C.brand} aria-hidden="true" />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: T.labelLg, fontWeight: 700, color: C.jet, ...fBody }}>Attending: {participantSummary}</div>
+            <div style={{ marginTop: 2, fontSize: T.caption, lineHeight: 1.4, color: C.slate, ...fBody }}>
+              Booking for someone else? Select a different participant.
+            </div>
+          </div>
+          <Btn variant="ghost" size="sm" onClick={changeParticipant}>Change</Btn>
+        </div>
+
         {!hasDateTime && (
           <Card style={{ marginBottom: 18, textAlign: "center" }}>
             <span style={{ fontSize: T.labelLg, color: C.slate, ...fBody }}>No date or time was selected for this package yet.</span>
@@ -559,8 +601,10 @@ export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings =
               state="scheduleConflict"
               message={`You already have ${conflictBooking.service} with ${(() => { const cc = COACHES.find((c) => c.id === conflictBooking.coachId); return getPublicName(cc || { name: conflictBooking.coachName }, "confirmed").name; })()} at this time.`}
               onPrimary={() => nav("coach-profile", { id: coach.id })}
-              primaryLabel="Pick a different time"
+              primaryLabel="Choose new time"
               onSecondary={() => nav("client-booking-detail", { id: conflictBooking.id })}
+              secondaryLabel="View booking"
+              equalActions
             />
           </div>
         )}
@@ -1124,6 +1168,7 @@ export function ScreenPayment({ nav, params, draft, bookings = [], additionalCha
         return;
       }
       markBookingPaid?.(params.bookingId, selectedOptionalIds);
+      haptic([12, 60, 18]);
       toast("Payment confirmed");
       setResult("success");
       setTimeout(() => nav("booking-confirmation", { bookingId: params.bookingId }), 700);

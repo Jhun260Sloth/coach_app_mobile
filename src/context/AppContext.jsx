@@ -13,6 +13,7 @@ import { getPublicName, fullNameOf } from "../utils/name";
 import { formatCoachLocation, getCoachPublicProfile } from "../utils/coachProfile";
 import { useUserLocation } from "../utils/useUserLocation";
 import { applyTheme } from "../theme/theme";
+import { loadStored, saveStored, clearStored, STORAGE_KEYS } from "../utils/persistence";
 
 /* =========================================================================
    APP CONTEXT
@@ -56,16 +57,19 @@ export function AppProvider({ children }) {
   // ---- UI ----
   const [toastMsg, setToastMsg] = useState(null);
   const [offline, setOffline] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => loadStored(STORAGE_KEYS.darkMode, false) === true);
 
   // ---- Client state ----
-  const [favorites, setFavorites] = useState(["c1"]);
+  const [favorites, setFavorites] = useState(() => {
+    const stored = loadStored(STORAGE_KEYS.favorites, ["c1"]);
+    return Array.isArray(stored) ? stored.filter((id) => typeof id === "string") : ["c1"];
+  });
   const [biometric, setBiometric] = useState(false);
   const [clientPrefs, setClientPrefs] = useState(null);
-  const [clientFilters, setClientFilters] = useState(null);
+  const [clientFilters, setClientFilters] = useState(() => loadStored(STORAGE_KEYS.clientFilters, null));
   const [childrenState, setChildren] = useState([]);
   const [isFirstTimeClient, setIsFirstTimeClient] = useState(false);
-  const [discoveryPrefs, setDiscoveryPrefs] = useState({ seeded: true });
+  const [discoveryPrefs, setDiscoveryPrefs] = useState(() => loadStored(STORAGE_KEYS.discoveryPrefs, { seeded: true }));
   const [showPostSignupGuide, setShowPostSignupGuide] = useState(false);
   const [clientIdentity, setClientIdentity] = useState(CURRENT_CLIENT);
 
@@ -103,6 +107,12 @@ export function AppProvider({ children }) {
   useEffect(() => {
     applyTheme(document.documentElement, darkMode ? "dark" : "light");
   }, [darkMode]);
+
+  // ======== Persistence — keep lightweight preferences across reloads ========
+  useEffect(() => { saveStored(STORAGE_KEYS.darkMode, darkMode); }, [darkMode]);
+  useEffect(() => { saveStored(STORAGE_KEYS.favorites, favorites); }, [favorites]);
+  useEffect(() => { saveStored(STORAGE_KEYS.clientFilters, clientFilters); }, [clientFilters]);
+  useEffect(() => { saveStored(STORAGE_KEYS.discoveryPrefs, discoveryPrefs); }, [discoveryPrefs]);
 
   useEffect(() => { screenRef.current = screen; }, [screen]);
   useEffect(() => { paramsRef.current = params; }, [params]);
@@ -916,6 +926,13 @@ export function AppProvider({ children }) {
     nextBookingNumberRef.current = getNextBookingNumber();
     setIsFirstTimeClient(false);
     setDiscoveryPrefs({ seeded: true });
+    setFavorites(["c1"]);
+    setClientFilters(null);
+    setDarkMode(false);
+    clearStored(STORAGE_KEYS.favorites);
+    clearStored(STORAGE_KEYS.clientFilters);
+    clearStored(STORAGE_KEYS.discoveryPrefs);
+    clearStored(STORAGE_KEYS.darkMode);
   };
 
   // ======== Context value ========

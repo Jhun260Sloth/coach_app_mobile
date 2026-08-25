@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { UploadCloud, Play, Image as ImageIcon, Trash2, Film, Camera, Info, Check } from "lucide-react";
+import { UploadCloud, Play, Image as ImageIcon, Trash2, Film, Camera, Check } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { COACHES } from "../../data/mockData";
 import { TopBar, Btn, Field, BottomSheet, ConfirmDialog, EmptyState } from "../../components/ui/Primitives";
@@ -100,24 +100,18 @@ export function ScreenCoachReels({ nav, toast, coachMedia = [], addMedia, remove
       <TopBar title="Reels & photos" onBack={() => nav("coach-profile-edit")} />
 
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 16 }}>
-          <div style={{ flex: 1, fontSize: T.labelLg, color: C.slate, lineHeight: 1.5, ...fBody }}>
-            Show athletes what a session with you looks like. Reels and photos appear on your public profile in the order you add them.
-          </div>
+        <div style={{ fontSize: T.labelLg, color: C.slate, lineHeight: 1.5, ...fBody, marginBottom: 16 }}>
+          Show athletes what a session with you looks like.{" "}
           <button
             type="button"
             onClick={() => setShowGuidelines(true)}
-            aria-label="Upload guidelines"
-            title="Upload guidelines"
-            style={{ width: 34, height: 34, minWidth: 34, padding: 0, borderRadius: 99, border: `1px solid ${C.border}`, background: C.white, color: C.slateLight, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+            style={{ background: "none", border: "none", cursor: "pointer", padding: 0, margin: 0, minWidth: 0, minHeight: 0, fontSize: "inherit", fontWeight: 600, color: C.brand, ...fBody }}
           >
-            <Info size={15} />
+            Read upload guidelines
           </button>
         </div>
 
         <input ref={fileInputRef} type="file" accept="image/*,video/*" onChange={onFileChange} style={{ display: "none" }} />
-        <Btn full icon={UploadCloud} onClick={() => fileInputRef.current?.click()}>Upload reel or photo</Btn>
-
         <div style={{ marginTop: 20 }}>
           {coachMedia.length === 0 ? (
             <EmptyState icon={Film} title="Nothing uploaded yet" body="Add your first reel or photo so athletes can see your coaching style before they book." />
@@ -134,6 +128,11 @@ export function ScreenCoachReels({ nav, toast, coachMedia = [], addMedia, remove
             </div>
           )}
         </div>
+      </div>
+
+      {/* Fixed upload action */}
+      <div style={{ flexShrink: 0, padding: "10px 18px", paddingBottom: "max(14px, env(safe-area-inset-bottom))", borderTop: `1px solid ${C.border}`, background: C.white }}>
+        <Btn full icon={UploadCloud} onClick={() => fileInputRef.current?.click()}>Upload reel or photo</Btn>
       </div>
 
       {/* -------------------- ADD DETAILS FOR NEW UPLOAD -------------------- */}

@@ -5,13 +5,19 @@
    Extracted from mockData.js — these are UI utilities, not data.
    ========================================================================= */
 
-import { PROFILE_AVATARS } from "../data/media";
+import { PROFILE_AVATARS, getValidAvatar } from "../data/media";
 
 const AVATAR_PALETTE = ["#4d7c0e"];
 
-/** First-party avatars for every seeded person; unknown names retain initials. */
+/** First-party avatars for every seeded person; unknown names get a deterministic local avatar. */
 export function avatarForName(name) {
-  return PROFILE_AVATARS[String(name || "").trim().toLowerCase()] || null;
+  const s = String(name || "").trim();
+  if (!s) return null;
+  const key = s.toLowerCase();
+  if (PROFILE_AVATARS[key]) return PROFILE_AVATARS[key];
+  let h = 0;
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+  return getValidAvatar(h);
 }
 
 /** Extract up to two-letter initials from a display name (or @handle). */

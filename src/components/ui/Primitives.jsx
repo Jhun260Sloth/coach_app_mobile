@@ -1,4 +1,5 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   ChevronLeft, ChevronRight, Star, CheckCircle2, Search, Wifi, Battery, AlertTriangle, CalendarDays, List, X,
 } from "lucide-react";
@@ -146,21 +147,37 @@ export function Card({ children, style, onClick, ariaLabel }) {
   );
 }
 
-export function Chip({ children, active, onClick, icon: Icon }) {
+export function Chip({ children, active, onClick, icon: Icon, compact }) {
   const C = useColors();
   return (
     <button
       type="button"
       onClick={onClick}
       style={{
-        display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: LAYOUT.pillRadius, minHeight: 40,
-        fontSize: T.body, fontWeight: 500, whiteSpace: "nowrap", border: `1px solid ${active ? C.brand : C.border}`,
+        display: "inline-flex", alignItems: "center", gap: 6, padding: compact ? "3px 11px" : "6px 12px",
+        borderRadius: LAYOUT.pillRadius, minHeight: compact ? 30 : 40,
+        fontSize: compact ? T.labelLg : T.body, fontWeight: compact ? 600 : 500, whiteSpace: "nowrap", border: `1px solid ${active ? C.brand : C.border}`,
         background: active ? C.brandTint : C.white, color: active ? (C.brandIcon || C.brandColor) : C.jet, ...fBody,
       }}
     >
-      {Icon && <Icon size={13} />}
+      {Icon && <Icon size={compact ? 12 : 13} />}
       {children}
     </button>
+  );
+}
+
+export function Skeleton({ w = "100%", h = 12, radius = 8, style }) {
+  const C = useColors();
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        display: "block", width: w, height: h, borderRadius: radius,
+        background: `linear-gradient(90deg, ${C.fog} 25%, ${C.white} 55%, ${C.fog} 85%)`,
+        backgroundSize: "200% 100%", animation: "clSkeleton 1.4s ease-in-out infinite",
+        ...style,
+      }}
+    />
   );
 }
 
@@ -437,6 +454,8 @@ export function StatusPill({ status }) {
       display: "inline-flex", alignItems: "center", gap: 5, flexShrink: 0, whiteSpace: "nowrap",
       color: colors.fg,
       fontSize: T.captionLg, fontWeight: 700, padding: "4px 8px", borderRadius: 8,
+      color: colors.fg,
+      fontSize: T.captionLg, fontWeight: 700, padding: "4px 8px", borderRadius: 8,
       background: colors.bg, ...fBody,
     }}>
       <span style={{ width: 6, height: 6, borderRadius: 99, background: "currentColor", animation: m.pulse ? "clPulse 1.4s infinite" : "none" }} />
@@ -463,8 +482,6 @@ export function Avatar({ name, size = 42, ring, src }) {
   const C = useColors();
   const label = String(name || "User");
   const localSrc = src || avatarForName(label);
-    // First-party seed avatars are preferred; DiceBear and the initials circle
-    // remain resilient fallbacks for profiles created during the prototype.
   const dicebearSrc = `https://api.dicebear.com/10.x/initials/svg?initialsVariant=default:1&lettersProbability=100&lettersVariant=single:1&seed=${encodeURIComponent(label)}`;
   return (
     <div style={{
@@ -475,13 +492,21 @@ export function Avatar({ name, size = 42, ring, src }) {
     }}>
       <span>{initials(name)}</span>
       <img
-          src={localSrc || dicebearSrc}
+        src={localSrc || dicebearSrc}
         alt={`${label} avatar`}
         width={size}
         height={size}
         loading={size >= 64 ? "eager" : "lazy"}
         decoding="async"
-        onError={(e) => { e.currentTarget.style.display = "none"; }}
+        onError={(e) => {
+          const fallback = avatarForName(label);
+          if (fallback && !e.currentTarget.dataset.retry) {
+            e.currentTarget.dataset.retry = "1";
+            e.currentTarget.src = fallback;
+          } else {
+            e.currentTarget.style.display = "none";
+          }
+        }}
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
       />
     </div>
@@ -735,6 +760,32 @@ export function EmptyState({ icon: Icon, title, body, ctaLabel, onCta, large }) 
           <Btn full={large} onClick={onCta}>{ctaLabel}</Btn>
         </div>
       )}
+    </div>
+  );
+}
+
+/* Shared password rule set — keep validation and the live checklist in sync. */
+export function passwordValid(pw) {
+  return typeof pw === "string" && pw.length >= 6 && /\d/.test(pw) && /[A-Z]/.test(pw);
+}
+
+export function PasswordRequirements({ password, style }) {
+  const C = useColors();
+  const checks = [
+    { ok: password.length >= 6, label: "At least 6 characters" },
+    { ok: /\d/.test(password), label: "At least one number" },
+    { ok: /[A-Z]/.test(password), label: "At least one uppercase letter" },
+  ];
+  const failed = checks.filter((c) => !c.ok);
+  if (!password || failed.length === 0) return null;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4, ...style }}>
+      {failed.map((c) => (
+        <span key={c.label} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: T.captionLg, fontWeight: 500, color: C.slateLight, ...fBody }}>
+          <span aria-hidden="true" style={{ width: 13, height: 13, borderRadius: 99, border: `1.5px solid ${C.border}`, flexShrink: 0, display: "inline-block" }} />
+          {c.label}
+        </span>
+      ))}
     </div>
   );
 }
@@ -1120,7 +1171,7 @@ export function BottomSheet({ open, onClose, title, children, footer, heightPct 
   }, [open]);
 
   if (!open) return null;
-  return (
+  const sheet = (
     <div style={{ position: "absolute", inset: 0, zIndex: 95, overflow: "hidden", overscrollBehavior: "contain" }}>
       <button
         type="button"
@@ -1163,6 +1214,10 @@ export function BottomSheet({ open, onClose, title, children, footer, heightPct 
       </div>
     </div>
   );
+  const mountNode = typeof document !== "undefined"
+    ? document.querySelector(".cl-phone-screen .cl-screen-wrap")
+    : null;
+  return mountNode ? createPortal(sheet, mountNode) : sheet;
 }
 
 export function SignalBars({ color = "currentColor" }) {

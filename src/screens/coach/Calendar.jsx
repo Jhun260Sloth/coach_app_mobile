@@ -157,6 +157,8 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
                     <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{booking.service}</div>
                     <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: T.caption, color: C.slateLight, marginTop: 4, ...fBody }}><Clock size={11} />{booking.time} · {booking.mode}</div>
                   </div>
+                </div>
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
                   <StatusPill status={booking.status} />
                 </div>
               </Card>
@@ -189,7 +191,7 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
                     const available = !blocked && blocksForDate(d).length > 0;
                     return (
                       <button key={di} onClick={() => setSelectedDate(d)} style={{
-                        aspectRatio: "1", borderRadius: 10, cursor: "pointer",
+                        aspectRatio: "1", width: "100%", minWidth: 0, minHeight: 0, borderRadius: 10, cursor: "pointer",
                         border: `1px solid ${isSelected ? C.brand : C.border}`,
                         background: isSelected ? C.brandTint : C.white,
                         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3,

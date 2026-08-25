@@ -29,13 +29,19 @@ export const MOCK_CLIENTS = [
   { id: "mc6", name: "Ravi Patel", handle: "ravip", namePrivacy: "initial", avatar: PROFILE_AVATARS["ravi patel"] },
   { id: "mc7", name: "Owen King", handle: "owenk", namePrivacy: "initial", avatar: PROFILE_AVATARS["owen king"] },
   { id: "mc8", name: "The Nguyen Family (u18)", handle: "nguyenfam", namePrivacy: "initial", avatar: PROFILE_AVATARS["the nguyen family (u18)"] },
+  { id: "mc9", name: "Priya Desai", handle: "priyad", namePrivacy: "initial", avatar: PROFILE_AVATARS["priya desai"] },
+  { id: "mc10", name: "Hannah Smith", handle: "hannahs", namePrivacy: "initial", avatar: PROFILE_AVATARS["hannah smith"] },
+  { id: "mc11", name: "Leo Tanaka", handle: "leot", namePrivacy: "initial", avatar: PROFILE_AVATARS["leo tanaka"] },
+  { id: "mc12", name: "Jordan Lee", handle: "jordanl", namePrivacy: "initial", avatar: PROFILE_AVATARS["jordan lee"] },
 ];
 
 export const TAKEN_HANDLES = [
   ...COACHES.filter((c) => c.handle).map((c) => c.handle.toLowerCase()),
   ...MOCK_CLIENTS.map((c) => c.handle.toLowerCase()),
   CURRENT_CLIENT.handle,
-  "priyad",
+  "admin",
+  "support",
+  "coachlink",
 ];
 
 /** Unique-handle check (case-insensitive). `exclude` = own handles to skip. */

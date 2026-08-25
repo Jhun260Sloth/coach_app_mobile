@@ -532,21 +532,19 @@ export function BookingCard({ b, nav, past, additionalCharge, onAdditionalCharge
         ...style,
       }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
-        <div style={{ display: "flex", gap: 10, minWidth: 0 }}>
-          <Avatar name={cn.name || b.clientName} size={42} />
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: T.subtitleLg, fontWeight: 700, color: C.jet, letterSpacing: "-0.1px", ...fDisplay }}>{b.service}</div>
-            <div style={{ fontSize: T.labelLg, color: C.slate, marginTop: 3, ...fBody }}>{cn.name || b.clientName}</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: T.label, color: C.slateLight, marginTop: 6, ...fBody }}>
-              <Clock size={11} /> {b.date} · {b.time}
-            </div>
+      <div style={{ display: "flex", gap: 10, minWidth: 0, marginBottom: 10 }}>
+        <Avatar name={cn.name || b.clientName} size={42} />
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ fontSize: T.subtitleLg, fontWeight: 700, color: C.jet, letterSpacing: "-0.1px", ...fDisplay }}>{b.service}</div>
+          <div style={{ fontSize: T.labelLg, color: C.slate, marginTop: 3, ...fBody }}>{cn.name || b.clientName}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: T.label, color: C.slateLight, marginTop: 6, ...fBody }}>
+            <Clock size={11} /> {b.date} · {b.time}
           </div>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
-          <StatusPill status={b.status} />
-          {past && b.status === BOOKING_STATUS.COMPLETED && b.reviewed && <Badge tone="success" icon={CheckCircle2}>Reviewed</Badge>}
-        </div>
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <StatusPill status={b.status} />
+        {past && b.status === BOOKING_STATUS.COMPLETED && b.reviewed && <Badge tone="success" icon={CheckCircle2}>Reviewed</Badge>}
       </div>
       {additionalPaymentDue && (
         <div
@@ -893,8 +891,8 @@ export function ScreenClientBookingDetail({ nav, goBack, params, bookings, toast
 
       {isPending && (
         <BottomActionBar>
-          <Btn full variant="secondary" icon={MessageCircle} onClick={() => nav("chat-thread", messageParams)}>Message coach</Btn>
-          <Btn full variant="outline" onClick={() => setCancelOpen(true)}>Withdraw</Btn>
+          <Btn variant="secondary" icon={MessageCircle} onClick={() => nav("chat-thread", messageParams)} />
+          <Btn full variant="danger" onClick={() => setCancelOpen(true)}>Withdraw</Btn>
         </BottomActionBar>
       )}
 

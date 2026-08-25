@@ -212,6 +212,7 @@ function AppShell() {
     "iphone-15": { name: "iPhone 15", icon: Smartphone, width: 393, height: 852, radius: 54, innerRadius: 44, hasIsland: true },
     "iphone-se": { name: "iPhone SE", icon: Smartphone, width: 375, height: 667, radius: 40, innerRadius: 30, hasIsland: false },
     "android": { name: "Android Pro", icon: Smartphone, width: 412, height: 915, radius: 48, innerRadius: 38, hasIsland: false },
+    "pixel": { name: "Google Pixel", icon: Smartphone, width: 412, height: 760, radius: 48, innerRadius: 38, hasIsland: false },
     "tablet": { name: "iPad / Tablet", icon: Tablet, width: 768, height: 1024, radius: 36, innerRadius: 26, hasIsland: false },
     "custom": { name: "Custom Size", icon: Sliders, width: customWidth, height: customHeight, radius: 24, innerRadius: 16, hasIsland: false },
   };
@@ -889,7 +890,7 @@ function AppShell() {
               )}
 
               {/* Protruding Physical Hardware Side Buttons */}
-              {showFrame && !isLandscape && (devicePreset === "iphone-15" || devicePreset === "iphone-se" || devicePreset === "android") && (
+              {showFrame && !isLandscape && (devicePreset === "iphone-15" || devicePreset === "iphone-se" || devicePreset === "android" || devicePreset === "pixel") && (
                 <>
                   <div style={{ position: "absolute", left: -2.5, top: 110, width: 2.5, height: 16, background: "#27272A", borderRadius: "3px 0 0 3px" }} />
                   <div style={{ position: "absolute", left: -2.5, top: 146, width: 2.5, height: 44, background: "#27272A", borderRadius: "3px 0 0 3px" }} />
@@ -915,18 +916,18 @@ function AppShell() {
                         <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#18181B", border: "1px solid #27272A", opacity: 0.85 }} />
                       </div>
                     )}
-                    {devicePreset === "android" && (
+                    {devicePreset === "android" || devicePreset === "pixel" ? (
                       <div style={{ position: "absolute", top: 16.5, left: "50%", transform: "translateX(-50%)", width: 15, height: 15, background: "#09090B", borderRadius: 999, border: "1.5px solid rgba(255,255,255,0.18)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center" }}>
                         <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#18181B" }} />
                       </div>
-                    )}
+                    ) : null}
                   </>
                 )}
                 
                 <StatusBar dark={screen === "splash" || screen === "get-started"} overlay={screen === "splash" || screen === "get-started"} />
 
                 {/* Active Screen Component */}
-                <div ref={screenWrapRef} style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+                <div ref={screenWrapRef} className="cl-screen-wrap" style={{ flex: 1, position: "relative", overflow: "hidden" }}>
                   <div key={screen} style={{ height: "100%", animation: "clScreenIn .3s cubic-bezier(.22,1,.36,1)" }}>
                     <ScreenErrorBoundary screen={screen} onReset={() => resetNav("client-home", {}, "client")}>
                       <ScreenComponent {...screenProps} />

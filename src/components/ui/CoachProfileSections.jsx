@@ -110,28 +110,28 @@ export function CoachProfileHero({
           </div>
           <div style={{ minWidth: 104, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", textAlign: "right", paddingTop: 2 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4, fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...fBody }}>
-              <Star size={15} fill={C.brand} color={C.brand} /> {coach.rating}
+              <Star size={15} fill={C.brand} color={C.brand} /> {coach.rating.toFixed(1)}
             </div>
             <div style={{ fontSize: T.caption, color: C.slate, marginTop: 1, ...fBody }}>{coach.reviews} reviews</div>
             {instantBook && <Badge tone="success" icon={Zap} style={{ marginTop: 8, whiteSpace: "nowrap" }}>Instant book</Badge>}
             {verificationChecks.length > 0 && (
-              <button
-                type="button"
-                aria-label={`Verified coach with ${verificationChecks.length} checks. Tap to view verification details.`}
-                onClick={() => setVerifyOpen(true)}
-                style={{
-                  display: "inline-flex", alignItems: "center", gap: 5, marginTop: 8,
-                  padding: "5px 9px", borderRadius: 999,
-                  background: C.successTint, color: C.success,
-                  border: `1px solid ${C.success}33`,
-                  cursor: "pointer",
-                  fontSize: T.caption, fontWeight: 700, whiteSpace: "nowrap", ...fBody
-                }}
-              >
-                <ShieldCheck size={13} aria-hidden="true" />
-                Verified
-                <span style={{ minWidth: 16, height: 16, borderRadius: 99, background: C.white, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: T.micro, fontWeight: 800, color: C.success, ...fBody }}>{verificationChecks.length}</span>
-              </button>
+                <button
+                  type="button"
+                  aria-label={`Verified coach with ${verificationChecks.length} checks. Tap to view verification details.`}
+                  onClick={() => setVerifyOpen(true)}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 5, marginTop: 8,
+                    padding: 0,
+                    background: "none", color: C.success,
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: T.caption, fontWeight: 700, whiteSpace: "nowrap", ...fBody
+                  }}
+                >
+                  <ShieldCheck size={13} aria-hidden="true" />
+                  Verified
+                  <span style={{ minWidth: 16, height: 16, borderRadius: 99, background: C.successTint, border: `1px solid ${C.success}33`, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: T.micro, fontWeight: 800, color: C.success, ...fBody }}>{verificationChecks.length}</span>
+                </button>
             )}
           </div>
         </div>

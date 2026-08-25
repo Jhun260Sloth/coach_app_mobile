@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { haptic } from "../../utils/haptics";
 import {
   ArrowRight, BadgeDollarSign, CalendarDays, Check, CheckCircle2,
   CircleDot, CreditCard, FileCheck2, LifeBuoy, LockKeyhole, MessageCircle,
@@ -600,6 +601,7 @@ export function ScreenAdditionalChargePayment({
         nav("additional-charge-review", { chargeId: charge.id, role: "client" });
         return;
       }
+      haptic([12, 60, 18]);
       toast?.("Final payment completed");
       if (charge.phase === ADDITIONAL_CHARGE_PHASE.COMPLETION) {
         nav("session-completion", { bookingId: booking.id, role: "client", backTo: "client-booking-detail" });

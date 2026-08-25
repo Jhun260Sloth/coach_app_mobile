@@ -27,8 +27,10 @@ function SelectedCoachCardBase({ coach, onOpen, onClose }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontWeight: 700, fontSize: T.title, color: C.jet, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", ...fDisplay }}>{pub.name}</div>
           {pub.handle && <HandleTag handle={pub.handle} size={11} color={C.slateLight} />}
-          <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 4 }}>
-            <SportLabel sport={coach.sport} size={14} color={C.brand} style={{ fontSize: T.label, fontWeight: 700, ...fDisplay }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 4, flexWrap: "wrap" }}>
+            {(coach.sports || [coach.sport]).map((s) => (
+              <SportLabel key={s} sport={s} size={14} color={C.brand} style={{ fontSize: T.label, fontWeight: 700, ...fDisplay }} />
+            ))}
             <span style={{ fontSize: T.label, color: C.slate, ...fBody }}>· ${coach.packages[0].price}/session</span>
           </div>
         </div>

@@ -11,7 +11,7 @@ import { COACHES, LANGUAGE_OPTIONS, GENDER_OPTIONS, AU_SUBURBS, REVIEWS } from "
 import {
   Avatar, ScreenHeader, SectionLabel, FormSection, Chip, Card, Toggle, Btn, BottomSheet, ConfirmDialog, Field,
   SearchMultiSelect, SearchSelect, ScrollFadeRow, SegTabs, StarRow, FullscreenImageViewer, RequiredMark,
-  SettingsRow, SettingsGroup,
+  SettingsRow, SettingsGroup, PasswordRequirements, passwordValid,
 } from "../../components/ui/Primitives";
 import { CoachProfileHero, CoachProfileAbout } from "../../components/ui/CoachProfileSections";
 import { SportBadge, SportLabel, SportSearchMultiSelect } from "../../components/ui/SportUI";
@@ -175,6 +175,9 @@ const toggleNotif = (key) => setNotifPrefs((p) => ({ ...p, [key]: !p[key] }));
   const [sheet, setSheet] = useState(null);
   const closeSheet = () => setSheet(null);
   const [showPw, setShowPw] = useState(false);
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const pwdOk = passwordValid(newPw) && newPw === confirmPw;
   const [tab, setTab] = useState("profile");
   const [deleteStep, setDeleteStep] = useState("confirm");
   const [deleteCode, setDeleteCode] = useState(["", "", "", "", "", ""]);
@@ -701,12 +704,15 @@ const toggleNotif = (key) => setNotifPrefs((p) => ({ ...p, [key]: !p[key] }));
 
       <BottomSheet open={sheet === "password"} onClose={closeSheet} title="Change password" heightPct={62}>
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-<Field label="Current password" placeholder="••••••••" icon={Lock} type={showPw ? "text" : "password"} rightIcon={showPw ? EyeOff : Eye} onRight={() => setShowPw((v) => !v)} required />
-          <Field label="New password" placeholder="••••••••" icon={Lock} type={showPw ? "text" : "password"} required />
-          <Field label="Confirm new password" placeholder="••••••••" icon={Lock} type={showPw ? "text" : "password"} required />
+          <Field label="Current password" placeholder="••••••••" icon={Lock} type={showPw ? "text" : "password"} rightIcon={showPw ? EyeOff : Eye} onRight={() => setShowPw((v) => !v)} required />
+          <div>
+            <Field label="New password" placeholder="••••••••" icon={Lock} type={showPw ? "text" : "password"} value={newPw} onChange={(e) => setNewPw(e.target.value)} required />
+            <PasswordRequirements password={newPw} style={{ marginTop: 8 }} />
+          </div>
+          <Field label="Confirm new password" placeholder="••••••••" icon={Lock} type={showPw ? "text" : "password"} value={confirmPw} onChange={(e) => setConfirmPw(e.target.value)} required />
         </div>
         <div style={{ marginTop: 20 }}>
-          <Btn full onClick={() => { toast("Password updated"); closeSheet(); }}>Update password</Btn>
+          <Btn full disabled={!pwdOk} onClick={() => { toast("Password updated"); setNewPw(""); setConfirmPw(""); closeSheet(); }}>Update password</Btn>
         </div>
       </BottomSheet>
 

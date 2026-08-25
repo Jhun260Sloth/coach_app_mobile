@@ -58,6 +58,7 @@ export const ADDITIONAL_CHARGE_STATUS = Object.freeze({
 export const ADDITIONAL_CHARGE_PHASE = Object.freeze({
   ACCEPTANCE: "acceptance",
   COMPLETION: "completion",
+  IN_PROGRESS: "in_progress",
 });
 
 export const ADDITIONAL_CHARGE_KIND = Object.freeze({
@@ -120,18 +121,25 @@ export function withBookingLifecycle(booking) {
 }
 
 export const INITIAL_BOOKINGS = [
-  // Pending — awaiting the coach's response
+  // Pending — awaiting coach's response
   { id: "b2", coachId: "c2", coachName: "Noah Kelly", clientName: "Sarah Lin", service: "1:1 Programming Session", date: "Fri, 25 Jul", time: "6:00am", mode: "In-person", status: "pending", price: 65, reviewed: false, participants: "You", notes: "Coming back from a shoulder injury — cleared for light training, will bring physio notes." },
   { id: "b5", coachId: "c1", coachName: "Isla Ferguson", clientName: "Sarah Lin", service: "Group Clinic", date: "Fri, 21 Aug", time: "3:00pm", mode: "In-person", status: "awaiting_payment", paymentDeadline: "Tomorrow, 6:00pm", paymentReminderSent: false, price: 42, reviewed: false, participants: "You", notes: "" },
   { id: "b6", coachId: "c5", coachName: "Chloe Dawson", clientName: "Sarah Lin", service: "Virtual Swing Review", date: "Sun, 10 Aug", time: "9:00am", mode: "Virtual", status: "pending", price: 40, reviewed: false, participants: "You", notes: "" },
   { id: "b7", coachId: "c6", coachName: "Liam O'Connor", clientName: "Sarah Lin", service: "Small Group Ride", date: "Thu, 14 Aug", time: "5:30pm", mode: "In-person", status: "pending", price: 42, reviewed: false, participants: "You", notes: "" },
+  { id: "b18", coachId: "c7", coachName: "Priya Sharma", clientName: "Sarah Lin", service: "Pickleball Strategy & Dinking Clinic", date: "Mon, 18 Aug", time: "5:00pm", mode: "In-person", status: "pending", price: 32, reviewed: false, participants: "You", notes: "First time trying pickleball tactics with competitive paddle drills." },
+  { id: "b19", coachId: "c10", coachName: "Tyler Koa Henderson", clientName: "Sarah Lin", service: "1:1 Stroke Correction & HD Video Analysis", date: "Tue, 19 Aug", time: "6:30am", mode: "In-person", status: "awaiting_payment", paymentDeadline: "Today, 11:59pm", paymentReminderSent: true, price: 75, reviewed: false, participants: "You", notes: "Focus on freestyle bilateral breathing." },
 
-  // Upcoming — confirmed and on the calendar
+  // Upcoming — confirmed on calendar
   { id: "s1", coachId: "c2", coachName: "Noah Kelly", clientName: "Sarah Lin", clientHandle: "sarahlin", service: "1:1 Programming Session", date: "Thu, 20 Aug", time: "6:00am", mode: "In-person", status: "completion_pending", paymentStatus: "held", payoutStatus: "not_ready", completionConfirmedBy: "coach", completionConfirmations: ["coach"], price: 65, reviewed: false, participants: "You", notes: "Focus on clean return-to-training technique." },
   { id: "b1", coachId: "c1", coachName: "Isla Ferguson", clientName: "Sarah Lin", service: "1:1 Court Session", date: "Tue, 22 Jul", time: "4:00pm", mode: "In-person", status: "confirmed", price: 72, reviewed: false, participants: "You", notes: "" },
   { id: "b8", coachId: "c3", coachName: "Ruby Hendricks", clientName: "Sarah Lin", service: "1:1 Beach Session", date: "Thu, 6 Aug", time: "7:00am", mode: "In-person", status: "confirmed", price: 65, reviewed: false, participants: "You", notes: "" },
   { id: "b9", coachId: "c4", coachName: "Marcus Ude", clientName: "Sarah Lin", service: "1:1 Pad Session", date: "Sat, 8 Aug", time: "10:00am", mode: "In-person", status: "confirmed", price: 68, reviewed: false, participants: "You", notes: "" },
   { id: "b10", coachId: "c6", coachName: "Liam O'Connor", clientName: "Sarah Lin", service: "Small Group Ride", date: "Wed, 12 Aug", time: "5:00pm", mode: "In-person", status: "confirmed", price: 42, reviewed: false, participants: "You", notes: "" },
+  { id: "b20", coachId: "c8", coachName: "Declan Murphy", clientName: "Sarah Lin", service: "1:1 Kicking Mechanics & Decision Making", date: "Sat, 22 Aug", time: "9:00am", mode: "In-person", status: "confirmed", price: 70, reviewed: false, participants: "You", notes: "Working on drop punt ball drop stability." },
+  { id: "b21", coachId: "c13", coachName: "Aisha Al-Mansoor", clientName: "Sarah Lin", service: "1:1 Running Gait & Cadence Analysis", date: "Wed, 26 Aug", time: "7:00am", mode: "In-person", status: "confirmed", price: 70, reviewed: false, participants: "You", notes: "Preparing for Sydney Half Marathon." },
+  { id: "b24", coachId: "c17", coachName: "Sienna Bennett", clientName: "Sarah Lin", service: "1:1 Studio Reformer Private", date: "Mon, 24 Aug", time: "6:30am", mode: "In-person", status: "confirmed", price: 80, reviewed: false, participants: "You", notes: "Focus on pelvic alignment and deep core." },
+  { id: "b25", coachId: "c20", coachName: "Mia Vasilev", clientName: "Sarah Lin", service: "1:1 High Performance Stroke Lab", date: "Tue, 25 Aug", time: "7:00am", mode: "In-person", status: "confirmed", price: 78, reviewed: false, participants: "You", notes: "Topspin forehand unit turn." },
+  { id: "b26", coachId: "c25", coachName: "Lucas Silva", clientName: "Sarah Lin", service: "1:1 Ball Mastery & 1v1 Dominance", date: "Wed, 26 Aug", time: "4:00pm", mode: "In-person", status: "confirmed", price: 70, reviewed: false, participants: "You", notes: "Sole-of-foot ball manipulation." },
 
   // Completed — past sessions
   { id: "b3", coachId: "c3", coachName: "Ruby Hendricks", clientName: "Sarah Lin", service: "1:1 Beach Session", date: "Sun, 13 Jul", time: "8:00am", mode: "In-person", status: "completed", price: 65, reviewed: false, participants: "You", notes: "" },
@@ -140,34 +148,39 @@ export const INITIAL_BOOKINGS = [
   { id: "b12", coachId: "c2", coachName: "Noah Kelly", clientName: "Sarah Lin", service: "1:1 Programming Session", date: "Tue, 21 Jul", time: "6:00am", mode: "In-person", status: "completed", price: 65, reviewed: false, participants: "You", notes: "" },
   { id: "b13", coachId: "c4", coachName: "Marcus Ude", clientName: "Sarah Lin", service: "1:1 Pad Session", date: "Fri, 24 Jul", time: "5:00pm", mode: "In-person", status: "completed", price: 68, reviewed: false, participants: "You", notes: "" },
   { id: "b14", coachId: "c6", coachName: "Liam O'Connor", clientName: "Sarah Lin", service: "Small Group Ride", date: "Sat, 25 Jul", time: "11:00am", mode: "In-person", status: "completed", price: 42, reviewed: true, participants: "You", notes: "" },
+  { id: "b22", coachId: "c7", coachName: "Priya Sharma", clientName: "Sarah Lin", service: "1:1 Tennis Technical Coaching", date: "Tue, 28 Jul", time: "7:00am", mode: "In-person", status: "completed", price: 75, reviewed: true, participants: "You", notes: "Topspin slice serve progression." },
+  { id: "b23", coachId: "c9", coachName: "Elena Rostova", clientName: "Sarah Lin", service: "1:1 Floor & Flexibility Mastery", date: "Fri, 31 Jul", time: "9:00am", mode: "In-person", status: "completed", price: 78, reviewed: true, participants: "You", notes: "Hip opening and hamstring flexibility drills." },
 
-  // Closed outcomes remain visible in history
-  { id: "b15", coachId: "c2", coachName: "Noah Kelly", clientName: "Sarah Lin", service: "1:1 Programming Session", date: "Mon, 27 Jul", time: "6:00am", mode: "In-person", status: "declined", price: 65, reviewed: false, participants: "You", notes: "" },
-  { id: "b16", coachId: "c6", coachName: "Liam O'Connor", clientName: "Sarah Lin", service: "Small Group Ride", date: "Tue, 28 Jul", time: "4:00pm", mode: "In-person", status: "expired", price: 42, reviewed: false, participants: "You", notes: "" },
-  { id: "b17", coachId: "c3", coachName: "Ruby Hendricks", clientName: "Sarah Lin", service: "1:1 Beach Session", date: "Wed, 29 Jul", time: "6:45am", mode: "In-person", status: "cancelled", paymentStatus: "refunded", refundStatus: "refunded", price: 65, reviewed: false, participants: "You", notes: "" },
+  // Closed outcomes
+  { id: "b15", coachId: "c2", coachName: "Noah Kelly", clientName: "Sarah Lin", service: "1:1 Programming Session", date: "Mon, 27 Jul", time: "6:00am", mode: "In-person", status: "declined", price: 65, reviewed: false, participants: "You", notes: "Coach away at regional competition." },
+  { id: "b16", coachId: "c6", coachName: "Liam O'Connor", clientName: "Sarah Lin", service: "Small Group Ride", date: "Tue, 28 Jul", time: "4:00pm", mode: "In-person", status: "expired", price: 42, reviewed: false, participants: "You", notes: "Booking request window lapsed." },
+  { id: "b17", coachId: "c3", coachName: "Ruby Hendricks", clientName: "Sarah Lin", service: "1:1 Beach Session", date: "Wed, 29 Jul", time: "6:45am", mode: "In-person", status: "cancelled", paymentStatus: "refunded", refundStatus: "refunded", price: 65, reviewed: false, participants: "You", notes: "Dangerous surf conditions / swell advisory." },
 ].map(withBookingLifecycle);
 
 /** Recurring weekly availability blocks for the current coach (Noah Kelly). */
 export const INITIAL_AVAILABILITY_BLOCKS = [
   { id: "ab1", days: ["Tue", "Thu"], start: "06:00", end: "07:30", packageIds: ["p1"] },
   { id: "ab2", days: ["Tue"], start: "17:30", end: "19:00", packageIds: ["p1", "p2"] },
-  { id: "ab3", days: ["Sat"], start: "08:00", end: "10:00", packageIds: ["p2"] },
+  { id: "ab3", days: ["Sat"], start: "08:00", end: "10:00", packageIds: ["p2", "p3"] },
 ];
 
 export const COACH_BOOKINGS = [
-  // Pending — awaiting the coach's accept/decline
+  // Pending — awaiting coach's accept/decline
   { id: "b2", coachId: "c2", coachName: "Noah Kelly", clientName: "Sarah Lin", clientHandle: "sarahlin", service: "1:1 Programming Session", date: "Fri, 25 Jul", time: "6:00am", mode: "In-person", status: "pending", paymentStatus: "not_requested", payoutStatus: "not_ready", price: 65, participants: "You", notes: "Coming back from a shoulder injury — cleared for light training, will bring physio notes." },
   { id: "cb2", clientName: "Marcus Webb", service: "Junior Group (max 4)", date: "Wed, 23 Jul", time: "5:00pm", mode: "In-person", status: "pending", price: 30, notes: "First session for his son, age 9." },
   { id: "cb3", clientName: "The Chen Family (u18)", service: "1:1 Court Session", date: "Sat, 26 Jul", time: "9:00am", mode: "In-person", status: "pending", price: 72, notes: "Booking for two children, guardian consent provided at checkout." },
   { id: "cb5", clientName: "Aiden Cross", service: "1:1 Court Session", date: "Fri, 21 Aug", time: "6:30am", mode: "In-person", status: "awaiting_payment", paymentDeadline: "Tomorrow, 6:00pm", paymentReminderSent: false, price: 72, notes: "" },
   { id: "cb6", clientName: "Grace Liu", service: "Junior Group (max 4)", date: "Thu, 30 Jul", time: "4:30pm", mode: "In-person", status: "pending", price: 30, notes: "Wants to try group coaching for the first time." },
+  { id: "cb17", clientName: "Leo Tanaka", service: "1:1 Programming Session", date: "Mon, 24 Aug", time: "7:00am", mode: "In-person", status: "pending", price: 65, notes: "Focusing on kettlebell clean & jerk technique." },
+  { id: "cb18", clientName: "Hannah Smith", service: "Injury Return Assessment", date: "Wed, 26 Aug", time: "6:00am", mode: "In-person", status: "pending", price: 85, notes: "Cleared 6 weeks post-ACL reconstruction." },
 
-  // Upcoming — confirmed and on the calendar
+  // Upcoming — confirmed on calendar
   { id: "s1", coachId: "c2", coachName: "Noah Kelly", clientName: "Sarah Lin", clientHandle: "sarahlin", service: "1:1 Programming Session", date: "Thu, 20 Aug", time: "6:00am", mode: "In-person", status: "completion_pending", paymentStatus: "held", payoutStatus: "not_ready", completionConfirmedBy: "coach", completionConfirmations: ["coach"], price: 65, notes: "Focus on clean return-to-training technique." },
   { id: "cb1", clientName: "Sarah Lin", service: "1:1 Court Session", date: "Tue, 22 Jul", time: "4:00pm", mode: "In-person", status: "confirmed", price: 72, notes: "" },
   { id: "cb7", clientName: "Ravi Patel", service: "1:1 Court Session", date: "Tue, 29 Jul", time: "7:00am", mode: "In-person", status: "confirmed", price: 72, notes: "" },
   { id: "cb8", clientName: "Owen King", service: "1:1 Court Session", date: "Fri, 1 Aug", time: "5:30pm", mode: "In-person", status: "confirmed", price: 72, notes: "" },
   { id: "cb9", clientName: "The Nguyen Family (u18)", service: "Junior Group (max 4)", date: "Sun, 3 Aug", time: "10:00am", mode: "In-person", status: "confirmed", price: 30, notes: "" },
+  { id: "cb19", clientName: "Jordan Lee", service: "Small Group WOD (max 3)", date: "Sat, 22 Aug", time: "8:00am", mode: "In-person", status: "confirmed", price: 38, notes: "Metcon conditioning session." },
 
   // Completed — past sessions
   { id: "cb4", clientName: "Ravi Patel", service: "8-Week Term Block", date: "Mon, 14 Jul", time: "7:00am", mode: "In-person", status: "completed", price: 500, notes: "" },
@@ -175,11 +188,12 @@ export const COACH_BOOKINGS = [
   { id: "cb11", clientName: "Marcus Webb", service: "Junior Group (max 4)", date: "Thu, 17 Jul", time: "5:00pm", mode: "In-person", status: "completed", price: 30, notes: "" },
   { id: "cb12", clientName: "The Chen Family (u18)", service: "1:1 Court Session", date: "Sun, 20 Jul", time: "9:00am", mode: "In-person", status: "completed", price: 72, notes: "" },
   { id: "cb13", clientName: "Owen King", service: "1:1 Court Session", date: "Mon, 21 Jul", time: "6:00am", mode: "In-person", status: "completed", price: 72, notes: "" },
+  { id: "cb20", clientName: "Hannah Smith", service: "1:1 Programming Session", date: "Wed, 23 Jul", time: "6:00am", mode: "In-person", status: "completed", price: 65, notes: "" },
 
-  // Closed outcomes remain visible in booking history
-  { id: "cb14", clientName: "Priya Desai", service: "Junior Group (max 4)", date: "Tue, 22 Jul", time: "5:00pm", mode: "In-person", status: "declined", price: 30, notes: "Schedule conflict" },
-  { id: "cb15", clientName: "Alex Morgan", service: "1:1 Court Session", date: "Fri, 24 Jul", time: "7:00am", mode: "In-person", status: "expired", price: 72, notes: "Payment window expired" },
-  { id: "cb16", clientName: "Jordan Lee", service: "1:1 Court Session", date: "Sat, 25 Jul", time: "8:00am", mode: "In-person", status: "cancelled", paymentStatus: "refunded", refundStatus: "refunded", price: 72, notes: "Cancelled by client" },
+  // Closed outcomes
+  { id: "cb14", clientName: "Priya Desai", service: "Junior Group (max 4)", date: "Tue, 22 Jul", time: "5:00pm", mode: "In-person", status: "declined", price: 30, notes: "Schedule conflict with existing booking." },
+  { id: "cb15", clientName: "Alex Morgan", service: "1:1 Court Session", date: "Fri, 24 Jul", time: "7:00am", mode: "In-person", status: "expired", price: 72, notes: "Payment window expired." },
+  { id: "cb16", clientName: "Jordan Lee", service: "1:1 Court Session", date: "Sat, 25 Jul", time: "8:00am", mode: "In-person", status: "cancelled", paymentStatus: "refunded", refundStatus: "refunded", price: 72, notes: "Cancelled by client before cutoff." },
 ].map(withBookingLifecycle);
 
 /** Role-facing exception records used by the client and coach prototypes. */
@@ -231,6 +245,22 @@ export const SESSION_DISPUTES = [
     updatedAt: "11 Aug, 12:05pm",
     decisionNote: "The booking and check-in records meet the coach’s published no-show policy. Compensation has been released.",
   },
+  {
+    id: "case-104",
+    bookingId: "b17",
+    filedByRole: "client",
+    category: "weather_hazard",
+    categoryLabel: "Severe Weather Cancellation",
+    description: "Surf conditions exceeded safe limits with coastal gale warning. Coach advised cancelling.",
+    amountRequested: 65,
+    status: DISPUTE_STATUS.RESOLVED,
+    outcome: DISPUTE_OUTCOME.CLIENT_REFUNDED,
+    evidence: ["BOM Marine Hazard Warning", "Chat confirmation from coach"],
+    includeChat: true,
+    submittedAt: "29 Jul, 7:15am",
+    updatedAt: "29 Jul, 10:00am",
+    decisionNote: "Confirmed hazardous weather condition. Full refund processed.",
+  },
 ];
 
 export const ADDITIONAL_CHARGES = [
@@ -273,6 +303,19 @@ export const ADDITIONAL_CHARGES = [
     createdAt: "Today, 9:04am",
     dueAt: "Choose at checkout",
   },
+  {
+    id: "charge-301",
+    bookingId: "b18",
+    reason: "Professional Racquet Restringing",
+    note: "Synthetic gut string replacement and fresh ergonomic overgrip before matchplay.",
+    amount: 25,
+    evidence: "Stringing log receipt",
+    phase: ADDITIONAL_CHARGE_PHASE.ACCEPTANCE,
+    kind: ADDITIONAL_CHARGE_KIND.OPTIONAL,
+    status: ADDITIONAL_CHARGE_STATUS.PENDING,
+    createdAt: "Yesterday, 4:30pm",
+    dueAt: "Optional add-on at checkout",
+  },
 ];
 
 export const REVIEWS = [
@@ -281,18 +324,25 @@ export const REVIEWS = [
   { id: "r3", name: "Owen K.", handle: "owenk", rating: 4, text: "Solid technical feedback, sessions run a little over time but worth it.", verified: true, date: "2 months ago" },
   { id: "r4", name: "Marcus W.", handle: "marcuswebb", rating: 5, text: "Clear session plan every week and I can feel the progress. Booking a full term.", verified: true, date: "3 months ago" },
   { id: "r5", name: "Grace L.", handle: "graceliu", rating: 4, text: "Really good coach — just wish there were a few more evening slots available.", verified: true, date: "4 months ago" },
-  { id: "r6", name: "The Chen Family", handle: "chenfam", rating: 5, text: "Our daughter's confidence has grown so much since she started. Couldn't ask for more.", verified: true, date: "5 months ago" },
+  { id: "r6", name: "The Chen Family", handle: "thechens", rating: 5, text: "Our daughter's confidence has grown so much since she started. Couldn't ask for more.", verified: true, date: "5 months ago" },
+  { id: "r7", name: "Hannah S.", handle: "hannahs", rating: 5, text: "Priya’s dual coaching in Tennis and Pickleball is brilliant. Her court positioning drills transformed our doubles synergy.", verified: true, date: "2 weeks ago" },
+  { id: "r8", name: "Leo T.", handle: "leot", rating: 5, text: "Declan’s kicking biomechanics session with video replay fixed a 3-year slice in my drop punt. Highly recommend for any serious AFL junior.", verified: true, date: "3 weeks ago" },
+  { id: "r9", name: "Jordan L.", handle: "jordanl", rating: 5, text: "Tyler Koa’s underwater stroke analysis identified my catch slip immediately. Shaved 4 seconds off my 100m freestyle in just 3 sessions.", verified: true, date: "1 month ago" },
 ];
 
 export const THREADS = [
   { id: "t1", withName: "Isla Ferguson", withRole: "coach", context: "Booking · Tue 4:00pm", lastMsg: "Sounds great, see you at the courts!", time: "9:41am", unread: 0 },
   { id: "t2", withName: "Noah Kelly", withRole: "coach", context: "Enquiry", lastMsg: "Do you have any morning slots next week?", time: "Yesterday", unread: 2 },
   { id: "t3", withName: "Ruby Hendricks", withRole: "coach", context: "Booking · Sun 8:00am", lastMsg: "I've sent through the drill sheet, take a look 🙂", time: "Mon", unread: 0 },
+  { id: "t4", withName: "Priya Sharma", withRole: "coach", context: "Enquiry · Pickleball & Tennis", lastMsg: "Yes, I provide composite paddles for the clinic!", time: "2 days ago", unread: 1 },
+  { id: "t5", withName: "Tyler Koa Henderson", withRole: "coach", context: "Booking · Tue 6:30am", lastMsg: "Don't forget to bring your optical goggles for video tracking.", time: "3 days ago", unread: 0 },
 ];
+
 export const COACH_THREADS = [
   { id: "ct1", withName: "Sarah Lin", withRole: "client", context: "Booking · Tue 4:00pm", lastMsg: "Sounds great, see you at the courts!", time: "9:41am", unread: 0 },
   { id: "ct2", withName: "Marcus Webb", withRole: "client", context: "Enquiry", lastMsg: "Do you run sessions on weekends?", time: "Yesterday", unread: 1 },
   { id: "ct3", withName: "The Chen Family", withRole: "client", context: "Booking · Sat 9:00am", lastMsg: "Perfect, thank you for confirming!", time: "Mon", unread: 0 },
+  { id: "ct4", withName: "Leo Tanaka", withRole: "client", context: "Enquiry · Strength & S&C", lastMsg: "I have clearance from my physiotherapist for barbell work.", time: "Yesterday", unread: 1 },
 ];
 
 export const CHAT_MESSAGES = [
@@ -311,10 +361,14 @@ export const BOOKING_ENQUIRY_MESSAGES = {
   cb3: [
     { id: 1, from: "them", text: "Hi Isla, we'd like to book for both our kids (u18) Saturday morning.", time: "Yesterday" },
   ],
+  cb17: [
+    { id: 1, from: "them", text: "Hi Noah, I’d like to book the Monday 7am slot for Olympic lifting programming.", time: "Yesterday" },
+    { id: 2, from: "me", text: "Great! Please bring your lifting shoes and any mobility bands you like using.", time: "Yesterday" },
+  ],
 };
 
 export const CLIENT_PROFILES = {
-  "Sarah Lin": { memberSince: "Jan 2025", totalSessions: 14, homeSuburb: "Bondi, Sydney", notes: "Regular client — usually books weekly sessions.", verifiedPayment: true },
+  "Sarah Lin": { memberSince: "Jan 2025", totalSessions: 16, homeSuburb: "Bondi, Sydney", notes: "Regular client — usually books weekly sessions across netball and strength.", verifiedPayment: true },
   "Marcus Webb": { memberSince: "Jun 2026", totalSessions: 1, homeSuburb: "Fitzroy, Melbourne", notes: "First-time booking with you. New to CoachLink.", verifiedPayment: true },
   "The Chen Family (u18)": { memberSince: "Mar 2026", totalSessions: 5, homeSuburb: "Bondi, Sydney", notes: "Books for two children (ages 10 & 13). Guardian consent on file.", verifiedPayment: true },
   "Ravi Patel": { memberSince: "Sep 2024", totalSessions: 22, homeSuburb: "Parramatta, Sydney", notes: "Long-term client, term-block subscriber.", verifiedPayment: true },
@@ -322,6 +376,8 @@ export const CLIENT_PROFILES = {
   "Grace Liu": { memberSince: "May 2026", totalSessions: 2, homeSuburb: "Randwick, Sydney", notes: "Prefers group sessions over 1:1.", verifiedPayment: true },
   "Owen King": { memberSince: "Feb 2026", totalSessions: 8, homeSuburb: "Bondi, Sydney", notes: "Regular client — books most weeks.", verifiedPayment: true },
   "The Nguyen Family (u18)": { memberSince: "Jun 2026", totalSessions: 3, homeSuburb: "Bondi, Sydney", notes: "Books for one child (age 11). Guardian consent on file.", verifiedPayment: true },
+  "Hannah Smith": { memberSince: "Apr 2026", totalSessions: 4, homeSuburb: "Fitzroy, Melbourne", notes: "Post-ACL rehab athlete, very diligent with warmup protocol.", verifiedPayment: true },
+  "Leo Tanaka": { memberSince: "May 2026", totalSessions: 6, homeSuburb: "Richmond, Melbourne", notes: "AFL junior state squad hopeful.", verifiedPayment: true },
 };
 
 export const FAQS = {
@@ -330,10 +386,12 @@ export const FAQS = {
     { q: "When am I charged?", a: "Payment is requested after the coach accepts your booking request. Once you pay, funds are held securely and released to the coach after the session is confirmed complete." },
     { q: "What if I need to cancel?", a: "Open the booking from your dashboard and select Cancel or Reschedule. Refunds follow the individual coach's cancellation policy, shown at checkout." },
     { q: "How do refunds work?", a: "Approved refunds are returned to your original payment method within 5–10 business days." },
+    { q: "Can I book a coach who coaches two sports?", a: "Yes! Multi-sport coaches offer distinct packages for each sport they coach. You can filter by either sport or select specific packages on their profile." },
     { q: "Is my payment information secure?", a: "Yes — CoachLink never stores full card details. Payments are processed through an encrypted, PCI-compliant provider." },
   ],
   coach: [
     { q: "How do I get verified?", a: "Submit an identity document and, if you coach under-18s, a Working with Children Check. Most reviews complete within 2 business days." },
+    { q: "Can I coach multiple sports on one profile?", a: "Yes! In Onboarding or Profile Edit, select your Primary Sport and any Secondary Sports. You can create customized packages for each sport with separate pricing and venues." },
     { q: "When do I get paid?", a: "Payouts release automatically once a client confirms a session is complete, minus CoachLink's commission. Funds typically land in 2–3 business days." },
     { q: "Can I set my own cancellation policy?", a: "Yes — choose Flexible, Moderate or Strict from your Services tab. This is shown to clients before they book." },
     { q: "How does Instant Book differ from Request to Book?", a: "Instant Book confirms matching client requests automatically. Request to Book lets you review and accept each one." },
@@ -351,13 +409,14 @@ export const CLIENT_NOTIFICATIONS = [
   { id: "n1", type: "booking", title: "Booking confirmed", body: "Your session with Isla Ferguson is confirmed for Tue, 4:00pm.", time: "9:41am", unread: true, coachId: "c1", coachName: "Isla Ferguson" },
   { id: "n2", type: "message", title: "New message from Noah Kelly", body: "Do you have any morning slots next week?", time: "Yesterday", unread: true, coachName: "Noah Kelly" },
   { id: "n3", type: "review", title: "How was your session?", body: "Leave a quick review for Ruby Hendricks to help other clients.", time: "2 days ago", unread: true, coachName: "Ruby Hendricks" },
-  { id: "n4", type: "availability", title: "New availability", body: "Chloe Dawson, one of your favorites, just opened up new slots this week.", time: "3 days ago", unread: false, coachId: "c5", coachName: "Chloe Dawson" },
+  { id: "n7", type: "booking", title: "New Multi-Sport Coach nearby", body: "Priya Sharma (Tennis & Pickleball) just opened slots in Fitzroy!", time: "2 days ago", unread: false, coachId: "c7", coachName: "Priya Sharma" },
   { id: "n5", type: "promo", title: "10% off your next booking", body: "Use code WELCOME10 at checkout before it expires.", time: "5 days ago", unread: false },
 ];
 
 export const COACH_VERIFICATION_DOCS = [
   { key: "wwcc", label: "Working with Children Check", expiresOn: "24 Aug 2026", daysLeft: 18 },
   { key: "quals", label: "Accreditation renewal", expiresOn: "30 Sep 2026", daysLeft: 55 },
+  { key: "first_aid", label: "HLTAID011 Provide First Aid", expiresOn: "15 Dec 2026", daysLeft: 132 },
 ];
 
 export const COACH_NOTIFICATIONS = [
@@ -365,6 +424,7 @@ export const COACH_NOTIFICATIONS = [
   { id: "cn2", type: "verification", title: "Working with Children Check expiring soon", body: "Your WWCC expires in 18 days — renew it to keep accepting under-18 bookings.", time: "Today", unread: true },
   { id: "cn3", type: "booking", title: "New booking request", body: "Marcus Webb requested a 1:1 Programming Session for Sat, 9:00am.", time: "2 hours ago", unread: true },
   { id: "cn4", type: "review", title: "New 5-star review", body: "Sarah L. left you a review after your last session.", time: "3 days ago", unread: false },
+  { id: "cn5", type: "booking", title: "Booking Accepted by Client", body: "Aiden Cross paid for the 1:1 Court Session on Fri, 21 Aug.", time: "4 days ago", unread: false },
 ];
 
 export const ADMIN_VERIFICATION_QUEUE = [
@@ -382,6 +442,27 @@ export const ADMIN_VERIFICATION_QUEUE = [
     suburb: "Geelong, Melbourne", experience: "3 yrs coaching",
     documents: [
       { key: "quals", label: "Accreditations", detail: "Cycling Australia Level 2 certificate" },
+    ],
+    submittedByUser: false,
+  },
+  {
+    id: "v3", name: "Priya Sharma", sport: "Tennis & Pickleball", type: "Multi-Sport Dual Accreditation",
+    suburb: "Fitzroy, Melbourne", experience: "7 yrs coaching",
+    documents: [
+      { key: "id", label: "Identity document", detail: "Australian Passport verified" },
+      { key: "wwcc", label: "Working with Children Check", detail: "VIC Working with Children Check (Employee)" },
+      { key: "quals", label: "Tennis Australia Club Pro", detail: "Club Professional qualification verified" },
+      { key: "quals2", label: "Pickleball Australia Coach", detail: "Level 1 Coach accreditation" },
+    ],
+    submittedByUser: false,
+  },
+  {
+    id: "v4", name: "Declan Murphy", sport: "AFL & S&C", type: "WWCC + ASCA Level 2",
+    suburb: "Richmond, Melbourne", experience: "8 yrs coaching",
+    documents: [
+      { key: "id", label: "Identity document", detail: "Driver's licence uploaded" },
+      { key: "wwcc", label: "WWCC Check", detail: "Valid to 2029" },
+      { key: "quals", label: "ASCA Strength Coach", detail: "ASCA Level 2 accreditation certificate" },
     ],
     submittedByUser: false,
   },
@@ -426,4 +507,6 @@ export const ADMIN_RECENT_BOOKINGS = [
   { id: "ab2", client: "Marcus Webb", coach: "Noah Kelly", amount: 65, status: "pending" },
   { id: "ab3", client: "The Chen Family", coach: "Isla Ferguson", amount: 72, status: "completed" },
   { id: "ab4", client: "Owen Kelly", coach: "Ruby Hendricks", amount: 65, status: "completed" },
+  { id: "ab5", client: "Hannah Smith", coach: "Priya Sharma", amount: 75, status: "confirmed" },
+  { id: "ab6", client: "Leo Tanaka", coach: "Declan Murphy", amount: 70, status: "completed" },
 ];

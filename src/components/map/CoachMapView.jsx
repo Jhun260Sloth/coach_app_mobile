@@ -61,7 +61,7 @@ export function CoachMapView({ coaches = [], radiusKm = null, activeFilterCount 
   const searchFiltered = useMemo(() => {
     if (!searchText.trim()) return geoCoaches;
     const q = searchText.trim().toLowerCase();
-    return geoCoaches.filter(c => c.suburb.toLowerCase().includes(q) || c.name.toLowerCase().includes(q) || c.sport.toLowerCase().includes(q));
+    return geoCoaches.filter(c => c.suburb.toLowerCase().includes(q) || c.name.toLowerCase().includes(q) || c.sport.toLowerCase().includes(q) || (c.sports && c.sports.some(s => s.toLowerCase().includes(q))));
   }, [geoCoaches, searchText]);
 
   // The parent owns the shared filter state; this map search only narrows the
@@ -77,7 +77,7 @@ export function CoachMapView({ coaches = [], radiusKm = null, activeFilterCount 
     const candidates = [
       ...coaches.map(c => ({ label: c.suburb, type: "location" })),
       ...coaches.map(c => ({ label: c.name, type: "coach" })),
-      ...coaches.map(c => ({ label: c.sport, type: "sport" })),
+      ...coaches.flatMap(c => (c.sports || [c.sport]).map(s => ({ label: s, type: "sport" }))),
     ];
     return candidates
       .filter((item, index) => candidates.findIndex((other) => other.label === item.label && other.type === item.type) === index)

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { haptic } from "../../utils/haptics";
 import {
   ArrowRight, BadgeDollarSign, CalendarDays, Check, Info,
   LockKeyhole, MessageSquareText, Plus, ShieldCheck, Sparkles, Trash2,
@@ -104,6 +105,7 @@ export function ScreenCoachAcceptBooking({ nav, params, coachBookings = [], acce
   const removeCost = (id) => setCosts((items) => items.filter((item) => item.id !== id));
   const accept = () => {
     if (submitting) return;
+    haptic(12);
     setSubmitting(true);
     window.setTimeout(() => {
       const accepted = acceptBookingWithCharges?.(booking.id, costs);
