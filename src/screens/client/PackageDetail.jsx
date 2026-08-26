@@ -104,7 +104,7 @@ export function ScreenPackageDetail({ nav, params }) {
                 </div>
               </div>
               <div style={{ marginTop: 12 }}>
-                <Btn full size="sm" variant="outline" icon={CalendarDays} onClick={changeSchedule}>Change date & time</Btn>
+                <Btn full size="sm" variant="outline" icon={CalendarDays} onClick={changeSchedule} style={{ background: C.white }}>Change date & time</Btn>
               </div>
             </Card>
           </div>

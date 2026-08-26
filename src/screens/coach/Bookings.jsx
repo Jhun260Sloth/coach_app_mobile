@@ -298,7 +298,7 @@ export function ScreenCoachBookingDetail({
               {cn.revealed && <div style={{ fontSize: T.captionLg, color: C.success, marginTop: 2, ...fBody }}>Identity shared for confirmed booking</div>}
               <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>{profile.homeSuburb}</div>
             </div>
-            {profile.verifiedPayment && <Badge tone="success" icon={ShieldCheck}>Verified</Badge>}
+            {profile.verifiedPayment && <Badge tone="orange" icon={ShieldCheck}>Verified</Badge>}
           </div>
           <div style={{ display: "flex", gap: 24, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.border}` }}>
             <div>

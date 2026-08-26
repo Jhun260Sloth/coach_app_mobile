@@ -101,10 +101,7 @@ export function CoachListCard({ coach, onOpen, unavailable, style }) {
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
         {(coach.sports || [coach.sport]).map((sport) => (
-          <span key={sport} style={{ minHeight: 26, display: "inline-flex", alignItems: "center", gap: 5, padding: "0 8px", borderRadius: 999, border: `1px solid ${C.border}`, background: C.fog, color: C.jet, fontSize: T.captionLg, fontWeight: 600, ...fBody }}>
-            <SportIcon sport={sport} size={12} color={C.brand} />
-            {sport}
-          </span>
+          <SportBadge key={sport} sport={sport} compact />
         ))}
       </div>
 
@@ -171,9 +168,8 @@ function TopRecommendationCard({ coach, onOpen }) {
 
         <div style={{ marginTop: 10 }}>
           <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, letterSpacing: "-0.1px", ...oneLine, ...fDisplay }}>{pub.name}</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 4, color: C.slate, fontSize: T.captionLg, ...fBody }}>
-            <SportIcon sport={coach.sport} size={14} color={C.brand} />
-            <span style={{ minWidth: 0, ...oneLine, fontWeight: 500 }}>{coach.sport}</span>
+          <div style={{ marginTop: 6 }}>
+            <SportBadge sport={coach.sport} compact />
           </div>
           <div title={experienceLabel} style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 4, color: C.slateLight, fontSize: T.caption, ...fBody }}>
             <Award size={12} color={C.brand} aria-hidden="true" />
@@ -415,7 +411,7 @@ export function PersonalisedRecommendationModal({ open, onClose, onSubmit }) {
               style={{ flex: 1, boxSizing: "border-box", background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, color: C.jet, outline: "none", ...fBody }}
             />
             <span style={{ fontSize: T.bodyLg, color: C.slate, ...fBody }}>km</span>
-            <button onClick={applyCustomRadius} style={{ padding: "11px 16px", borderRadius: 12, border: "none", background: C.brand, color: C.white, fontSize: T.labelLg, fontWeight: 700, cursor: "pointer", ...fBody }}>Set</button>
+            <button onClick={applyCustomRadius} style={{ padding: "11px 16px", borderRadius: 12, border: "none", background: C.black, color: C.white, fontSize: T.labelLg, fontWeight: 700, cursor: "pointer", ...fBody }}>Set</button>
           </div>
         ) : (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -951,34 +947,10 @@ export function ScreenClientHome({ nav, params = {}, favorites = [], toggleFav, 
           )}
 
           {!hasActiveFilters && (
-            <>
-              {/* Promotional / Featured Packages Hero Carousel */}
-              <PromoBannerCarousel
-                banners={PROMO_BANNERS}
-                onSelectBanner={handleBannerSelect}
-              />
-
-              {recommendedCoaches.length > 0 && (
-                <div style={{ marginBottom: 22 }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                      <div style={{ width: 26, height: 26, borderRadius: 8, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", color: C.brand, flexShrink: 0 }}>
-                        <Sparkles size={14} color={C.brand} />
-                      </div>
-                      <div>
-                        <div style={{ fontSize: T.title, fontWeight: 700, color: C.jet, ...fDisplay }}>Recommended for you</div>
-                        <div style={{ fontSize: T.micro, color: C.slateLight, marginTop: 1, ...fBody }}>Based on your profile, goals and location</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="cl-swipe-row cl-hide-scrollbar" style={{ display: "flex", gap: 11, overflowX: "auto", margin: "0 -18px", padding: "2px 18px 8px", width: "auto" }}>
-                    {recommendedCoaches.map((c) => (
-                      <TopRecommendationCard key={c.id} coach={c} onOpen={() => nav("coach-profile", { id: c.id })} />
-                    ))}
-                  </div>
-                </div>
-              )}
-            </>
+            <PromoBannerCarousel
+              banners={PROMO_BANNERS}
+              onSelectBanner={handleBannerSelect}
+            />
           )}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
             <div style={{ minWidth: 0 }}>

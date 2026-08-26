@@ -129,8 +129,6 @@ export function LocationField({ value, onChange, label = "Location", helper, pla
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => pick(s)}
                   style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, width: "100%", textAlign: "left", padding: "10px 12px", background: "none", border: "none", borderRadius: 11, cursor: "pointer", ...fBody }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = C.fog; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}
                 >
                   <span style={{ display: "flex", alignItems: "center", gap: 9, fontSize: T.bodyLg, color: C.jet, fontWeight: 500, minWidth: 0 }}>
                     <MapPin size={14} color={C.slateLight} style={{ flexShrink: 0 }} />

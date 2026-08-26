@@ -54,7 +54,7 @@ function RadiusFilterBase({ radiusKm, onChange, resultCount }) {
           </div>
           <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
             <button onClick={() => setShowCustom(false)} style={{ flex: 1, padding: "8px 0", borderRadius: 10, border: `1px solid ${C.border}`, background: C.white, color: C.jet, fontSize: T.labelLg, fontWeight: 600, cursor: "pointer", ...fBody }}>Close</button>
-            <button onClick={apply} style={{ flex: 1, padding: "8px 0", borderRadius: 10, border: "none", background: C.brand, color: C.white, fontSize: T.labelLg, fontWeight: 700, cursor: "pointer", ...fBody }}>Apply</button>
+            <button onClick={apply} style={{ flex: 1, padding: "8px 0", borderRadius: 10, border: "none", background: C.black, color: C.white, fontSize: T.labelLg, fontWeight: 700, cursor: "pointer", ...fBody }}>Apply</button>
           </div>
         </div>
       ) : (

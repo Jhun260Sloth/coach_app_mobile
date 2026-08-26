@@ -269,8 +269,7 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
     toast && toast(`${childDraft.name}'s profile added`);
     setChildModalOpen(false);
   };
-
-  return (
+  return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="Who's attending?" onBack={() => nav("package-detail", { coachId: coach.id, packageId: pkg.id, presetDate: params.presetDate, presetTime: params.presetTime })} />
 
@@ -309,12 +308,12 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
             style={{
               width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 14,
               padding: "13px 15px", borderRadius: 16,
-              background: selfSelected ? C.brandTint : C.white,
-              border: `1.5px solid ${selfSelected ? C.brand : C.border}`,
+              background: selfSelected ? (darkMode ? C.jetSoft : C.fog) : C.white,
+              border: `1.5px solid ${selfSelected ? C.black : C.border}`,
               opacity: atCapacity && !selfSelected ? 0.45 : 1,
               cursor: atCapacity && !selfSelected ? "not-allowed" : "pointer",
               transition: "background .15s ease, border-color .15s ease, opacity .15s ease, box-shadow .15s ease, transform .15s ease",
-              boxShadow: selfSelected ? `0 2px 8px ${darkMode ? "rgba(0,0,0,0.3)" : "rgba(46,125,50,0.08)"}` : "0 1px 3px rgba(0,0,0,0.02)",
+              boxShadow: selfSelected ? "0 2px 8px rgba(0,0,0,0.06)" : "0 1px 3px rgba(0,0,0,0.02)",
             }}
           >
             <Avatar name={selfName} size={42} />
@@ -322,15 +321,15 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
               <div style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...fBody }}>
                 {selfName}
               </div>
-              <div style={{ fontSize: T.captionLg, color: selfSelected ? C.brand : C.slate, marginTop: 2, ...fBody }}>
+              <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>
                 Account holder (You)
               </div>
             </div>
             <div
               style={{
                 width: 22, height: 22, borderRadius: 99,
-                border: `1.5px solid ${selfSelected ? C.brand : C.border}`,
-                background: selfSelected ? C.brand : "transparent",
+                border: `1.5px solid ${selfSelected ? C.black : C.border}`,
+                background: selfSelected ? C.black : "transparent",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 flexShrink: 0, transition: "background .15s ease, border-color .15s ease",
               }}
@@ -356,12 +355,12 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
                 style={{
                   width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 14,
                   padding: "13px 15px", borderRadius: 16,
-                  background: isSelected ? C.brandTint : C.white,
-                  border: `1.5px solid ${isSelected ? C.brand : C.border}`,
+                  background: isSelected ? (darkMode ? C.jetSoft : C.fog) : C.white,
+                  border: `1.5px solid ${isSelected ? C.black : C.border}`,
                   opacity: disabled ? 0.45 : 1,
                   cursor: disabled ? "not-allowed" : "pointer",
                   transition: "background .15s ease, border-color .15s ease, opacity .15s ease, box-shadow .15s ease, transform .15s ease",
-                  boxShadow: isSelected ? `0 2px 8px ${darkMode ? "rgba(0,0,0,0.3)" : "rgba(46,125,50,0.08)"}` : "0 1px 3px rgba(0,0,0,0.02)",
+                  boxShadow: isSelected ? "0 2px 8px rgba(0,0,0,0.06)" : "0 1px 3px rgba(0,0,0,0.02)",
                 }}
               >
                 <Avatar name={c.name || "Child"} size={42} />
@@ -369,15 +368,15 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
                   <div style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...fBody }}>
                     {c.name || "Child Profile"}
                   </div>
-                  <div style={{ fontSize: T.captionLg, color: isSelected ? C.brand : C.slate, marginTop: 2, ...fBody }}>
+                  <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>
                     {childSubtitle}
                   </div>
                 </div>
                 <div
                   style={{
                     width: 22, height: 22, borderRadius: 99,
-                    border: `1.5px solid ${isSelected ? C.brand : C.border}`,
-                    background: isSelected ? C.brand : "transparent",
+                    border: `1.5px solid ${isSelected ? C.black : C.border}`,
+                    background: isSelected ? C.black : "transparent",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     flexShrink: 0, transition: "background .15s ease, border-color .15s ease",
                   }}
@@ -398,7 +397,7 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
               padding: "14px 16px", borderRadius: 16,
               background: C.fog,
               border: `1.5px dashed ${C.border}`,
-              color: atCapacity ? C.slateLight : C.brand,
+              color: atCapacity ? C.slateLight : C.jet,
               fontSize: T.bodyLg, fontWeight: 600,
               cursor: atCapacity ? "not-allowed" : "pointer",
               opacity: atCapacity ? 0.5 : 1,
@@ -406,7 +405,7 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
               ...fBody,
             }}
           >
-            <Plus size={18} color={atCapacity ? C.slateLight : C.brand} strokeWidth={2.2} />
+            <Plus size={18} color={atCapacity ? C.slateLight : C.jet} strokeWidth={2.2} />
             Add Child Profile
           </button>
         </div>
@@ -667,7 +666,7 @@ export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings =
 
             {/* Session Summary */}
             <SectionLabel>Session Summary</SectionLabel>
-            <Card style={{ marginBottom: 18, background: C.brandTint, border: "none" }}>
+            <Card style={{ marginBottom: 18, background: C.fog, border: "none" }}>
               <Row label="Package" value={pkg.name} />
               <Row label="Coach" value={pub.name} />
               <Row label="Date" value={formatFullDateFromDate(selectedDate)} />

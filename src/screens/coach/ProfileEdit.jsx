@@ -523,11 +523,11 @@ const toggleNotif = (key) => setNotifPrefs((p) => ({ ...p, [key]: !p[key] }));
 {tab === "settings" && (
         <>
         <SettingsGroup title="Notifications">
-          <SettingsRow icon={Bell} label="Notification preferences" sub="Bookings, messages & payment alerts" onClick={() => setSheet("notif")} />
+          <SettingsRow icon={Bell} label="Notification preferences" onClick={() => setSheet("notif")} />
         </SettingsGroup>
 
         <SettingsGroup title="Security">
-          <SettingsRow icon={ShieldCheck} label="Login & contact details" sub="Name, username, verified email and phone" onClick={() => setSheet("accountDetails")} />
+          <SettingsRow icon={ShieldCheck} label="Login & contact details" onClick={() => setSheet("accountDetails")} />
           <SettingsRow icon={Fingerprint} label="Biometric login" right={<Toggle label="Biometric login" on={biometric} onClick={() => setBiometric((v) => !v)} />} />
           <SettingsRow icon={Lock} label="Change password" onClick={() => setSheet("password")} />
         </SettingsGroup>

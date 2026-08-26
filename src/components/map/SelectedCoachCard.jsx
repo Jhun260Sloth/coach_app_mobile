@@ -3,7 +3,7 @@ import { MapPin, ShieldCheck, ChevronRight, X } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { Avatar, HandleTag } from "../ui/Primitives";
-import { SportLabel } from "../ui/SportUI";
+import { SportBadge } from "../ui/SportUI";
 import { getPublicName } from "../../utils/name";
 
 // Isolated so selecting an approximate coach area does not re-render the map
@@ -27,9 +27,9 @@ function SelectedCoachCardBase({ coach, onOpen, onClose }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontWeight: 700, fontSize: T.title, color: C.jet, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", ...fDisplay }}>{pub.name}</div>
           {pub.handle && <HandleTag handle={pub.handle} size={11} color={C.slateLight} />}
-          <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 4, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
             {(coach.sports || [coach.sport]).map((s) => (
-              <SportLabel key={s} sport={s} size={14} color={C.brand} style={{ fontSize: T.label, fontWeight: 700, ...fDisplay }} />
+              <SportBadge key={s} sport={s} compact />
             ))}
             <span style={{ fontSize: T.label, color: C.slate, ...fBody }}>· ${coach.packages[0].price}/session</span>
           </div>
@@ -47,7 +47,7 @@ function SelectedCoachCardBase({ coach, onOpen, onClose }) {
             <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Venue shared after booking</span>
           </div>
         </div>
-        <button type="button" aria-label={`Open ${pub.name}'s profile`} onClick={() => onOpen?.(coach.id)} style={{ minWidth: 92, height: 44, padding: "0 12px", borderRadius: 14, background: C.brand, color: C.white, border: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, cursor: "pointer", flexShrink: 0, fontSize: T.labelLg, fontWeight: 700, ...fBody }}>
+        <button type="button" aria-label={`Open ${pub.name}'s profile`} onClick={() => onOpen?.(coach.id)} style={{ minWidth: 92, height: 44, padding: "0 12px", borderRadius: 14, background: C.black, color: C.white, border: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, cursor: "pointer", flexShrink: 0, fontSize: T.labelLg, fontWeight: 700, ...fBody }}>
           View <ChevronRight size={16} color={C.white} />
         </button>
       </div>

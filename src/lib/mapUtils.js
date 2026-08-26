@@ -155,7 +155,7 @@ export function injectMapStyles(C = CL) {
     .cl-user-dot-wrap::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: #3B82F6; border: 3px solid ${C.white}; box-shadow: 0 1px 5px rgba(0,0,0,.35); }
     .cl-coach-avatar-marker { position: relative; box-sizing: border-box; width: 52px; height: 52px; padding: 3px; border-radius: 50%; background: var(--cl-marker-surface); border: 2px solid var(--cl-marker-ring); box-shadow: none; cursor: pointer; transition: transform .16s ease; }
     .cl-coach-avatar-marker::before { content: ""; position: absolute; inset: -8px; border-radius: 50%; border: 1.5px solid var(--cl-marker-ring); background: var(--cl-marker-ring); opacity: .12; }
-    .cl-coach-avatar-marker:hover, .cl-coach-avatar-marker.selected { transform: scale(1.1); box-shadow: none; }
+    .cl-coach-avatar-marker.selected { transform: scale(1.1); box-shadow: none; }
     .cl-coach-avatar-marker.selected { border-width: 3px; }
     .cl-coach-avatar-marker.selected::before { inset: -10px; opacity: .18; }
     .cl-coach-avatar-shell { position: relative; z-index: 1; width: 100%; height: 100%; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: var(--cl-marker-tint); color: var(--cl-marker-ink); font: 700 15px/1 'Outfit', sans-serif; }

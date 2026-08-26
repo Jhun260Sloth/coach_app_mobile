@@ -191,6 +191,19 @@ function AppShell() {
     return () => el.removeEventListener("wheel", onWheel);
   }, []);
 
+  // Touch indicator — simulates a phone screen-recording tap dot inside the
+  // phone frame. pointerdown shows a fading ripple at the press point; the
+  // mouse cursor is hidden inside the phone so only the tap dot is visible.
+  const [touches, setTouches] = useState([]);
+  const touchIdRef = useRef(0);
+  const handleScreenPointerDown = (e) => {
+    if (e.pointerType !== "mouse" && e.pointerType !== "touch") return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const id = ++touchIdRef.current;
+    setTouches((prev) => [...prev, { id, x: e.clientX - rect.left, y: e.clientY - rect.top }]);
+    setTimeout(() => setTouches((prev) => prev.filter((t) => t.id !== id)), 500);
+  };
+
   // Resolve current screen component
   const ScreenComponent = ROUTES[screen] || ROUTES["splash"];
   const currentMeta = ROUTE_METADATA[screen] || { title: screen, category: "App Screen", role };
@@ -234,9 +247,9 @@ function AppShell() {
     fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
     bgSidebar: studioTheme === "dark" ? "#0D1117" : "#FFFFFF",
     border: studioTheme === "dark" ? "#21262D" : "#E5E7EB",
-    textPrimary: studioTheme === "dark" ? "#E8F5E9" : "#111827",
-    textSecondary: studioTheme === "dark" ? "#81A881" : "#6B7280",
-    textMuted: studioTheme === "dark" ? "#5C8A5C" : "#9CA3AF",
+    textPrimary: studioTheme === "dark" ? "#E5E7EB" : "#111827",
+    textSecondary: studioTheme === "dark" ? "#8B949E" : "#6B7280",
+    textMuted: studioTheme === "dark" ? "#6E7681" : "#9CA3AF",
     bgHover: studioTheme === "dark" ? "#21262D" : "#F3F4F6",
     bgActive: studioTheme === "dark" ? "#161B22" : "#F9FAFB",
   };
@@ -327,9 +340,9 @@ function AppShell() {
                   }}
                   style={{
                     display: "flex", alignItems: "center", gap: 5, padding: "4px 8px", borderRadius: 6,
-                    border: `1px solid ${isFirstTimeClient ? "#10B981" : vSystem.border}`,
-                    background: isFirstTimeClient ? "#ECFDF5" : vSystem.bgSidebar,
-                    color: isFirstTimeClient ? "#047857" : vSystem.textPrimary, fontSize: 11, fontWeight: 500, cursor: "pointer", fontFamily: vSystem.fontFamily,
+                    border: `1px solid ${isFirstTimeClient ? "#F15A29" : vSystem.border}`,
+                    background: isFirstTimeClient ? "#FDF1E8" : vSystem.bgSidebar,
+                    color: isFirstTimeClient ? "#D94A17" : vSystem.textPrimary, fontSize: 11, fontWeight: 500, cursor: "pointer", fontFamily: vSystem.fontFamily,
                   }}
                 >
                   <Sparkles size={11} /> New Client
@@ -645,7 +658,7 @@ function AppShell() {
                     {isCapturing ? (
                       <Loader2 size={12} style={{ animation: "clSpin 0.8s linear infinite" }} />
                     ) : (
-                      <Camera size={12} color={studioTheme === "dark" ? "#A5D6A7" : "#2E7D32"} />
+                      <Camera size={12} color={studioTheme === "dark" ? "#F8A579" : "#F15A29"} />
                     )}
                     <span>{isCapturing ? "Capturing..." : "Screenshot"}</span>
                     <Download size={10} style={{ opacity: 0.6, marginLeft: 1 }} />
@@ -692,7 +705,7 @@ function AppShell() {
                         onMouseEnter={(e) => e.currentTarget.style.background = studioTheme === "dark" ? "#262626" : "#F3F4F6"}
                         onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
                       >
-                        <Camera size={13} color="#2E7D32" />
+                        <Camera size={13} color="#F15A29" />
                         <div style={{ flex: 1 }}>
                           <div>Current View (PNG)</div>
                           <div style={{ fontSize: 10, color: vSystem.textMuted }}>{showFrame ? "With device mockup" : "Clean screen only"}</div>
@@ -829,7 +842,7 @@ function AppShell() {
               {isCapturing ? (
                 <Loader2 size={12} style={{ animation: "clSpin 0.8s linear infinite" }} />
               ) : (
-                <Camera size={12} color={studioTheme === "dark" ? "#A5D6A7" : "#2E7D32"} />
+                <Camera size={12} color={studioTheme === "dark" ? "#F8A579" : "#F15A29"} />
               )}
               <span>{isCapturing ? "Capturing..." : "Screenshot"}</span>
             </button>
@@ -933,13 +946,27 @@ function AppShell() {
                 />
 
                 {/* Active Screen Component */}
-                <div ref={screenWrapRef} className="cl-screen-wrap" style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+                <div ref={screenWrapRef} className="cl-screen-wrap" onPointerDown={handleScreenPointerDown} style={{ flex: 1, position: "relative", overflow: "hidden" }}>
                   <div key={screen} style={{ height: "100%", animation: "clScreenIn .3s cubic-bezier(.22,1,.36,1)" }}>
                     <ScreenErrorBoundary screen={screen} onReset={() => resetNav("client-home", {}, "client")}>
                       <ScreenComponent {...screenProps} />
                     </ScreenErrorBoundary>
                   </div>
                   <Toast toast={toastMsg} />
+                  {touches.map((t) => (
+                    <span
+                      key={t.id}
+                      aria-hidden="true"
+                      style={{
+                        position: "absolute", left: t.x, top: t.y, width: 44, height: 44, borderRadius: 99,
+                        pointerEvents: "none", zIndex: 9999,
+                        background: darkMode ? "rgba(255,255,255,.32)" : "rgba(22,24,29,.26)",
+                        border: "1.5px solid rgba(255,255,255,.55)",
+                        boxShadow: "0 2px 10px rgba(0,0,0,.16)",
+                        animation: "clTouchFade .5s ease-out forwards",
+                      }}
+                    />
+                  ))}
                 </div>
 
                 {/* Bottom Tab Bar */}

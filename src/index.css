@@ -2,16 +2,16 @@
    CoachLink — Base Styles & CSS Custom Properties
    =========================================================================
    Root-level custom properties mirror the JS design tokens in theme/theme.js.
-   Text/neutral tokens stay NEUTRAL (gray/black) — only brand tokens are green.
+   Text/neutral tokens stay NEUTRAL (gray/black) — only brand tokens are orange.
    ========================================================================= */
 
 :root {
   color-scheme: light;
   /* ---------- Brand palette ---------- */
-  --cl-brand-color: #1B5E20;
-  --cl-secondary: #66BB6A;
-  --cl-accent: #A5D6A7;
-  --cl-surface: #E8F5E9;
+  --cl-brand-color: #F15A29;
+  --cl-secondary: #F15A29;
+  --cl-accent: #F8A579;
+  --cl-surface: #FDF1E8;
 
   /* ---------- Neutral tokens (black / gray) ---------- */
   --cl-jet: #16181D;
@@ -22,9 +22,9 @@
   --cl-white: #FFFFFF;
   --cl-black: #000000;
 
-  /* ---------- Brand semantic (green) ---------- */
-  --cl-brand: #66BB6A;
-  --cl-brand-tint: #A5D6A7;
+  /* ---------- Brand semantic (orange) ---------- */
+  --cl-brand: #F15A29;
+  --cl-brand-tint: #FDEBDD;
   --cl-fog: #F4F5F7;
 
   /* ---------- Functional tokens ---------- */
@@ -78,10 +78,10 @@
 [data-theme="dark"] {
   color-scheme: dark;
   /* ---------- Brand palette ---------- */
-  --cl-brand-color: #1B5E20;
-  --cl-secondary: #81C784;
-  --cl-accent: #1B5E20;
-  --cl-surface: #0D1F0D;
+  --cl-brand-color: #F15A29;
+  --cl-secondary: #F8A579;
+  --cl-accent: #F15A29;
+  --cl-surface: #201209;
 
   /* ---------- Neutral tokens (inverted for dark bg) ---------- */
   --cl-jet: #E5E7EB;
@@ -92,9 +92,9 @@
   --cl-white: #0D1117;
   --cl-black: #FFFFFF;
 
-  /* ---------- Brand semantic (green, adjusted for dark bg) ---------- */
-  --cl-brand: #81C784;
-  --cl-brand-tint: #1B5E20;
+  /* ---------- Brand semantic (orange, adjusted for dark bg) ---------- */
+  --cl-brand: #F15A29;
+  --cl-brand-tint: #3B2012;
   --cl-fog: #1A1A1A;
 
   /* ---------- Functional tokens ---------- */
@@ -150,8 +150,7 @@ input::placeholder, textarea::placeholder {
   opacity: 1;
 }
 
-/* =========================================================================
-   MOBILE-LIKE SCROLLING INSIDE THE PHONE PROTOTYPE
+/* MOBILE-LIKE SCROLLING INSIDE THE PHONE PROTOTYPE
    -------------------------------------------------------------------------
    Real mobile apps have no visible scrollbars — scrolling happens via touch
    (or mouse wheel on desktop). Hide every scrollbar inside the phone screen
@@ -165,6 +164,27 @@ input::placeholder, textarea::placeholder {
   width: 0 !important;
   height: 0 !important;
   display: none;
+}
+
+/* =========================================================================
+   TOUCH-FIRST POINTER
+   -------------------------------------------------------------------------
+   The phone is a touch device: the mouse renders as a round touch dot that
+   follows the pointer, and a press shows the touch-dot ripple (like a phone
+   screen recording). Text fields keep a caret so desktop keyboards still
+   work when editing inputs.
+   ========================================================================= */
+.cl-phone-screen, .cl-phone-screen * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Ccircle cx='12' cy='12' r='10' fill='rgba(22,24,29,0.28)' stroke='rgba(255,255,255,0.65)' stroke-width='1.5'/%3E%3C/svg%3E") 12 12, auto !important;
+}
+[data-theme="dark"] .cl-phone-screen,
+[data-theme="dark"] .cl-phone-screen * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Ccircle cx='12' cy='12' r='10' fill='rgba(255,255,255,0.32)' stroke='rgba(255,255,255,0.72)' stroke-width='1.5'/%3E%3C/svg%3E") 12 12, auto !important;
+}
+.cl-phone-screen input,
+.cl-phone-screen textarea,
+.cl-phone-screen [contenteditable="true"] {
+  cursor: text !important;
 }
 
 /* =========================================================================
@@ -198,10 +218,10 @@ input::placeholder, textarea::placeholder {
 }
 
 .cl-phone-screen ::selection {
-  background: rgba(46, 125, 50, .22);
+  background: rgba(241, 90, 41, .22);
 }
 
-/* Inputs — border-only focus state: the border turns brand green, no glow
+/* Inputs — border-only focus state: the border turns brand orange, no glow
    ring. Applies to bare inputs AND .cl-input wrapper divs via focus-within. */
 .cl-phone-screen input:focus,
 .cl-phone-screen textarea:focus,
@@ -228,14 +248,9 @@ input::placeholder, textarea::placeholder {
   box-shadow: none !important;
 }
 
-/* Cards lift subtly on hover — desktop prototyping feel, inert on touch. */
+/* Cards give subtle press feedback — native-app feel, inert on desktop hover. */
 .cl-card {
   transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
-}
-.cl-card[data-interactive="true"]:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 18px -8px rgba(22, 24, 29, .12);
-  border-color: var(--cl-secondary);
 }
 
 .cl-card[data-interactive="true"]:active {

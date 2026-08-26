@@ -742,7 +742,7 @@ export function ScreenChatThread({ nav, goBack, params, role, toast, offline, bo
           <div style={{ display: "flex", alignItems: "center", gap: 10, background: C.fog, borderRadius: 12, padding: "12px 14px", fontSize: T.labelLg, color: C.slate, lineHeight: 1.5, ...fBody }}>
             <Ban size={15} color={C.danger} style={{ flexShrink: 0 }} />
             <span style={{ flex: 1 }}>You blocked {params.name}.</span>
-            <button onClick={() => unblock(threadId)} style={{ fontSize: T.labelLg, fontWeight: 600, color: C.white, background: C.brand, border: "none", borderRadius: 8, padding: "6px 12px", cursor: "pointer", whiteSpace: "nowrap", ...fBody }}>
+            <button onClick={() => unblock(threadId)} style={{ fontSize: T.labelLg, fontWeight: 600, color: C.white, background: C.black, border: "none", borderRadius: 8, padding: "6px 12px", cursor: "pointer", whiteSpace: "nowrap", ...fBody }}>
               Unblock
             </button>
           </div>
@@ -764,7 +764,7 @@ export function ScreenChatThread({ nav, goBack, params, role, toast, offline, bo
               <MapPin size={19} color={C.slate} />
             </button>
           </div>
-          <button type="button" aria-label="Send message" disabled={!input.trim()} onClick={send} style={{ width: LAYOUT.touchTarget, height: LAYOUT.touchTarget, padding: 0, borderRadius: LAYOUT.pillRadius, background: input.trim() ? C.brand : C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: input.trim() ? "pointer" : "default", flexShrink: 0, transition: "background .15s ease" }}>
+          <button type="button" aria-label="Send message" disabled={!input.trim()} onClick={send} style={{ width: LAYOUT.touchTarget, height: LAYOUT.touchTarget, padding: 0, borderRadius: LAYOUT.pillRadius, background: input.trim() ? C.black : C.fog, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: input.trim() ? "pointer" : "default", flexShrink: 0, transition: "background .15s ease" }}>
             <Send size={16} color={input.trim() ? C.white : C.slateLight} />
           </button>
         </div>

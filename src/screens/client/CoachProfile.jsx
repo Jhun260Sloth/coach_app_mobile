@@ -242,7 +242,7 @@ function PackageBookingSheet({
                       onClick={() => chooseDate(date, availabilityState)}
                       style={{
                         minWidth: 0, height: 44, borderRadius: 11,
-                        border: `1.5px solid ${isSelected ? C.brand : (isToday ? C.success : C.border)}`,
+                        border: `1.5px solid ${isSelected ? C.brand : (isToday ? C.brand : C.border)}`,
                         background: isSelected ? C.brand : C.white,
                         color: isSelected ? C.white : (disabled ? C.slateLight : C.jet),
                         opacity: inMonth ? (disabled ? 0.45 : 1) : 0.2,

@@ -74,7 +74,7 @@ export function ScreenSupport({ nav, params = {}, role }) {
           </div>
           <div style={{ padding: "12px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", display: "flex", gap: 8, borderTop: `1px solid ${C.border}`, background: C.white }}>
             <input name="support-message" autoComplete="off" aria-label="Describe your issue" placeholder="Describe your issue…" style={{ flex: 1, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, outline: "none", color: C.jet, background: C.white, ...fBody }} />
-            <button style={{ width: 38, height: 38, borderRadius: 99, background: C.brand, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 12px -3px rgba(46,125,50,.5)" }}>
+            <button style={{ width: 38, height: 38, borderRadius: 99, background: C.black, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 12px -3px rgba(0,0,0,.28)" }}>
               <Send size={15} color={C.white} />
             </button>
           </div>

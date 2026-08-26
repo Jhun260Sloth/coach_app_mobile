@@ -698,7 +698,7 @@ export function ScreenClientBookingDetail({ nav, goBack, params, bookings, toast
           </div>
           {coach?.verified?.identity && (
             <div style={{ display: "flex", gap: 8, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.border}` }}>
-              <Badge tone="success" icon={ShieldCheck}>Verified coach</Badge>
+              <Badge tone="orange" icon={ShieldCheck}>Verified coach</Badge>
             </div>
           )}
         </Card>

@@ -45,33 +45,36 @@ export function SportLabel({ sport, size = 16, color = "currentColor", label, st
 export function SportBadge({ sport, selected = false, onClick, compact = false, label, style }) {
   const C = useColors();
   const Component = onClick ? "button" : "span";
-  const fg = selected ? (C.brandIcon || C.brandColor) : C.jet;
+  const bg = selected ? C.brand : C.brandTint;
+  const fg = selected ? C.white : C.jet;
+  const iconColor = selected ? C.white : (C.brandIcon || C.brandColor);
   return (
     <Component
       type={onClick ? "button" : undefined}
       onClick={onClick}
       aria-pressed={onClick ? selected : undefined}
       style={{
-        display: "inline-flex", alignItems: "center", gap: compact ? 6 : 8,
-        minHeight: onClick ? LAYOUT.touchTarget : compact ? 30 : 36,
-        padding: compact ? "4px 9px 4px 6px" : "6px 12px 6px 7px",
+        display: "inline-flex",
+        alignItems: "center",
+        gap: compact ? 5 : 7,
+        minHeight: 0,
+        padding: compact ? "6px 10px" : "6px 13px",
         borderRadius: LAYOUT.pillRadius,
-        border: `1px solid ${selected ? C.brand : C.border}`,
-        background: selected ? C.brandTint : C.white,
-        color: fg, cursor: onClick ? "pointer" : "default",
-        fontSize: compact ? T.captionLg : T.body, fontWeight: selected ? 700 : 600,
-        whiteSpace: "nowrap", boxSizing: "border-box", ...fBody, ...style,
+        border: "none",
+        background: bg,
+        color: fg,
+        cursor: onClick ? "pointer" : "default",
+        fontSize: compact ? T.captionLg : T.body,
+        fontWeight: selected ? 700 : 600,
+        lineHeight: 1,
+        whiteSpace: "nowrap",
+        boxSizing: "border-box",
+        ...fBody,
+        ...style,
       }}
     >
-      <span style={{
-        width: compact ? 22 : 28, height: compact ? 22 : 28, borderRadius: compact ? 7 : 9,
-        display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-        background: selected ? C.brand : C.brandTint,
-        color: selected ? C.white : (C.brandIcon || C.brandColor),
-      }}>
-        <SportIcon sport={sport} size={compact ? 13 : 16} />
-      </span>
-      {label || getSportLabel(sport)}
+      <SportIcon sport={sport} size={compact ? 13 : 15} color={iconColor} />
+      <span>{label || getSportLabel(sport)}</span>
     </Component>
   );
 }

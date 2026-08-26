@@ -3,15 +3,20 @@ import { useEffect } from "react";
 /* =========================================================================
    COACHLINK THEME SYSTEM
    -------------------------------------------------------------------------
-   Two complete color palettes (light / dark) using a green brand identity:
-     brandColor     #1B5E20   — deep brand green (dark brand elements)
-     secondaryColor #66BB6A   — primary brand (buttons, accents, links)
-     accentColor    #A5D6A7   — brand tints / highlights
-     surfaceColor   #E8F5E9   — page backgrounds / card surfaces
+   Two complete color palettes (light / dark) using an orange brand identity:
+     brandColor     #F15A29   — main brand orange (status bars, gradients)
+     secondaryColor #F8A579   — brand shade 1 (highlights, accents)
+     accentColor    #F8A579   — brand shade 1 / tints
+     surfaceColor   #FDF1E8   — page backgrounds / card surfaces
+     brandTint      #FDEBDD   — light soft orange fills (icon tiles, chips)
+
+   brandIcon (#D94A17 light / #F8A579 dark) is a derived darker orange used
+   for small text and icons on light backgrounds for contrast.
 
    IMPORTANT: text/neutral tokens (jet, jetSoft, slate, slateLight, border,
    onDark*) stay NEUTRAL (black/gray) in both modes — only the brand tokens
-   (brand, brandTint, fog) carry green.
+   (brand, brandTint, fog) carry orange. Primary CTA buttons are neutral:
+   black background in light mode, white background in dark mode.
 
    Every token exists in both CL (light) and CD (dark) so components can
    switch at runtime:  const C = darkMode ? CD : CL;
@@ -19,10 +24,10 @@ import { useEffect } from "react";
 
 export const CL = {
   // ── brand palette ───────────────────────────────────────────────
-  brandColor: "#1B5E20",
-  secondary: "#2E7D32",
-  accent: "#A5D6A7",
-  surface: "#E8F5E9",
+  brandColor: "#F15A29",
+  secondary: "#F15A29",
+  accent: "#F8A579",
+  surface: "#FDF1E8",
 
   // ── neutral tokens (black / gray) ───────────────────────────────
   jet: "#16181D",
@@ -33,10 +38,10 @@ export const CL = {
   white: "#FFFFFF",
   black: "#000000",
 
-  // ── brand semantic tokens (green) ───────────────────────────────
-  brand: "#2E7D32",
-  brandTint: "#E8F5E9",
-  brandIcon: "#1B5E20",
+  // ── brand semantic tokens (orange) ──────────────────────────────
+  brand: "#F15A29",
+  brandTint: "#FDEBDD",
+  brandIcon: "#D94A17",
   fog: "#F4F5F7",
 
   // ── functional tokens ───────────────────────────────────────────
@@ -64,10 +69,10 @@ export const CL = {
 
 export const CD = {
   // ── brand palette ───────────────────────────────────────────────
-  brandColor: "#81C784",
-  secondary: "#81C784",
-  accent: "#1B5E20",
-  surface: "#0D1F0D",
+  brandColor: "#F15A29",
+  secondary: "#F8A579",
+  accent: "#F15A29",
+  surface: "#201209",
 
   // ── neutral tokens (inverted for dark bg) ───────────────────────
   jet: "#E5E7EB",
@@ -78,10 +83,10 @@ export const CD = {
   white: "#0D1117",
   black: "#FFFFFF",
 
-  // ── brand semantic tokens (green, adjusted for dark bg) ────────
-  brand: "#81C784",
-  brandTint: "#143315",
-  brandIcon: "#81C784",
+  // ── brand semantic tokens (orange, adjusted for dark bg) ───────
+  brand: "#F15A29",
+  brandTint: "#3B2012",
+  brandIcon: "#F8A579",
   fog: "#1A1A1A",
 
   // ── functional tokens ───────────────────────────────────────────
@@ -219,6 +224,7 @@ export const KEYFRAMES = `
 @keyframes clScreenIn { from{opacity:0; transform:translateY(10px) scale(.995)} to{opacity:1; transform:translateY(0) scale(1)} }
 @keyframes clToastIn { from{opacity:0; transform:translateY(10px) scale(.97)} to{opacity:1; transform:translateY(0) scale(1)} }
 @keyframes clTabBounce { 0%{transform:translateY(0)} 40%{transform:translateY(-3px)} 100%{transform:translateY(0)} }
+@keyframes clTouchFade { 0%{opacity:.85; transform:translate(-50%,-50%) scale(.55)} 55%{opacity:.35} 100%{opacity:0; transform:translate(-50%,-50%) scale(1.2)} }
 @keyframes clSkeleton { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 @keyframes clHeroFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
 .cl-hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

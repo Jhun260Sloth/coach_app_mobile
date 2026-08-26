@@ -106,7 +106,7 @@ export function ScreenBookingSelectDateTime({ nav, params }) {
                 let color = C.jet;
                 if ((state === "available" || state === "limited") && inRange) border = C.brand;
                 if (disabled) color = C.slateLight;
-                if (isToday && inRange && !isSelected) border = C.success;
+                if (isToday && inRange && !isSelected) border = C.brand;
                 if (isSelected) { background = C.brand; border = C.brand; color = C.white; }
 
                 return (
@@ -1091,7 +1091,7 @@ export function ScreenAvailabilityCalendar({ nav, params }) {
                 let color = C.jet;
                 if ((state === "available" || state === "limited") && inRange) border = C.brand;
                 if (disabled) color = C.slateLight;
-                if (isToday && inRange && !isSelected) border = C.success;
+                if (isToday && inRange && !isSelected) border = C.brand;
                 if (isSelected) { background = C.brand; border = C.brand; color = C.white; }
 
                 return (

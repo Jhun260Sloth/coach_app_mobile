@@ -23,7 +23,7 @@ function useColors() {
   }
 }
 
-/** Brand-green asterisk marking a field/section as required. */
+/** Brand-orange asterisk marking a field/section as required. */
 export function RequiredMark() {
   const C = useColors();
   return (
@@ -45,7 +45,7 @@ export function Spinner({ size = 15, color }) {
   );
 }
 
-export function Btn({ children, onClick, variant = "primary", full, icon: Icon, disabled, loading, loadingText, size = "md", type = "button", ariaLabel, title }) {
+export function Btn({ children, onClick, variant = "primary", full, icon: Icon, disabled, loading, loadingText, size = "md", type = "button", ariaLabel, title, style }) {
   const C = useColors();
   const iconOnly = !!Icon && !children;
   const base = {
@@ -58,7 +58,7 @@ export function Btn({ children, onClick, variant = "primary", full, icon: Icon, 
     fontSize: size === "sm" ? T.body : T.subtitleLg, ...fBody,
   };
   const variants = {
-    primary: { background: C.brand, color: C.white, boxShadow: `0 6px 16px -6px ${darkenHex(C.brand, 0.35)}` },
+    primary: { background: C.black, color: C.white, boxShadow: "0 6px 16px -6px rgba(0,0,0,.28)" },
     dark: { background: C.jet, color: C.white },
     secondary: { background: C.fog, color: C.jet },
     outline: { background: "transparent", color: C.jet, border: `1px solid ${C.border}` },
@@ -66,21 +66,11 @@ export function Btn({ children, onClick, variant = "primary", full, icon: Icon, 
     danger: { background: "transparent", color: C.danger, border: `1px solid ${C.dangerBorder}` },
   };
   return (
-    <button type={type} disabled={disabled || loading} aria-busy={loading || undefined} aria-label={ariaLabel} title={title} onClick={(disabled || loading) ? undefined : onClick} style={{ ...base, ...variants[variant] }}>
+    <button type={type} disabled={disabled || loading} aria-busy={loading || undefined} aria-label={ariaLabel} title={title} onClick={(disabled || loading) ? undefined : onClick} style={{ ...base, ...variants[variant], ...style }}>
       {loading ? <Spinner size={size === "sm" ? 13 : 15} /> : (Icon && <Icon aria-hidden="true" size={size === "sm" ? 14 : 17} strokeWidth={2.3} />)}
       {loading ? (loadingText || children) : children}
     </button>
   );
-}
-
-/* Subtle brand-coloured soft shadow behind primary buttons. */
-function darkenHex(hex, alpha) {
-  const h = (hex || "").replace("#", "");
-  if (h.length < 6) return "transparent";
-  const r = parseInt(h.slice(0, 2), 16);
-  const g = parseInt(h.slice(2, 4), 16);
-  const b = parseInt(h.slice(4, 6), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 export function ScrollFadeRow({ children, style, className }) {
@@ -452,8 +442,6 @@ export function StatusPill({ status }) {
   return (
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 5, flexShrink: 0, whiteSpace: "nowrap",
-      color: colors.fg,
-      fontSize: T.captionLg, fontWeight: 700, padding: "4px 8px", borderRadius: 8,
       color: colors.fg,
       fontSize: T.captionLg, fontWeight: 700, padding: "4px 8px", borderRadius: 8,
       background: colors.bg, ...fBody,

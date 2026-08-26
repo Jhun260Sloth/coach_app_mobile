@@ -88,12 +88,12 @@ export function CoachProfileHero({
             onClick={onAvatarClick}
             disabled={!onAvatarClick}
             style={{
-              padding: 3, borderRadius: 99, background: C.white,
+              padding: 4, borderRadius: 99, background: C.white,
               boxShadow: "0 6px 18px rgba(22,24,29,.14)",
               border: "none", display: "block", cursor: onAvatarClick ? "pointer" : "default",
             }}
           >
-            <Avatar name={pub.name} src={avatarSrc} size={76} ring />
+            <Avatar name={pub.name} src={avatarSrc} size={76} />
           </button>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
@@ -113,24 +113,24 @@ export function CoachProfileHero({
               <Star size={15} fill={C.brand} color={C.brand} /> {coach.rating.toFixed(1)}
             </div>
             <div style={{ fontSize: T.caption, color: C.slate, marginTop: 1, ...fBody }}>{coach.reviews} reviews</div>
-            {instantBook && <Badge tone="success" icon={Zap} style={{ marginTop: 8, whiteSpace: "nowrap" }}>Instant book</Badge>}
+            {instantBook && <Badge tone="neutral" icon={Zap} style={{ marginTop: 8, whiteSpace: "nowrap", color: C.jet }}>Instant book</Badge>}
             {verificationChecks.length > 0 && (
                 <button
                   type="button"
                   aria-label={`Verified coach with ${verificationChecks.length} checks. Tap to view verification details.`}
                   onClick={() => setVerifyOpen(true)}
                   style={{
-                    display: "inline-flex", alignItems: "center", gap: 5, marginTop: 8,
-                    padding: 0,
-                    background: "none", color: C.success,
-                    border: "none",
+                    display: "inline-flex", alignItems: "center", gap: 4, marginTop: 8,
+                    padding: "4px 8px", minHeight: 0,
+                    background: C.brandTint, color: C.brandIcon,
+                    border: "none", borderRadius: 8,
                     cursor: "pointer",
-                    fontSize: T.caption, fontWeight: 700, whiteSpace: "nowrap", ...fBody
+                    fontSize: T.captionLg, fontWeight: 600, whiteSpace: "nowrap", ...fBody
                   }}
                 >
-                  <ShieldCheck size={13} aria-hidden="true" />
+                  <ShieldCheck size={11.5} aria-hidden="true" />
                   Verified
-                  <span style={{ minWidth: 16, height: 16, borderRadius: 99, background: C.successTint, border: `1px solid ${C.success}33`, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: T.micro, fontWeight: 800, color: C.success, ...fBody }}>{verificationChecks.length}</span>
+                  <span style={{ minWidth: 14, height: 14, borderRadius: 99, background: C.brand, color: C.white, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 9.5, fontWeight: 800, lineHeight: 1, padding: "0 2px", ...fBody }}>{verificationChecks.length}</span>
                 </button>
             )}
           </div>
@@ -162,7 +162,7 @@ export function CoachProfileHero({
             <div style={{ minWidth: 0, flex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                 <span style={{ fontSize: T.subtitle, fontWeight: 700, color: C.jet, ...fDisplay }}>{pub.name}</span>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 7px", borderRadius: 999, background: C.success, color: C.white, fontSize: T.micro, fontWeight: 700, ...fBody }}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 7px", borderRadius: 999, background: C.brand, color: C.white, fontSize: T.micro, fontWeight: 700, ...fBody }}>
                   <ShieldCheck size={11} /> {verificationChecks.length} Verified
                 </span>
               </div>
@@ -200,7 +200,7 @@ export function CoachProfileHero({
                   <span style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>Working with Children (WWCC)</span>
                 </div>
                 <Badge tone={verifiedObj.wwcc ? "success" : "neutral"} icon={verifiedObj.wwcc ? CheckCircle2 : null}>
-                  {verifiedObj.wwcc ? "Verified & active" : "Adult athletes only"}
+                  {verifiedObj.wwcc ? "Active" : "Adult athletes only"}
                 </Badge>
               </div>
               <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 6, lineHeight: 1.45, ...fBody }}>

@@ -93,7 +93,7 @@ export function ScreenSplash({ nav }) {
   return (
     <div style={{ height: "100%", background: C.white, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 28, textAlign: "center" }}>
       <div style={{ animation: "clFadeUp .5s ease" }}>
-        <img src={LOGO_WHITE_SRC} alt="CoachLink" style={{ width: 120, height: "auto" }} />
+        <img src={darkMode ? "/white.svg" : "/black.svg"} alt="CoachLink" style={{ width: 170, height: "auto" }} />
       </div>
       <div style={{ marginTop: 34 }}>
         <Spinner size={22} color={C.slateLight} />
@@ -159,9 +159,9 @@ export function ScreenGetStarted({ nav }) {
         }}
       >
         <img
-          src={LOGO_WHITE_SRC}
+          src="/white.svg"
           alt="CoachLink"
-          style={{ height: 32, width: "auto" }}
+          style={{ height: 28, width: "auto" }}
         />
       </div>
 
@@ -220,7 +220,7 @@ export function ScreenGetStarted({ nav }) {
 
         {/* Action Buttons */}
         <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 12 }}>
-          <Btn full variant="primary" onClick={() => nav("role-select")}>
+          <Btn full variant="primary" onClick={() => nav("role-select")} style={{ background: C.brand, color: C.white }}>
             Get Started
           </Btn>
           <button
@@ -276,7 +276,7 @@ export function ScreenRoleSelect({ nav, setRole }) {
     <div style={{ height: "100%", display: "flex", flexDirection: "column", background: C.white }}>
       <TopBar title="" onBack={() => nav("get-started")} />
       <div style={{ flex: 1, overflowY: "auto", padding: "14px 18px 24px" }} className="cl-hide-scrollbar">
-        <LogoMark size={36} />
+        <img src={darkMode ? "/white.svg" : "/black.svg"} alt="CoachLink" style={{ height: 26, width: "auto", marginBottom: 8 }} />
         <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, marginTop: 18, ...fDisplay }}>
           What brings you<br />to CoachLink?
         </div>
@@ -1472,7 +1472,7 @@ export function ScreenAdminLogin({ nav, toast }) {
     <div style={{ height: "100%", background: C.white, display: "flex", flexDirection: "column", padding: "40px 24px 28px" }}>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
         <div style={{ textAlign: "center", marginBottom: 30 }}>
-          <img src={LOGO_WHITE_SRC} alt="CoachLink" style={{ width: 120, height: "auto", marginBottom: 20 }} />
+          <img src={darkMode ? "/white.svg" : "/black.svg"} alt="CoachLink" style={{ width: 170, height: "auto", marginBottom: 20 }} />
           <div style={{ fontSize: T.body, color: C.onDarkMuted, marginTop: 4, ...fBody }}>Sign in with your CoachLink admin credentials</div>
         </div>
 
