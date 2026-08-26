@@ -1307,7 +1307,7 @@ export function BatteryIcon({ color = "currentColor", level = 82 }) {
   );
 }
 
-export function StatusBar({ dark, overlay }) {
+export function StatusBar({ dark, overlay, background }) {
   const C = useColors();
   const { darkMode } = useApp();
   const color = dark ? (darkMode ? C.black : C.white) : C.jet;
@@ -1318,6 +1318,7 @@ export function StatusBar({ dark, overlay }) {
       height: 48, padding: "0 22px",
       fontSize: T.body, fontWeight: 600, color, ...fBody,
       boxSizing: "border-box", pointerEvents: "none", zIndex: 90,
+      background,
       ...(overlay ? { position: "absolute", top: 0, left: 0, right: 0, width: "100%" } : {}),
     }}>
       <span style={{

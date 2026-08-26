@@ -6,12 +6,15 @@ import {
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { GENDER_OPTIONS } from "../../data/mockData";
-import { Chip, SectionLabel, FormSection, Btn, TopBar, Field, Card, Avatar, Badge, RequiredMark } from "../../components/ui/Primitives";
+import { SectionLabel, FormSection, Btn, TopBar, Field, Card, Avatar, Badge, RequiredMark } from "../../components/ui/Primitives";
 import { HandleField } from "../../components/ui/PublicIdentityFields";
 import { isValidHandle } from "../../utils/name";
 import { LocationField } from "../../components/ui/LocationField";
 import { SportBadge, SportSearchMultiSelect } from "../../components/ui/SportUI";
 import { POPULAR_SPORTS, SPORT_NAMES } from "../../data/sports";
+import { SportSkillLevelPicker } from "../../components/ui/SportSkillLevelPicker";
+import { hasCompleteSportLevels, normaliseSportLevels } from "../../data/sportSkillLevels";
+import { comparablePhone, isValidPhone } from "../../utils/contactVerification";
 
 function StepHeader({ title, subtitle, onBack }) {
   const { darkMode } = useApp();
@@ -39,13 +42,13 @@ export function calcAge(dobStr) {
   return age;
 }
 
-export function ScreenAboutYouProfile({ nav, onComplete }) {
+export function ScreenAboutYouProfile({ nav, params, onComplete }) {
   const { darkMode, clientIdentity, updateClientIdentity, isHandleTaken } = useApp();
   const C = darkMode ? CD : CL;
-  const [mobile, setMobile] = useState("");
-  const [location, setLocation] = useState(null); // { suburb, state, postcode }
-  const [dob, setDob] = useState("");
-  const [photo, setPhoto] = useState(null);
+  const [mobile, setMobile] = useState(params?.mobile || clientIdentity.phone || "");
+  const [location, setLocation] = useState(params?.location || null); // { suburb, state, postcode }
+  const [dob, setDob] = useState(params?.dob || "");
+  const [photo, setPhoto] = useState(params?.photo || null);
   const [handle, setHandle] = useState(clientIdentity.handle || "");
 
   const fullName = `${clientIdentity.firstName || ""} ${clientIdentity.lastName || ""}`.trim() || "";
@@ -60,21 +63,32 @@ export function ScreenAboutYouProfile({ nav, onComplete }) {
   const age = calcAge(dob);
   const isUnder18 = age !== null && age < 18;
   const ageVerified = age !== null && age >= 18;
+  const phoneVerified = !!clientIdentity.phoneVerified
+    && comparablePhone(mobile) === comparablePhone(clientIdentity.phone);
 
   // Continue stays disabled — and the user can't advance — until the date of
   // birth entered confirms they're 18 or older, and a valid, available
   // username has been chosen.
-  const canContinue = mobile.trim().length > 0 && !!location && ageVerified && isValidHandle(handle) && !isHandleTaken(handle);
+  const canContinue = isValidPhone(mobile) && !!location && ageVerified && isValidHandle(handle) && !isHandleTaken(handle);
   // The "who are you booking for?" step has been removed from the flow —
   // finishing this step takes the client straight to the setup success screen.
   const goNext = () => {
     if (!canContinue) return;
-    // Persist the location chosen here so the rest of the app (search,
-    // personalise-your-recommendations, profile) reuses the same location
-    // state rather than asking for it again.
-    onComplete?.({ location, mobile });
+    const profilePrefs = { location, mobile, dob, age, hasPhoto: !!photo };
     updateClientIdentity?.({ handle });
-    nav("client-setup-complete", { mobile, location, dob, age, hasPhoto: !!photo, name: fullName });
+    if (!phoneVerified) {
+      nav("verify-phone", {
+        phone: mobile,
+        next: "client-setup-complete",
+        nextParams: { ...profilePrefs, name: fullName },
+        pendingClientPrefs: profilePrefs,
+        backTo: "about-you-profile",
+        backParams: { mobile, location, dob, photo },
+      });
+      return;
+    }
+    onComplete?.({ ...profilePrefs, phoneVerified: true });
+    nav("client-setup-complete", { ...profilePrefs, name: fullName });
   };
 
   return (
@@ -104,18 +118,32 @@ export function ScreenAboutYouProfile({ nav, onComplete }) {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 16 }}>
-          <div>
-            <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Mobile number<RequiredMark /></div>
-            <div className="cl-input" style={{ display: "flex", alignItems: "center", gap: 8, background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
-              <Phone size={16} color={C.slateLight} />
-              <input
-                value={mobile}
-                onChange={(e) => setMobile(e.target.value)}
-                placeholder="04XX XXX XXX"
-                style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: T.bodyLg, color: C.jet, ...fBody }}
-              />
+          {phoneVerified ? (
+            <Card style={{ padding: 12, display: "flex", alignItems: "center", gap: 10, background: C.successTint }}>
+              <span style={{ width: 36, height: 36, borderRadius: 12, background: C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Phone size={16} color={C.success} /></span>
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ display: "block", fontSize: T.captionLg, color: C.slate, ...fBody }}>Verified mobile</span>
+                <span style={{ display: "block", fontSize: T.body, color: C.jet, fontWeight: 600, marginTop: 2, ...fBody }}>{mobile}</span>
+              </span>
+              <Badge tone="success">Verified</Badge>
+            </Card>
+          ) : (
+            <div>
+              <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Mobile number<RequiredMark /></div>
+              <div className="cl-input" style={{ display: "flex", alignItems: "center", gap: 8, background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
+                <Phone size={16} color={C.slateLight} />
+                <input
+                  value={mobile}
+                  onChange={(e) => setMobile(e.target.value.replace(/[^0-9+()\-\s]/g, ""))}
+                  placeholder="04XX XXX XXX"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: T.bodyLg, color: C.jet, ...fBody }}
+                />
+              </div>
+              <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 5, lineHeight: 1.45, ...fBody }}>We’ll verify this number before setup is complete.</div>
             </div>
-          </div>
+          )}
 
           <div>
             <LocationField
@@ -236,10 +264,9 @@ export function ScreenAccountType({ nav, params }) {
 
 /* Shared field set used by both the participant (child) setup flow and the
    "tell us about yourself" individual setup flow. */
-export const SKILL_LEVELS = ["Beginner", "Intermediate", "Advanced", "Elite"];
 export const emptyParticipantDraft = {
   name: "", dob: "", gender: "", location: null,
-  sport: [], skillLevel: "", goals: "",
+  sport: [], sportLevels: {}, goals: "",
   medicalConditions: "", allergies: "", medicalNotes: "",
   emergencyName: "", emergencyRelationship: "", emergencyMobile: "",
   guardianName: "", guardianRelationship: "", guardianMobile: "",
@@ -259,7 +286,14 @@ export function ParticipantFields({ draft, setDraft, showGuardianInfo = false })
 
   const patch = (p) => setDraft((d) => ({ ...d, ...p }));
   const age = calcAge(draft.dob);
-  const toggleSport = (s) => patch({ sport: draft.sport.includes(s) ? draft.sport.filter((x) => x !== s) : [...draft.sport, s] });
+  const setSports = (sports) => setDraft((current) => ({
+    ...current,
+    sport: sports,
+    sportLevels: normaliseSportLevels(sports, current.sportLevels, current.skillLevel),
+  }));
+  const toggleSport = (sport) => setSports(draft.sport.includes(sport)
+    ? draft.sport.filter((item) => item !== sport)
+    : [...draft.sport, sport]);
 
   return (
     <>
@@ -332,15 +366,15 @@ export function ParticipantFields({ draft, setDraft, showGuardianInfo = false })
             <SportBadge key={s} sport={s} selected={draft.sport.includes(s)} onClick={() => toggleSport(s)} compact />
           ))}
         </div>
-        <SportSearchMultiSelect options={SPORT_NAMES} value={draft.sport} onChange={(sport) => patch({ sport })} placeholder="Search all sports…" />
+        <SportSearchMultiSelect options={SPORT_NAMES} value={draft.sport} onChange={setSports} placeholder="Search all sports…" />
       </FormSection>
 
-      <FormSection icon={Target} label="Skill level" hint="How experienced they are in their main sport.">
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          {SKILL_LEVELS.map((lvl) => (
-            <Chip key={lvl} active={draft.skillLevel === lvl} onClick={() => patch({ skillLevel: lvl })}>{lvl}</Chip>
-          ))}
-        </div>
+      <FormSection icon={Target} label="Experience by sport" hint="Choose the closest current level for every selected sport.">
+        <SportSkillLevelPicker
+          sports={draft.sport}
+          value={draft.sportLevels}
+          onChange={(sportLevels) => patch({ sportLevels })}
+        />
       </FormSection>
 
       <FormSection icon={Target} label="Coaching goals" hint="What they'd like to get out of coaching.">
@@ -390,6 +424,7 @@ export function ScreenAboutYouParticipants({ nav, params, addChild, toast }) {
   const [savedCount, setSavedCount] = useState(0);
 
   const canSave = draft.name.trim().length > 0 && !!draft.dob
+    && hasCompleteSportLevels(draft.sport, draft.sportLevels)
     && draft.guardianName.trim().length > 0 && draft.guardianRelationship.trim().length > 0 && draft.guardianMobile.trim().length > 0;
 
   const persist = () => {
@@ -441,7 +476,8 @@ export function ScreenAboutYouSelf({ nav, params, onComplete }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const [draft, setDraft] = useState(emptyParticipantDraft);
-  const canContinue = draft.name.trim().length > 0 && !!draft.dob;
+  const canContinue = draft.name.trim().length > 0 && !!draft.dob
+    && hasCompleteSportLevels(draft.sport, draft.sportLevels);
 
   const finish = () => {
     if (!canContinue) return;

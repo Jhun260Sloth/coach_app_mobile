@@ -209,7 +209,7 @@ export function buildFallbackDraft(params, draft, coachOverride) {
 // sheet only asks for the essentials (name, DOB, photo, mobile); everything
 // else is filled in later from Account → Family.
 const emptyChildDraft = {
-  name: "", dob: "", age: "", sport: [], skillLevel: "", goals: "", location: null, preferences: "", hasPhoto: false,
+  name: "", dob: "", age: "", sport: [], sportLevels: {}, goals: "", location: null, preferences: "", hasPhoto: false,
   medicalConditions: "", allergies: "",
   guardianName: "", guardianRelationship: "", guardianMobile: "",
 };

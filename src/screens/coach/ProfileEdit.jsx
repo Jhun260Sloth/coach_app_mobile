@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import {
-  Camera, Edit3, Eye, EyeOff, Fingerprint, Lock, Shield, HelpCircle,
+  Camera, Edit3, Eye, EyeOff, Fingerprint, Lock, Shield, ShieldCheck, HelpCircle,
   LogOut, ChevronRight, Trash2, Plus, User,
   Banknote, CalendarClock, CalendarDays, Zap, Hand, Bell, MapPin, Film, Play, Image as ImageIcon,
   Share2, Award, X, Navigation, Star, Mail, AlertTriangle, Sparkles,
@@ -21,6 +21,7 @@ import { isValidHandle, getPublicName } from "../../utils/name";
 import { formatCoachLocation } from "../../utils/coachProfile";
 import { useApp } from "../../context/AppContext";
 import { CONFIG } from "../../config";
+import { AccountDetailsSheet } from "../../components/ui/AccountDetailsSheet";
 
 const LOCATION_OPTIONS = AU_SUBURBS.map((s) => `${s.suburb}, ${s.state}`);
 
@@ -62,7 +63,7 @@ function OptionCard({ icon: Icon, title, desc, selected, onClick }) {
 }
 
 export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, savePackage, removePackage, biometric, setBiometric, coachMedia = [], coachAvailableNow, setCoachAvailableNow }) {
-  const { darkMode, coachOnboarding, coachProfile, coachBookingType, setCoachBookingType, updateCoachOnboarding, isHandleTaken } = useApp();
+  const { darkMode, coachOnboarding, coachProfile, coachBookingType, setCoachBookingType, updateCoachOnboarding, isHandleTaken, pushNotification } = useApp();
   const C = darkMode ? CD : CL;
   const coach = coachProfile;
 
@@ -185,6 +186,22 @@ const toggleNotif = (key) => setNotifPrefs((p) => ({ ...p, [key]: !p[key] }));
   const [deleteResendSeconds, setDeleteResendSeconds] = useState(0);
   const deleteInputsRef = useRef([]);
   const coachEmail = coachOnboarding.email || "noah.kelly@email.com";
+  const coachPhone = coachOnboarding.phone || "0412 555 018";
+
+  const saveAccountDetails = ({ name, username, email, phone }) => {
+    const contactChanged = email.trim().toLowerCase() !== coachEmail.trim().toLowerCase()
+      || phone.replace(/\D/g, "") !== coachPhone.replace(/\D/g, "");
+    setProfile((current) => ({ ...current, name, handle: username }));
+    updateCoachOnboarding?.({ name, handle: username, email, phone, phoneVerified: !!phone });
+    if (contactChanged) {
+      pushNotification?.({
+        audience: "coach",
+        type: "verification",
+        title: "Contact details changed",
+        body: "Your verified email or phone number was updated. If this wasn't you, contact support now.",
+      });
+    }
+  };
 
   useEffect(() => {
     if (deleteResendSeconds <= 0) return undefined;
@@ -510,6 +527,7 @@ const toggleNotif = (key) => setNotifPrefs((p) => ({ ...p, [key]: !p[key] }));
         </SettingsGroup>
 
         <SettingsGroup title="Security">
+          <SettingsRow icon={ShieldCheck} label="Login & contact details" sub="Name, username, verified email and phone" onClick={() => setSheet("accountDetails")} />
           <SettingsRow icon={Fingerprint} label="Biometric login" right={<Toggle label="Biometric login" on={biometric} onClick={() => setBiometric((v) => !v)} />} />
           <SettingsRow icon={Lock} label="Change password" onClick={() => setSheet("password")} />
         </SettingsGroup>
@@ -680,6 +698,16 @@ const toggleNotif = (key) => setNotifPrefs((p) => ({ ...p, [key]: !p[key] }));
           </>
         )}
       </BottomSheet>
+
+      <AccountDetailsSheet
+        open={sheet === "accountDetails"}
+        onClose={closeSheet}
+        details={{ name: profile.name, username: profile.handle, email: coachEmail, phone: coachPhone }}
+        onSave={saveAccountDetails}
+        isHandleTaken={(handle) => isHandleTaken(handle, [coach.handle, profile.handle])}
+        toast={toast}
+        accountLabel="coach account"
+      />
 
       <BottomSheet open={sheet === "notif"} onClose={closeSheet} title="Notification preferences" heightPct={84}>
         <SettingsGroup title="Channels">

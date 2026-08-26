@@ -346,6 +346,13 @@ export function ScreenCoachProfile({ nav, goBack, params = {}, favorites = [], t
     toast?.(fav ? "Removed from saved coaches" : "Coach saved to favourites");
   };
   const handleShare = () => toast?.("Profile link ready to share");
+  const handleBack = () => {
+    if (params.returnToMap) {
+      nav("client-home", { mapOpen: true });
+      return;
+    }
+    goBack("client-home");
+  };
 
   const activePackages = coach.packages.filter((pkg) => pkg.active !== false);
   const startingPrice = activePackages.length ? Math.min(...activePackages.map((pkg) => pkg.price)) : null;
@@ -365,7 +372,7 @@ export function ScreenCoachProfile({ nav, goBack, params = {}, favorites = [], t
             overlay={
               <>
                 <div style={{ position: "absolute", top: 12, left: 12, pointerEvents: "auto" }}>
-                  <BackButton floating onClick={() => goBack("client-home")} />
+                  <BackButton floating onClick={handleBack} />
                 </div>
                 <div style={{ position: "absolute", top: 12, right: 12, display: "flex", gap: 8, pointerEvents: "auto" }}>
                   <button type="button" aria-label={fav ? "Remove coach from favourites" : "Add coach to favourites"} aria-pressed={fav} onClick={handleFavourite} style={{ width: 44, height: 44, borderRadius: 99, background: fav ? C.brand : CL.jetSoft, opacity: 0.94, border: `1px solid ${CL.onDarkDivider}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 8px 20px rgba(0,0,0,.18)" }}>

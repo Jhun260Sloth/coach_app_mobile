@@ -109,10 +109,10 @@ export const CD = {
 
 export const C = CL;
 
-export function applyTheme(docElement, mode) {
+export function applyTheme(docElement, mode, themeColorOverride) {
   docElement.setAttribute("data-theme", mode);
   docElement.style.colorScheme = mode;
-  const themeColor = mode === "dark" ? CD.white : CL.white;
+  const themeColor = themeColorOverride || (mode === "dark" ? CD.white : CL.white);
   let meta = document.querySelector('meta[name="theme-color"]');
   if (!meta) {
     meta = document.createElement("meta");

@@ -12,7 +12,8 @@ import { CURRENT_CLIENT, isHandleTaken as isHandleTakenBase } from "../data/user
 import { getPublicName, fullNameOf } from "../utils/name";
 import { formatCoachLocation, getCoachPublicProfile } from "../utils/coachProfile";
 import { useUserLocation } from "../utils/useUserLocation";
-import { applyTheme } from "../theme/theme";
+import { applyTheme, CL } from "../theme/theme";
+import { usesBrandedStatusBar } from "../utils/screenChrome";
 import { loadStored, saveStored, clearStored, STORAGE_KEYS } from "../utils/persistence";
 
 /* =========================================================================
@@ -105,8 +106,12 @@ export function AppProvider({ children }) {
 
   // ======== Dark mode effect ========
   useEffect(() => {
-    applyTheme(document.documentElement, darkMode ? "dark" : "light");
-  }, [darkMode]);
+    applyTheme(
+      document.documentElement,
+      darkMode ? "dark" : "light",
+      usesBrandedStatusBar(screen) ? CL.brandColor : undefined,
+    );
+  }, [darkMode, screen]);
 
   // ======== Persistence — keep lightweight preferences across reloads ========
   useEffect(() => { saveStored(STORAGE_KEYS.darkMode, darkMode); }, [darkMode]);
@@ -671,13 +676,13 @@ export function AppProvider({ children }) {
         ...prefs.children
           .filter((nc) => nc.name && nc.name.trim().length > 0)
           .filter((nc) => !c.some((ec) => ec.id === nc.id))
-          .map((nc) => ({ sport: [], goals: "", location: prefs.location || null, preferences: "", hasPhoto: false, ...nc })),
+          .map((nc) => ({ sport: [], sportLevels: {}, goals: "", location: prefs.location || null, preferences: "", hasPhoto: false, ...nc })),
       ]);
     }
   };
 
   const addChild = (child) =>
-    setChildren((c) => [...c, { id: Date.now(), name: "", age: "", sport: [], goals: "", location: null, preferences: "", hasPhoto: false, ...child }]);
+    setChildren((c) => [...c, { id: Date.now(), name: "", age: "", sport: [], sportLevels: {}, goals: "", location: null, preferences: "", hasPhoto: false, ...child }]);
   const updateChild = (id, patch) =>
     setChildren((c) => c.map((ch) => (ch.id === id ? { ...ch, ...patch } : ch)));
   const removeChild = (id) =>

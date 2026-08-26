@@ -11,7 +11,6 @@ export function PromoBannerCarousel({ banners = [], onSelectBanner, style }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const [activeIndex, setActiveIndex] = useState(0);
-  const [focusedDot, setFocusedDot] = useState(null);
   const railRef = useRef(null);
   const scrollTimerRef = useRef(null);
 
@@ -98,19 +97,19 @@ export function PromoBannerCarousel({ banners = [], onSelectBanner, style }) {
             style={{
               position: "relative",
               flex: "0 0 calc(100% - 40px)",
+              minWidth: 0,
               aspectRatio: "16 / 9",
               minHeight: LAYOUT.touchTarget,
               padding: 0,
               overflow: "hidden",
               scrollSnapAlign: "start",
-              border: `1px solid ${C.border}`,
+              border: `0px`,
               borderRadius: LAYOUT.cardRadius,
-              background: C.jet,
-              boxShadow: "0 1px 2px rgba(22,24,29,.04)",
               color: CL.white,
               cursor: "pointer",
               textAlign: "left",
               userSelect: "none",
+              outline: "none",
             }}
           >
             <img
@@ -257,7 +256,17 @@ export function PromoBannerCarousel({ banners = [], onSelectBanner, style }) {
       </div>
 
       {banners.length > 1 && (
-        <div role="group" aria-label="Choose coaching package" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5, marginTop: 4 }}>
+        <div
+          role="group"
+          aria-label="Choose coaching package"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 4,
+            marginTop: 4,
+          }}
+        >
           {banners.map((banner, index) => {
             const isActive = activeIndex === index;
             return (
@@ -267,18 +276,22 @@ export function PromoBannerCarousel({ banners = [], onSelectBanner, style }) {
                 aria-label={`Show ${banner.title}`}
                 aria-current={isActive ? "true" : undefined}
                 onClick={() => goToSlide(index)}
-                onFocus={() => setFocusedDot(index)}
-                onBlur={() => setFocusedDot(null)}
                 style={{
+                  minWidth: 0,
+                  minHeight: 0,
+                  width: "auto",
+                  height: "auto",
                   padding: "4px 2px",
-                  display: "flex",
+                  display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
                   border: "none",
                   outline: "none",
+                  boxShadow: "none",
                   borderRadius: LAYOUT.pillRadius,
                   background: "transparent",
                   cursor: "pointer",
+                  transform: "none",
                 }}
               >
                 <span
@@ -288,12 +301,8 @@ export function PromoBannerCarousel({ banners = [], onSelectBanner, style }) {
                     height: 5,
                     borderRadius: LAYOUT.pillRadius,
                     background: isActive ? C.brand : C.border,
-                    boxShadow: focusedDot === index
-                      ? `0 0 0 3px color-mix(in srgb, ${C.brand} 28%, transparent)`
-                      : isActive
-                        ? `0 0 0 2px color-mix(in srgb, ${C.brand} 12%, transparent)`
-                        : "none",
-                    transition: "width .24s cubic-bezier(.22,1,.36,1), background .2s ease, box-shadow .2s ease",
+                    boxShadow: "none",
+                    transition: "width .24s cubic-bezier(.22,1,.36,1), background .2s ease",
                   }}
                 />
               </button>

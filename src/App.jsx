@@ -13,6 +13,7 @@ import { LogoMark, Toast, BottomTabs, StatusBar } from "./components/ui/Primitiv
 import { AppProvider, useApp } from "./context/AppContext";
 import { ROUTES, ROUTE_METADATA } from "./router/routes";
 import { downloadElementAsPng } from "./utils/screenshot";
+import { usesBrandedStatusBar } from "./utils/screenChrome";
 
 /* =========================================================================
    ERROR BOUNDARY — Catches any screen-level exceptions gracefully
@@ -193,6 +194,7 @@ function AppShell() {
   // Resolve current screen component
   const ScreenComponent = ROUTES[screen] || ROUTES["splash"];
   const currentMeta = ROUTE_METADATA[screen] || { title: screen, category: "App Screen", role };
+  const brandedStatusBar = usesBrandedStatusBar(screen);
 
   const screenProps = { ...app };
 
@@ -924,7 +926,11 @@ function AppShell() {
                   </>
                 )}
                 
-                <StatusBar dark={screen === "splash" || screen === "get-started"} overlay={screen === "splash" || screen === "get-started"} />
+                <StatusBar
+                  dark={brandedStatusBar || screen === "splash" || screen === "get-started"}
+                  overlay={screen === "splash" || screen === "get-started"}
+                  background={brandedStatusBar ? CL.brandColor : undefined}
+                />
 
                 {/* Active Screen Component */}
                 <div ref={screenWrapRef} className="cl-screen-wrap" style={{ flex: 1, position: "relative", overflow: "hidden" }}>

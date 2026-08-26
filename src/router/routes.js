@@ -10,7 +10,7 @@ import {
   ScreenSplash, ScreenGetStarted, ScreenRoleSelect, ScreenAuth, ScreenCoachInfo,
   ScreenCoachExpertise, ScreenEnableBiometric, ScreenVerification,
   ScreenVerificationPending,
-  ScreenForgotPassword, ScreenResetCode, ScreenResetPassword, ScreenVerifyEmail,
+  ScreenForgotPassword, ScreenResetCode, ScreenResetPassword, ScreenVerifyEmail, ScreenVerifyPhone,
 } from "../screens/onboarding/OnboardingScreens";
 
 import {
@@ -20,6 +20,7 @@ import {
 
 // Client
 import { ScreenClientHome } from "../screens/client/Discovery";
+import { ScreenClientSearchResults } from "../screens/client/SearchResults";
 import { ScreenNotifications } from "../screens/client/Notifications";
 import { ScreenCoachProfile } from "../screens/client/CoachProfile";
 import { ScreenCoachMedia } from "../screens/client/Reels";
@@ -78,6 +79,7 @@ export const ROUTES = {
   "reset-code": ScreenResetCode,
   "reset-password": ScreenResetPassword,
   "verify-email": ScreenVerifyEmail,
+  "verify-phone": ScreenVerifyPhone,
   "enable-biometric": ScreenEnableBiometric,
   "coach-info": ScreenCoachInfo,
   "coach-expertise": ScreenCoachExpertise,
@@ -92,6 +94,7 @@ export const ROUTES = {
 
   // Client
   "client-home": ScreenClientHome,
+  "client-search": ScreenClientSearchResults,
   "notifications": ScreenNotifications,
   "coach-profile": ScreenCoachProfile,
   "coach-media": ScreenCoachMedia,
@@ -165,6 +168,7 @@ const ROUTE_METADATA_BASE = {
   "reset-code": { title: "Reset Code Verification", category: "Onboarding", role: "client" },
   "reset-password": { title: "Reset Password", category: "Onboarding", role: "client" },
   "verify-email": { title: "Verify Your Email", category: "Onboarding", role: "client" },
+  "verify-phone": { title: "Verify Your Phone", category: "Onboarding", role: "client" },
   "enable-biometric": { title: "Enable Biometrics", category: "Onboarding", role: "client" },
   "coach-info": { title: "Coach Info Step 2", category: "Onboarding", role: "coach" },
   "coach-expertise": { title: "Coach Expertise Step 3", category: "Onboarding", role: "coach" },
@@ -179,6 +183,7 @@ const ROUTE_METADATA_BASE = {
 
   // Client Flow
   "client-home": { title: "Client Discover Home", category: "Client", role: "client" },
+  "client-search": { title: "Marketplace Search Results", category: "Client", role: "client" },
   "notifications": { title: "Notifications Log", category: "Client", role: "client" },
   "coach-profile": { title: "Coach Profile Detail", category: "Client", role: "client" },
   "coach-media": { title: "Coach Reels & Media", category: "Client", role: "client" },
@@ -252,9 +257,11 @@ const ROUTE_DEMO_PARAMS = {
   "reset-code": { email: "sarah@example.com", role: "client", backTo: "role-select" },
   "reset-password": { email: "sarah@example.com", role: "client", backTo: "role-select" },
   "verify-email": { email: "sarah@example.com", next: "about-you-profile" },
+  "verify-phone": { phone: "0412 345 678", next: "about-you-profile" },
   "enable-biometric": { next: "about-you-profile" },
   "client-setup-complete": { name: "Sarah Lin" },
   "coach-profile": { id: "c1" },
+  "client-search": { query: "Cricket" },
   "coach-media": { coachId: "c1", mediaId: "c1-r1" },
   "package-detail": { coachId: "c1", packageId: "p1", presetDate: "2026-08-19", presetTime: "16:00" },
   "booking-participants": { coachId: "c1", packageId: "p1", presetDate: "2026-08-19", presetTime: "16:00" },

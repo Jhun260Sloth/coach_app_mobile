@@ -1,10 +1,10 @@
 import React from "react";
-import { Bell, Calendar, MessageCircle, Star, Sparkles, Percent, CreditCard, Check } from "lucide-react";
+import { Bell, Calendar, MessageCircle, Star, Sparkles, Percent, CreditCard, Check, ShieldCheck } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { TopBar, EmptyState } from "../../components/ui/Primitives";
 
-const NOTIF_ICON = { booking: Calendar, message: MessageCircle, review: Star, availability: Sparkles, promo: Percent, payment: CreditCard };
+const NOTIF_ICON = { booking: Calendar, message: MessageCircle, review: Star, availability: Sparkles, promo: Percent, payment: CreditCard, verification: ShieldCheck };
 
 // Dedicated screen instead of a bottom sheet — gives notifications room to
 // breathe (full list, no clipped height) and a natural place to grow into
@@ -24,6 +24,7 @@ export function ScreenNotifications({
     setNotifications?.((arr) => arr.map((x) => (x.id === n.id ? { ...x, unread: false } : x)));
     if (n.type === "message") nav("chat-thread", { name: n.coachName, handle: n.coachHandle });
     else if (n.type === "availability" && n.coachId) nav("coach-profile", { id: n.coachId });
+    else if (n.type === "verification") nav("client-profile");
     else if (n.type === "payment" && n.chargeId) {
       nav("additional-charge-review", { chargeId: n.chargeId, role: "client", backTo: "notifications" });
     }

@@ -7,21 +7,23 @@ import {
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
-import { Avatar, Btn, ScreenHeader, SectionLabel, FormSection, Toggle, BottomSheet, ConfirmDialog, Field, Chip, Card, Badge, EmptyState, TopBar, SegTabs, HandleTag, RequiredMark, SettingsRow, SettingsGroup, PasswordRequirements, passwordValid } from "../../components/ui/Primitives";
+import { Avatar, Btn, ScreenHeader, SectionLabel, FormSection, Toggle, BottomSheet, ConfirmDialog, Field, Chip, Card, Badge, EmptyState, TopBar, SegTabs, HandleTag, RequiredMark, SettingsRow, SettingsGroup, PasswordRequirements, passwordValid, FullscreenImageViewer } from "../../components/ui/Primitives";
 import { HandleField } from "../../components/ui/PublicIdentityFields";
 import { isValidHandle } from "../../utils/name";
 import { getBookingCoachName } from "../../utils/name";
 import { CLIENT_NOTIFICATIONS, COACHES } from "../../data/mockData";
 import { POPULAR_SPORTS, SPORT_NAMES } from "../../data/sports";
 import { SportBadge, SportSearchMultiSelect } from "../../components/ui/SportUI";
+import { SportSkillLevelPicker } from "../../components/ui/SportSkillLevelPicker";
 import { PAYMENT_STATUS } from "../../data/bookings";
 import { ReceiptSheet } from "./Dashboard";
-import { SKILL_LEVELS } from "./AboutYou";
+import { hasCompleteSportLevels, normaliseSportLevels } from "../../data/sportSkillLevels";
 import { useLiveNotifications } from "../../systems/StateSystem";
 import { LocationField } from "../../components/ui/LocationField";
+import { AccountDetailsSheet } from "../../components/ui/AccountDetailsSheet";
 
 const emptyChildDraft = {
-  name: "", age: "", sport: [], skillLevel: "", goals: "", location: null, preferences: "", hasPhoto: false,
+  name: "", age: "", sport: [], sportLevels: {}, goals: "", location: null, preferences: "", hasPhoto: false,
   medicalConditions: "", allergies: "", medicalNotes: "",
   emergencyName: "", emergencyRelationship: "", emergencyMobile: "",
   guardianName: "", guardianRelationship: "", guardianMobile: "",
@@ -29,7 +31,7 @@ const emptyChildDraft = {
 const emptyCardDraft = { number: "", name: "", expiry: "", cvc: "" };
 
 export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, toast, addCoachRole, children = [], addChild, updateChild, removeChild, bookings = [], clientPrefs, onComplete }) {
-  const { darkMode, clientIdentity, updateClientIdentity, isHandleTaken } = useApp();
+  const { darkMode, clientIdentity, updateClientIdentity, isHandleTaken, pushNotification } = useApp();
   const C = darkMode ? CD : CL;
   const [sheet, setSheet] = useState(null); // which bottom sheet is open
   const [removalTarget, setRemovalTarget] = useState(null);
@@ -41,16 +43,40 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
   const profile = {
     name: `${clientIdentity.firstName || ""} ${clientIdentity.lastName || ""}`.trim() || "You",
     email: clientIdentity.email || "",
+    phone: clientIdentity.phone || clientPrefs?.mobile || "",
   };
   const [editDraft, setEditDraft] = useState(null);
   const [handleEdited, setHandleEdited] = useState(false);
+  const [avatarOpen, setAvatarOpen] = useState(false);
   const profilePhotoInputRef = useRef(null);
+  const profilePhoto = clientIdentity.photo || clientIdentity.avatar || null;
 
   const openNewChild = () => { setEditingChildId(null); setChildDraft(emptyChildDraft); setSheet("child"); };
-  const openEditChild = (child) => { setEditingChildId(child.id); setChildDraft({ ...emptyChildDraft, ...child }); setSheet("child"); };
-  const toggleDraftSport = (s) => setChildDraft((d) => ({ ...d, sport: d.sport.includes(s) ? d.sport.filter((x) => x !== s) : [...d.sport, s] }));
+  const openEditChild = (child) => {
+    const sport = Array.isArray(child.sport) ? child.sport : [];
+    setEditingChildId(child.id);
+    setChildDraft({
+      ...emptyChildDraft,
+      ...child,
+      sport,
+      sportLevels: normaliseSportLevels(sport, child.sportLevels, child.skillLevel),
+    });
+    setSheet("child");
+  };
+  const setDraftSports = (sport) => setChildDraft((draft) => ({
+    ...draft,
+    sport,
+    sportLevels: normaliseSportLevels(sport, draft.sportLevels, draft.skillLevel),
+  }));
+  const toggleDraftSport = (sport) => setDraftSports(childDraft.sport.includes(sport)
+    ? childDraft.sport.filter((item) => item !== sport)
+    : [...childDraft.sport, sport]);
   const saveChild = () => {
     if (!childDraft.name.trim()) { toast("Give this profile a name first"); return; }
+    if (childDraft.sport.length > 0 && !hasCompleteSportLevels(childDraft.sport, childDraft.sportLevels)) {
+      toast("Add an experience level for every selected sport");
+      return;
+    }
     if (editingChildId) { updateChild(editingChildId, childDraft); toast(`${childDraft.name}'s profile updated`); }
     else { addChild(childDraft); toast(`${childDraft.name}'s profile added`); }
     setSheet(null);
@@ -94,21 +120,21 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
     setSheet("payment");
   };
 
-  // Edit profile draft is seeded from whatever was collected during onboarding
-  // (mobile, address, postal code, sports, goals) plus the account's name/email,
-  // so editing the profile shows exactly what sign-up asked for.
+  // Edit profile is for public and coaching-preference data. Login email and
+  // phone are intentionally handled by the verified account-details flow.
   const openEditProfile = () => {
+    const sports = Array.isArray(clientPrefs?.sports) && clientPrefs.sports.length
+      ? clientPrefs.sports
+      : Array.isArray(clientPrefs?.sport) ? clientPrefs.sport : [];
     setHandleEdited(false);
     setEditDraft({
       name: profile.name,
-      email: profile.email,
       handle: clientIdentity.handle || "",
       photo: clientIdentity.photo || clientIdentity.avatar || null,
-      phone: clientPrefs?.mobile || "",
       address: clientPrefs?.address || "",
       location: clientPrefs?.location || null,
-      sports: clientPrefs?.sports || [],
-      skillLevel: clientPrefs?.skillLevel || "",
+      sports,
+      sportLevels: normaliseSportLevels(sports, clientPrefs?.sportLevels, clientPrefs?.skillLevel),
       goals: clientPrefs?.goals || "",
       medicalConditions: clientPrefs?.medicalConditions || "",
       allergies: clientPrefs?.allergies || "",
@@ -124,27 +150,37 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
     if (file) setEditDraft((draft) => ({ ...draft, photo: URL.createObjectURL(file) }));
     event.target.value = "";
   };
-  const toggleEditSport = (s) => setEditDraft((d) => ({ ...d, sports: d.sports.includes(s) ? d.sports.filter((x) => x !== s) : [...d.sports, s] }));
+  const setEditSports = (sports) => setEditDraft((draft) => ({
+    ...draft,
+    sports,
+    sportLevels: normaliseSportLevels(sports, draft.sportLevels, draft.skillLevel),
+  }));
+  const toggleEditSport = (sport) => setEditSports(editDraft.sports.includes(sport)
+    ? editDraft.sports.filter((item) => item !== sport)
+    : [...editDraft.sports, sport]);
   const saveProfile = () => {
     if (!editDraft.name.trim()) { toast("Add your name first"); return; }
     if (!isValidHandle(editDraft.handle)) { toast("Pick a valid username — 3–24 characters"); return; }
     if (isHandleTaken(editDraft.handle)) { toast("That username's taken — try another"); return; }
+    if (editDraft.sports.length > 0 && !hasCompleteSportLevels(editDraft.sports, editDraft.sportLevels)) {
+      toast("Add an experience level for every selected sport");
+      return;
+    }
     const parts = editDraft.name.trim().split(/\s+/);
     updateClientIdentity({
       firstName: parts[0] || "",
       lastName: parts.slice(1).join(" ") || "",
-      email: editDraft.email,
       handle: editDraft.handle.trim(),
       photo: editDraft.photo,
     });
     if (onComplete) {
       onComplete({
         ...clientPrefs,
-        mobile: editDraft.phone,
         address: editDraft.address,
         location: editDraft.location,
+        sport: editDraft.sports,
         sports: editDraft.sports,
-        skillLevel: editDraft.skillLevel,
+        sportLevels: editDraft.sportLevels,
         goals: editDraft.goals,
         medicalConditions: editDraft.medicalConditions,
         allergies: editDraft.allergies,
@@ -156,6 +192,29 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
     }
     toast("Profile updated");
     setSheet(null);
+  };
+
+  const saveAccountDetails = ({ name, username, email, phone }) => {
+    const contactChanged = email.trim().toLowerCase() !== profile.email.trim().toLowerCase()
+      || phone.replace(/\D/g, "") !== profile.phone.replace(/\D/g, "");
+    const parts = name.trim().split(/\s+/);
+    updateClientIdentity({
+      firstName: parts[0] || "",
+      lastName: parts.slice(1).join(" ") || "",
+      handle: username,
+      email,
+      phone,
+      phoneVerified: !!phone,
+    });
+    onComplete?.({ ...clientPrefs, mobile: phone });
+    if (contactChanged) {
+      pushNotification?.({
+        audience: "client",
+        type: "verification",
+        title: "Contact details changed",
+        body: "Your verified email or phone number was updated. If this wasn't you, contact support now.",
+      });
+    }
   };
 
   const [showPw, setShowPw] = useState(false);
@@ -248,7 +307,15 @@ const closeSheet = () => setSheet(null);
 
         {/* Profile summary — scrolls with the page */}
         <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "6px 0 26px" }}>
-          <Avatar name={profile.name} src={clientIdentity.photo || clientIdentity.avatar} size={58} />
+          <button
+            type="button"
+            aria-label={`Open ${profile.name}'s profile photo`}
+            disabled={!profilePhoto}
+            onClick={() => setAvatarOpen(true)}
+            style={{ width: 58, height: 58, padding: 0, border: "none", borderRadius: 99, background: "transparent", cursor: profilePhoto ? "zoom-in" : "default", flexShrink: 0 }}
+          >
+            <Avatar name={profile.name} src={profilePhoto} size={58} />
+          </button>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: T.title, fontWeight: 600, color: C.jet, ...fDisplay }}>{profile.name}</div>
             <div style={{ fontSize: T.labelLg, color: C.slate, marginTop: 2, ...fBody }}>{profile.email}</div>
@@ -303,6 +370,7 @@ const closeSheet = () => setSheet(null);
         </SettingsGroup>
 
         <SettingsGroup title="Security">
+          <SettingsRow icon={ShieldCheck} label="Login & contact details" sub="Name, username, verified email and phone" onClick={() => setSheet("accountDetails")} />
           <SettingsRow icon={Fingerprint} label="Biometric login" right={<Toggle label="Biometric login" on={biometric} onClick={() => setBiometric((v) => !v)} />} />
           <SettingsRow icon={Lock} label="Change password" onClick={() => setSheet("password")} />
         </SettingsGroup>
@@ -370,16 +438,16 @@ const closeSheet = () => setSheet(null);
             ))}
           </div>
           <div style={{ marginTop: 10 }}>
-            <SportSearchMultiSelect options={SPORT_NAMES} value={childDraft.sport} onChange={(sport) => setChildDraft((d) => ({ ...d, sport }))} placeholder="Search all sports…" />
+            <SportSearchMultiSelect options={SPORT_NAMES} value={childDraft.sport} onChange={setDraftSports} placeholder="Search all sports…" />
           </div>
         </FormSection>
 
-        <FormSection icon={Target} label="Skill level" hint="How experienced they are in their main sport.">
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {SKILL_LEVELS.map((lvl) => (
-              <Chip key={lvl} active={childDraft.skillLevel === lvl} onClick={() => setChildDraft((d) => ({ ...d, skillLevel: lvl }))}>{lvl}</Chip>
-            ))}
-          </div>
+        <FormSection icon={Target} label="Experience by sport" hint="Choose the closest current level for every selected sport.">
+          <SportSkillLevelPicker
+            sports={childDraft.sport}
+            value={childDraft.sportLevels}
+            onChange={(sportLevels) => setChildDraft((draft) => ({ ...draft, sportLevels }))}
+          />
         </FormSection>
 
         <FormSection icon={Target} label="Coaching goals" hint="What they'd like to get out of coaching.">
@@ -463,8 +531,8 @@ const closeSheet = () => setSheet(null);
         </div>
       </BottomSheet>
 
-      {/* Edit profile — mirrors every field collected across sign-up (name, email) and the
-          "About you" onboarding (phone, address, postal code, sports, goals), prefilled with
+      {/* Edit profile — mirrors the public profile and the "About you"
+          onboarding (address, postal code, sports, goals), prefilled with
           whatever the person already gave us so nothing has to be re-entered from scratch. */}
       <BottomSheet open={sheet === "edit"} onClose={closeSheet} title="Edit profile" heightPct={88}>
         {editDraft && (
@@ -494,8 +562,6 @@ const closeSheet = () => setSheet(null);
                 showStatus={handleEdited && editDraft.handle.trim() !== String(clientIdentity.handle || "").trim()}
                 required
               />
-              <Field label="Email" placeholder="you@email.com" icon={Mail} type="email" value={editDraft.email} onChange={(e) => setEditDraft((d) => ({ ...d, email: e.target.value }))} />
-              <Field label="Mobile number" placeholder="04XX XXX XXX" icon={Phone} type="tel" value={editDraft.phone} onChange={(e) => setEditDraft((d) => ({ ...d, phone: e.target.value }))} />
             </div>
           </FormSection>
 
@@ -521,16 +587,16 @@ const closeSheet = () => setSheet(null);
                   ))}
                 </div>
                 <div style={{ marginTop: 10 }}>
-                  <SportSearchMultiSelect options={SPORT_NAMES} value={editDraft.sports} onChange={(sports) => setEditDraft((d) => ({ ...d, sports }))} placeholder="Search all sports…" />
+                  <SportSearchMultiSelect options={SPORT_NAMES} value={editDraft.sports} onChange={setEditSports} placeholder="Search all sports…" />
                 </div>
               </div>
               <div>
-                <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Skill level</div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {SKILL_LEVELS.map((lvl) => (
-                    <Chip key={lvl} active={editDraft.skillLevel === lvl} onClick={() => setEditDraft((d) => ({ ...d, skillLevel: lvl }))}>{lvl}</Chip>
-                  ))}
-                </div>
+                <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 7, ...fBody }}>Experience by sport</div>
+                <SportSkillLevelPicker
+                  sports={editDraft.sports}
+                  value={editDraft.sportLevels}
+                  onChange={(sportLevels) => setEditDraft((draft) => ({ ...draft, sportLevels }))}
+                />
               </div>
               <div>
                 <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Coaching goals</div>
@@ -577,6 +643,16 @@ const closeSheet = () => setSheet(null);
           </>
         )}
       </BottomSheet>
+
+      <AccountDetailsSheet
+        open={sheet === "accountDetails"}
+        onClose={closeSheet}
+        details={{ name: profile.name, username: clientIdentity.handle || "", email: profile.email, phone: profile.phone }}
+        onSave={saveAccountDetails}
+        isHandleTaken={isHandleTaken}
+        toast={toast}
+        accountLabel="client account"
+      />
 
 {/* Notification preferences */}
       <BottomSheet open={sheet === "notif"} onClose={closeSheet} title="Notification preferences" heightPct={84}>
@@ -798,6 +874,13 @@ const closeSheet = () => setSheet(null);
           : `${removalTarget?.name || "This card"} will no longer be available for future bookings.`}
         confirmLabel={removalTarget?.type === "child" ? "Remove profile" : "Remove card"}
         icon={Trash2}
+      />
+
+      <FullscreenImageViewer
+        open={avatarOpen}
+        onClose={() => setAvatarOpen(false)}
+        src={profilePhoto}
+        alt={`${profile.name} profile photo`}
       />
 
     </div>

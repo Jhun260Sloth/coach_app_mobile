@@ -15,6 +15,7 @@ import { SportSearchMultiSelect } from "../../components/ui/SportUI";
 import { HandleField } from "../../components/ui/PublicIdentityFields";
 import { LocationField } from "../../components/ui/LocationField";
 import { isValidHandle } from "../../utils/name";
+import { EMPTY_VERIFICATION_CODE, isAcceptedPrototypeCode, isValidPhone } from "../../utils/contactVerification";
 import {
   LANGUAGE_OPTIONS, GENDER_OPTIONS, SPORT_OPTIONS_FULL,
   COACHING_CATEGORY_OPTIONS, SKILL_LEVEL_OPTIONS, AGE_GROUP_OPTIONS,
@@ -301,6 +302,7 @@ export function ScreenAuth({ nav, resetNav, params, role, toast, biometric, upda
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState(params?.email || "");
+  const [phone, setPhone] = useState(params?.phone || "");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
@@ -311,7 +313,7 @@ export function ScreenAuth({ nav, resetNav, params, role, toast, biometric, upda
   const passwordsMatch = password.length > 0 && password === confirmPassword;
   const canSubmit = mode === "login"
     ? true
-    : firstName.trim() && lastName.trim() && email.trim() && passwordValid(password) && passwordsMatch && agree;
+    : firstName.trim() && lastName.trim() && email.trim() && isValidPhone(phone) && passwordValid(password) && passwordsMatch && agree;
   const homeScreen = role === "coach" ? "coach-dashboard" : "client-home";
 
   const proceedAfterAuth = (method) => {
@@ -322,6 +324,7 @@ export function ScreenAuth({ nav, resetNav, params, role, toast, biometric, upda
       const ln = lastName.trim() || (isSocial ? "User" : "");
       updateCoachOnboarding?.({
         firstName: fn, lastName: ln, email: email.trim(),
+        phone: phone.trim(), phoneVerified: false,
         name: `${fn} ${ln}`.trim(),
         namePrivacy: "initial",
       });
@@ -331,16 +334,25 @@ export function ScreenAuth({ nav, resetNav, params, role, toast, biometric, upda
       // username is set in the "About you" step.
       updateClientIdentity?.({
         firstName: firstName.trim(), lastName: lastName.trim(), email: email.trim(),
+        phone: phone.trim(), phoneVerified: false,
       });
     }
     if (isSocial) {
-      nav("enable-biometric", { next: role === "coach" ? "coach-info" : "about-you-profile" });
+      nav("verify-phone", {
+        phone: isValidPhone(phone) ? phone.trim() : "",
+        next: "enable-biometric",
+        nextParams: { next: role === "coach" ? "coach-info" : "about-you-profile" },
+      });
       return;
     }
     nav("verify-email", {
       email: email.trim(),
-      next: "enable-biometric",
-      nextParams: { next: role === "coach" ? "coach-info" : "about-you-profile" },
+      next: "verify-phone",
+      nextParams: {
+        phone: phone.trim(),
+        next: "enable-biometric",
+        nextParams: { next: role === "coach" ? "coach-info" : "about-you-profile" },
+      },
     });
   };
 
@@ -366,6 +378,9 @@ export function ScreenAuth({ nav, resetNav, params, role, toast, biometric, upda
         )}
 
         <Field label="Email address" name="email" autoComplete="email" type="email" inputMode="email" placeholder="you@email.com" icon={Mail} value={email} onChange={(e) => setEmail(e.target.value)} required />
+        {mode === "signup" && (
+          <Field label="Phone number" name="phone" autoComplete="tel" type="tel" inputMode="tel" placeholder="04XX XXX XXX" icon={Smartphone} value={phone} onChange={(e) => setPhone(e.target.value.replace(/[^0-9+()\-\s]/g, ""))} required />
+        )}
         <Field label="Password" name="password" autoComplete={mode === "signup" ? "new-password" : "current-password"} placeholder="••••••••" type={showPw ? "text" : "password"} rightIcon={showPw ? EyeOff : Eye} onRight={() => setShowPw((s) => !s)} value={password} onChange={(e) => setPassword(e.target.value)} required />
         {mode === "signup" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -753,6 +768,193 @@ export function ScreenVerifyEmail({ nav, params, toast, role }) {
   );
 }
 
+/* =========================================================================
+   PHONE VERIFICATION — shared onboarding step for client and coach signups.
+   The prototype accepts any complete numeric code except an all-zero code;
+   no generated code is exposed in the UI.
+   ========================================================================= */
+export function ScreenVerifyPhone({ nav, params, toast, role, updateClientIdentity, updateCoachOnboarding, onComplete }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
+  const initialPhone = params?.phone || "";
+  const next = params?.next || "enable-biometric";
+  const nextParams = params?.nextParams || { next: role === "coach" ? "coach-info" : "about-you-profile" };
+  const [phone, setPhone] = useState(initialPhone);
+  const [stage, setStage] = useState(initialPhone ? "code" : "phone");
+  const [phase, setPhase] = useState("code");
+  const [digits, setDigits] = useState(() => [...EMPTY_VERIFICATION_CODE]);
+  const [secondsLeft, setSecondsLeft] = useState(initialPhone ? 30 : 0);
+  const [resent, setResent] = useState(false);
+  const inputsRef = React.useRef([]);
+  const code = digits.join("");
+
+  useEffect(() => {
+    if (secondsLeft <= 0) return undefined;
+    const timer = window.setTimeout(() => setSecondsLeft((seconds) => seconds - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [secondsLeft]);
+
+  const setDigit = (index, rawValue) => {
+    const digit = rawValue.replace(/\D/g, "").slice(-1);
+    setDigits((current) => current.map((item, itemIndex) => itemIndex === index ? digit : item));
+    setPhase("code");
+    if (digit && index < 5) inputsRef.current[index + 1]?.focus();
+  };
+
+  const onCodeKeyDown = (index, event) => {
+    if (event.key === "Backspace" && !digits[index] && index > 0) inputsRef.current[index - 1]?.focus();
+  };
+
+  const onCodePaste = (event) => {
+    const pasted = event.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6).split("");
+    if (!pasted.length) return;
+    event.preventDefault();
+    setDigits(Array.from({ length: 6 }, (_, index) => pasted[index] || ""));
+    setPhase("code");
+    inputsRef.current[Math.min(pasted.length, 6) - 1]?.focus();
+  };
+
+  const sendCode = () => {
+    if (!isValidPhone(phone)) return;
+    setStage("code");
+    setPhase("code");
+    setDigits([...EMPTY_VERIFICATION_CODE]);
+    setSecondsLeft(30);
+    setResent(false);
+    toast?.("Verification code sent");
+    window.setTimeout(() => inputsRef.current[0]?.focus(), 120);
+  };
+
+  const resendCode = () => {
+    if (secondsLeft > 0) return;
+    setDigits([...EMPTY_VERIFICATION_CODE]);
+    setPhase("code");
+    setSecondsLeft(30);
+    setResent(true);
+    toast?.("A new code has been sent");
+    window.setTimeout(() => inputsRef.current[0]?.focus(), 120);
+  };
+
+  const verify = () => {
+    if (!isAcceptedPrototypeCode(code)) {
+      setPhase("error");
+      return;
+    }
+    const verifiedPhone = phone.trim();
+    if (role === "coach") updateCoachOnboarding?.({ phone: verifiedPhone, phoneVerified: true });
+    else updateClientIdentity?.({ phone: verifiedPhone, phoneVerified: true });
+    if (params?.pendingClientPrefs) onComplete?.({ ...params.pendingClientPrefs, mobile: verifiedPhone, phoneVerified: true });
+    setPhase("success");
+  };
+
+  const continueAfterVerify = () => nav(next, nextParams);
+  const editPhone = () => {
+    setPhone("");
+    setStage("phone");
+    setPhase("code");
+    setDigits([...EMPTY_VERIFICATION_CODE]);
+    setSecondsLeft(0);
+    setResent(false);
+  };
+  const back = () => params?.backTo
+    ? nav(params.backTo, params.backParams || {})
+    : nav("auth", { mode: "signup", phone });
+  const mmss = `${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, "0")}`;
+
+  return (
+    <div style={{ height: "100%", display: "flex", flexDirection: "column", background: C.white }}>
+      {phase !== "success" ? <TopBar title="" onBack={stage === "code" ? editPhone : back} /> : null}
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 28px" }} className="cl-hide-scrollbar">
+        {phase === "success" ? (
+          <>
+            <div style={{ textAlign: "center", marginTop: 64 }}>
+              <div style={{ width: 84, height: 84, borderRadius: 26, background: C.successTint, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+                <CheckCircle2 size={40} color={C.success} />
+              </div>
+              <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Your phone is verified</div>
+              <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 8, lineHeight: 1.6, ...fBody }}>
+                Your number is ready for secure sign-in, recovery and important session updates.
+              </div>
+            </div>
+            <div style={{ marginTop: 28 }}><Btn full onClick={continueAfterVerify}>Continue</Btn></div>
+          </>
+        ) : stage === "phone" ? (
+          <>
+            <div style={{ width: 52, height: 52, borderRadius: 16, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
+              <Smartphone size={23} color={C.brand} />
+            </div>
+            <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Add your phone number</div>
+            <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 6, marginBottom: 24, lineHeight: 1.55, ...fBody }}>
+              We’ll verify this number for account recovery and important booking updates.
+            </div>
+            <Field label="Phone number" name="onboarding-phone" autoComplete="tel" type="tel" inputMode="tel" placeholder="04XX XXX XXX" icon={Smartphone} value={phone} onChange={(event) => setPhone(event.target.value.replace(/[^0-9+()\-\s]/g, ""))} required />
+            <div style={{ marginTop: 22 }}><Btn full disabled={!isValidPhone(phone)} onClick={sendCode}>Send verification code</Btn></div>
+          </>
+        ) : (
+          <>
+            <div style={{ width: 52, height: 52, borderRadius: 16, background: phase === "error" ? C.dangerTint : C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
+              {phase === "error" ? <XCircle size={23} color={C.danger} /> : <Smartphone size={23} color={C.brand} />}
+            </div>
+            <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Verify your phone<RequiredMark /></div>
+            <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 6, marginBottom: 24, lineHeight: 1.55, ...fBody }}>
+              Enter the six-digit code sent to <span style={{ color: C.jet, fontWeight: 600 }}>{phone}</span>.
+            </div>
+
+            {resent && phase === "code" ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.successTint, borderRadius: 12, padding: "10px 12px", marginBottom: 14 }}>
+                <CheckCircle2 size={14} color={C.success} />
+                <span style={{ fontSize: T.labelLg, color: C.success, fontWeight: 600, ...fBody }}>A new code has been sent</span>
+              </div>
+            ) : null}
+
+            {phase === "error" ? (
+              <div role="alert" style={{ background: C.dangerTint, border: `1px solid ${C.dangerBorder}`, borderRadius: 12, padding: "12px 14px", marginBottom: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <XCircle size={15} color={C.danger} />
+                  <span style={{ fontSize: T.body, fontWeight: 700, color: C.danger, ...fBody }}>Invalid verification code</span>
+                </div>
+                <div style={{ fontSize: T.labelLg, color: C.slate, marginTop: 4, lineHeight: 1.5, ...fBody }}>Enter any six-digit code except all zeros.</div>
+              </div>
+            ) : null}
+
+            <div onPaste={onCodePaste} style={{ display: "grid", gridTemplateColumns: "repeat(6, minmax(0, 1fr))", gap: 8 }}>
+              {digits.map((digit, index) => (
+                <input
+                  key={index}
+                  ref={(element) => { inputsRef.current[index] = element; }}
+                  name={`phone-verification-code-${index + 1}`}
+                  aria-label={`Phone verification code digit ${index + 1} of 6`}
+                  autoComplete={index === 0 ? "one-time-code" : "off"}
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(event) => setDigit(index, event.target.value)}
+                  onKeyDown={(event) => onCodeKeyDown(index, event)}
+                  style={{ width: "100%", minWidth: 0, height: 54, textAlign: "center", fontSize: T.headingLg, fontWeight: 700, border: `1.5px solid ${phase === "error" ? C.dangerBorderSoft : digit ? C.brand : C.border}`, borderRadius: 13, outline: "none", background: C.white, color: C.jet, boxSizing: "border-box", ...fDisplay }}
+                />
+              ))}
+            </div>
+
+            <div style={{ marginTop: 24 }}><Btn full disabled={code.length !== 6} onClick={verify}>Verify phone</Btn></div>
+            <div style={{ marginTop: 16, display: "flex", justifyContent: "center", alignItems: "center", gap: 6, fontSize: T.body, ...fBody }}>
+              {phase === "error" ? (
+                <button type="button" onClick={() => { setPhase("code"); setDigits([...EMPTY_VERIFICATION_CODE]); }} style={{ minHeight: 44, background: "none", border: "none", color: C.brand, fontWeight: 600, cursor: "pointer", fontSize: T.body, ...fBody }}>Try again</button>
+              ) : null}
+              {phase === "error" ? <span style={{ color: C.slateLight }}>·</span> : null}
+              {secondsLeft > 0 ? <span style={{ color: C.slateLight }}>Resend code in {mmss}</span> : (
+                <button type="button" onClick={resendCode} style={{ minHeight: 44, background: "none", border: "none", color: C.brand, fontWeight: 600, cursor: "pointer", fontSize: T.body, ...fBody }}>Resend code</button>
+              )}
+            </div>
+            <div style={{ marginTop: 6, textAlign: "center" }}>
+              <button type="button" onClick={editPhone} style={{ minHeight: 44, background: "none", border: "none", color: C.slate, cursor: "pointer", fontSize: T.body, ...fBody }}>Use a different number</button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function ScreenEnableBiometric({ nav, params, toast, biometric, setBiometric, role }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
@@ -761,11 +963,7 @@ export function ScreenEnableBiometric({ nav, params, toast, biometric, setBiomet
   const enable = () => {
     setBiometric(true);
     toast("Face ID enabled");
-    // Client UI: enabling Face ID skips the rest of onboarding (profile details
-    // etc.) and goes straight to the setup success screen. Coaches still need
-    // their onboarding details, so they continue to the normal next step.
-    if (role === "coach") nav(next);
-    else nav("client-setup-complete");
+    nav(next);
   };
   const skip = () => nav(next);
 

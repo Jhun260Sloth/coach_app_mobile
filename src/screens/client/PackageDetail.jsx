@@ -69,10 +69,10 @@ export function ScreenPackageDetail({ nav, params }) {
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: T.subtitleLg, fontWeight: 700, color: C.jet, ...fDisplay }}>{pub.name}</div>
             <HandleTag handle={pub.handle} size={11} color={C.slateLight} />
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 5 }}>
+            <div style={{ fontSize: T.label, color: C.slate, marginTop: 4, ...fBody }}>{coach.suburb}</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 6 }}>
               {(coach.sports || [coach.sport]).map((sport) => <SportBadge key={sport} sport={sport} compact />)}
             </div>
-            <div style={{ fontSize: T.label, color: C.slate, marginTop: 5, ...fBody }}>{coach.suburb}</div>
           </div>
         </Card>
 

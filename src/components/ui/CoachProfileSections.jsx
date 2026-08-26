@@ -100,12 +100,12 @@ export function CoachProfileHero({
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ fontSize: T.headingLg, fontWeight: 700, color: C.jet, lineHeight: 1.15, ...fDisplay }}>{pub.name}</div>
             <HandleTag handle={pub.handle} size={12.5} color={C.slateLight} />
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 8 }}>
-              {sportValues.map((value) => <SportBadge key={value} sport={value} compact />)}
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 6, fontSize: T.captionLg, color: C.slate, ...fBody }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 5, fontSize: T.captionLg, color: C.slate, ...fBody }}>
               <MapPin size={12} color={C.brand} style={{ flexShrink: 0 }} />
               <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{suburbLine}</span>
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 8 }}>
+              {sportValues.map((value) => <SportBadge key={value} sport={value} compact />)}
             </div>
           </div>
           <div style={{ minWidth: 104, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", textAlign: "right", paddingTop: 2 }}>
