@@ -770,7 +770,6 @@ const HEADER_DESCRIPTIONS = {
   "Package details": "Review the session details before booking.",
   "Choose a time": "Pick a time that works best for you.",
   "Add payment method": "Add a secure payment method for bookings.",
-  "Browse packages": "Compare coaching sessions and find the right fit.",
   "Ask a question": "Send the coach a quick message before you book.",
   "Join waitlist": "Get notified when a place becomes available.",
   "Session prep": "Get ready for your upcoming coaching session.",

@@ -30,7 +30,7 @@ import {
   ScreenBookingConfirmation, ScreenBookingRequestSent,
 } from "../screens/client/Booking";
 import {
-  ScreenBookingSelectDateTime, ScreenPaymentAddCard, ScreenPackageListing,
+  ScreenBookingSelectDateTime, ScreenPaymentAddCard,
   ScreenPackageInquiry, ScreenPackageWaitlist, ScreenSessionPrep,
   ScreenRefundStatus, ScreenBookingMessage, ScreenAvailabilityCalendar,
   ScreenBookingParticipantDetails,
@@ -108,7 +108,6 @@ export const ROUTES = {
   "payment-add-card": ScreenPaymentAddCard,
   "booking-confirmation": ScreenBookingConfirmation,
   "booking-request-sent": ScreenBookingRequestSent,
-  "package-listing": ScreenPackageListing,
   "package-inquiry": ScreenPackageInquiry,
   "package-waitlist": ScreenPackageWaitlist,
   "session-prep": ScreenSessionPrep,
@@ -197,7 +196,6 @@ const ROUTE_METADATA_BASE = {
   "payment-add-card": { title: "Add Payment Method", category: "Client", role: "client" },
   "booking-confirmation": { title: "Booking Confirmation", category: "Client", role: "client" },
   "booking-request-sent": { title: "Booking Request Sent", category: "Client", role: "client" },
-  "package-listing": { title: "Browse All Packages", category: "Client", role: "client" },
   "package-inquiry": { title: "Ask Coach a Question", category: "Client", role: "client" },
   "package-waitlist": { title: "Join Package Waitlist", category: "Client", role: "client" },
   "session-prep": { title: "Session Preparation", category: "Client", role: "client" },
@@ -273,7 +271,6 @@ const ROUTE_DEMO_PARAMS = {
   "payment-add-card": { bookingId: "b5" },
   "booking-confirmation": { bookingId: "s1" },
   "booking-request-sent": { id: "b2", coachName: "Noah Kelly" },
-  "package-listing": { sport: "Netball" },
   "package-inquiry": { coachId: "c1", packageId: "p1" },
   "package-waitlist": { coachId: "c1", packageId: "p1" },
   "session-prep": { coachId: "c1", packageId: "p1", date: "Wed, 19 Aug" },
