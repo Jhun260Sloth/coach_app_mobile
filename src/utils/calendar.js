@@ -104,5 +104,5 @@ export function groupSlotsByPeriod(slots) {
 
 /** Format a Date as a full human-readable date ("Tuesday, 22 July"). */
 export function formatFullDateFromDate(d) {
-  return d.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" });
+  return d.toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" });
 }

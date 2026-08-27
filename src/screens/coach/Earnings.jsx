@@ -153,10 +153,10 @@ export function ScreenCoachEarnings({ nav, goBack, coachBookings }) {
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", ...fBody }}>{b.service}</div>
                 <div style={{ fontSize: T.captionLg, color: C.slate, ...fBody }}>{b.date} · {getBookingClientName(withClientMeta(b)).name}</div>
-                <div style={{ marginTop: 5 }}><Badge tone={b.payoutStatus === PAYOUT_STATUS.RELEASED ? "success" : "orange"}>{b.payoutStatus === PAYOUT_STATUS.RELEASED ? "Payout released" : "Processing"}</Badge></div>
+                <div style={{ marginTop: 5 }}><Badge tone="orange">{b.payoutStatus === PAYOUT_STATUS.RELEASED ? "Payout released" : "Processing"}</Badge></div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                <span style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.success, ...fDisplay }}>+${netOf(b)}</span>
+                <span style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.brand, ...fDisplay }}>+${netOf(b)}</span>
                 <ChevronRight size={14} color={C.slateLight} />
               </div>
             </Card>

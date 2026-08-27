@@ -80,7 +80,7 @@ export function groupSlotsByPeriod(slots) {
 }
 
 export function formatFullDateFromDate(d) {
-  return d.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" });
+  return d.toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" });
 }
 
 const REPEAT_FREQ_OPTIONS = [

@@ -38,6 +38,41 @@ function formatDateShort(d) {
   return d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
 }
 
+function parseCalendarBadge(dateStr) {
+  if (!dateStr) return { weekday: "-", dayNumber: "-" };
+  const str = String(dateStr).trim();
+
+  // Extract day number (1-31)
+  const dayMatch = str.match(/\b([0-3]?\d)\b/);
+  const dayNumber = dayMatch ? dayMatch[1] : "-";
+
+  // Match English day of week name or abbreviation (e.g. Saturday -> SAT, Thu -> THU)
+  const weekdayMatch = str.match(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*/i);
+  if (weekdayMatch) {
+    return {
+      weekday: weekdayMatch[1].slice(0, 3).toUpperCase(),
+      dayNumber,
+    };
+  }
+
+  // If dateStr can be parsed as a Date object
+  const parsed = new Date(str);
+  if (!isNaN(parsed.getTime())) {
+    const dows = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+    return {
+      weekday: dows[parsed.getDay()],
+      dayNumber: String(parsed.getDate()),
+    };
+  }
+
+  // Fallback: take first 3 letters
+  const alpha = str.match(/[a-zA-Z]{3}/);
+  return {
+    weekday: alpha ? alpha[0].toUpperCase() : "-",
+    dayNumber,
+  };
+}
+
 const DOW_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlocks, setAvailabilityBlocks, coachBookings = [] }) {
@@ -144,25 +179,28 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
             <SectionLabel>Upcoming sessions</SectionLabel>
             {scheduledSessions.length === 0 ? (
               <EmptyState icon={CalendarIcon} title="Your schedule is clear" body="Confirmed client sessions will appear here." />
-            ) : scheduledSessions.map((booking) => (
-              <Card key={booking.id} onClick={() => nav("coach-session-detail", { id: booking.id })} style={{ marginBottom: 10 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-                  <div style={{ width: 48, height: 50, borderRadius: 14, background: C.brandTint, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <span style={{ fontSize: T.tiny, fontWeight: 700, color: C.brand, textTransform: "uppercase", ...fBody }}>{booking.date?.split(",")[0]}</span>
-                    <span style={{ fontSize: T.title, fontWeight: 750, color: C.jet, marginTop: 1, ...fDisplay }}>{booking.date?.match(/\d+/)?.[0] || "-"}</span>
+            ) : scheduledSessions.map((booking) => {
+              const badge = parseCalendarBadge(booking.date);
+              return (
+                <Card key={booking.id} onClick={() => nav("coach-session-detail", { id: booking.id })} style={{ marginBottom: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+                    <div style={{ width: 48, height: 50, borderRadius: 14, background: C.brandTint, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexShrink: 0, padding: "3px 2px" }}>
+                      <span style={{ fontSize: 10.5, fontWeight: 700, color: C.brand, textTransform: "uppercase", letterSpacing: 0.4, lineHeight: 1, ...fBody }}>{badge.weekday}</span>
+                      <span style={{ fontSize: 18, fontWeight: 750, color: C.jet, marginTop: 3, lineHeight: 1, ...fDisplay }}>{badge.dayNumber}</span>
+                    </div>
+                    <Avatar name={booking.clientName} size={38} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>{booking.clientName}</div>
+                      <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{booking.service}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: T.caption, color: C.slateLight, marginTop: 4, ...fBody }}><Clock size={11} />{booking.time} · {booking.mode}</div>
+                    </div>
                   </div>
-                  <Avatar name={booking.clientName} size={38} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>{booking.clientName}</div>
-                    <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{booking.service}</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: T.caption, color: C.slateLight, marginTop: 4, ...fBody }}><Clock size={11} />{booking.time} · {booking.mode}</div>
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
+                    <StatusPill status={booking.status} />
                   </div>
-                </div>
-                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
-                  <StatusPill status={booking.status} />
-                </div>
-              </Card>
-            ))}
+                </Card>
+              );
+            })}
           </>
         ) : view === "calendar" ? (
           <>

@@ -255,11 +255,11 @@ export function ScreenFundsReleaseStatus({ nav, params, role: appRole, bookings 
           <div style={{
             width: 70, height: 70, borderRadius: 24, margin: "0 auto 14px",
             display: "flex", alignItems: "center", justifyContent: "center",
-            background: released ? C.successTint : C.brandTint,
+            background: C.brandTint,
           }}>
-            {released ? <Banknote size={32} color={C.success} /> : <Clock3 size={30} color={C.brand} />}
+            {released ? <Banknote size={32} color={C.brand} /> : <Clock3 size={30} color={C.brand} />}
           </div>
-          <Badge tone={released ? "success" : "orange"}>{released ? "Released" : processing ? "Processing" : "Pending completion"}</Badge>
+          <Badge tone="orange">{released ? "Released" : processing ? "Processing" : "Pending completion"}</Badge>
           <div style={{ fontSize: T.display, fontWeight: 750, color: C.jet, marginTop: 11, ...fDisplay }}>
             {released
               ? role === "coach" ? "Your payout is on the way" : "Payment released securely"

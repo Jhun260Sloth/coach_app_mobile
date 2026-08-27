@@ -156,7 +156,9 @@ export function CoachProfileHero({
       >
         <div style={{ animation: "clFadeUp .2s ease" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: C.brandTint, borderRadius: 16, border: `1px solid ${C.border}`, marginBottom: 16 }}>
-            <Avatar name={pub.name} src={avatarSrc} size={44} ring />
+            <div style={{ padding: 2.5, borderRadius: 99, background: C.white, boxShadow: "0 2px 6px rgba(0,0,0,.08)", display: "inline-flex", flexShrink: 0 }}>
+              <Avatar name={pub.name} src={avatarSrc} size={44} />
+            </div>
             <div style={{ minWidth: 0, flex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                 <span style={{ fontSize: T.subtitle, fontWeight: 700, color: C.jet, ...fDisplay }}>{pub.name}</span>

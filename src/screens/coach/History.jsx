@@ -100,7 +100,7 @@ export function ScreenCoachHistory({ nav, coachBookings = [], coachNotifications
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ fontSize: T.subtitle, fontWeight: 700, color: C.success, ...fDisplay }}>+${Math.round(Number(b.paidTotal || b.price || 0) * (1 - CONFIG.commissionRate))}</div>
+                  <div style={{ fontSize: T.subtitle, fontWeight: 700, color: C.brand, ...fDisplay }}>+${Math.round(Number(b.paidTotal || b.price || 0) * (1 - CONFIG.commissionRate))}</div>
                   <ChevronRight size={16} color={C.slateLight} />
                 </div>
               </Card>

@@ -108,8 +108,8 @@ export function ScreenCoachReviews({ nav, toast }) {
                     <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                       <Avatar name={r.name} size={34} />
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>
-                          {r.name}
+                        <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{r.name}</span>
                           {r.handle && <HandleTag handle={r.handle} size={10.5} color={C.slateLight} />}
                         </div>
                         <div style={{ fontSize: T.caption, color: C.slateLight, ...fBody }}>{r.date}</div>

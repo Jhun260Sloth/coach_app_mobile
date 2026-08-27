@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import {
-  ClipboardList, ShieldCheck, Info, MessagesSquare, MessageCircle,
+  ClipboardList, Info, MessagesSquare, MessageCircle,
   ChevronLeft, ChevronRight, CalendarX2, BellRing, CalendarClock,
   CheckCircle2, Banknote, LifeBuoy, LockKeyhole, Scale, BadgeDollarSign, Clock,
 } from "lucide-react";
@@ -304,10 +304,10 @@ export function ScreenCoachBookingDetail({
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: T.subtitleLg, fontWeight: 650, color: C.jet, ...fDisplay }}>{cn.name}</div>
               {cn.handle && <HandleTag handle={cn.handle} size={11.5} color={C.slateLight} />}
-              {cn.revealed && <div style={{ fontSize: T.captionLg, color: C.success, marginTop: 2, ...fBody }}>Identity shared for confirmed booking</div>}
-              <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>{profile.homeSuburb}</div>
+              {profile.homeSuburb && profile.homeSuburb !== "-" && (
+                <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>{profile.homeSuburb}</div>
+              )}
             </div>
-            {profile.verifiedPayment && <Badge tone="orange" icon={ShieldCheck}>Verified</Badge>}
           </div>
           <div style={{ display: "flex", gap: 24, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.border}` }}>
             <div>

@@ -574,13 +574,13 @@ export function ScreenCoachDashboard({
                 <div>
                   <div
                     style={{
-                      fontSize: T.body,
-                      fontWeight: 600,
-                      color: C.jet,
-                      ...fBody,
+                      display: "flex",
+                      alignItems: "baseline",
+                      gap: 6,
+                      flexWrap: "wrap",
                     }}
                   >
-                    {cn.name}
+                    <span style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{cn.name}</span>
                     {cn.handle && <HandleTag handle={cn.handle} size={10.5} color={C.slateLight} />}
                   </div>
 
@@ -651,13 +651,13 @@ export function ScreenCoachDashboard({
               >
                 <div
                   style={{
-                    fontSize: T.body,
-                    fontWeight: 600,
-                    color: C.jet,
-                    ...fBody,
+                    display: "flex",
+                    alignItems: "baseline",
+                    gap: 6,
+                    flexWrap: "wrap",
                   }}
                 >
-                  {r.name}
+                  <span style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{r.name}</span>
                   {r.handle && <HandleTag handle={r.handle} size={10.5} color={C.slateLight} />}
                 </div>
 
