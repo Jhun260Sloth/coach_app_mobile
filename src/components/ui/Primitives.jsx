@@ -171,6 +171,124 @@ export function Skeleton({ w = "100%", h = 12, radius = 8, style }) {
   );
 }
 
+export function CoachCardSkeleton({ rows = 3 }) {
+  const C = useColors();
+  return (
+    <div aria-hidden="true">
+      {Array.from({ length: rows }, (_, i) => (
+        <div key={i} style={{ marginBottom: 12, padding: 14, borderRadius: LAYOUT.cardRadius, border: `1px solid ${C.border}`, background: C.white, opacity: 1 - i * 0.12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "52px minmax(0, 1fr) auto", gap: 12, alignItems: "start" }}>
+            <Skeleton w={52} h={52} radius={99} style={{ flexShrink: 0 }} />
+            <div style={{ minWidth: 0 }}>
+              <Skeleton w="58%" h={13} radius={7} />
+              <Skeleton w="34%" h={10} radius={7} style={{ marginTop: 7 }} />
+              <Skeleton w="46%" h={10} radius={7} style={{ marginTop: 8 }} />
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <Skeleton w={44} h={16} radius={7} style={{ flexShrink: 0 }} />
+              <Skeleton w={32} h={9} radius={7} style={{ marginTop: 6, flexShrink: 0 }} />
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
+            <Skeleton w={56} h={22} radius={99} />
+            <Skeleton w={48} h={22} radius={99} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function ThreadSkeleton({ rows = 4 }) {
+  const C = useColors();
+  return (
+    <div aria-hidden="true">
+      {Array.from({ length: rows }, (_, i) => (
+        <div key={i} style={{ display: "flex", gap: 12, alignItems: "center", padding: "12px 4px", borderBottom: `1px solid ${C.border}`, opacity: 1 - i * 0.1 }}>
+          <Skeleton w={46} h={46} radius={99} style={{ flexShrink: 0 }} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+              <Skeleton w="40%" h={12} radius={7} />
+              <Skeleton w={32} h={9} radius={7} />
+            </div>
+            <Skeleton w="70%" h={10} radius={7} style={{ marginTop: 8 }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function StatSkeleton({ count = 3 }) {
+  const C = useColors();
+  return (
+    <div aria-hidden="true" style={{ display: "flex", gap: 8 }}>
+      {Array.from({ length: count }, (_, i) => (
+        <div key={i} style={{ flex: 1, background: C.fog, borderRadius: 14, padding: "10px 12px", opacity: 1 - i * 0.1 }}>
+          <Skeleton w="60%" h={16} radius={7} />
+          <Skeleton w="80%" h={9} radius={7} style={{ marginTop: 6 }} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function BookingCardSkeleton({ rows = 3 }) {
+  const C = useColors();
+  return (
+    <div aria-hidden="true">
+      {Array.from({ length: rows }, (_, i) => (
+        <div key={i} style={{ marginBottom: 12, padding: 14, borderRadius: LAYOUT.cardRadius, border: `1px solid ${C.border}`, background: C.white, opacity: 1 - i * 0.12 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <Skeleton w="55%" h={13} radius={7} />
+              <Skeleton w="40%" h={10} radius={7} style={{ marginTop: 8 }} />
+            </div>
+            <Skeleton w={64} h={22} radius={99} style={{ flexShrink: 0 }} />
+          </div>
+          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            <Skeleton w={72} h={10} radius={7} />
+            <Skeleton w={48} h={10} radius={7} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function ProfileSkeleton() {
+  const C = useColors();
+  return (
+    <div aria-hidden="true">
+      <Skeleton w="100%" h={188} radius={0} style={{ flexShrink: 0 }} />
+      <div style={{ padding: "0 18px", marginTop: -32 }}>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 14 }}>
+          <Skeleton w={72} h={72} radius={99} style={{ border: `3px solid ${C.white}` }} />
+          <div style={{ flex: 1, paddingBottom: 4 }}>
+            <Skeleton w="50%" h={16} radius={7} />
+            <Skeleton w="30%" h={10} radius={7} style={{ marginTop: 6 }} />
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+          <Skeleton w={80} h={28} radius={99} />
+          <Skeleton w={72} h={28} radius={99} />
+          <Skeleton w={64} h={28} radius={99} />
+        </div>
+        <div style={{ marginTop: 18 }}>
+          <Skeleton w="100%" h={12} radius={7} />
+          <Skeleton w="90%" h={12} radius={7} style={{ marginTop: 6 }} />
+          <Skeleton w="65%" h={12} radius={7} style={{ marginTop: 6 }} />
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginTop: 18 }}>
+          <Skeleton w="100%" h={56} radius={14} />
+          <Skeleton w="100%" h={56} radius={14} />
+          <Skeleton w="100%" h={56} radius={14} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Badge({ tone = "neutral", children, icon: Icon, style }) {
   const C = useColors();
   const tones = {
@@ -212,7 +330,7 @@ export function StepProgress({ step, total, label }) {
         ))}
       </div>
       <div style={{ fontSize: T.captionLg, fontWeight: 600, color: C.slateLight, ...fBody }}>
-        Step {step} of {total}{label ? ` — ${label}` : ""}
+        Step {step} of {total}{label ? ` - ${label}` : ""}
       </div>
     </div>
   );

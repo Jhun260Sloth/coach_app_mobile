@@ -1,4 +1,4 @@
-﻿/* =========================================================================
+/* =========================================================================
    COACH PROFILES & SPORT DATA
 
    Privacy contract: discovery receives suburb-level area centres only. A
@@ -26,7 +26,7 @@ export const COACHES = [
     rating: 4.9,
     reviews: 132,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     bookingAvailability: "busy",
     experience: "8 yrs coaching",
     languages: ["English"],
@@ -65,11 +65,11 @@ export const COACHES = [
     rating: 4.8,
     reviews: 96,
     verified: { identity: true, wwcc: false, quals: true },
-    instantBook: false,
+
     experience: "6 yrs coaching",
     languages: ["English"],
     bio: "Accredited functional fitness coach working with amateur athletes and everyday members. Specialising in safe return-to-training after injury and periodised strength blocks.",
-    noShowPolicy: "No-shows without at least 2h notice forfeit the full session fee â€” no exceptions.",
+    noShowPolicy: "No-shows without at least 2h notice forfeit the full session fee - no exceptions.",
     venue: "Chatswood Performance Box",
     travelRadiusKm: 5,
     willingToTravel: false,
@@ -102,7 +102,7 @@ export const COACHES = [
     rating: 5.0,
     reviews: 58,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     experience: "10 yrs coaching",
     languages: ["English", "Spanish"],
     bio: "Ex-competitive longboarder. I coach juniors through adult beginners, with a focus on reading conditions, paddle efficiency, and building confidence in open water.",
@@ -138,7 +138,7 @@ export const COACHES = [
     rating: 4.7,
     reviews: 74,
     verified: { identity: true, wwcc: true, quals: false },
-    instantBook: true,
+
     experience: "5 yrs coaching",
     languages: ["English"],
     bio: "Former amateur boxer now coaching juniors and adult fitness clients. Sessions include high-tempo pad combinations and video feedback.",
@@ -174,7 +174,7 @@ export const COACHES = [
     rating: 4.9,
     reviews: 210,
     verified: { identity: true, wwcc: false, quals: true },
-    instantBook: true,
+
     experience: "9 yrs coaching",
     languages: ["English"],
     bio: "PGA-accredited instructor. I teach 1:1 and small group lessons with TrackMan launch monitor technology, focusing on building a repeatable swing.",
@@ -211,7 +211,7 @@ export const COACHES = [
     rating: 4.6,
     reviews: 41,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: false,
+
     experience: "4 yrs coaching",
     languages: ["English"],
     bio: "Former state road cyclist turned coach. I work with complete beginners through to riders training for their first crit, gran fondo, or triathlon leg.",
@@ -247,7 +247,7 @@ export const COACHES = [
     rating: 5.0,
     reviews: 172,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     experience: "9 yrs coaching",
     languages: ["English", "French"],
     bio: "Certified Classical Reformer and Mat Pilates Master Trainer. I focus on spinal articulation, pelvis stability, and deep core integration for pain-free posture.",
@@ -283,7 +283,7 @@ export const COACHES = [
     rating: 4.9,
     reviews: 114,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     experience: "7 yrs coaching",
     languages: ["English", "Mandarin"],
     bio: "Former NSW representative guard and jump biomechanics coach. Specialising in first-step deceleration, finishing through contact, and elite handle work.",
@@ -319,7 +319,7 @@ export const COACHES = [
     rating: 4.9,
     reviews: 67,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: false,
+
     experience: "8 yrs coaching",
     languages: ["English"],
     bio: "Shute Shield forward and ASCA S&C coach. I build safe tackle technique, explosive breakdown work, and neck strength for junior and premier club rugby players.",
@@ -355,7 +355,7 @@ export const COACHES = [
     rating: 5.0,
     reviews: 138,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     experience: "10 yrs coaching",
     languages: ["English", "Greek"],
     bio: "Tennis Australia Performance Coach. I coach junior tournament competitors and adult pennant players on rally aggression, unit turn biomechanics, and first serve placement.",
@@ -391,7 +391,7 @@ export const COACHES = [
     rating: 4.9,
     reviews: 73,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     experience: "6 yrs coaching",
     languages: ["English"],
     bio: "Athletics Australia certified sprint specialist. I work with track sprinters and field sport athletes to maximise 10m/40m acceleration using wireless laser gates.",
@@ -427,7 +427,7 @@ export const COACHES = [
     rating: 5.0,
     reviews: 142,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     bookingAvailability: "available",
     experience: "11 yrs coaching",
     languages: ["English"],
@@ -464,7 +464,7 @@ export const COACHES = [
     rating: 4.9,
     reviews: 48,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: false,
+
     experience: "12 yrs coaching",
     languages: ["English", "French"],
     bio: "French Fencing Federation MaÃ®tre d'Armes and former European circuit competitor. I teach Foil and Ã‰pÃ©e tactical bouting and electric piste strategy.",
@@ -500,7 +500,7 @@ export const COACHES = [
     rating: 4.9,
     reviews: 86,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     experience: "7 yrs coaching",
     languages: ["English", "Hindi", "Punjabi"],
     bio: "Cricket Australia Representative Coach and former WNCL seam bowler. I work on wrist alignment, front-foot plant bracing, and boundary power hitting against pace.",
@@ -536,7 +536,7 @@ export const COACHES = [
     rating: 4.9,
     reviews: 126,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     bookingAvailability: "available",
     experience: "9 yrs coaching",
     languages: ["English", "Portuguese", "Spanish"],
@@ -573,7 +573,7 @@ export const COACHES = [
     rating: 5.0,
     reviews: 156,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     experience: "8 yrs coaching",
     languages: ["English"],
     bio: "Head coach at Bondi Surf Academy. I teach breath-hold composure in wipeouts, clean bottom turns, and confidence navigating Sydney's coastal breaks.",
@@ -609,7 +609,7 @@ export const COACHES = [
     rating: 4.9,
     reviews: 98,
     verified: { identity: true, wwcc: false, quals: true },
-    instantBook: true,
+
     experience: "8 yrs coaching",
     languages: ["English"],
     bio: "ASCA Level 2 Strength Coach. I program evidence-based barbell lifting (squat, bench, deadlift) and athletic plyometrics to help clients break through strength plateaus safely.",
@@ -645,7 +645,7 @@ export const COACHES = [
     rating: 4.9,
     reviews: 64,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     experience: "7 yrs coaching",
     languages: ["English"],
     bio: "Sport Climbing Australia accredited coach. I teach precise foot placements, drop knees, heel hooks, and psychological crux management from V2 to V8 bouldering.",
@@ -681,7 +681,7 @@ export const COACHES = [
     rating: 4.9,
     reviews: 52,
     verified: { identity: true, wwcc: false, quals: true },
-    instantBook: false,
+
     experience: "9 yrs coaching",
     languages: ["English", "Italian"],
     bio: "Ex-continental tour rider and cycling coach. I specialize in steep climb cadence, high-speed cornering confidence, and anaerobic threshold intervals across Sydney's North Shore.",
@@ -717,7 +717,7 @@ export const COACHES = [
     rating: 5.0,
     reviews: 110,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     experience: "7 yrs coaching",
     languages: ["English"],
     bio: "Australian Touch Football representative and premier division netballer. I coach deceptive dummy-half play, subbing box transitions, and lateral link defense.",
@@ -753,7 +753,7 @@ export const COACHES = [
     rating: 4.9,
     reviews: 94,
     verified: { identity: true, wwcc: false, quals: true },
-    instantBook: true,
+
     experience: "14 yrs coaching",
     languages: ["English"],
     bio: "PGA Teaching Professional with extensive collegiate and tour coaching credentials. Utilizing dual TrackMan 4 launch monitors and Boditrak pressure mapping.",
@@ -789,7 +789,7 @@ export const COACHES = [
     rating: 5.0,
     reviews: 120,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     experience: "10 yrs coaching",
     languages: ["English"],
     bio: "Gymnastics Australia High Performance Coach. I coach competitive junior artistic gymnasts and adults looking to conquer back handsprings, aerials, and beam balance.",
@@ -825,7 +825,7 @@ export const COACHES = [
     rating: 4.9,
     reviews: 78,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     experience: "9 yrs coaching",
     languages: ["English"],
     bio: "Muay Thai champion with stadium fights in Thailand. I teach authentic eight-limb striking, elbow defense, roundhouse hip turnover, and clinch dominance.",
@@ -861,7 +861,7 @@ export const COACHES = [
     rating: 4.9,
     reviews: 89,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     experience: "8 yrs coaching",
     languages: ["English", "Greek"],
     bio: "Australian Beach Volleyball Tour player. I coach float serves, spike approach footwork in deep sand, block reading, and doubles court communication.",
@@ -897,7 +897,7 @@ export const COACHES = [
     rating: 4.9,
     reviews: 62,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     experience: "6 yrs coaching",
     languages: ["English", "Mandarin"],
     bio: "Table Tennis NSW state squad coach. I focus on heavy brush topspin, backhand punch, fast short-game banana flicks, and reaction drills.",
@@ -933,7 +933,7 @@ export const COACHES = [
     rating: 5.0,
     reviews: 44,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: false,
+
     experience: "13 yrs coaching",
     languages: ["English"],
     bio: "Equestrian Australia Level 2 Dressage & Jumping Specialist. I coach balanced independent seat, light contact, and striding rhythm at Centennial Parklands Equestrian Centre.",
@@ -968,7 +968,7 @@ export const COACHES = [
     rating: 4.9,
     reviews: 57,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: false,
+
     experience: "10 yrs coaching",
     languages: ["English", "French"],
     bio: "Head sculling coach on Iron Cove. I coach smooth square-bladed catches, leg drive sequencing, and race plan pacing for GPS school rowers and masters scullers.",
@@ -1003,7 +1003,7 @@ export const COACHES = [
     rating: 4.9,
     reviews: 71,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     experience: "6 yrs coaching",
     languages: ["English"],
     bio: "National Touch Football champion and NRLW development coach. Specialising in deception at speed, sweep line running, and evasive agility.",
@@ -1038,7 +1038,7 @@ export const COACHES = [
     rating: 4.9,
     reviews: 84,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     bookingAvailability: "busy",
     experience: "10 yrs coaching",
     languages: ["English"],
@@ -1074,7 +1074,7 @@ export const COACHES = [
     rating: 5.0,
     reviews: 108,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     experience: "8 yrs coaching",
     languages: ["English", "Swedish"],
     bio: "CrossFit Games Regional athlete and gymnastics specialist. I break down bar and ring muscle-up mechanics, butterfly pull-ups, and efficient barbell cycling.",
@@ -1111,7 +1111,7 @@ export const COACHES = [
     rating: 5.0,
     reviews: 148,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     experience: "7 yrs coaching",
     languages: ["English", "Hindi", "Punjabi"],
     bio: "Tennis Australia Club Professional and certified Pickleball coach. I bridge classical racquet mechanics with modern tactical play for competitive juniors and social club champions.",
@@ -1148,7 +1148,7 @@ export const COACHES = [
     rating: 4.9,
     reviews: 82,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     experience: "8 yrs coaching",
     languages: ["English"],
     bio: "Former VFL midfielder and ASCA strength coach. I specialise in drop punt precision under pressure, ground ball speed, and building robust athletic conditioning.",
@@ -1184,7 +1184,7 @@ export const COACHES = [
     rating: 5.0,
     reviews: 164,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     experience: "11 yrs coaching",
     languages: ["English", "Russian", "French"],
     bio: "International gymnastics competitor with over a decade of coaching experience across rhythmic gymnastics, contemporary dance flexibility, and adult calisthenics.",
@@ -1220,7 +1220,7 @@ export const COACHES = [
     rating: 4.9,
     reviews: 88,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     experience: "12 yrs coaching",
     languages: ["English", "Portuguese"],
     bio: "IBJJF 2nd-degree Black Belt and Muay Thai practitioner. I teach technical submission grappling, guard retention, clinch leverage, and practical self-defence.",
@@ -1255,7 +1255,7 @@ export const COACHES = [
     rating: 4.9,
     reviews: 76,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     experience: "7 yrs coaching",
     languages: ["English"],
     bio: "Former Coates League midfield coach. I focus on clean first-touch gathers below the knees, body positioning at centre bounces, and high-impact kicking execution.",
@@ -1290,7 +1290,7 @@ export const COACHES = [
     rating: 4.9,
     reviews: 84,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     experience: "8 yrs coaching",
     languages: ["English", "Mandarin"],
     bio: "Victorian state badminton coach. I specialize in split-second net deception, overhead scissor-kick smashes, and fast doubles rotations.",
@@ -1325,7 +1325,7 @@ export const COACHES = [
     rating: 4.9,
     reviews: 92,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     experience: "7 yrs coaching",
     languages: ["English"],
     bio: "NBL1 South sharpshooter. I teach micro-footwork into catch-and-shoot jumpers, reading drop vs blitz coverage on ball screens, and elite paint finishing.",
@@ -1360,7 +1360,7 @@ export const COACHES = [
     rating: 4.9,
     reviews: 106,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     experience: "9 yrs coaching",
     languages: ["English"],
     bio: "Kona Ironman finisher and accredited Triathlon Coach. I teach low-drag ocean swimming in choppy water, efficient pack drafting, and rapid transition speed.",
@@ -1395,7 +1395,7 @@ export const COACHES = [
     rating: 4.9,
     reviews: 54,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: false,
+
     experience: "10 yrs coaching",
     languages: ["English"],
     bio: "Former Premier Rugby forward and lineout caller. I coach set-piece dominance, defensive pod spacing, and technical scrum stability.",
@@ -1430,7 +1430,7 @@ export const COACHES = [
     rating: 5.0,
     reviews: 68,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     experience: "6 yrs coaching",
     languages: ["English"],
     bio: "Skate Australia accredited coach. I teach safe falling, pumping in bowls, kick turns, dropping into vert ramps, and street ollies for beginners through intermediates.",
@@ -1465,7 +1465,7 @@ export const COACHES = [
     rating: 4.9,
     reviews: 79,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     experience: "11 yrs coaching",
     languages: ["English", "Spanish"],
     bio: "Judo 3rd Dan Black Belt and BJJ Brown Belt. I coach high-amplitude Judo throws (Seoi Nage, Harai Goshi) and seamless transitions into ground control.",
@@ -1500,7 +1500,7 @@ export const COACHES = [
     rating: 5.0,
     reviews: 118,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     experience: "9 yrs coaching",
     languages: ["English"],
     bio: "Tennis Australia accredited coach. I teach rotational torso drive, flat and slice serves, and transition volleys on synthetic grass and hard courts.",
@@ -1535,7 +1535,7 @@ export const COACHES = [
     rating: 4.9,
     reviews: 46,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: false,
+
     experience: "8 yrs coaching",
     languages: ["English"],
     bio: "Paddle Australia certified Whitewater and Flatwater Guide. I coach torso rotation paddle mechanics, river rapid reading, and sea kayak rolling on the Yarra.",
@@ -1570,7 +1570,7 @@ export const COACHES = [
     rating: 5.0,
     reviews: 135,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     experience: "9 yrs coaching",
     languages: ["English"],
     bio: "Professional contemporary dancer and APMA Pilates Instructor. I guide dancers, gymnasts, and movement enthusiasts on fluid transitions, high extensions, and core strength.",
@@ -1607,7 +1607,7 @@ export const COACHES = [
     rating: 4.9,
     reviews: 115,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     experience: "9 yrs coaching",
     languages: ["English"],
     bio: "Head coach with Australian Swimming coaching accreditation and national water polo background. I help triathletes, competitive swimmers, and junior squad athletes shave seconds off their personal bests.",
@@ -1622,7 +1622,7 @@ export const COACHES = [
     reelsCount: 4,
     packages: [
       { id: "p1", name: "1:1 Stroke Correction & HD Video Analysis", type: "1:1 Coaching", packageType: "1:1 Coaching", sport: "Swimming", description: "Sub-surface camera tracking of catch phase, body roll, head position, and kick timing with immediate poolside playback.", duration: 60, durationMinutes: 60, mode: "In-person", locationType: "In-person", location: "Gold Coast Aquatic Centre", venue: "Gold Coast Aquatic Centre", price: 75, maxParticipants: 1, equipment: "Goggles, swim cap, swimwear. Pool entry included.", active: true },
-      { id: "p2", name: "Open Water Ocean Swimmer Clinic", type: "Group Training", packageType: "Group Training", sport: "Swimming", description: "Sighting waves, drafting in packs, negotiating surf breaks, and conserving energy over 1kmâ€“5km distances.", duration: 75, durationMinutes: 75, mode: "In-person", locationType: "In-person", location: "Surfers Paradise Beach", venue: "Surfers Paradise Beach", price: 35, maxParticipants: 5, equipment: "Bright swim cap and ocean goggles", active: true },
+      { id: "p2", name: "Open Water Ocean Swimmer Clinic", type: "Group Training", packageType: "Group Training", sport: "Swimming", description: "Sighting waves, drafting in packs, negotiating surf breaks, and conserving energy over 1km–5km distances.", duration: 75, durationMinutes: 75, mode: "In-person", locationType: "In-person", location: "Surfers Paradise Beach", venue: "Surfers Paradise Beach", price: 35, maxParticipants: 5, equipment: "Bright swim cap and ocean goggles", active: true },
     ],
     availability: { Tue: ["05:30", "06:30", "16:00"], Thu: ["05:30", "06:30", "16:00"], Sat: ["06:30", "07:30", "08:30"] },
   },
@@ -1643,7 +1643,7 @@ export const COACHES = [
     rating: 4.9,
     reviews: 79,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     experience: "6 yrs coaching",
     languages: ["English", "Mandarin", "Cantonese"],
     bio: "Former Queensland state badminton representative and university table tennis coach. I teach explosive split-step footwork, smash angle generation, and spin manipulation.",
@@ -1678,7 +1678,7 @@ export const COACHES = [
     rating: 4.8,
     reviews: 63,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: false,
+
     experience: "7 yrs coaching",
     languages: ["English"],
     bio: "NBL1 point guard with 7 years of elite player development experience. I teach pure shooting form mechanics, ball screen reads, handle speed, and high-IQ court vision.",
@@ -1713,7 +1713,7 @@ export const COACHES = [
     rating: 5.0,
     reviews: 104,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     experience: "10 yrs coaching",
     languages: ["English", "Arabic"],
     bio: "Athletics Australia accredited middle-distance and marathon coach. I use optical cadence tracking, heart-rate zone calibration, and personalised strength routines.",
@@ -1748,7 +1748,7 @@ export const COACHES = [
     rating: 4.9,
     reviews: 51,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: false,
+
     experience: "8 yrs coaching",
     languages: ["English"],
     bio: "Rowing Australia accredited coach and former national lightweight sculler. Based on the Derwent River, I coach single scull technique, ergometer lactate pacing, and sea kayaking handling.",
@@ -1783,10 +1783,10 @@ export const COACHES = [
     rating: 4.9,
     reviews: 95,
     verified: { identity: true, wwcc: true, quals: true },
-    instantBook: true,
+
     experience: "7 yrs coaching",
     languages: ["English", "Spanish"],
-    bio: "Football Australia â€˜Bâ€™ Diploma holder. I coach junior development squads and senior premier league players focusing on first-touch deception, spatial awareness, and clinical finishing.",
+    bio: "Football Australia 'B' Diploma holder. I coach junior development squads and senior premier league players focusing on first-touch deception, spatial awareness, and clinical finishing.",
     noShowPolicy: "12h notice required for cancellations. Late no-shows forfeit the full session fee.",
     venue: "Dickson Playing Fields & AIS Training Pitch",
     travelRadiusKm: 15,

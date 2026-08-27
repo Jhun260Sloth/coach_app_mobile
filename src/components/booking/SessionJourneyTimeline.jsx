@@ -62,14 +62,13 @@ export function SessionJourneyTimeline({ booking, role = "client", compact = fal
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                 <div style={{
                   width: 28, height: 28, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center",
-                  background: step.complete ? C.successTint : active ? C.brandTint : C.fog,
-                  border: `1px solid ${step.complete ? C.success : active ? C.brand : C.border}`,
+                  background: step.complete || active ? C.brandTint : C.fog,
                 }}>
                   {active && !step.complete
                     ? <Clock3 size={13} color={C.brand} />
-                    : <StepIcon size={13} color={step.complete ? C.success : C.slateLight} strokeWidth={2.3} />}
+                    : <StepIcon size={13} color={step.complete ? C.brand : C.slateLight} strokeWidth={2.3} />}
                 </div>
-                {!last && <div style={{ flex: 1, width: 1.5, minHeight: compact ? 17 : 22, background: step.complete ? C.success : C.border }} />}
+                {!last && <div style={{ flex: 1, width: 1.5, minHeight: compact ? 17 : 22, background: step.complete ? C.brand : C.border }} />}
               </div>
               <div style={{ paddingTop: 2, paddingBottom: last ? 0 : 10, minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
@@ -91,7 +90,7 @@ export function PaymentDeadlineCard({ booking, role = "coach", children }) {
   const C = darkMode ? CD : CL;
   if (!booking) return null;
   return (
-    <Card style={{ padding: 0, overflow: "hidden", borderColor: C.strong }}>
+    <Card style={{ padding: 0, overflow: "hidden" }}>
       <div style={{ padding: "14px 15px", background: C.strongTint, display: "flex", gap: 12, alignItems: "flex-start" }}>
         <div style={{ width: 34, height: 34, borderRadius: 11, background: C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           <Clock3 size={17} color={C.strong} />
@@ -103,7 +102,7 @@ export function PaymentDeadlineCard({ booking, role = "coach", children }) {
           <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, marginTop: 3, ...fBody }}>
             Complete by <strong style={{ color: C.strong }}>{booking.paymentDeadline || "tomorrow, 6:00pm"}</strong>. The reserved slot releases automatically after the deadline.
           </div>
-          {booking.paymentReminderSent && <Badge tone="success" style={{ marginTop: 8 }}>Reminder sent</Badge>}
+          {booking.paymentReminderSent && <Badge tone="orange" style={{ marginTop: 8 }}>Reminder sent</Badge>}
         </div>
       </div>
       {children && <div style={{ padding: 14, borderTop: `1px solid ${C.border}` }}>{children}</div>}

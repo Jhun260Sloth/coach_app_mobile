@@ -149,7 +149,7 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
                 <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
                   <div style={{ width: 48, height: 50, borderRadius: 14, background: C.brandTint, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <span style={{ fontSize: T.tiny, fontWeight: 700, color: C.brand, textTransform: "uppercase", ...fBody }}>{booking.date?.split(",")[0]}</span>
-                    <span style={{ fontSize: T.title, fontWeight: 750, color: C.jet, marginTop: 1, ...fDisplay }}>{booking.date?.match(/\d+/)?.[0] || "—"}</span>
+                    <span style={{ fontSize: T.title, fontWeight: 750, color: C.jet, marginTop: 1, ...fDisplay }}>{booking.date?.match(/\d+/)?.[0] || "-"}</span>
                   </div>
                   <Avatar name={booking.clientName} size={38} />
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -254,7 +254,7 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
             <CalendarIcon size={17} color={C.jet} />
             <div>
               <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>Sync with device calendar</div>
-              <div style={{ fontSize: T.caption, color: C.slate, ...fBody }}>{synced ? "Connected — Google Calendar" : "Not connected"}</div>
+              <div style={{ fontSize: T.caption, color: C.slate, ...fBody }}>{synced ? "Connected - Google Calendar" : "Not connected"}</div>
             </div>
           </div>
           <Toggle label="Sync with device calendar" on={synced} onClick={() => { setSynced((v) => !v); toast(!synced ? "Calendar connected" : "Calendar disconnected"); }} />
@@ -342,7 +342,7 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
           {exceptions.map((ex) => (
             <Card key={ex.id} style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
-                <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{ex.date} — blocked</div>
+                <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{ex.date} - blocked</div>
                 <div style={{ fontSize: T.captionLg, color: C.slate, ...fBody }}>Reason: {ex.reason}</div>
               </div>
               <button onClick={() => setRemovalTarget({ type: "exception", id: ex.id, label: ex.date })} aria-label={`Remove exception for ${ex.date}`} style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}>

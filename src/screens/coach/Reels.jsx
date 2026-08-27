@@ -10,7 +10,7 @@ const UPLOAD_GUIDELINES = [
   "Upload only content you own or have permission to use.",
   "Reels should run 15–30 seconds and never exceed 60 seconds.",
   "Vertical 9:16 format at 1080 × 1920 px is recommended.",
-  "Keep uploads relevant and appropriate — no offensive, misleading, unsafe or confidential material.",
+  "Keep uploads relevant and appropriate - no offensive, misleading, unsafe or confidential material.",
   "Get consent from anyone featured, including a parent or guardian for anyone under 18.",
   "Uploaded content appears publicly on your profile and may be reviewed or removed if it breaches our Community Guidelines or Terms of Use.",
 ];

@@ -86,7 +86,7 @@ export function ScreenSessionCompletion({
       return;
     }
     if (otherConfirmed) {
-      toast?.("Both sides confirmed — releasing funds");
+      toast?.("Both sides confirmed - releasing funds");
       window.setTimeout(() => nav("funds-release-status", { bookingId: booking.id, role, backTo }), 1150);
     } else {
       toast?.(`${role === "coach" ? "Coach" : "Client"} confirmation saved`);
@@ -164,7 +164,7 @@ export function ScreenSessionCompletion({
           <SessionSummary booking={booking} role={role} />
 
           {finalCharge && (
-            <Card style={{ background: finalPaymentDue ? C.warnTint : C.successTint, borderColor: finalPaymentDue ? C.warnStrong : C.success }}>
+            <Card style={{ background: finalPaymentDue ? C.warnTint : C.successTint, border: "none" }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 11 }}>
                 <div style={{ width: 38, height: 38, borderRadius: 12, background: C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><BadgeDollarSign size={18} color={finalPaymentDue ? C.warnStrong : C.success} /></div>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -186,7 +186,7 @@ export function ScreenSessionCompletion({
           )}
 
           <SessionJourneyTimeline booking={booking} role={role} compact />
-          <Card style={{ background: C.successTint, borderColor: C.success }}>
+          <Card style={{ background: C.successTint, border: "none" }}>
             <div style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
               <ShieldCheck size={19} color={C.success} style={{ flexShrink: 0 }} />
               <div>
@@ -202,7 +202,7 @@ export function ScreenSessionCompletion({
         {role === "coach" && finalPaymentDue && <Btn full disabled icon={LockKeyhole}>Waiting for client payment</Btn>}
         {role === "coach" && finalPaymentDue && <Btn full variant="outline" icon={BadgeDollarSign} onClick={() => nav("additional-charge-review", { chargeId: finalCharge.id, role: "coach", backTo })}>View final payment</Btn>}
         {role === "coach" && !finalPaymentDue && !currentRoleConfirmed && coachChoice === "charge" && <Btn full icon={Plus} onClick={coachAddCharge}>Add final charge</Btn>}
-        {role === "coach" && !finalPaymentDue && !currentRoleConfirmed && coachChoice !== "charge" && <Btn full loading={submitting} loadingText="Saving confirmation…" disabled={!canConfirm || coachChoice !== "none"} icon={CheckCircle2} onClick={handleComplete}>{coachChoice === "none" ? "No final charge — confirm" : "Choose an option to continue"}</Btn>}
+        {role === "coach" && !finalPaymentDue && !currentRoleConfirmed && coachChoice !== "charge" && <Btn full loading={submitting} loadingText="Saving confirmation…" disabled={!canConfirm || coachChoice !== "none"} icon={CheckCircle2} onClick={handleComplete}>{coachChoice === "none" ? "No final charge - confirm" : "Choose an option to continue"}</Btn>}
         {role === "coach" && currentRoleConfirmed && <Btn full disabled icon={Clock3}>Waiting for client confirmation</Btn>}
         {role === "client" && finalPaymentDue && <Btn full icon={WalletCards} onClick={() => nav("additional-charge-payment", { chargeId: finalCharge.id, role: "client" })}>Pay final ${Number(finalCharge.amount).toFixed(2)}</Btn>}
         {role === "client" && !finalPaymentDue && <Btn full loading={submitting} loadingText="Saving confirmation…" disabled={!canConfirm} icon={CheckCircle2} onClick={handleComplete}>{currentRoleConfirmed ? "Confirmation saved" : completionConfirmations.includes("coach") ? "Yes, session completed" : "Waiting for coach to finish"}</Btn>}

@@ -284,8 +284,8 @@ function CaseTimeline({ dispute }) {
         return (
           <div key={item.title} style={{ display: "flex", gap: 11, minHeight: index === steps.length - 1 ? 44 : 62 }}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <div style={{ width: 24, height: 24, borderRadius: 99, border: `1.5px solid ${done ? C.brand : C.border}`, background: done ? (current ? C.brand : C.brandTint) : C.white, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                {index < activeIndex ? <Check size={12} color={C.brand} strokeWidth={3} /> : <CircleDot size={12} color={done ? C.white : C.slateLight} />}
+              <div style={{ width: 24, height: 24, borderRadius: 99, background: done ? (current ? C.brand : C.brandTint) : C.fog, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {index < activeIndex ? <Check size={12} color={current ? C.white : C.brand} strokeWidth={3} /> : <CircleDot size={12} color={done ? C.white : C.slateLight} />}
               </div>
               {index < steps.length - 1 && <div style={{ width: 1.5, flex: 1, background: index < activeIndex ? C.brand : C.border }} />}
             </div>
@@ -314,7 +314,7 @@ function OutcomeCard({ dispute, role, booking }) {
       ? role === "coach" ? "Your protected payout has been released under your no-show policy." : "The coach’s no-show protection applies to this booking."
       : "The original session payment remains unchanged.";
   return (
-    <Card style={{ padding: 17, background: favourable ? C.successTint : C.fog, borderColor: favourable ? C.success : C.border }}>
+    <Card style={{ padding: 17, background: favourable ? C.successTint : C.fog, border: favourable ? "none" : `1px solid ${C.border}` }}>
       <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
         <div style={{ width: 42, height: 42, borderRadius: 14, background: favourable ? C.successTint : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           {favourable ? <CheckCircle2 size={21} color={C.success} /> : <Scale size={20} color={C.slate} />}
@@ -429,7 +429,7 @@ export function ScreenAdditionalChargeCreate({
       return;
     }
     if (phase === ADDITIONAL_CHARGE_PHASE.COMPLETION) confirmSessionCompletion?.(booking.id, "coach");
-    toast?.("Final payment sent — completion is now locked");
+    toast?.("Final payment sent - completion is now locked");
     window.setTimeout(() => nav("additional-charge-review", { chargeId, role: "coach", backTo: params?.backTo || "coach-session-detail" }), 650);
   };
 
@@ -536,7 +536,7 @@ export function ScreenAdditionalChargeReview({
             <ReviewNotice>Approval creates a separate receipt tied to this session. If anything looks wrong, question the request before paying or send it to CoachLink for review.</ReviewNotice>
           )}
           {disputed && (
-            <Card style={{ background: C.warnTint, borderColor: C.brand }}>
+            <Card style={{ background: C.warnTint, border: "none" }}>
               <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}><Scale size={18} color={C.brand} /><div><div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>Sent to resolution support</div><div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, marginTop: 3, ...fBody }}>Payment is paused while CoachLink reviews the session and this request.</div></div></div>
             </Card>
           )}
@@ -646,7 +646,7 @@ export function ScreenAdditionalChargePayment({
       <TopBar title={finalPayment ? "Final payment" : "Secure payment"} onBack={() => nav("additional-charge-review", { chargeId: charge.id, role: "client" })} right={<Badge tone="success" icon={ShieldCheck}>Protected</Badge>} />
 
       <div style={{ flex: 1, overflowY: "auto", padding: `${LAYOUT.pagePadTop}px ${LAYOUT.pagePadX}px 24px` }} className="cl-hide-scrollbar">
-        <Card style={{ padding: 18, marginBottom: 20, background: C.warnTint, borderColor: C.warnStrong }}>
+        <Card style={{ padding: 18, marginBottom: 20, background: C.warnTint, border: "none" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: T.captionLg, fontWeight: 700, color: C.slate, textTransform: "uppercase", letterSpacing: ".04em", ...fBody }}>{finalPayment ? "Final session payment" : "Additional payment"}</div>

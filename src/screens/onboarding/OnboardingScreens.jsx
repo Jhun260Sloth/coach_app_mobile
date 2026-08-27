@@ -56,7 +56,7 @@ function SelectField({ label, value, onChange, options, placeholder = "Select…
 
 const TERMS_POINTS = [
   "We collect your location to show nearby coaches and enable travel-radius search.",
-  "Payment details are processed by our PCI-compliant payment partner — CoachLink never stores full card numbers.",
+  "Payment details are processed by our PCI-compliant payment partner - CoachLink never stores full card numbers.",
   "If you're booking for someone under 18, a parent or guardian must provide consent before the session is confirmed.",
   "Coaches working with minors must hold a valid Working with Children Check, verified before their profile goes live.",
   "You can request a full export or deletion of your data at any time from Account Settings.",
@@ -366,7 +366,7 @@ export function ScreenAuth({ nav, resetNav, params, role, toast, biometric, upda
       <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 6, marginBottom: 20, ...fBody }}>
         {mode === "signup"
           ? (role === "coach" ? "Signing up as a Coach." : "Signing up as a Client.")
-          : "Welcome back — sign in to your CoachLink account."}
+          : "Welcome back - sign in to your CoachLink account."}
       </div>
 
        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -426,7 +426,7 @@ export function ScreenAuth({ nav, resetNav, params, role, toast, biometric, upda
 
       {mode === "login" && biometric && (
         <div style={{ marginBottom: 10 }}>
-          <Btn full variant="dark" icon={Fingerprint} onClick={() => { toast("Face ID recognised — welcome back"); nav(homeScreen); }}>
+          <Btn full variant="dark" icon={Fingerprint} onClick={() => { toast("Face ID recognised - welcome back"); nav(homeScreen); }}>
             Continue with Face ID
           </Btn>
         </div>
@@ -576,7 +576,7 @@ export function ScreenResetPassword({ nav, params, toast }) {
 
   const submit = () => {
     if (!canSubmit) return;
-    toast("Password reset — sign in with your new password");
+    toast("Password reset - sign in with your new password");
     nav("auth", { mode: "login", backTo: params?.backTo });
   };
 
@@ -678,7 +678,7 @@ export function ScreenVerifyEmail({ nav, params, toast, role }) {
               </div>
               <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Your email is verified</div>
               <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 8, lineHeight: 1.6, ...fBody }}>
-                Thanks for confirming — let's continue setting up your account.
+                Thanks for confirming - let's continue setting up your account.
               </div>
             </div>
             <div style={{ marginTop: 28 }}>
@@ -975,7 +975,7 @@ export function ScreenEnableBiometric({ nav, params, toast, biometric, setBiomet
         </div>
         <div style={{ fontSize: T.display, fontWeight: 600, color: C.jet, ...fDisplay }}>Set up Face ID</div>
         <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 10, lineHeight: 1.6, maxWidth: 280, ...fBody }}>
-          Your account is ready. Turn on Face ID to sign in instantly next time — no password needed.
+          Your account is ready. Turn on Face ID to sign in instantly next time - no password needed.
         </div>
       </div>
       <div style={{ paddingBottom: "max(28px, env(safe-area-inset-bottom))", display: "flex", flexDirection: "column", gap: 10 }}>
@@ -1024,7 +1024,7 @@ export function ScreenCoachInfo({ nav, coachOnboarding, updateCoachOnboarding })
 
         <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Coach information</div>
         <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 8, marginBottom: 20, lineHeight: 1.55, ...fBody }}>
-          This is what clients see first — your photo, name and story help them decide if you're the right coach for them.
+          This is what clients see first - your photo, name and story help them decide if you're the right coach for them.
         </div>
 
         <div style={{ textAlign: "center", marginBottom: 20 }}>
@@ -1218,7 +1218,7 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
         </div>
 
         {resubmitting && (
-          <Card style={{ marginBottom: 18, background: C.warnTint, borderColor: C.brand }}>
+          <Card style={{ marginBottom: 18, background: C.warnTint, border: "none" }}>
             <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
               <Upload size={18} color={C.brand} style={{ flexShrink: 0, marginTop: 1 }} />
               <div>
@@ -1340,10 +1340,10 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
         <div style={{ marginTop: 22, paddingBottom: 8 }}>
           <Btn full disabled={!allDone} onClick={() => {
             const documents = [
-              { key: "id", label: `${idType} — Identity document`, detail: "Uploaded" },
+              { key: "id", label: `${idType} - Identity document`, detail: "Uploaded" },
               { key: "selfie", label: "Selfie verification", detail: "Uploaded" },
-              ...(worksWithMinors ? [{ key: "wwcc", label: "Working with Children Check", detail: `${wwccNumber} — expires ${wwccExpiry}` }] : []),
-              ...qualifications.map((q) => ({ key: q.id, label: `${q.type} — ${q.name}`, detail: "Certificate uploaded" })),
+              ...(worksWithMinors ? [{ key: "wwcc", label: "Working with Children Check", detail: `${wwccNumber} - expires ${wwccExpiry}` }] : []),
+              ...qualifications.map((q) => ({ key: q.id, label: `${q.type} - ${q.name}`, detail: "Certificate uploaded" })),
             ];
             submitVerification({ documents, worksWithMinors });
             toast("Documents submitted for review");
@@ -1393,7 +1393,7 @@ export function ScreenVerificationPending({ nav, params, verificationStatus, set
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {documents.map((document) => (
-              <Card key={document.label} style={{ display: "flex", gap: 11, alignItems: "flex-start", background: document.action ? C.warnTint : C.white, borderColor: document.action ? C.brand : C.border }}>
+              <Card key={document.label} style={{ display: "flex", gap: 11, alignItems: "flex-start", background: document.action ? C.warnTint : C.white, border: document.action ? "none" : `1px solid ${C.border}` }}>
                 <div style={{ width: 34, height: 34, borderRadius: 11, background: document.action ? C.brandTint : C.successTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   {document.action ? <Upload size={16} color={C.brand} /> : <CheckCircle2 size={16} color={C.success} />}
                 </div>
@@ -1437,7 +1437,7 @@ export function ScreenVerificationPending({ nav, params, verificationStatus, set
         <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 8, lineHeight: 1.6, maxWidth: 300, marginLeft: "auto", marginRight: "auto", ...fBody }}>
           {approved
             ? "An admin has reviewed and approved your documents. You now have full access to the Coach dashboard and can start accepting bookings."
-            : "Your documents have been submitted successfully and are now awaiting review by a CoachLink administrator. This usually takes up to 2 business days — we'll notify you as soon as a decision is made."}
+            : "Your documents have been submitted successfully and are now awaiting review by a CoachLink administrator. This usually takes up to 2 business days - we'll notify you as soon as a decision is made."}
         </div>
         {!approved && (
           <div style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "center", marginTop: 18 }}>
@@ -1605,7 +1605,7 @@ export function ScreenAdminLogin({ nav, toast }) {
           <div style={{ flex: 1, height: 1, background: C.onDarkDivider }} />
         </div>
 
-        <Btn full variant="secondary" icon={Fingerprint} onClick={() => { toast("Face ID recognised — welcome back"); nav("admin-home"); }}>
+        <Btn full variant="secondary" icon={Fingerprint} onClick={() => { toast("Face ID recognised - welcome back"); nav("admin-home"); }}>
           Continue with Face ID
         </Btn>
       </div>

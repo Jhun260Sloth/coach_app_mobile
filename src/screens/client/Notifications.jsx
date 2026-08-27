@@ -1,8 +1,8 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Bell, Calendar, MessageCircle, Star, Sparkles, Percent, CreditCard, Check, ShieldCheck } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
-import { TopBar, EmptyState } from "../../components/ui/Primitives";
+import { TopBar, EmptyState, ThreadSkeleton } from "../../components/ui/Primitives";
 
 const NOTIF_ICON = { booking: Calendar, message: MessageCircle, review: Star, availability: Sparkles, promo: Percent, payment: CreditCard, verification: ShieldCheck };
 
@@ -16,7 +16,10 @@ export function ScreenNotifications({
 }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
+  const [loading, setLoading] = useState(true);
   const unreadCount = notifications.filter((n) => n.unread).length;
+
+  useEffect(() => { const t = setTimeout(() => setLoading(false), 800); return () => clearTimeout(t); }, []);
 
   const markAllRead = () => setNotifications?.((arr) => arr.map((n) => ({ ...n, unread: false })));
 
@@ -56,7 +59,9 @@ export function ScreenNotifications({
         </div>
 
         <div style={{ flex: 1, overflowY: "auto", padding: unreadCount > 0 ? "0 18px 24px" : "16px 18px 24px" }} className="cl-hide-scrollbar">
-          {notifications.length === 0 ? (
+          {loading ? (
+            <ThreadSkeleton rows={5} />
+          ) : notifications.length === 0 ? (
             <EmptyState icon={Bell} title="No notifications yet" body="Updates about your bookings, messages and offers will show up here." />
           ) : (
             <div className="cl-stagger">

@@ -249,7 +249,7 @@ export function ScreenAccountType({ nav, params }) {
           <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
             <ShieldCheck size={16} color={C.brand} style={{ flexShrink: 0, marginTop: 1 }} />
             <div style={{ fontSize: T.label, color: C.slate, lineHeight: 1.6, ...fBody }}>
-              Keeping each child on their own participant profile means coaches see only that child's age and needs — bookings, history and messages stay separate per child.
+              Keeping each child on their own participant profile means coaches see only that child's age and needs - bookings, history and messages stay separate per child.
             </div>
           </div>
         </Card>
@@ -360,7 +360,7 @@ export function ParticipantFields({ draft, setDraft, showGuardianInfo = false })
         </FormSection>
       )}
 
-      <FormSection icon={Sparkles} label="Sport interests" hint="Sports they love — helps coaches match the right sessions.">
+      <FormSection icon={Sparkles} label="Sport interests" hint="Sports they love - helps coaches match the right sessions.">
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
           {POPULAR_SPORTS.slice(0, 10).map((s) => (
             <SportBadge key={s} sport={s} selected={draft.sport.includes(s)} onClick={() => toggleSport(s)} compact />
@@ -444,7 +444,7 @@ export function ScreenAboutYouParticipants({ nav, params, addChild, toast }) {
     const name = draft.name.trim();
     persist();
     setDraft(emptyParticipantDraft);
-    if (toast) toast(`${name}'s profile saved — add the next participant below`);
+    if (toast) toast(`${name}'s profile saved - add the next participant below`);
   };
 
   return (

@@ -141,8 +141,8 @@ function deliveryModeLabel(pkg) {
 // there isn't one, for online / "come to you" sessions).
 function venueLabel(pkg, coach) {
   const mode = deliveryModeLabel(pkg);
-  if (/online|virtual/i.test(mode)) return "Online — link shared once the coach accepts";
-  if (/come to you/i.test(mode)) return pkg.travelArea ? `Coach travels to you — ${pkg.travelArea}` : "Coach travels to your location";
+  if (/online|virtual/i.test(mode)) return "Online - link shared once the coach accepts";
+  if (/come to you/i.test(mode)) return pkg.travelArea ? `Coach travels to you - ${pkg.travelArea}` : "Coach travels to your location";
   return pkg.venue || (coach && coach.venue) || "Venue to be confirmed by coach";
 }
 
@@ -269,7 +269,7 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
     toast && toast(`${childDraft.name}'s profile added`);
     setChildModalOpen(false);
   };
-  return (
+  return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar title="Who's attending?" onBack={() => nav("package-detail", { coachId: coach.id, packageId: pkg.id, presetDate: params.presetDate, presetTime: params.presetTime })} />
 
@@ -437,7 +437,7 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
         </div>
 
         <div style={{ fontSize: T.labelLg, color: C.slate, lineHeight: 1.5, marginBottom: 16, textAlign: "center", ...fBody }}>
-          We'll keep this quick — add sports, skill level and medical details anytime from Account.
+          We'll keep this quick - add sports, skill level and medical details anytime from Account.
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -674,7 +674,7 @@ export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings =
               <Row label="Repeats" value={repeatSummaryText(repeat)} />
               <Row label="Sessions" value={sessionCount ? `${sessionCount} session${sessionCount > 1 ? "s" : ""}` : "Pick an end date above"} />
               <Row label="Price per session" value={`$${pkg.price}`} />
-              <Row label="Total" value={totalPrice != null ? `$${totalPrice.toFixed(2)}` : "—"} bold last />
+              <Row label="Total" value={totalPrice != null ? `$${totalPrice.toFixed(2)}` : "-"} bold last />
             </Card>
           </>
         )}
@@ -900,7 +900,7 @@ export function ScreenBookingReview({ nav, goBack, params, draft, setDraft, toas
                     ) : (
                       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                         <AlertTriangle size={12} color={C.brand} />
-                        <span style={{ fontSize: T.caption, color: C.brand, fontWeight: 600, ...fBody }}>{hasSavedMedical ? "Medical notes loaded; add an emergency contact below" : "No safety contact saved — choose one below"}</span>
+                        <span style={{ fontSize: T.caption, color: C.brand, fontWeight: 600, ...fBody }}>{hasSavedMedical ? "Medical notes loaded; add an emergency contact below" : "No safety contact saved - choose one below"}</span>
                       </div>
                     )}
                   </div>
@@ -1000,7 +1000,7 @@ export function ScreenBookingReview({ nav, goBack, params, draft, setDraft, toas
                     <textarea
                       value={conditions}
                       onChange={(e) => setConditions(e.target.value)}
-                      placeholder="e.g. asthma (carries inhaler), peanut allergy — leave blank if none"
+                      placeholder="e.g. asthma (carries inhaler), peanut allergy - leave blank if none"
                       rows={2}
                       style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: T.bodyLg, color: C.jet, resize: "none", ...fBody }}
                     />
@@ -1078,9 +1078,9 @@ export function ScreenBookingReview({ nav, goBack, params, draft, setDraft, toas
               if (c.allergies) bits.push(`Allergies: ${c.allergies}`);
               if (c.medicalNotes) bits.push(c.medicalNotes);
               if (c.emergencyName || c.emergencyMobile) {
-                bits.push(`Emergency contact: ${c.emergencyName || "—"}${c.emergencyRelationship ? ` (${c.emergencyRelationship})` : ""}${c.emergencyMobile ? ` – ${c.emergencyMobile}` : ""}`);
+                bits.push(`Emergency contact: ${c.emergencyName || "-"}${c.emergencyRelationship ? ` (${c.emergencyRelationship})` : ""}${c.emergencyMobile ? ` - ${c.emergencyMobile}` : ""}`);
               }
-              return `${c.name || "Participant"} — ${bits.join("; ")}`;
+              return `${c.name || "Participant"} - ${bits.join("; ")}`;
             }).join("\n");
           const safetyNotes = [conditions.trim(), profileSafetyNotes].filter(Boolean).join("\n");
           const finalDraft = {
@@ -1147,7 +1147,7 @@ export function ScreenPayment({ nav, params, draft, bookings = [], additionalCha
 
   const pay = (forceFail = false) => {
     if (busy) return;
-    if (offline) { toast("You're offline — reconnect to pay"); return; }
+    if (offline) { toast("You're offline - reconnect to pay"); return; }
     if (!booking || booking.status !== BOOKING_STATUS.AWAITING_PAYMENT) {
       toast("This booking does not have a payment due");
       return;
@@ -1204,7 +1204,7 @@ export function ScreenPayment({ nav, params, draft, bookings = [], additionalCha
             <StatusBanner state="paymentCancelled" onPrimary={() => setResult(null)} primaryLabel="Resume payment" />
           </div>
         )}
-        <Card style={{ marginBottom: 18, padding: 16, background: C.brandTint, borderColor: C.brand }}>
+        <Card style={{ marginBottom: 18, padding: 16, background: C.brandTint, border: "none" }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
             <div>
               <div style={{ fontSize: T.captionLg, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".04em", color: C.brand, ...fBody }}>Booking payment</div>
@@ -1348,7 +1348,7 @@ export function ScreenBookingConfirmation({ nav, params, draft, bookings = [], t
           <SessionJourneyTimeline booking={confirmedBooking} role="client" compact />
         </div>
 
-        <Card style={{ marginBottom: 14, background: C.successTint, borderColor: C.success }}>
+        <Card style={{ marginBottom: 14, background: C.successTint, border: "none" }}>
           <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
             <ShieldCheck size={18} color={C.success} style={{ flexShrink: 0 }} />
             <div>

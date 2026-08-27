@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   WifiOff,
   Calendar,
@@ -24,6 +24,8 @@ import {
   HandleTag,
   ScreenHeader,
   Toggle,
+  BookingCardSkeleton,
+  EmptyState,
 } from "../../components/ui/Primitives";
 import { useReviewActions, DISPUTE_REASONS } from "../../systems/ReviewsSystem";
 import { NotificationBellButton } from "../../systems/StateSystem";
@@ -52,7 +54,10 @@ export function ScreenCoachDashboard({
   const { darkMode, coachIdentity } = useApp();
   const C = darkMode ? CD : CL;
   const [respondingId, setRespondingId] = useState(null);
+  const [loading, setLoading] = useState(true);
   const { getReply, getDispute, submitReply, submitDispute } = useReviewActions();
+
+  useEffect(() => { const t = setTimeout(() => setLoading(false), 800); return () => clearTimeout(t); }, []);
   const [replyTarget, setReplyTarget] = useState(null); // review being replied to
   const [replyText, setReplyText] = useState("");
   const [disputeTarget, setDisputeTarget] = useState(null); // review being disputed
@@ -215,7 +220,7 @@ export function ScreenCoachDashboard({
             }}
           >
             <WifiOff size={14} color={C.brand} />
-            Offline — showing your last synced data.
+            Offline - showing your last synced data.
           </div>
         )}
 
@@ -317,6 +322,15 @@ export function ScreenCoachDashboard({
           />
         </div>
 
+        {loading ? (
+          <>
+            <div style={{ marginTop: 22, marginBottom: 10 }}><SectionLabel>Pending requests</SectionLabel></div>
+            <BookingCardSkeleton rows={2} />
+            <div style={{ marginTop: 18, marginBottom: 10 }}><SectionLabel>Upcoming sessions</SectionLabel></div>
+            <BookingCardSkeleton rows={2} />
+          </>
+        ) : (
+          <>
         {/* Pending Requests */}
         <div
           style={{
@@ -493,7 +507,7 @@ export function ScreenCoachDashboard({
             {awaitingPayment.slice(0, 2).map((b) => {
               const cn = clientNameFor(b);
               return (
-                <Card key={b.id} onClick={() => nav("booking-awaiting-payment", { id: b.id })} style={{ marginBottom: 10, borderColor: C.strong }}>
+                <Card key={b.id} onClick={() => nav("booking-awaiting-payment", { id: b.id })} style={{ marginBottom: 10 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <Avatar name={cn.name} size={38} />
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -588,6 +602,8 @@ export function ScreenCoachDashboard({
           })}
           </div>
         )}
+          </>
+        )}
 
         {/* Recent Reviews */}
         <div
@@ -645,7 +661,10 @@ export function ScreenCoachDashboard({
                   {r.handle && <HandleTag handle={r.handle} size={10.5} color={C.slateLight} />}
                 </div>
 
-                <StarRow value={r.rating} size={11} />
+                <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: T.labelLg, fontWeight: 700, color: C.jet, ...fBody }}>
+                  <Star size={12} fill={C.brand} color={C.brand} />
+                  {r.rating.toFixed(1)}
+                </span>
               </div>
 
               <p

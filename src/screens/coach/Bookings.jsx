@@ -1,13 +1,13 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   ClipboardList, ShieldCheck, Info, MessagesSquare, MessageCircle,
   ChevronLeft, ChevronRight, CalendarX2, BellRing, CalendarClock,
-  CheckCircle2, Banknote, LifeBuoy, LockKeyhole, Scale, BadgeDollarSign,
+  CheckCircle2, Banknote, LifeBuoy, LockKeyhole, Scale, BadgeDollarSign, Clock,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { CLIENT_PROFILES, BOOKING_ENQUIRY_MESSAGES, CONFIG } from "../../data/mockData";
 import {
-  Avatar, BottomActionBar, Card, SegTabs, ViewModeToggle, ScreenHeader, EmptyState, StatusPill, Btn, TopBar, Row, SectionLabel, Badge, HandleTag, BottomSheet,
+  Avatar, BottomActionBar, Card, SegTabs, ViewModeToggle, ScreenHeader, EmptyState, StatusPill, Btn, TopBar, Row, SectionLabel, Badge, HandleTag, BottomSheet, BookingCardSkeleton,
 } from "../../components/ui/Primitives";
 import { useApp } from "../../context/AppContext";
 import { getBookingClientName } from "../../utils/name";
@@ -55,7 +55,10 @@ export function ScreenCoachBookings({ nav, coachBookings }) {
   const C = darkMode ? CD : CL;
   const [tab, setTab] = useState("pending");
   const [view, setView] = useState("list");
+  const [loading, setLoading] = useState(true);
   const [calMode, setCalMode] = useState("month");
+
+  useEffect(() => { const t = setTimeout(() => setLoading(false), 800); return () => clearTimeout(t); }, []);
 
   const dated = useMemo(() => coachBookings.map((b) => ({ ...b, _date: parseBookingDate(b.date) })), [coachBookings]);
   const initialDate = useMemo(() => (dated.find((b) => b._date)?._date) || new Date(), [dated]);
@@ -151,10 +154,16 @@ export function ScreenCoachBookings({ nav, coachBookings }) {
       <div style={{ flex: 1, overflowY: "auto", padding: "14px 18px 0", paddingBottom: 116 }} className="cl-hide-scrollbar">
         {view === "list" && (
           <>
-            {list.length === 0 && <EmptyState icon={ClipboardList} title={emptyState.title} body={emptyState.body} />}
-            <div className="cl-stagger">
-              {list.map((b, i) => renderBookingCard(b, i))}
-            </div>
+            {loading ? (
+              <BookingCardSkeleton rows={4} />
+            ) : (
+              <>
+                {list.length === 0 && <EmptyState icon={ClipboardList} title={emptyState.title} body={emptyState.body} />}
+                <div className="cl-stagger">
+                  {list.map((b, i) => renderBookingCard(b, i))}
+                </div>
+              </>
+            )}
           </>
         )}
 
@@ -245,7 +254,7 @@ export function ScreenCoachBookingDetail({
     [BOOKING_STATUS.EXPIRED]: "Expired request",
     [BOOKING_STATUS.CANCELLED]: "Cancelled session",
   };
-  const profile = CLIENT_PROFILES[booking.clientName] || { memberSince: "—", totalSessions: 0, homeSuburb: "—", notes: "", verifiedPayment: true };
+  const profile = CLIENT_PROFILES[booking.clientName] || { memberSince: "-", totalSessions: 0, homeSuburb: "-", notes: "", verifiedPayment: true };
   const cn = clientNameFor(booking);
   const hasThread = !!BOOKING_ENQUIRY_MESSAGES[booking.id];
   const detailRoute = booking.status === BOOKING_STATUS.PENDING
@@ -263,7 +272,7 @@ export function ScreenCoachBookingDetail({
     setResponding(status);
     setTimeout(() => {
       respondBooking(booking.id, status);
-      toast(status === BOOKING_STATUS.AWAITING_PAYMENT ? "Accepted — payment requested" : "Booking declined");
+      toast(status === BOOKING_STATUS.AWAITING_PAYMENT ? "Accepted - payment requested" : "Booking declined");
       nav("coach-bookings");
     }, 600);
   };
@@ -274,7 +283,7 @@ export function ScreenCoachBookingDetail({
 
   const releaseSlot = () => {
     if (expireAwaitingPayment?.(booking.id)) {
-      toast("Payment window closed and slot released");
+      toast("Acceptance withdrawn and slot released");
       nav("coach-bookings");
     }
   };
@@ -329,7 +338,7 @@ export function ScreenCoachBookingDetail({
               </div>
             </PaymentDeadlineCard>
             {acceptanceCharges.length > 0 && (
-              <Card style={{ marginTop: 10, padding: 14, background: C.brandTint, borderColor: C.brand }}>
+              <Card style={{ marginTop: 10, padding: 14, background: C.brandTint, border: "none" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 8 }}>
                   <div>
                     <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>Payment sent for review</div>
@@ -344,7 +353,7 @@ export function ScreenCoachBookingDetail({
         )}
 
         {[BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.COMPLETION_PENDING].includes(booking.status) && (
-          <Card style={{ marginBottom: 14, display: "flex", gap: 11, alignItems: "flex-start", background: C.successTint, borderColor: C.success }}>
+          <Card style={{ marginBottom: 14, display: "flex", gap: 11, alignItems: "flex-start", background: C.successTint, border: "none" }}>
             <LockKeyhole size={18} color={C.success} style={{ flexShrink: 0 }} />
             <div>
               <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>${Number(booking.paidTotal || booking.price).toFixed(2)} secured</div>
@@ -373,7 +382,7 @@ export function ScreenCoachBookingDetail({
         </div>
 
         {relatedCase && (
-          <Card style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 11, background: C.warnTint, borderColor: C.brand }} onClick={() => nav("dispute-status", { caseId: relatedCase.id, role: "coach", backTo: detailRoute, bookingId: booking.id })}>
+          <Card style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 11, background: C.warnTint, border: "none" }} onClick={() => nav("dispute-status", { caseId: relatedCase.id, role: "coach", backTo: detailRoute, bookingId: booking.id })}>
             <div style={{ width: 38, height: 38, borderRadius: 12, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Scale size={18} color={C.brand} /></div>
             <div style={{ flex: 1 }}><div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>{relatedCase.status === "resolved" ? "Case decision available" : "Session report under review"}</div><div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{relatedCase.categoryLabel} · View financial outcome</div></div>
             <ChevronRight size={16} color={C.slateLight} />
@@ -444,14 +453,41 @@ export function ScreenCoachBookingDetail({
 
       {booking.status === BOOKING_STATUS.AWAITING_PAYMENT && (
         <BottomActionBar>
-          <Btn full variant="danger" onClick={releaseSlot}>Close payment window</Btn>
+          <Btn full variant="danger" onClick={releaseSlot}>Withdraw acceptance</Btn>
         </BottomActionBar>
       )}
 
       {[BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.COMPLETION_PENDING].includes(booking.status) && (
         <BottomActionBar>
-          <Btn variant="outline" icon={CalendarClock} ariaLabel="Reschedule session" title="Reschedule session" onClick={() => setRescheduleOpen(true)} />
-          <Btn full disabled={coachConfirmedCompletion} icon={CheckCircle2} onClick={() => nav("coach-session-completion", { bookingId: booking.id, role: "coach", backTo: "coach-session-detail" })}>{coachConfirmedCompletion ? "Waiting for client confirmation" : "Finish session"}</Btn>
+          {coachConfirmedCompletion ? (
+            <div
+              style={{
+                width: "100%",
+                minHeight: 44,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                background: C.fog,
+                borderRadius: 12,
+                padding: "10px 16px",
+                color: C.slate,
+                fontSize: T.body,
+                fontWeight: 600,
+                ...fBody,
+              }}
+            >
+              <Clock size={15} color={C.brand} />
+              <span>Waiting for client confirmation</span>
+            </div>
+          ) : (
+            <>
+              {booking.status === BOOKING_STATUS.CONFIRMED && (
+                <Btn variant="outline" icon={CalendarClock} ariaLabel="Reschedule session" title="Reschedule session" onClick={() => setRescheduleOpen(true)} />
+              )}
+              <Btn full icon={CheckCircle2} onClick={() => nav("coach-session-completion", { bookingId: booking.id, role: "coach", backTo: "coach-session-detail" })}>Finish session</Btn>
+            </>
+          )}
         </BottomActionBar>
       )}
 

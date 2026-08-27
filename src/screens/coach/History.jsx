@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Banknote, Wallet, ChevronRight, CheckCircle2, Calendar, MessageCircle,
   ShieldAlert, Star, Percent, History as HistoryIcon,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { CONFIG, COACH_NOTIFICATIONS } from "../../data/mockData";
-import { Card, Row, SectionLabel, EmptyState, TopBar, SegTabs, BottomSheet, Avatar } from "../../components/ui/Primitives";
+import { Card, Row, SectionLabel, EmptyState, TopBar, SegTabs, BottomSheet, Avatar, BookingCardSkeleton } from "../../components/ui/Primitives";
 import { useApp } from "../../context/AppContext";
 import { useLiveNotifications } from "../../systems/StateSystem";
 import { getBookingClientName } from "../../utils/name";
@@ -29,9 +29,12 @@ export function ScreenCoachHistory({ nav, coachBookings = [], coachNotifications
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const [tab, setTab] = useState("payments");
+  const [loading, setLoading] = useState(true);
   const [receiptTarget, setReceiptTarget] = useState(null);
   const [activity] = useLiveNotifications(coachNotifications, COACH_NOTIFICATIONS);
   const completed = coachBookings.filter((b) => b.status === "completed");
+
+  useEffect(() => { const t = setTimeout(() => setLoading(false), 800); return () => clearTimeout(t); }, []);
 
   function PayoutReceiptSheet({ booking, onClose }) {
     const gross = booking?.price || 0;
@@ -79,7 +82,9 @@ export function ScreenCoachHistory({ nav, coachBookings = [], coachNotifications
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))" }} className="cl-hide-scrollbar">
-        {tab === "payments" && (
+        {loading ? (
+          <BookingCardSkeleton rows={4} />
+        ) : tab === "payments" ? (
           <>
             {completed.length === 0 && (
               <EmptyState icon={Banknote} title="No payouts yet" body="Completed sessions and their payouts will show up here." />
@@ -102,9 +107,7 @@ export function ScreenCoachHistory({ nav, coachBookings = [], coachNotifications
             ))}
             </div>
           </>
-        )}
-
-        {tab === "activity" && (
+        ) : tab === "activity" ? (
           <>
             {activity.length === 0 && (
               <EmptyState icon={HistoryIcon} title="No activity yet" body="Booking updates, messages, verification and other activity will show up here." />
@@ -129,7 +132,7 @@ export function ScreenCoachHistory({ nav, coachBookings = [], coachNotifications
             })}
             </div>
           </>
-        )}
+        ) : null}
       </div>
 
       <PayoutReceiptSheet booking={receiptTarget} onClose={() => setReceiptTarget(null)} />

@@ -97,7 +97,7 @@ export function ScreenCoachMedia({ nav, goBack, params = {} }) {
             <div style={{ position: "absolute", left: 18, right: 18, bottom: 30, display: "flex", alignItems: "flex-end", gap: 14, color: C.white }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <button type="button" onClick={() => nav("coach-profile", { id: coach.id })} style={{ padding: 0, border: "none", background: "transparent", color: C.white, display: "flex", alignItems: "center", gap: 10, cursor: "pointer", textAlign: "left" }}>
-                  <Avatar name={pub.name} src={coach.avatar} size={42} ring />
+                  <Avatar name={pub.name} src={coach.avatar} size={42} />
                   <span style={{ minWidth: 0 }}>
                     <span style={{ display: "block", fontSize: T.bodyLg, fontWeight: 700, ...oneLine, ...fDisplay }}>{pub.name}</span>
                     {pub.handle && <HandleTag handle={pub.handle} size={11} color={C.onDark} />}

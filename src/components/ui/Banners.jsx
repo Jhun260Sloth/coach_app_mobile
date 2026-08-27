@@ -68,21 +68,21 @@ export const STATE_CATALOG = {
   bookingPending: {
     tone: "warning", icon: Hourglass, title: "Request sent",
     message: "Waiting on the coach to accept or decline.",
-    next: "You'll be notified as soon as they respond — usually within a few hours.",
+    next: "You'll be notified as soon as they respond - usually within a few hours.",
     notify: (b) => ({ title: "New booking request", body: `${bookingClientPubName(b) || "A client"} requested ${b?.service || "a session"}${b?.date ? ` for ${b.date}` : ""}.` }),
   },
   bookingConfirmed: {
     tone: "success", icon: CheckCircle2, title: "Booking confirmed",
     message: "This session is locked in on both calendars.",
     primary: "Add to calendar", secondary: "Message",
-    next: "Show up on time — cancellations follow the coach's policy.",
+    next: "Show up on time - cancellations follow the coach's policy.",
     notify: (b) => ({ title: "Booking confirmed", body: `Your session with ${b?.coachName || "your coach"} is confirmed${b?.date ? ` for ${b.date}${b.time ? `, ${b.time}` : ""}` : ""}.` }),
   },
   bookingDeclined: {
     tone: "danger", icon: XCircle, title: "Request declined",
     message: "The coach isn't able to take this booking.",
     primary: "Find another coach", secondary: "Message coach",
-    next: "No charge was made — you're free to book someone else.",
+    next: "No charge was made - you're free to book someone else.",
     notify: (b) => ({ title: "Booking declined", body: `${b?.coachName || "The coach"} declined your request for ${b?.service || "a session"}.` }),
   },
   bookingExpired: {
@@ -103,7 +103,7 @@ export const STATE_CATALOG = {
   paymentProcessing: {
     tone: "info", icon: Clock, title: "Processing payment…",
     message: "Confirming your charge with the payment provider.",
-    next: "This usually takes a few seconds — don't close the app.",
+    next: "This usually takes a few seconds - don't close the app.",
   },
   paymentSuccess: {
     tone: "success", icon: CheckCircle2, title: "Payment successful",
@@ -121,7 +121,7 @@ export const STATE_CATALOG = {
     tone: "neutral", icon: Ban, title: "Payment cancelled",
     message: "You stopped this payment before it completed.",
     primary: "Resume payment", secondary: "Back to review",
-    next: "Your booking request is still saved — you can pay whenever you're ready.",
+    next: "Your booking request is still saved - you can pay whenever you're ready.",
   },
   paymentRefunded: {
     tone: "success", icon: Undo2, title: "Refund issued",
@@ -132,7 +132,7 @@ export const STATE_CATALOG = {
   refundProcessing: {
     tone: "info", icon: Clock, title: "Refund requested",
     message: "We're processing your refund now.",
-    next: "You'll be notified once it's issued — no action needed.",
+    next: "You'll be notified once it's issued - no action needed.",
   },
 
   // ---- Session ----
@@ -195,7 +195,7 @@ export const STATE_CATALOG = {
     tone: "warning", icon: ShieldAlert, title: "Verification expiring soon",
     message: "Renew before it expires to keep accepting bookings without interruption.",
     primary: "Renew now",
-    notify: (b) => ({ title: "Verification expiring soon", body: `${b?.label || "A document"} expires in ${b?.daysLeft ?? "a few"} days — renew it to avoid disruption.` }),
+    notify: (b) => ({ title: "Verification expiring soon", body: `${b?.label || "A document"} expires in ${b?.daysLeft ?? "a few"} days - renew it to avoid disruption.` }),
   },
   verificationExpired: {
     tone: "danger", icon: ShieldX, title: "Verification expired",
@@ -231,7 +231,7 @@ export const STATE_CATALOG = {
   // ---- Guardrails ----
   actionBlockedOffline: {
     tone: "neutral", icon: WifiOff, title: "You're offline",
-    message: "This action needs a connection — reconnect and try again.",
+    message: "This action needs a connection - reconnect and try again.",
     primary: "Retry",
   },
   invalidAction: {

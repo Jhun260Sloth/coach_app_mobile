@@ -5,7 +5,7 @@ import { useApp } from "../../context/AppContext";
 import { COACHES } from "../../data/coaches";
 import { POPULAR_SPORTS, SPORT_NAMES } from "../../data/sports";
 import { getPublicName } from "../../utils/name";
-import { Avatar, Card, Chip, EmptyState, SegTabs, TopBar } from "../../components/ui/Primitives";
+import { Avatar, Card, Chip, EmptyState, SegTabs, TopBar, CoachCardSkeleton } from "../../components/ui/Primitives";
 import { SportBadge, SportIcon } from "../../components/ui/SportUI";
 
 const RECENT_SEARCHES_KEY = "coachlink.recent-searches";
@@ -154,12 +154,20 @@ export function ScreenClientSearchResults() {
   const [query, setQuery] = useState(() => String(params?.query || ""));
   const [activeTab, setActiveTab] = useState("all");
   const [recentSearches, setRecentSearches] = useState(readRecentSearches);
+  const [loading, setLoading] = useState(false);
   const q = normalise(query);
 
   useEffect(() => {
     const timer = setTimeout(() => inputRef.current?.focus(), 180);
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (!q) { setLoading(false); return; }
+    setLoading(true);
+    const t = setTimeout(() => setLoading(false), 500);
+    return () => clearTimeout(t);
+  }, [q]);
 
   const rememberQuery = value => {
     const clean = String(value || "").trim();
@@ -265,7 +273,9 @@ export function ScreenClientSearchResults() {
       </div>
 
       <div className="cl-hide-scrollbar" style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "18px 18px 32px" }}>
-        {!q ? (
+        {loading && q ? (
+          <CoachCardSkeleton rows={4} />
+        ) : !q ? (
           <>
             {recentSearches.length > 0 && (
               <section style={{ marginBottom: 24 }}>

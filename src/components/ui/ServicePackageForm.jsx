@@ -52,7 +52,7 @@ export function isPackageValid(pkg) {
 // Human-readable location for a package, used in summaries and lists.
 export function packageLocationLabel(pkg) {
   if (pkg.deliveryMode === "Online") return "Online";
-  if (pkg.deliveryMode === "Come to You") return pkg.travelArea ? `Come to You — ${pkg.travelArea}` : "Come to You";
+  if (pkg.deliveryMode === "Come to You") return pkg.travelArea ? `Come to You - ${pkg.travelArea}` : "Come to You";
   return pkg.venue || "Location TBC";
 }
 
@@ -165,7 +165,7 @@ export function ServicePackageForm({ initial, onSave, onCancel, saveLabel = "Add
         <div style={{ marginBottom: 16 }}>
           <div style={labelStyle}>Package type<RequiredMark /></div>
           <div style={{ fontSize: T.captionLg, color: C.slateLight, marginBottom: 8, marginTop: -4, ...fBody }}>
-            Select every format this service can be booked as — you can pick more than one.
+            Select every format this service can be booked as - you can pick more than one.
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {PACKAGE_TYPE_OPTIONS.map((t) => {
@@ -270,7 +270,7 @@ export function ServicePackageForm({ initial, onSave, onCancel, saveLabel = "Add
         <div style={{ marginBottom: 16 }}>
           <div style={labelStyle}>Delivery mode<RequiredMark /></div>
           <div style={{ fontSize: T.captionLg, color: C.slateLight, marginBottom: 8, marginTop: -4, ...fBody }}>
-            Each package can have its own location — this doesn't need to match your other packages.
+            Each package can have its own location - this doesn't need to match your other packages.
           </div>
           <div style={{ display: "flex", gap: 8, marginBottom: 0, flexWrap: "wrap" }}>
             {DELIVERY_MODE_OPTIONS.map((m) => (
@@ -317,7 +317,7 @@ export function ServicePackageForm({ initial, onSave, onCancel, saveLabel = "Add
         )}
 
         {pkg.deliveryMode === "Online" && (
-          <div style={{ fontSize: T.captionLg, color: C.slateLight, ...fBody }}>Delivered virtually — no physical location needed.</div>
+          <div style={{ fontSize: T.captionLg, color: C.slateLight, ...fBody }}>Delivered virtually - no physical location needed.</div>
         )}
       </FormSection>
 

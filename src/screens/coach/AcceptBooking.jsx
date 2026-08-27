@@ -115,7 +115,7 @@ export function ScreenCoachAcceptBooking({ nav, params, coachBookings = [], acce
         nav("coach-bookings");
         return;
       }
-      toast?.("Accepted — payment request sent");
+      toast?.("Accepted - payment request sent");
       nav("booking-awaiting-payment", { id: booking.id });
     }, 650);
   };
@@ -182,7 +182,7 @@ export function ScreenCoachAcceptBooking({ nav, params, coachBookings = [], acce
               <Row label="Participants" value={booking.participants || "Client"} last />
             </Card>
             <SectionLabel>Message from client</SectionLabel>
-            <Card style={{ marginBottom: 14, background: booking.notes ? C.brandTint : C.fog, borderColor: booking.notes ? C.brand : C.border }}>
+            <Card style={{ marginBottom: 14, background: booking.notes ? C.brandTint : C.fog, border: "none" }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 11 }}>
                 <MessageSquareText size={18} color={booking.notes ? C.brand : C.slateLight} style={{ flexShrink: 0, marginTop: 1 }} />
                 <div>
@@ -243,7 +243,7 @@ export function ScreenCoachAcceptBooking({ nav, params, coachBookings = [], acce
             </Card>
             <Btn full variant="secondary" icon={Sparkles} onClick={() => setEditorKind(ADDITIONAL_CHARGE_KIND.OPTIONAL)}>Add optional add-on</Btn>
 
-            <Card style={{ marginTop: 20, padding: 16, background: C.brandTint, borderColor: C.brand }}>
+            <Card style={{ marginTop: 20, padding: 16, background: C.brandTint, border: "none" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 10 }}>
                 <div>
                   <div style={{ fontSize: T.captionLg, color: C.slate, ...fBody }}>Required at checkout</div>

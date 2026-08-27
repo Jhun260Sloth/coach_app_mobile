@@ -92,7 +92,6 @@ export function AppProvider({ children }) {
   const [coachMedia, setCoachMedia] = useState(() => getCoachMedia(COACHES[1].id));
   const [availabilityBlocks, setAvailabilityBlocks] = useState(INITIAL_AVAILABILITY_BLOCKS);
   const [coachAvailableNow, setCoachAvailableNow] = useState(true);
-  const [coachBookingType, setCoachBookingType] = useState(COACHES[1].instantBook ? "instant" : "request");
 
   // ---- Admin state ----
   const [verificationQueue, setVerificationQueue] = useState(ADMIN_VERIFICATION_QUEUE);
@@ -172,7 +171,6 @@ export function AppProvider({ children }) {
     base: COACHES[1],
     onboarding: coachOnboarding,
     packages: coachPackages,
-    bookingType: coachBookingType,
     availableNow: coachAvailableNow,
   });
 
@@ -474,7 +472,7 @@ export function AppProvider({ children }) {
     if (nextStatus === BOOKING_STATUS.AWAITING_PAYMENT) {
       pushNotification({
         audience: "client", type: "payment", title: "Send your payment",
-        body: `${coachPub.name} accepted your ${target.service} request — send payment to confirm your session on ${target.date}.`,
+        body: `${coachPub.name} accepted your ${target.service} request - send payment to confirm your session on ${target.date}.`,
         bookingId: id,
       });
     } else if (nextStatus === BOOKING_STATUS.DECLINED) {
@@ -551,7 +549,7 @@ export function AppProvider({ children }) {
       pushNotification({
         audience: "client",
         type: "payment",
-        title: "Booking accepted — review payment",
+        title: "Booking accepted - review payment",
         body: `${coachPub.name} accepted ${target.service}. $${(Number(target.price || 0) + requiredTotal).toFixed(2)} is required${optionalCount ? `, with ${optionalCount} optional add-on${optionalCount === 1 ? "" : "s"}` : ""}.`,
         bookingId: id,
       });
@@ -882,7 +880,7 @@ export function AppProvider({ children }) {
       pushNotification({
         audience: "coach", type: "verification",
         title: approve ? "You're verified!" : "Verification rejected",
-        body: approve ? "Your verification was approved. You can now accept bookings." : "One or more documents couldn't be confirmed — please resubmit.",
+        body: approve ? "Your verification was approved. You can now accept bookings." : "One or more documents couldn't be confirmed - please resubmit.",
       });
     }
     toast(approve ? `${applicant ? applicant.name : "Coach"} approved` : `${applicant ? applicant.name : "Coach"} rejected`);
@@ -927,7 +925,6 @@ export function AppProvider({ children }) {
     setCoachPackages(COACHES[1].packages);
     setAvailabilityBlocks(INITIAL_AVAILABILITY_BLOCKS);
     setCoachMedia(getCoachMedia(COACHES[1].id));
-    setCoachBookingType(COACHES[1].instantBook ? "instant" : "request");
     nextBookingNumberRef.current = getNextBookingNumber();
     setIsFirstTimeClient(false);
     setDiscoveryPrefs({ seeded: true });
@@ -966,7 +963,7 @@ export function AppProvider({ children }) {
     verified, verificationStatus, reachedDashboardAfterVerification, setReachedDashboardAfterVerification,
     coachOnboarding, updateCoachOnboarding, coachProfile,
     coachPackages, savePackage, removePackage,
-    coachMedia, addMedia, removeMedia, coachBookingType, setCoachBookingType,
+    coachMedia, addMedia, removeMedia,
     availabilityBlocks, setAvailabilityBlocks,
     coachAvailableNow, setCoachAvailableNow,
     addCoachRole: () => setHasCoachRole(true),

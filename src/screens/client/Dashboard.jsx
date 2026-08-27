@@ -13,7 +13,7 @@ import {
   BOOKING_STATUS, PAYMENT_STATUS,
 } from "../../data/bookings";
 import {
-  Avatar, BottomActionBar, Card, Badge, SegTabs, ViewModeToggle, ScreenHeader, SectionLabel, Btn, TopBar, EmptyState, StatusPill, Chip, BottomSheet, Row, ScrollFadeRow, HandleTag,
+  Avatar, BottomActionBar, Card, Badge, SegTabs, ViewModeToggle, ScreenHeader, SectionLabel, Btn, TopBar, EmptyState, StatusPill, Chip, BottomSheet, Row, ScrollFadeRow, HandleTag, BookingCardSkeleton,
 } from "../../components/ui/Primitives";
 import { StatusBanner } from "../../systems/StateSystem";
 import { getBookingCoachName } from "../../utils/name";
@@ -81,10 +81,10 @@ function getCancellationOutcome(booking, coach) {
   let ruleLabel;
   if (hoursUntil == null || hoursUntil >= 24) {
     refundPct = 1;
-    ruleLabel = "Cancelled 24h+ before the session — fully refundable under CoachLink's cancellation policy.";
+    ruleLabel = "Cancelled 24h+ before the session - fully refundable under CoachLink's cancellation policy.";
   } else {
     refundPct = 0.5;
-    ruleLabel = "Cancelled inside 24h — CoachLink's cancellation policy refunds 50% of the session fee.";
+    ruleLabel = "Cancelled inside 24h - CoachLink's cancellation policy refunds 50% of the session fee.";
   }
   return { refundPct, ruleLabel, hoursUntil, tier: "standard" };
 }
@@ -94,12 +94,15 @@ export function ScreenClientDashboard({ nav, bookings = [], additionalCharges = 
   const C = darkMode ? CD : CL;
   const [tab, setTab] = useState("pending");
   const [view, setView] = useState("list");
+  const [loading, setLoading] = useState(true);
   const safeBookings = Array.isArray(bookings) ? bookings : [];
   // First-time clients haven't booked anything yet — show a single, unified
   // empty state pointing them at Discover, instead of the tabbed/calendar UI.
   const showEmptyDashboard = isFirstTimeClient && safeBookings.length === 0;
   const [calMode, setCalMode] = useState("month");
   const [cancelTarget, setCancelTarget] = useState(null);
+
+  useEffect(() => { const t = setTimeout(() => setLoading(false), 800); return () => clearTimeout(t); }, []);
 
   const pendingChargeBookingIds = new Set(
     additionalCharges
@@ -179,7 +182,7 @@ export function ScreenClientDashboard({ nav, bookings = [], additionalCharges = 
         />
         {offline && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.jet, color: C.white, padding: "9px 12px", borderRadius: 12, marginTop: 12, fontSize: T.label, ...fBody }}>
-            <WifiOff size={14} color={C.brand} /> You're offline — showing your last saved sessions.
+            <WifiOff size={14} color={C.brand} /> You're offline - showing your last saved sessions.
           </div>
         )}
         {!showEmptyDashboard && view === "list" && (
@@ -221,9 +224,15 @@ export function ScreenClientDashboard({ nav, bookings = [], additionalCharges = 
 
         {!showEmptyDashboard && view === "list" && (
           <>
-            {tab === "pending" && (pending.length ? <div className="cl-stagger">{pending.map(renderCard)}</div> : <EmptyState icon={Hourglass} title="No active requests" body="Requests awaiting a coach or your payment will show up here." />)}
-            {tab === "upcoming" && (upcoming.length ? <div className="cl-stagger">{upcoming.map(renderCard)}</div> : <EmptyState icon={Calendar} title="No upcoming sessions" body="Search for a coach to book your next session." />)}
-            {tab === "past" && (past.length ? <div className="cl-stagger">{past.map(renderCard)}</div> : <EmptyState icon={ClipboardList} title="No booking history yet" body="Completed, cancelled, declined and expired bookings will show up here." />)}
+            {loading ? (
+              <BookingCardSkeleton rows={4} />
+            ) : (
+              <>
+                {tab === "pending" && (pending.length ? <div className="cl-stagger">{pending.map(renderCard)}</div> : <EmptyState icon={Hourglass} title="No active requests" body="Requests awaiting a coach or your payment will show up here." />)}
+                {tab === "upcoming" && (upcoming.length ? <div className="cl-stagger">{upcoming.map(renderCard)}</div> : <EmptyState icon={Calendar} title="No upcoming sessions" body="Search for a coach to book your next session." />)}
+                {tab === "past" && (past.length ? <div className="cl-stagger">{past.map(renderCard)}</div> : <EmptyState icon={ClipboardList} title="No booking history yet" body="Completed, cancelled, declined and expired bookings will show up here." />)}
+              </>
+            )}
           </>
         )}
 
@@ -375,7 +384,7 @@ function CancelSheet({ booking, onClose, onConfirm, pending }) {
             <div style={{ display: "flex", alignItems: "flex-start", gap: 8, background: C.warnTint, borderRadius: 12, padding: 12, marginBottom: 18 }}>
               <AlertTriangle size={14} color={C.brand} style={{ marginTop: 2, flexShrink: 0 }} />
               <span style={{ fontSize: T.label, color: C.slate, lineHeight: 1.5, ...fBody }}>
-                {coachNameFor(booking).name.split(" ")[0]} hasn't responded to this request yet — withdrawing it now won't incur any charge.
+                {coachNameFor(booking).name.split(" ")[0]} hasn't responded to this request yet - withdrawing it now won't incur any charge.
               </span>
             </div>
 
@@ -424,7 +433,7 @@ function CancelSheet({ booking, onClose, onConfirm, pending }) {
           ) : (
             <div style={{ display: "flex", alignItems: "flex-start", gap: 8, background: C.fog, borderRadius: 12, padding: 12, marginBottom: 16 }}>
               <CreditCard size={14} color={C.slate} style={{ marginTop: 2, flexShrink: 0 }} />
-              <span style={{ fontSize: T.label, color: C.slate, lineHeight: 1.5, ...fBody }}>No payment has been collected for this booking yet — cancelling now won't incur any charge.</span>
+              <span style={{ fontSize: T.label, color: C.slate, lineHeight: 1.5, ...fBody }}>No payment has been collected for this booking yet - cancelling now won't incur any charge.</span>
             </div>
           )}
 
@@ -549,7 +558,7 @@ export function BookingCard({ b, nav, past, additionalCharge, onAdditionalCharge
       {additionalPaymentDue && (
         <div
           onClick={(event) => event.stopPropagation()}
-          style={{ display: "flex", alignItems: "center", gap: 10, background: C.warnTint, borderRadius: 14, padding: "10px 10px 10px 12px", marginTop: 12 }}
+          style={{ display: "flex", alignItems: "center", gap: 10, background: C.warnTint, borderRadius: 14, padding: "10px 12px", marginTop: 12 }}
         >
           <div style={{ width: 34, height: 34, borderRadius: 11, background: C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <BadgeDollarSign size={17} color={C.warnStrong} />
@@ -558,14 +567,12 @@ export function BookingCard({ b, nav, past, additionalCharge, onAdditionalCharge
             <div style={{ fontSize: T.labelLg, fontWeight: 700, color: C.jet, ...fBody }}>Additional payment due · ${Number(additionalCharge.amount).toFixed(2)}</div>
             <div style={{ fontSize: T.caption, color: C.slate, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", ...fBody }}>{additionalCharge.reason}</div>
           </div>
-          <Btn size="sm" variant="dark" onClick={onAdditionalCharge}>Review</Btn>
         </div>
       )}
       {paymentDue && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.brandTint, borderRadius: 12, padding: "9px 12px", marginTop: 12 }} onClick={(e) => e.stopPropagation()}>
           <CreditCard size={14} color={C.brand} style={{ flexShrink: 0 }} />
-          <span style={{ flex: 1, fontSize: T.label, color: C.jet, lineHeight: 1.4, ...fBody }}>{(cn.name || "Your coach").split(" ")[0]} accepted — send your payment to lock in the session.</span>
-          <Btn size="sm" variant="dark" onClick={onPay}>Pay now</Btn>
+          <span style={{ flex: 1, fontSize: T.label, color: C.jet, lineHeight: 1.4, ...fBody }}>{(cn.name || "Your coach").split(" ")[0]} accepted - send your payment to lock in the session.</span>
         </div>
       )}
       <div style={{ display: "flex", gap: 8, marginTop: 14, alignItems: "center" }} onClick={(e) => e.stopPropagation()}>
@@ -573,7 +580,13 @@ export function BookingCard({ b, nav, past, additionalCharge, onAdditionalCharge
             details, where clients can review the session before choosing a slot. */}
         {!past && (
           <>
-            <Btn size="sm" variant="secondary" full onClick={onCancel}>{pending ? "Withdraw request" : "Cancel booking"}</Btn>
+            {paymentDue ? (
+              <Btn size="sm" variant="dark" full onClick={onPay}>Pay now</Btn>
+            ) : additionalPaymentDue ? (
+              <Btn size="sm" variant="dark" full onClick={onAdditionalCharge}>Review</Btn>
+            ) : (
+              <Btn size="sm" variant="secondary" full onClick={onCancel}>{pending ? "Withdraw request" : "Cancel booking"}</Btn>
+            )}
             <Btn size="sm" variant="dark" icon={MessageCircle} ariaLabel={`Message ${cn.name}`} onClick={() => nav("chat-thread", { name: b.coachName || b.clientName, handle: coach?.handle, context: `${b.service} · ${b.date}`, bookingId: b.id })} />
           </>
         )}
@@ -694,13 +707,13 @@ export function ScreenClientBookingDetail({ nav, goBack, params, bookings, toast
               {cn.revealed && <div style={{ fontSize: T.captionLg, color: C.slate, ...fBody }}>Full name shared with your booking partner</div>}
               {coach && <div style={{ fontSize: T.label, color: C.slate, ...fBody }}>{coach.suburb}</div>}
             </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.border}`, flexWrap: "wrap" }}>
+            {coach?.verified?.identity && (
+              <Badge tone="orange" icon={ShieldCheck}>Verified coach</Badge>
+            )}
             <StatusPill status={booking.status} />
           </div>
-          {coach?.verified?.identity && (
-            <div style={{ display: "flex", gap: 8, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.border}` }}>
-              <Badge tone="orange" icon={ShieldCheck}>Verified coach</Badge>
-            </div>
-          )}
         </Card>
 
         {booking.status === BOOKING_STATUS.DECLINED && (
@@ -735,7 +748,7 @@ export function ScreenClientBookingDetail({ nav, goBack, params, bookings, toast
         </div>
 
         {relatedCase && (
-          <Card style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 11, background: C.warnTint, borderColor: C.brand }} onClick={() => nav("dispute-status", { caseId: relatedCase.id, role: "client", backTo: "client-booking-detail", bookingId: booking.id })}>
+          <Card style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 11, background: C.warnTint, border: "none" }} onClick={() => nav("dispute-status", { caseId: relatedCase.id, role: "client", backTo: "client-booking-detail", bookingId: booking.id })}>
             <div style={{ width: 38, height: 38, borderRadius: 12, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Scale size={18} color={C.brand} /></div>
             <div style={{ flex: 1 }}><div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>{relatedCase.status === "resolved" ? "Case decision available" : "Session report under review"}</div><div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{relatedCase.categoryLabel} · View status and outcome</div></div>
             <ChevronRight size={16} color={C.slateLight} />
@@ -743,11 +756,10 @@ export function ScreenClientBookingDetail({ nav, goBack, params, bookings, toast
         )}
 
         {isAwaitingPayment && acceptanceCharges.length > 0 && (
-          <Card style={{ marginBottom: 14, padding: 16, background: C.brandTint, borderColor: C.brand }}>
+          <Card style={{ marginBottom: 14, padding: 16, background: C.brandTint, border: "none" }}>
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
               <div>
-                <Badge tone="success">Coach accepted</Badge>
-                <div style={{ marginTop: 8, fontSize: T.title, fontWeight: 750, color: C.jet, ...fDisplay }}>Your final price is ready</div>
+                <div style={{ fontSize: T.title, fontWeight: 750, color: C.jet, ...fDisplay }}>Your final price is ready</div>
                 <div style={{ marginTop: 4, fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, ...fBody }}>{acceptanceCharges.filter((item) => item.kind === ADDITIONAL_CHARGE_KIND.REQUIRED).length} required cost{acceptanceCharges.filter((item) => item.kind === ADDITIONAL_CHARGE_KIND.REQUIRED).length === 1 ? "" : "s"} included · {acceptanceCharges.filter((item) => item.kind === ADDITIONAL_CHARGE_KIND.OPTIONAL).length} optional add-on{acceptanceCharges.filter((item) => item.kind === ADDITIONAL_CHARGE_KIND.OPTIONAL).length === 1 ? "" : "s"}</div>
               </div>
               <div style={{ fontSize: T.titleLg, fontWeight: 800, color: C.jet, ...fDisplay }}>${requiredCheckoutTotal.toFixed(2)}</div>
@@ -756,7 +768,7 @@ export function ScreenClientBookingDetail({ nav, goBack, params, bookings, toast
         )}
 
         {completionCharge && (
-          <Card style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 11, background: pendingFinalCharge ? C.warnTint : C.white, borderColor: pendingFinalCharge ? C.warnStrong : C.border }} onClick={() => nav("additional-charge-review", { chargeId: completionCharge.id, role: "client", backTo: "client-booking-detail" })}>
+          <Card style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 11, background: pendingFinalCharge ? C.warnTint : C.white, border: pendingFinalCharge ? "none" : `1px solid ${C.border}` }} onClick={() => nav("additional-charge-review", { chargeId: completionCharge.id, role: "client", backTo: "client-booking-detail" })}>
             <div style={{ width: 38, height: 38, borderRadius: 12, background: C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><BadgeDollarSign size={18} color={pendingFinalCharge ? C.warnStrong : C.brand} /></div>
             <div style={{ flex: 1 }}><div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>{pendingFinalCharge ? "Final payment required" : "Final payment"} · ${Number(completionCharge.amount).toFixed(2)}</div><div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{completionCharge.reason} · {pendingFinalCharge ? "Pay before confirming completion" : completionCharge.status.replace("_", " ")}</div></div>
             <ChevronRight size={16} color={C.slateLight} />
@@ -775,7 +787,7 @@ export function ScreenClientBookingDetail({ nav, goBack, params, bookings, toast
         {booking.safetyNotes && (
           <>
             <SectionLabel>Health & safety information shared</SectionLabel>
-            <Card style={{ marginBottom: 14, display: "flex", alignItems: "flex-start", gap: 10, background: C.warnTint }}>
+            <Card style={{ marginBottom: 14, display: "flex", alignItems: "flex-start", gap: 10, background: C.warnTint, border: "none" }}>
               <ShieldCheck size={17} color={C.warnStrong} style={{ flexShrink: 0, marginTop: 1 }} />
               <p style={{ margin: 0, fontSize: T.body, color: C.jet, lineHeight: 1.6, whiteSpace: "pre-line", ...fBody }}>{booking.safetyNotes}</p>
             </Card>
@@ -905,14 +917,25 @@ export function ScreenClientBookingDetail({ nav, goBack, params, bookings, toast
 
       {(isUpcoming || isCompletionPending) && pendingFinalCharge && (
         <BottomActionBar>
-          <Btn variant="secondary" disabled icon={CheckCircle2}>Completion locked</Btn>
           <Btn full icon={CreditCard} onClick={() => nav("additional-charge-payment", { chargeId: completionCharge.id, role: "client" })}>Pay final ${Number(completionCharge.amount).toFixed(2)}</Btn>
         </BottomActionBar>
       )}
 
       {(isUpcoming || isCompletionPending) && !pendingFinalCharge && (
         <BottomActionBar>
-          <Btn full disabled={!coachFinishedSession || clientConfirmedCompletion} icon={CheckCircle2} onClick={() => nav("session-completion", { bookingId: booking.id, role: "client", backTo: "client-booking-detail" })}>{clientConfirmedCompletion ? "Confirmation saved" : coachFinishedSession ? "Confirm session completed" : "Waiting for coach to finish"}</Btn>
+          {clientConfirmedCompletion ? (
+            <div style={{ width: "100%", minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: C.fog, borderRadius: 12, padding: "10px 16px", color: C.slate, fontSize: T.body, fontWeight: 600, ...fBody }}>
+              <CheckCircle2 size={15} color={C.success} />
+              <span>Confirmation saved</span>
+            </div>
+          ) : !coachFinishedSession ? (
+            <div style={{ width: "100%", minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: C.fog, borderRadius: 12, padding: "10px 16px", color: C.slate, fontSize: T.body, fontWeight: 600, ...fBody }}>
+              <Clock size={15} color={C.brand} />
+              <span>Waiting for coach to finish</span>
+            </div>
+          ) : (
+            <Btn full icon={CheckCircle2} onClick={() => nav("session-completion", { bookingId: booking.id, role: "client", backTo: "client-booking-detail" })}>Confirm session completed</Btn>
+          )}
         </BottomActionBar>
       )}
 
@@ -958,7 +981,7 @@ export function ScreenLeaveReview({ nav, goBack, params, toast, bookings = [], s
           ? { ...item, reviewed: true, review: { rating, tags, comment: review.trim() } }
           : item));
       }
-      toast("Review sent — thank you!");
+      toast("Review sent - thank you!");
       nav("client-dashboard");
     }, 450);
   };

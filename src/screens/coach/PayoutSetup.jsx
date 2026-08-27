@@ -71,7 +71,7 @@ export function ScreenCoachPayoutSetup({ nav, goBack, params, toast }) {
           </div>
         </FormSection>
 
-        <FormSection icon={FileText} label="Tax information (optional)" hint="Only required in some regions — leave blank if it doesn't apply to you.">
+        <FormSection icon={FileText} label="Tax information (optional)" hint="Only required in some regions - leave blank if it doesn't apply to you.">
           <div>
             <div style={labelStyle}>Tax information (if required)</div>
             <div className="cl-input" style={fieldWrapStyle}>

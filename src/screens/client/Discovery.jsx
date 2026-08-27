@@ -544,7 +544,7 @@ export function ScreenClientHome({ nav, params = {}, favorites = [], toggleFav, 
       if (sortBy === "rating") return b.rating - a.rating || a.liveDistanceKm - b.liveDistanceKm;
       if (sortBy === "price") return a.packages[0].price - b.packages[0].price || b.rating - a.rating;
       if (sortBy === "distance") return a.liveDistanceKm - b.liveDistanceKm;
-      const score = coach => (coach.rating * 20) + (coach.instantBook ? 4 : 0) - coach.liveDistanceKm;
+      const score = coach => (coach.rating * 20) - coach.liveDistanceKm;
       return score(b) - score(a);
     });
   }, [searchAndAreaFiltered, radiusKm, sortBy]);

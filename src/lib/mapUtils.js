@@ -37,7 +37,7 @@ export const MAP_STYLES = [
   {
     id: "street",
     label: "Street",
-    description: "Roads, buildings & parks — best for everyday use",
+    description: "Roads, buildings & parks - best for everyday use",
     swatch: "#CFE3D6",
     url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
     attribution: "&copy; OpenStreetMap contributors",
@@ -55,7 +55,7 @@ export const MAP_STYLES = [
   {
     id: "terrain",
     label: "Terrain",
-    description: "Elevation, hills & mountains — great for running/cycling",
+    description: "Elevation, hills & mountains - great for running/cycling",
     swatch: "#D9C9A3",
     url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}",
     attribution: "Tiles &copy; Esri",
@@ -64,7 +64,7 @@ export const MAP_STYLES = [
   {
     id: "dark",
     label: "Dark",
-    description: "Dark UI — premium, night-friendly interface",
+    description: "Dark UI - premium, night-friendly interface",
     swatch: "#1B1E24",
     url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
     attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
@@ -73,7 +73,7 @@ export const MAP_STYLES = [
   {
     id: "light",
     label: "Light / Minimal",
-    description: "Simplified roads & labels — clean modern look",
+    description: "Simplified roads & labels - clean modern look",
     swatch: "#F1F1EE",
     url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
     attribution: "&copy; OpenStreetMap contributors &copy; CARTO",

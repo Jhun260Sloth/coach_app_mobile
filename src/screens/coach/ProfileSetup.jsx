@@ -54,7 +54,7 @@ export function ScreenCoachProfileSetup({ nav, toast }) {
       <div style={{ padding: "18px 20px 0", flex: 1, overflowY: "auto", paddingBottom: 100 }}>
         <TopBar title="Profile setup" />
         <div style={{ fontSize: T.body, color: C.slate, marginBottom: 18, ...fBody }}>
-          Tell clients who you are — this shows up on your public coach profile.
+          Tell clients who you are - this shows up on your public coach profile.
         </div>
 
         <FormSection icon={Camera} label="Profile photo" hint="A clear photo helps clients feel confident in you.">

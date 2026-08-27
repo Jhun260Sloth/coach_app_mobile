@@ -3,7 +3,7 @@ import { HelpCircle, Paperclip, MapPin, Send, MoreVertical, Flag, Ban, Check, Ch
 import { CL, CD, fDisplay, fBody, T, LAYOUT } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { THREADS, COACH_THREADS, CHAT_MESSAGES, BOOKING_ENQUIRY_MESSAGES, COACHES } from "../../data/mockData";
-import { Avatar, BackButton, BottomSheet, Btn, ConfirmDialog, EmptyState, TopBar, HandleTag } from "../../components/ui/Primitives";
+import { Avatar, BackButton, BottomSheet, Btn, ConfirmDialog, EmptyState, TopBar, HandleTag, ThreadSkeleton } from "../../components/ui/Primitives";
 import { StatusBanner } from "../../systems/StateSystem";
 import { getPublicName } from "../../utils/name";
 import { clientMetaFor } from "../../data/users";
@@ -96,6 +96,7 @@ export function ScreenMessages({ nav, role, isFirstTimeClient }) {
   const { isBlocked, unblock } = useBlockedThreads();
   const { isPinned, pin, unpin } = usePinnedThreads();
   const { isDeleted, remove } = useDeletedThreads();
+  const [loading, setLoading] = useState(true);
   const rawThreads = role === "coach" ? COACH_THREADS : THREADS;
   // Pinned threads first, then unread, then original order; deleted threads drop out entirely.
   const threads = [...rawThreads]
@@ -104,6 +105,8 @@ export function ScreenMessages({ nav, role, isFirstTimeClient }) {
   const [blockedThread, setBlockedThread] = useState(null);
   const [optionsThread, setOptionsThread] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+
+  useEffect(() => { const t = setTimeout(() => setLoading(false), 800); return () => clearTimeout(t); }, []);
 
   // First-time clients haven't sent a booking request yet, so there's nothing
   // to chat about — show a single unified empty state instead of the (mock)
@@ -122,7 +125,9 @@ export function ScreenMessages({ nav, role, isFirstTimeClient }) {
       />
 
       <div style={{ flex: 1, overflowY: "auto", padding: "0 18px", paddingBottom: 116 }} className="cl-hide-scrollbar">
-        {showEmptyChat ? (
+        {loading ? (
+          <div style={{ paddingTop: 8 }}><ThreadSkeleton rows={5} /></div>
+        ) : showEmptyChat ? (
           <div style={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: "center" }}>
             <EmptyState
               large

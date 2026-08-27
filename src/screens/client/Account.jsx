@@ -160,8 +160,8 @@ export function ScreenClientProfile({ nav, resetNav, biometric, setBiometric, to
     : [...editDraft.sports, sport]);
   const saveProfile = () => {
     if (!editDraft.name.trim()) { toast("Add your name first"); return; }
-    if (!isValidHandle(editDraft.handle)) { toast("Pick a valid username — 3–24 characters"); return; }
-    if (isHandleTaken(editDraft.handle)) { toast("That username's taken — try another"); return; }
+    if (!isValidHandle(editDraft.handle)) { toast("Pick a valid username - 3–24 characters"); return; }
+    if (isHandleTaken(editDraft.handle)) { toast("That username's taken - try another"); return; }
     if (editDraft.sports.length > 0 && !hasCompleteSportLevels(editDraft.sports, editDraft.sportLevels)) {
       toast("Add an experience level for every selected sport");
       return;
@@ -431,7 +431,7 @@ const closeSheet = () => setSheet(null);
           </div>
         </FormSection>
 
-        <FormSection icon={Sparkles} label="Sport & interests" hint="Sports they love — helps coaches match the right sessions.">
+        <FormSection icon={Sparkles} label="Sport & interests" hint="Sports they love - helps coaches match the right sessions.">
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {POPULAR_SPORTS.slice(0, 10).map((s) => (
               <SportBadge key={s} sport={s} selected={childDraft.sport.includes(s)} onClick={() => toggleDraftSport(s)} compact />
@@ -565,7 +565,7 @@ const closeSheet = () => setSheet(null);
             </div>
           </FormSection>
 
-          <FormSection icon={MapPin} label="Location" hint="Only used to find coaches nearby — never shown to them.">
+          <FormSection icon={MapPin} label="Location" hint="Only used to find coaches nearby - never shown to them.">
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <Field label="Address" placeholder="Enter your address" icon={MapPin} value={editDraft.address} onChange={(e) => setEditDraft((d) => ({ ...d, address: e.target.value }))} />
               <LocationField
@@ -745,7 +745,7 @@ const closeSheet = () => setSheet(null);
           </div>
         </div>
         <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: 14, lineHeight: 1.5, ...fBody }}>
-          Payments are processed by our PCI-compliant payment partner — CoachLink never stores your full card number.
+          Payments are processed by our PCI-compliant payment partner - CoachLink never stores your full card number.
         </div>
         <div style={{ marginTop: 20 }}>
           <Btn full disabled={!canSaveCard} onClick={saveCard}>Save card</Btn>

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import {
   Camera, Edit3, Eye, EyeOff, Fingerprint, Lock, Shield, ShieldCheck, HelpCircle,
   LogOut, ChevronRight, Trash2, Plus, User,
-  Banknote, CalendarClock, CalendarDays, Zap, Hand, Bell, MapPin, Film, Play, Image as ImageIcon,
+  Banknote, CalendarClock, CalendarDays, Bell, MapPin, Film, Play, Image as ImageIcon,
   Share2, Award, X, Navigation, Star, Mail, AlertTriangle, Sparkles,
   Phone, MessageCircle, CheckCircle2,
 } from "lucide-react";
@@ -10,7 +10,7 @@ import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { COACHES, LANGUAGE_OPTIONS, GENDER_OPTIONS, AU_SUBURBS, REVIEWS } from "../../data/mockData";
 import {
   Avatar, ScreenHeader, SectionLabel, FormSection, Chip, Card, Toggle, Btn, BottomSheet, ConfirmDialog, Field,
-  SearchMultiSelect, SearchSelect, ScrollFadeRow, SegTabs, StarRow, FullscreenImageViewer, RequiredMark,
+  SearchMultiSelect, SearchSelect, ScrollFadeRow, SegTabs, FullscreenImageViewer, RequiredMark,
   SettingsRow, SettingsGroup, PasswordRequirements, passwordValid,
 } from "../../components/ui/Primitives";
 import { CoachProfileHero, CoachProfileAbout } from "../../components/ui/CoachProfileSections";
@@ -63,7 +63,7 @@ function OptionCard({ icon: Icon, title, desc, selected, onClick }) {
 }
 
 export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, savePackage, removePackage, biometric, setBiometric, coachMedia = [], coachAvailableNow, setCoachAvailableNow }) {
-  const { darkMode, coachOnboarding, coachProfile, coachBookingType, setCoachBookingType, updateCoachOnboarding, isHandleTaken, pushNotification } = useApp();
+  const { darkMode, coachOnboarding, coachProfile, updateCoachOnboarding, isHandleTaken, pushNotification } = useApp();
   const C = darkMode ? CD : CL;
   const coach = coachProfile;
 
@@ -128,8 +128,8 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
   const removeDraftAccreditation = (i) => setDraftField({ accreditations: draft.accreditations.filter((_, idx) => idx !== i) });
   const saveProfile = () => {
     if (!draft.name.trim()) { toast("Add your name first"); return; }
-    if (!isValidHandle(draft.handle)) { toast("Pick a valid username — 3–24 characters"); return; }
-    if (isHandleTaken(draft.handle, [coach.handle, profile.handle])) { toast("That username's taken — try another"); return; }
+    if (!isValidHandle(draft.handle)) { toast("Pick a valid username - 3–24 characters"); return; }
+    if (isHandleTaken(draft.handle, [coach.handle, profile.handle])) { toast("That username's taken - try another"); return; }
     if (!draft.sports || draft.sports.length === 0) { toast("Pick at least one sport you coach"); return; }
     setProfile(draft);
     updateCoachOnboarding?.({
@@ -156,15 +156,10 @@ export function ScreenCoachProfileEdit({ nav, resetNav, toast, coachPackages, sa
     setSheet(null);
   };
 
-  const bookingType = coachBookingType || (coach.instantBook ? "instant" : "request");
-  const setBookingType = (value) => {
-    setCoachBookingType(value);
-    updateCoachOnboarding?.({ bookingType: value, instantBook: value === "instant" });
-  };
   const toggleActive = (pkg) => {
     const nowActive = !(pkg.active !== false);
     savePackage({ ...pkg, active: nowActive });
-    toast(nowActive ? `${pkg.name} enabled` : `${pkg.name} paused — hidden from clients`);
+    toast(nowActive ? `${pkg.name} enabled` : `${pkg.name} paused - hidden from clients`);
   };
 
   const [notifPrefs, setNotifPrefs] = useState({
@@ -315,7 +310,6 @@ const toggleNotif = (key) => setNotifPrefs((p) => ({ ...p, [key]: !p[key] }));
           sport={profile.sports[0]}
           sports={profile.sports}
           suburb={profile.location}
-          instantBook={bookingType === "instant"}
           coverHeight={188}
           style={{ margin: "-14px -18px 0" }}
           onAvatarClick={() => setAvatarOpen(true)}
@@ -350,7 +344,7 @@ const toggleNotif = (key) => setNotifPrefs((p) => ({ ...p, [key]: !p[key] }));
                 {coachAvailableNow ? "Available for bookings" : "Unavailable for bookings"}
               </div>
               <div style={{ fontSize: T.caption, color: coachAvailableNow ? C.slateLight : C.danger, ...fBody }}>
-                {coachAvailableNow ? "Clients can send new requests" : "Your profile shows as unavailable — clients can't book you"}
+                {coachAvailableNow ? "Clients can send new requests" : "Your profile shows as unavailable - clients can't book you"}
               </div>
             </div>
           </div>
@@ -376,7 +370,7 @@ const toggleNotif = (key) => setNotifPrefs((p) => ({ ...p, [key]: !p[key] }));
         <SectionLabel>Reels & photos</SectionLabel>
         {coachMedia.length === 0 ? (
           <div style={{ fontSize: T.labelLg, color: C.slateLight, marginBottom: 22, ...fBody }}>
-            No reels or photos yet — add some so athletes can see you coach.
+            No reels or photos yet - add some so athletes can see you coach.
           </div>
         ) : (
           <div className="cl-hide-scrollbar" style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, marginBottom: 12 }}>
@@ -429,8 +423,10 @@ const toggleNotif = (key) => setNotifPrefs((p) => ({ ...p, [key]: !p[key] }));
           <Card style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 14 }}>
             <div style={{ textAlign: "center", flexShrink: 0 }}>
               <div style={{ fontSize: T.hero, fontWeight: 700, color: C.jet, ...fDisplay }}>{reviewAvg}</div>
-              <StarRow value={parseFloat(reviewAvg)} size={11} />
-              <div style={{ fontSize: T.micro, color: C.slateLight, marginTop: 3, ...fBody }}>{REVIEWS.length} reviews</div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4, marginTop: 4 }}>
+                <Star size={12} fill={C.brand} color={C.brand} />
+                <span style={{ fontSize: T.label, color: C.slate, ...fBody }}>{REVIEWS.length} reviews</span>
+              </div>
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>Athletes rate you {reviewAvg} / 5</div>
@@ -448,7 +444,7 @@ const toggleNotif = (key) => setNotifPrefs((p) => ({ ...p, [key]: !p[key] }));
         <>
         <SectionLabel>Service packages</SectionLabel>
         {coachPackages.length === 0 && (
-          <div style={{ fontSize: T.labelLg, color: C.slateLight, marginBottom: 10, ...fBody }}>No packages yet — add your first service below.</div>
+          <div style={{ fontSize: T.labelLg, color: C.slateLight, marginBottom: 10, ...fBody }}>No packages yet - add your first service below.</div>
         )}
         {coachPackages.map((p) => {
           const isActive = p.active !== false;
@@ -482,27 +478,6 @@ const toggleNotif = (key) => setNotifPrefs((p) => ({ ...p, [key]: !p[key] }));
         </div>
 
         <div style={{ marginTop: 22 }}>
-          <SectionLabel>Booking preferences</SectionLabel>
-          <div style={{ fontSize: T.label, color: C.slate, marginTop: -6, marginBottom: 12, lineHeight: 1.5, ...fBody }}>
-            Choose how athletes are able to book your services.
-          </div>
-          <div role="radiogroup" aria-label="Booking preference">
-            <OptionCard
-              icon={Zap}
-              title="Instant book"
-              desc="Sessions are auto-confirmed the moment an athlete books — no approval needed."
-              selected={bookingType === "instant"}
-              onClick={() => { setBookingType("instant"); toast("Instant book enabled"); }}
-            />
-            <OptionCard
-              icon={Hand}
-              title="Request to book"
-              desc="Athletes send a request first; you review and approve each one."
-              selected={bookingType === "request"}
-              onClick={() => { setBookingType("request"); toast("Request to book enabled"); }}
-            />
-          </div>
-
           <div style={{ marginTop: 18 }}>
             <SectionLabel>Cancellation policy</SectionLabel>
             <Card style={{ marginBottom: 12, background: C.brandTint }}>
@@ -586,7 +561,7 @@ const toggleNotif = (key) => setNotifPrefs((p) => ({ ...p, [key]: !p[key] }));
               </div>
             </FormSection>
 
-            <FormSection icon={User} label="About you" hint="Your name and username — how athletes see and recognise you.">
+            <FormSection icon={User} label="About you" hint="Your name and username - how athletes see and recognise you.">
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 <Field label="Full name" placeholder="How athletes will see you" icon={User} value={draft.name} onChange={(e) => setDraftField({ name: e.target.value })} required />
                 <HandleField value={draft.handle} onChange={(v) => { setHandleEdited(true); setDraftField({ handle: v }); }} isTaken={isHandleTaken(draft.handle, [coach.handle, profile.handle])} showStatus={handleEdited && draft.handle.trim() !== String(profile.handle || "").trim()} required />

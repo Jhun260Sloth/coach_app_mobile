@@ -11,7 +11,7 @@ import { COACHES, REVIEWS } from "../../data/mockData";
 import { getCoachMedia } from "../../data/media";
 import {
   Avatar, BackButton, Badge, BottomSheet, SegTabs, SectionLabel, Card, Btn,
-  HandleTag, FullscreenImageViewer, StepProgress,
+  HandleTag, FullscreenImageViewer, StepProgress, ProfileSkeleton,
 } from "../../components/ui/Primitives";
 import { CoachProfileHero, CoachProfileAbout } from "../../components/ui/CoachProfileSections";
 import { SportIcon } from "../../components/ui/SportUI";
@@ -20,7 +20,7 @@ import { availabilityBlocksToWeekly } from "../../utils/coachProfile";
 import { StatusBanner } from "../../systems/StateSystem";
 import { useReviewActions } from "../../systems/ReviewsSystem";
 import {
-  buildMonthGrid, sameDay, dayAvailability, slotsForDate, groupSlotsByPeriod, formatTimeRange12, formatFullDateFromDate,
+  buildMonthGrid, sameDay, dayAvailability, slotsForDate, groupSlotsByPeriod, formatTimeRange12, formatFullDateFromDate, addDays, DOW_ABBR,
 } from "./Booking";
 
 const WEEKDAY_HEADERS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -42,7 +42,47 @@ function derivePackageAvailability(coach, pkg) {
     const kept = slots.filter((_, i) => (seed + di * 3 + i) % 2 === 0);
     if (kept.length) out[day] = kept;
   });
-  return out;
+  return Object.keys(out).length ? out : base;
+}
+
+function getNextAvailableDate(coach, pkg, isCurrentCoach, availabilityBlocks, coachPackages) {
+  const availability = isCurrentCoach && availabilityBlocks?.length
+    ? availabilityBlocksToWeekly(availabilityBlocks, pkg, coachPackages)
+    : derivePackageAvailability(coach, pkg);
+
+  if (!availability || Object.keys(availability).length === 0) return null;
+
+  const now = new Date();
+  const curH = now.getHours();
+  const curM = now.getMinutes();
+
+  for (let i = 0; i < 28; i++) {
+    const d = addDays(now, i);
+    const abbrev = DOW_ABBR[d.getDay()];
+    const slots = availability[abbrev];
+    if (slots && slots.length > 0) {
+      if (i === 0) {
+        const hasFutureSlot = slots.some((t) => {
+          const [h, m] = t.split(":").map(Number);
+          return h > curH || (h === curH && m > curM);
+        });
+        if (hasFutureSlot) return d;
+      } else {
+        return d;
+      }
+    }
+  }
+  return null;
+}
+
+function formatNextAvailability(date) {
+  if (!date) return "Check availability";
+  const now = new Date();
+  const tomorrow = addDays(now, 1);
+  if (sameDay(date, now)) return "Next: Today";
+  if (sameDay(date, tomorrow)) return "Next: Tomorrow";
+  const formatted = date.toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" });
+  return `Next: ${formatted}`;
 }
 
 function packageLocation(pkg, coach) {
@@ -135,8 +175,7 @@ function PackageBookingSheet({
           <div style={{ padding: 16, borderRadius: 18, background: C.brandTint, border: `1px solid ${C.border}`, marginBottom: 18 }}>
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
               <div style={{ minWidth: 0 }}>
-                <Badge tone="success" icon={ShieldCheck}>Coach verified</Badge>
-                <h2 style={{ margin: "10px 0 0", fontSize: T.headingLg, lineHeight: 1.2, fontWeight: 800, color: C.jet, ...fDisplay }}>{pkg.name}</h2>
+                <h2 style={{ margin: "0 0 0", fontSize: T.headingLg, lineHeight: 1.2, fontWeight: 800, color: C.jet, ...fDisplay }}>{pkg.name}</h2>
                 <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 5, fontSize: T.labelLg, color: C.slate, ...fBody }}>
                   <SportIcon sport={pkg.sport || coach.sport} size={13} color={C.brand} />
                   {pkg.sport || coach.sport} · {typeLabel}
@@ -321,6 +360,7 @@ function PackageBookingSheet({
 export function ScreenCoachProfile({ nav, goBack, params = {}, favorites = [], toggleFav, coachAvailableNow }) {
   const { darkMode, coachMedia, coachProfile, coachPackages, availabilityBlocks, toast } = useApp();
   const C = darkMode ? CD : CL;
+  const [loading, setLoading] = useState(true);
   const listedCoach = COACHES.find((c) => c.id === (params?.id)) || COACHES[0];
   const coach = listedCoach.id === COACHES[1].id ? coachProfile : listedCoach;
   const media = coach.id === COACHES[1].id ? coachMedia : getCoachMedia(coach.id);
@@ -335,11 +375,13 @@ export function ScreenCoachProfile({ nav, goBack, params = {}, favorites = [], t
   const reviewPageCount = Math.max(1, Math.ceil(REVIEWS.length / REVIEWS_PER_PAGE));
   const pagedReviews = REVIEWS.slice((reviewPage - 1) * REVIEWS_PER_PAGE, reviewPage * REVIEWS_PER_PAGE);
   useEffect(() => { setReviewPage(1); }, [tab, coach.id]);
+  useEffect(() => { const t = setTimeout(() => setLoading(false), 800); return () => clearTimeout(t); }, []);
   const selectedPkg = coach.packages.find((p) => p.id === selectedPkgId) || null;
   const safeFavorites = Array.isArray(favorites) ? favorites : [];
   const fav = safeFavorites.includes(coach.id);
   const heroImage = coach.coverPhoto || media.find((item) => item.type === "photo")?.url;
   const unavailable = coach.id === LIVE_AVAILABILITY_COACH_ID && coachAvailableNow === false;
+  const isCurrentCoach = coach.id === LIVE_AVAILABILITY_COACH_ID;
   const handleFavourite = () => {
     haptic(8);
     toggleFav?.(coach.id);
@@ -360,13 +402,16 @@ export function ScreenCoachProfile({ nav, goBack, params = {}, favorites = [], t
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ flex: 1, overflowY: "auto", paddingBottom: 100 }} className="cl-hide-scrollbar">
+        {loading ? (
+          <ProfileSkeleton />
+        ) : (
+          <>
         <div style={{ position: "relative" }}>
           <CoachProfileHero
             coach={coach}
             pub={pub}
             heroImage={heroImage}
             avatarSrc={coach.avatar}
-            instantBook={coach.instantBook}
             coverHeight={188}
             onAvatarClick={() => setAvatarOpen(true)}
             overlay={
@@ -437,16 +482,18 @@ export function ScreenCoachProfile({ nav, goBack, params = {}, favorites = [], t
         {tab === "packages" && (
           <div style={{ marginTop: 16 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-              <Badge tone="success" icon={ShieldCheck}>{activePackages.length} available</Badge>
+              <Badge tone="neutral" icon={ShieldCheck} style={{ color: C.jet }}>{activePackages.length} available</Badge>
               <span style={{ fontSize: T.captionLg, color: C.slateLight, ...fBody }}>Tap a package to see everything included</span>
             </div>
 
             <div className="cl-stagger">
               {coach.packages.map((p, i) => {
-                const isInactive = p.active === false;
+                const isInactive = p.active === false || unavailable;
                 const duration = p.durationMinutes || p.duration || 60;
                 const format = p.mode || p.locationType || "In-person";
                 const groupSize = p.maxParticipants > 1 ? `Up to ${p.maxParticipants} people` : "Private session";
+                const nextDate = !isInactive ? getNextAvailableDate(coach, p, isCurrentCoach, availabilityBlocks, coachPackages) : null;
+                const nextAvailability = formatNextAvailability(nextDate);
                 return (
                   <Card
                     key={p.id}
@@ -465,7 +512,7 @@ export function ScreenCoachProfile({ nav, goBack, params = {}, favorites = [], t
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <div style={{ width: 42, height: 42, flexShrink: 0, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", background: isInactive ? C.white : C.brandTint, border: `1px solid ${C.border}` }}>
+                      <div style={{ width: 42, height: 42, flexShrink: 0, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", background: isInactive ? C.fog : C.brandTint }}>
                         <SportIcon sport={p.sport || coach.sport} size={19} color={isInactive ? C.slateLight : C.brand} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -485,10 +532,14 @@ export function ScreenCoachProfile({ nav, goBack, params = {}, favorites = [], t
                     </div>
 
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginTop: 12 }}>
-                      {isInactive ? <Badge tone="neutral">Currently unavailable</Badge> : coach.instantBook ? <Badge tone="success">Instant book</Badge> : <Badge tone="neutral">Request to book</Badge>}
+                      {isInactive ? (
+                        <Badge tone="neutral">Currently unavailable</Badge>
+                      ) : (
+                        <Badge tone="neutral" icon={CalendarDays}>{nextAvailability}</Badge>
+                      )}
                       {!isInactive ? (
-                        <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: T.captionLg, fontWeight: 650, color: C.brand, ...fBody }}>
-                          Details & availability <ChevronRight size={14} />
+                        <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: T.captionLg, fontWeight: 700, color: C.brand, ...fBody }}>
+                          Book session <ChevronRight size={14} />
                         </span>
                       ) : null}
                     </div>
@@ -563,6 +614,8 @@ export function ScreenCoachProfile({ nav, goBack, params = {}, favorites = [], t
           </div>
         )}
         </div>
+          </>
+        )}
       </div>
 
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: C.white, borderTop: `1px solid ${C.border}`, padding: "14px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", display: "flex", alignItems: "center", gap: 12 }}>

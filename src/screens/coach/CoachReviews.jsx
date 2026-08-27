@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Star, CornerUpLeft, Flag, Check, CheckCircle2, Clock,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { REVIEWS } from "../../data/mockData";
 import {
-  Avatar, Card, Btn, SectionLabel, StarRow, BottomSheet, Badge, HandleTag, TopBar, EmptyState,
+  Avatar, Card, Btn, SectionLabel, BottomSheet, Badge, HandleTag, TopBar, EmptyState, BookingCardSkeleton,
 } from "../../components/ui/Primitives";
 import { useReviewActions, DISPUTE_REASONS } from "../../systems/ReviewsSystem";
 import { useApp } from "../../context/AppContext";
@@ -20,7 +20,10 @@ import { useApp } from "../../context/AppContext";
 export function ScreenCoachReviews({ nav, toast }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
+  const [loading, setLoading] = useState(true);
   const { getReply, getDispute, submitReply, submitDispute } = useReviewActions();
+
+  useEffect(() => { const t = setTimeout(() => setLoading(false), 800); return () => clearTimeout(t); }, []);
   const [replyTarget, setReplyTarget] = useState(null);
   const [replyText, setReplyText] = useState("");
   const [disputeTarget, setDisputeTarget] = useState(null);
@@ -56,12 +59,18 @@ export function ScreenCoachReviews({ nav, toast }) {
       <TopBar title="Reviews" onBack={() => nav("coach-profile-edit")} />
 
       <div style={{ flex: 1, overflowY: "auto", padding: "14px 18px 0", paddingBottom: 116 }} className="cl-hide-scrollbar">
+        {loading ? (
+          <BookingCardSkeleton rows={4} />
+        ) : (
+          <>
         {/* Rating summary */}
         <Card style={{ marginBottom: 18, display: "flex", alignItems: "center", gap: 14 }}>
           <div style={{ textAlign: "center", flexShrink: 0 }}>
             <div style={{ fontSize: T.hero, fontWeight: 700, color: C.jet, ...fDisplay }}>{ratingAvg}</div>
-            <StarRow value={parseFloat(ratingAvg)} size={11} />
-            <div style={{ fontSize: T.micro, color: C.slateLight, marginTop: 3, ...fBody }}>{REVIEWS.length} reviews</div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4, marginTop: 4 }}>
+              <Star size={12} fill={C.brand} color={C.brand} />
+              <span style={{ fontSize: T.label, color: C.slate, ...fBody }}>{REVIEWS.length} reviews</span>
+            </div>
           </div>
           <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 5 }}>
             {distribution.map((d) => {
@@ -83,7 +92,7 @@ export function ScreenCoachReviews({ nav, toast }) {
         {/* Review list */}
         <SectionLabel>All reviews</SectionLabel>
         <div style={{ fontSize: T.labelLg, color: C.slateLight, marginTop: -4, marginBottom: 12, lineHeight: 1.5, ...fBody }}>
-          Reply to reviews publicly — athletes see your responses on your profile.
+          Reply to reviews publicly - athletes see your responses on your profile.
         </div>
 
         {REVIEWS.length === 0 ? (
@@ -106,7 +115,10 @@ export function ScreenCoachReviews({ nav, toast }) {
                         <div style={{ fontSize: T.caption, color: C.slateLight, ...fBody }}>{r.date}</div>
                       </div>
                     </div>
-                    <StarRow value={r.rating} size={11} />
+                    <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: T.labelLg, fontWeight: 700, color: C.jet, ...fBody }}>
+                      <Star size={12} fill={C.brand} color={C.brand} />
+                      {r.rating.toFixed(1)}
+                    </span>
                   </div>
 
                   <p style={{ fontSize: T.labelLg, color: C.slate, marginTop: 8, lineHeight: 1.5, ...fBody }}>{r.text}</p>
@@ -145,6 +157,8 @@ export function ScreenCoachReviews({ nav, toast }) {
             })}
           </div>
         )}
+          </>
+        )}
       </div>
 
       {/* Reply sheet */}
@@ -155,7 +169,10 @@ export function ScreenCoachReviews({ nav, toast }) {
               <div style={{ background: C.fog, borderRadius: 12, padding: "10px 12px", marginBottom: 14 }}>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <span style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, ...fBody }}>{replyTarget.name}</span>
-                  <StarRow value={replyTarget.rating} size={11} />
+                  <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: T.labelLg, fontWeight: 700, color: C.jet, ...fBody }}>
+                    <Star size={12} fill={C.brand} color={C.brand} />
+                    {replyTarget.rating.toFixed(1)}
+                  </span>
                 </div>
                 <p style={{ fontSize: T.labelLg, color: C.slate, marginTop: 4, lineHeight: 1.5, ...fBody }}>{replyTarget.text}</p>
               </div>

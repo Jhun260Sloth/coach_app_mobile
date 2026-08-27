@@ -59,7 +59,7 @@ export function LocationField({ value, onChange, label = "Location", helper, pla
       (pos) => {
         clearTimeout(fallbackTimer);
         const nearest = nearestSuburb(pos.coords.latitude, pos.coords.longitude);
-        done(nearest, `Location detected — ${nearest.suburb}`);
+        done(nearest, `Location detected - ${nearest.suburb}`);
       },
       () => {
         clearTimeout(fallbackTimer);

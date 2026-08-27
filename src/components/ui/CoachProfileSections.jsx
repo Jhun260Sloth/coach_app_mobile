@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import {
-  Star, ShieldCheck, Clock, TrendingUp, Repeat, MapPin, Navigation, Award, Zap, Sparkles, Languages, CheckCircle2, UserCheck, Info,
+  Star, ShieldCheck, Clock, TrendingUp, Repeat, MapPin, Navigation, Award, Sparkles, Languages, CheckCircle2, UserCheck, Info,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
@@ -46,7 +46,6 @@ export function CoachProfileHero({
   sport,
   sports,
   suburb,
-  instantBook = false,
   coverHeight = 188,
   style,
   onAvatarClick,
@@ -113,7 +112,6 @@ export function CoachProfileHero({
               <Star size={15} fill={C.brand} color={C.brand} /> {coach.rating.toFixed(1)}
             </div>
             <div style={{ fontSize: T.caption, color: C.slate, marginTop: 1, ...fBody }}>{coach.reviews} reviews</div>
-            {instantBook && <Badge tone="neutral" icon={Zap} style={{ marginTop: 8, whiteSpace: "nowrap", color: C.jet }}>Instant book</Badge>}
             {verificationChecks.length > 0 && (
                 <button
                   type="button"
@@ -348,7 +346,7 @@ export function CoachProfileAbout({ coach, data = {}, showCancellationPolicy = t
               {travelRadiusKm ? `Travels up to ${travelRadiusKm}km` : "Travel distance to be confirmed"}
             </div>
             <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 1, ...fBody }}>
-              {willingToTravel ? "Willing to travel to your location" : "In-venue sessions only — travel not offered"}
+              {willingToTravel ? "Willing to travel to your location" : "In-venue sessions only - travel not offered"}
             </div>
           </div>
         </div>
@@ -360,7 +358,7 @@ export function CoachProfileAbout({ coach, data = {}, showCancellationPolicy = t
           <Card style={{ marginBottom: 16 }}>
             {accreditations.map((q, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: i === accreditations.length - 1 ? "none" : `1px solid ${C.border}` }}>
-                <Award size={14} color={C.success} style={{ flexShrink: 0 }} />
+                <Award size={14} color={C.brand} style={{ flexShrink: 0 }} />
                 <span style={{ fontSize: T.body, color: C.jet, ...fBody }}>{q}</span>
               </div>
             ))}

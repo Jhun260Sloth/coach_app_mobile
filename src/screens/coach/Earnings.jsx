@@ -1,9 +1,9 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Banknote, Percent, Wallet, ChevronRight } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { CONFIG } from "../../data/mockData";
-import { Card, Badge, SectionLabel, Row, TopBar } from "../../components/ui/Primitives";
+import { Card, Badge, SectionLabel, Row, TopBar, StatSkeleton, BookingCardSkeleton, Skeleton } from "../../components/ui/Primitives";
 import { getBookingClientName } from "../../utils/name";
 import { withClientMeta } from "../../data/users";
 import { BOOKING_STATUS, PAYOUT_STATUS } from "../../data/bookings";
@@ -13,7 +13,10 @@ const STAT_LIMIT = 8;
 export function ScreenCoachEarnings({ nav, goBack, coachBookings }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
+  const [loading, setLoading] = useState(true);
   const completed = coachBookings.filter((b) => b.status === BOOKING_STATUS.COMPLETED);
+
+  useEffect(() => { const t = setTimeout(() => setLoading(false), 800); return () => clearTimeout(t); }, []);
   const released = completed.filter((b) => b.payoutStatus === PAYOUT_STATUS.RELEASED);
   const processing = coachBookings.filter((b) => b.payoutStatus === PAYOUT_STATUS.PROCESSING);
   const netOf = (b) => Math.round(Number(b.paidTotal || b.price || 0) * (1 - CONFIG.commissionRate));
@@ -38,6 +41,16 @@ export function ScreenCoachEarnings({ nav, goBack, coachBookings }) {
 
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "16px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))" }} className="cl-hide-scrollbar">
 
+        {loading ? (
+          <>
+            <Skeleton w="100%" h={120} radius={20} style={{ marginBottom: 16 }} />
+            <StatSkeleton count={3} />
+            <div style={{ marginTop: 16 }}>
+              <BookingCardSkeleton rows={3} />
+            </div>
+          </>
+        ) : (
+          <>
         <div style={{ background: C.jet, borderRadius: 20, padding: 20, marginBottom: 16 }}>
           <div style={{ fontSize: T.captionLg, color: C.onDarkMuted, ...fBody }}>Released earnings</div>
           <div style={{ fontSize: T.heroLg, fontWeight: 800, color: C.white, marginTop: 4, ...fDisplay }}>${net}</div>
@@ -50,7 +63,7 @@ export function ScreenCoachEarnings({ nav, goBack, coachBookings }) {
 
         <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
           {stat(released.length, "Paid-out sessions")}
-          {stat(avgNet ? `$${avgNet}` : "—", "Avg per session")}
+          {stat(avgNet ? `$${avgNet}` : "-", "Avg per session")}
           {stat(pendingTotal ? `$${pendingTotal}` : "$0", "Pending payouts")}
         </div>
 
@@ -149,6 +162,8 @@ export function ScreenCoachEarnings({ nav, goBack, coachBookings }) {
             </Card>
           ))}
         </div>
+          </>
+        )}
       </div>
     </div>
   );

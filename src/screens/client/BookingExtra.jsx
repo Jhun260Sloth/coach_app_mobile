@@ -791,7 +791,7 @@ export function ScreenSessionPrep({ nav, params }) {
         <SectionLabel>Tips for a great session</SectionLabel>
         <Card>
           <div style={{ fontSize: T.label, color: C.slate, lineHeight: 1.6, ...fBody }}>
-            Arrive 5 minutes early to warm up. {isOnline ? "Test your camera and internet connection before the session starts." : `Make your way to ${venue} — look for ${pub.name.split(" ")[0]} near the entrance.`} Bring a positive attitude and be ready to work!
+            Arrive 5 minutes early to warm up. {isOnline ? "Test your camera and internet connection before the session starts." : `Make your way to ${venue} - look for ${pub.name.split(" ")[0]} near the entrance.`} Bring a positive attitude and be ready to work!
           </div>
         </Card>
       </div>
@@ -911,7 +911,7 @@ export function ScreenBookingMessage({ nav, params, toast }) {
         ? `Hi, thanks for your interest in the ${booking?.service || "session"}. Unfortunately I'm unable to take on this booking at the moment. Feel free to check my other available times or message me to discuss alternatives.`
         : messageType === "modify"
         ? `Hi! I'd love to work with you on this, but the ${booking?.service || "session"} time you selected doesn't quite work for me. Would you be open to a different time? I have availability on weekdays after 4pm.`
-        : `Thanks for your booking request! I just wanted to confirm — do you have any specific goals or areas you'd like to focus on during the session? This will help me prepare the best session plan for you.`,
+        : `Thanks for your booking request! I just wanted to confirm - do you have any specific goals or areas you'd like to focus on during the session? This will help me prepare the best session plan for you.`,
       time: "2 hours ago",
     },
   ];

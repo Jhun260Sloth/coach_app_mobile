@@ -28,8 +28,8 @@ export function ScreenPackageDetail({ nav, params }) {
   const pkg = coach.packages.find((p) => p.id === params.packageId) || coach.packages[0];
   const unavailable = pkg.active === false;
 
-  const durationLabel = pkg.duration != null ? `${pkg.duration} min` : "—";
-  const typeLabel = pkg.packageTypes && pkg.packageTypes.length ? pkg.packageTypes.join(" + ") : (pkg.type || pkg.packageType || "—");
+  const durationLabel = pkg.duration != null ? `${pkg.duration} min` : "-";
+  const typeLabel = pkg.packageTypes && pkg.packageTypes.length ? pkg.packageTypes.join(" + ") : (pkg.type || pkg.packageType || "-");
   const locationLabel = pkg.locationType
     ? packageLocationLabel({ deliveryMode: pkg.locationType, venue: pkg.location, travelArea: pkg.location })
     : (pkg.venue || coach.venue || pkg.mode || "Venue to be confirmed");
@@ -94,7 +94,7 @@ export function ScreenPackageDetail({ nav, params }) {
             <SectionLabel>Your selected session</SectionLabel>
             <Card style={{ marginTop: 8, padding: 14, background: C.brandTint, border: `1px solid ${C.border}` }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                <div style={{ width: 42, height: 42, flexShrink: 0, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", background: C.white, border: `1px solid ${C.border}` }}>
+                <div style={{ width: 42, height: 42, flexShrink: 0, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", background: C.white }}>
                   <CalendarDays size={19} color={C.brand} aria-hidden="true" />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>

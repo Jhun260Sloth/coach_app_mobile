@@ -39,7 +39,7 @@ export function availabilityBlocksToWeekly(blocks, pkg, packages = []) {
   return out;
 }
 
-export function getCoachPublicProfile({ base, onboarding = {}, packages, bookingType, availableNow } = {}) {
+export function getCoachPublicProfile({ base, onboarding = {}, packages, availableNow } = {}) {
   const source = base || {};
   const primarySports = Array.isArray(onboarding.primarySports) ? onboarding.primarySports : [];
   const savedSports = Array.isArray(onboarding.sports) ? onboarding.sports : [];
@@ -64,10 +64,6 @@ export function getCoachPublicProfile({ base, onboarding = {}, packages, booking
     ? `${yearsExperience} yrs coaching`
     : (source.experience || "");
   const location = formatCoachLocation(onboarding.location, source.suburb || "");
-  const resolvedBookingType = bookingType || onboarding.bookingType;
-  const instantBook = resolvedBookingType
-    ? resolvedBookingType === "instant"
-    : typeof onboarding.instantBook === "boolean" ? onboarding.instantBook : !!source.instantBook;
 
   return {
     ...source,
@@ -88,7 +84,6 @@ export function getCoachPublicProfile({ base, onboarding = {}, packages, booking
     willingToTravel: onboarding.willingToTravel ?? source.willingToTravel,
     accreditations: Array.isArray(onboarding.accreditations) ? onboarding.accreditations : (source.accreditations || []),
     packages: Array.isArray(packages) ? packages : (source.packages || []),
-    instantBook,
     availableNow: typeof availableNow === "boolean" ? availableNow : true,
   };
 }

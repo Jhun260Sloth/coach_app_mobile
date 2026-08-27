@@ -122,7 +122,7 @@ export function withBookingLifecycle(booking) {
 
 export const INITIAL_BOOKINGS = [
   // Pending — awaiting coach's response
-  { id: "b2", coachId: "c2", coachName: "Noah Kelly", clientName: "Sarah Lin", service: "1:1 Programming Session", date: "Fri, 25 Jul", time: "6:00am", mode: "In-person", status: "pending", price: 65, reviewed: false, participants: "You", notes: "Coming back from a shoulder injury — cleared for light training, will bring physio notes." },
+  { id: "b2", coachId: "c2", coachName: "Noah Kelly", clientName: "Sarah Lin", service: "1:1 Programming Session", date: "Fri, 25 Jul", time: "6:00am", mode: "In-person", status: "pending", price: 65, reviewed: false, participants: "You", notes: "Coming back from a shoulder injury - cleared for light training, will bring physio notes." },
   { id: "b5", coachId: "c1", coachName: "Isla Ferguson", clientName: "Sarah Lin", service: "Group Clinic", date: "Fri, 21 Aug", time: "3:00pm", mode: "In-person", status: "awaiting_payment", paymentDeadline: "Tomorrow, 6:00pm", paymentReminderSent: false, price: 42, reviewed: false, participants: "You", notes: "" },
   { id: "b6", coachId: "c5", coachName: "Chloe Dawson", clientName: "Sarah Lin", service: "Virtual Swing Review", date: "Sun, 10 Aug", time: "9:00am", mode: "Virtual", status: "pending", price: 40, reviewed: false, participants: "You", notes: "" },
   { id: "b7", coachId: "c6", coachName: "Liam O'Connor", clientName: "Sarah Lin", service: "Small Group Ride", date: "Thu, 14 Aug", time: "5:30pm", mode: "In-person", status: "pending", price: 42, reviewed: false, participants: "You", notes: "" },
@@ -166,7 +166,7 @@ export const INITIAL_AVAILABILITY_BLOCKS = [
 
 export const COACH_BOOKINGS = [
   // Pending — awaiting coach's accept/decline
-  { id: "b2", coachId: "c2", coachName: "Noah Kelly", clientName: "Sarah Lin", clientHandle: "sarahlin", service: "1:1 Programming Session", date: "Fri, 25 Jul", time: "6:00am", mode: "In-person", status: "pending", paymentStatus: "not_requested", payoutStatus: "not_ready", price: 65, participants: "You", notes: "Coming back from a shoulder injury — cleared for light training, will bring physio notes." },
+  { id: "b2", coachId: "c2", coachName: "Noah Kelly", clientName: "Sarah Lin", clientHandle: "sarahlin", service: "1:1 Programming Session", date: "Fri, 25 Jul", time: "6:00am", mode: "In-person", status: "pending", paymentStatus: "not_requested", payoutStatus: "not_ready", price: 65, participants: "You", notes: "Coming back from a shoulder injury - cleared for light training, will bring physio notes." },
   { id: "cb2", clientName: "Marcus Webb", service: "Junior Group (max 4)", date: "Wed, 23 Jul", time: "5:00pm", mode: "In-person", status: "pending", price: 30, notes: "First session for his son, age 9." },
   { id: "cb3", clientName: "The Chen Family (u18)", service: "1:1 Court Session", date: "Sat, 26 Jul", time: "9:00am", mode: "In-person", status: "pending", price: 72, notes: "Booking for two children, guardian consent provided at checkout." },
   { id: "cb5", clientName: "Aiden Cross", service: "1:1 Court Session", date: "Fri, 21 Aug", time: "6:30am", mode: "In-person", status: "awaiting_payment", paymentDeadline: "Tomorrow, 6:00pm", paymentReminderSent: false, price: 72, notes: "" },
@@ -320,10 +320,10 @@ export const ADDITIONAL_CHARGES = [
 
 export const REVIEWS = [
   { id: "r1", name: "Sarah L.", handle: "sarahlin", rating: 5, text: "Isla spotted a positioning issue in my first session that nobody else had picked up on. Genuinely improved my game.", verified: true, date: "3 weeks ago" },
-  { id: "r2", name: "Priya D.", handle: "priyad", rating: 5, text: "Great with my two kids — patient but pushes them just enough.", verified: true, date: "1 month ago" },
+  { id: "r2", name: "Priya D.", handle: "priyad", rating: 5, text: "Great with my two kids - patient but pushes them just enough.", verified: true, date: "1 month ago" },
   { id: "r3", name: "Owen K.", handle: "owenk", rating: 4, text: "Solid technical feedback, sessions run a little over time but worth it.", verified: true, date: "2 months ago" },
   { id: "r4", name: "Marcus W.", handle: "marcuswebb", rating: 5, text: "Clear session plan every week and I can feel the progress. Booking a full term.", verified: true, date: "3 months ago" },
-  { id: "r5", name: "Grace L.", handle: "graceliu", rating: 4, text: "Really good coach — just wish there were a few more evening slots available.", verified: true, date: "4 months ago" },
+  { id: "r5", name: "Grace L.", handle: "graceliu", rating: 4, text: "Really good coach - just wish there were a few more evening slots available.", verified: true, date: "4 months ago" },
   { id: "r6", name: "The Chen Family", handle: "thechens", rating: 5, text: "Our daughter's confidence has grown so much since she started. Couldn't ask for more.", verified: true, date: "5 months ago" },
   { id: "r7", name: "Hannah S.", handle: "hannahs", rating: 5, text: "Priya’s dual coaching in Tennis and Pickleball is brilliant. Her court positioning drills transformed our doubles synergy.", verified: true, date: "2 weeks ago" },
   { id: "r8", name: "Leo T.", handle: "leot", rating: 5, text: "Declan’s kicking biomechanics session with video replay fixed a 3-year slice in my drop punt. Highly recommend for any serious AFL junior.", verified: true, date: "3 weeks ago" },
@@ -347,7 +347,7 @@ export const COACH_THREADS = [
 
 export const CHAT_MESSAGES = [
   { id: 1, from: "them", text: "Hi! Looking forward to Tuesday's session.", time: "9:12am" },
-  { id: 2, from: "me", text: "Me too — should I bring my own gear?", time: "9:15am" },
+  { id: 2, from: "me", text: "Me too - should I bring my own gear?", time: "9:15am" },
   { id: 3, from: "them", text: "Either is fine, I've got spares on hand.", time: "9:20am" },
   { id: 4, from: "them", text: "Sounds great, see you at the courts!", time: "9:41am" },
 ];
@@ -355,7 +355,7 @@ export const CHAT_MESSAGES = [
 export const BOOKING_ENQUIRY_MESSAGES = {
   cb2: [
     { id: 1, from: "them", text: "Hi! Is 5pm still free for a junior group session on Wednesday?", time: "10:02am" },
-    { id: 2, from: "me", text: "Yep, that slot's open — how many kids will be joining?", time: "10:10am" },
+    { id: 2, from: "me", text: "Yep, that slot's open - how many kids will be joining?", time: "10:10am" },
     { id: 3, from: "them", text: "Just my son this time, he's 9 and new to netball.", time: "10:12am" },
   ],
   cb3: [
@@ -368,13 +368,13 @@ export const BOOKING_ENQUIRY_MESSAGES = {
 };
 
 export const CLIENT_PROFILES = {
-  "Sarah Lin": { memberSince: "Jan 2025", totalSessions: 16, homeSuburb: "Bondi, Sydney", notes: "Regular client — usually books weekly sessions across netball and strength.", verifiedPayment: true },
+  "Sarah Lin": { memberSince: "Jan 2025", totalSessions: 16, homeSuburb: "Bondi, Sydney", notes: "Regular client - usually books weekly sessions across netball and strength.", verifiedPayment: true },
   "Marcus Webb": { memberSince: "Jun 2026", totalSessions: 1, homeSuburb: "Fitzroy, Melbourne", notes: "First-time booking with you. New to CoachLink.", verifiedPayment: true },
   "The Chen Family (u18)": { memberSince: "Mar 2026", totalSessions: 5, homeSuburb: "Bondi, Sydney", notes: "Books for two children (ages 10 & 13). Guardian consent on file.", verifiedPayment: true },
   "Ravi Patel": { memberSince: "Sep 2024", totalSessions: 22, homeSuburb: "Parramatta, Sydney", notes: "Long-term client, term-block subscriber.", verifiedPayment: true },
   "Aiden Cross": { memberSince: "Jul 2026", totalSessions: 0, homeSuburb: "Bondi, Sydney", notes: "First-time booking with you. New to CoachLink.", verifiedPayment: true },
   "Grace Liu": { memberSince: "May 2026", totalSessions: 2, homeSuburb: "Randwick, Sydney", notes: "Prefers group sessions over 1:1.", verifiedPayment: true },
-  "Owen King": { memberSince: "Feb 2026", totalSessions: 8, homeSuburb: "Bondi, Sydney", notes: "Regular client — books most weeks.", verifiedPayment: true },
+  "Owen King": { memberSince: "Feb 2026", totalSessions: 8, homeSuburb: "Bondi, Sydney", notes: "Regular client - books most weeks.", verifiedPayment: true },
   "The Nguyen Family (u18)": { memberSince: "Jun 2026", totalSessions: 3, homeSuburb: "Bondi, Sydney", notes: "Books for one child (age 11). Guardian consent on file.", verifiedPayment: true },
   "Hannah Smith": { memberSince: "Apr 2026", totalSessions: 4, homeSuburb: "Fitzroy, Melbourne", notes: "Post-ACL rehab athlete, very diligent with warmup protocol.", verifiedPayment: true },
   "Leo Tanaka": { memberSince: "May 2026", totalSessions: 6, homeSuburb: "Richmond, Melbourne", notes: "AFL junior state squad hopeful.", verifiedPayment: true },
@@ -382,25 +382,25 @@ export const CLIENT_PROFILES = {
 
 export const FAQS = {
   client: [
-    { q: "How do I book a session?", a: "Search for a coach, open their profile, choose a package, then pick a time. Coaches with Instant Book confirm automatically — others review your request first." },
+    { q: "How do I book a session?", a: "Search for a coach, open their profile, choose a package, then pick a time. Your booking request will be sent to the coach for review." },
     { q: "When am I charged?", a: "Payment is requested after the coach accepts your booking request. Once you pay, funds are held securely and released to the coach after the session is confirmed complete." },
     { q: "What if I need to cancel?", a: "Open the booking from your dashboard and select Cancel or Reschedule. Refunds follow the individual coach's cancellation policy, shown at checkout." },
     { q: "How do refunds work?", a: "Approved refunds are returned to your original payment method within 5–10 business days." },
     { q: "Can I book a coach who coaches two sports?", a: "Yes! Multi-sport coaches offer distinct packages for each sport they coach. You can filter by either sport or select specific packages on their profile." },
-    { q: "Is my payment information secure?", a: "Yes — CoachLink never stores full card details. Payments are processed through an encrypted, PCI-compliant provider." },
+    { q: "Is my payment information secure?", a: "Yes - CoachLink never stores full card details. Payments are processed through an encrypted, PCI-compliant provider." },
   ],
   coach: [
     { q: "How do I get verified?", a: "Submit an identity document and, if you coach under-18s, a Working with Children Check. Most reviews complete within 2 business days." },
     { q: "Can I coach multiple sports on one profile?", a: "Yes! In Onboarding or Profile Edit, select your Primary Sport and any Secondary Sports. You can create customized packages for each sport with separate pricing and venues." },
     { q: "When do I get paid?", a: "Payouts release automatically once a client confirms a session is complete, minus CoachLink's commission. Funds typically land in 2–3 business days." },
-    { q: "Can I set my own cancellation policy?", a: "Yes — choose Flexible, Moderate or Strict from your Services tab. This is shown to clients before they book." },
-    { q: "How does Instant Book differ from Request to Book?", a: "Instant Book confirms matching client requests automatically. Request to Book lets you review and accept each one." },
+    { q: "Can I set my own cancellation policy?", a: "Yes - choose Flexible, Moderate or Strict from your Services tab. This is shown to clients before they book." },
+    { q: "How do booking requests work?", a: "When a client sends a booking request, you review the details and choose to accept or decline. Once accepted, the client is notified to confirm and pay." },
   ],
   verification: [
-    { q: "How long does verification take?", a: "Most reviews complete within 2 business days. We'll notify you the moment a decision is made — you'll also see it reflected on the verification screen." },
+    { q: "How long does verification take?", a: "Most reviews complete within 2 business days. We'll notify you the moment a decision is made - you'll also see it reflected on the verification screen." },
     { q: "What documents do I need?", a: "A government-issued photo ID plus a selfie to match it. If you coach athletes under 18, you'll also need a Working with Children Check, and an accreditation upload is required." },
-    { q: "Why was my verification rejected?", a: "Usually a photo was unclear, expired, or didn't match your ID. You'll be told exactly which document failed — resubmit it from the verification screen and the review restarts." },
-    { q: "Can I accept bookings while verification is pending?", a: "Not yet — your profile stays hidden until you're approved. You can keep setting up your services, availability and payouts in the meantime." },
+    { q: "Why was my verification rejected?", a: "Usually a photo was unclear, expired, or didn't match your ID. You'll be told exactly which document failed - resubmit it from the verification screen and the review restarts." },
+    { q: "Can I accept bookings while verification is pending?", a: "Not yet - your profile stays hidden until you're approved. You can keep setting up your services, availability and payouts in the meantime." },
   ],
 };
 
@@ -421,7 +421,7 @@ export const COACH_VERIFICATION_DOCS = [
 
 export const COACH_NOTIFICATIONS = [
   { id: "cn1", type: "message", title: "New message from Marcus Webb", body: "Do you run sessions on weekends?", time: "Yesterday", unread: true, threadId: "ct2", clientName: "Marcus Webb" },
-  { id: "cn2", type: "verification", title: "Working with Children Check expiring soon", body: "Your WWCC expires in 18 days — renew it to keep accepting under-18 bookings.", time: "Today", unread: true },
+  { id: "cn2", type: "verification", title: "Working with Children Check expiring soon", body: "Your WWCC expires in 18 days - renew it to keep accepting under-18 bookings.", time: "Today", unread: true },
   { id: "cn3", type: "booking", title: "New booking request", body: "Marcus Webb requested a 1:1 Programming Session for Sat, 9:00am.", time: "2 hours ago", unread: true },
   { id: "cn4", type: "review", title: "New 5-star review", body: "Sarah L. left you a review after your last session.", time: "3 days ago", unread: false },
   { id: "cn5", type: "booking", title: "Booking Accepted by Client", body: "Aiden Cross paid for the 1:1 Court Session on Fri, 21 Aug.", time: "4 days ago", unread: false },
@@ -432,7 +432,7 @@ export const ADMIN_VERIFICATION_QUEUE = [
     id: "v1", name: "Ravi Patel", sport: "Boxing", type: "Identity + WWCC",
     suburb: "Parramatta, Sydney", experience: "6 yrs coaching",
     documents: [
-      { key: "id", label: "Identity document", detail: "Driver's licence — front & back, uploaded" },
+      { key: "id", label: "Identity document", detail: "Driver's licence - front & back, uploaded" },
       { key: "wwcc", label: "Working with Children Check", detail: "NSW WWCC, valid to 2028" },
     ],
     submittedByUser: false,
@@ -479,8 +479,8 @@ export const ADMIN_DISPUTES = [
     ],
     messages: [
       { from: "Sarah Lin", text: "I was at the gym at 6am but Noah never turned up.", time: "Fri, 6:20am" },
-      { from: "Noah Kelly", text: "I'm so sorry — I had a family emergency and couldn't get to my phone in time.", time: "Fri, 9:02am" },
-      { from: "CoachLink Support", text: "Thanks both — reviewing the booking and check-in logs now.", time: "Fri, 11:40am" },
+      { from: "Noah Kelly", text: "I'm so sorry - I had a family emergency and couldn't get to my phone in time.", time: "Fri, 9:02am" },
+      { from: "CoachLink Support", text: "Thanks both - reviewing the booking and check-in logs now.", time: "Fri, 11:40am" },
     ],
   },
   {
