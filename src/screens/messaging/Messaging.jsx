@@ -352,7 +352,7 @@ function ConversationOptionsFlow({ otherName, onReportSubmit, onBlockConfirm, is
             <div style={iconBox(C.brandTint)}><Flag size={16} color={C.brand} /></div>
             <div>
               <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>Report conversation</div>
-              <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>Flag this conversation for review by CoachLink Support</div>
+              <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>Flag this conversation for review by CoachNivo Support</div>
             </div>
           </button>
 
@@ -421,7 +421,7 @@ function ConversationOptionsFlow({ otherName, onReportSubmit, onBlockConfirm, is
 
       {/* Report Success Sheet */}
       <BottomSheet open={step === "report-success"} onClose={closeAll} title="" heightPct={36}>
-        <SuccessPanel title="Report submitted" body="Thanks for letting us know. CoachLink Support will review this conversation." onDone={closeAll} />
+        <SuccessPanel title="Report submitted" body="Thanks for letting us know. CoachNivo Support will review this conversation." onDone={closeAll} />
       </BottomSheet>
 
       {/* Block Confirm Dialog */}

@@ -745,7 +745,7 @@ const closeSheet = () => setSheet(null);
           </div>
         </div>
         <div style={{ fontSize: T.captionLg, color: C.slateLight, marginTop: 14, lineHeight: 1.5, ...fBody }}>
-          Payments are processed by our PCI-compliant payment partner - CoachLink never stores your full card number.
+          Payments are processed by our PCI-compliant payment partner - CoachNivo never stores your full card number.
         </div>
         <div style={{ marginTop: 20 }}>
           <Btn full disabled={!canSaveCard} onClick={saveCard}>Save card</Btn>
@@ -770,7 +770,7 @@ const closeSheet = () => setSheet(null);
       {/* Privacy policy */}
       <BottomSheet open={sheet === "privacy"} onClose={closeSheet} title="Privacy policy" heightPct={75}>
         <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.6, ...fBody }}>
-          <p style={{ marginBottom: 12 }}>CoachLink collects only the information needed to connect you with coaches and manage your bookings, such as your profile details, session history, and payment information.</p>
+          <p style={{ marginBottom: 12 }}>CoachNivo collects only the information needed to connect you with coaches and manage your bookings, such as your profile details, session history, and payment information.</p>
           <p style={{ marginBottom: 12 }}>We never sell your personal data. Information is shared with coaches only as needed to fulfil a booking, and with payment processors to complete transactions securely.</p>
           <p>You can request a copy of your data or ask us to delete your account at any time from this Account tab.</p>
         </div>
@@ -797,7 +797,7 @@ const closeSheet = () => setSheet(null);
             <div style={{ width: 52, height: 52, borderRadius: 16, background: C.dangerTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
               <AlertTriangle size={23} color={C.danger} />
             </div>
-            <div style={{ fontSize: T.title, fontWeight: 700, color: C.jet, marginBottom: 7, ...fDisplay }}>Take a break from CoachLink?</div>
+            <div style={{ fontSize: T.title, fontWeight: 700, color: C.jet, marginBottom: 7, ...fDisplay }}>Take a break from CoachNivo?</div>
             <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.6, marginBottom: 16, ...fBody }}>
               Your profile will be hidden and upcoming bookings will be cancelled. You can restore your account by signing in again within 30 days.
             </div>

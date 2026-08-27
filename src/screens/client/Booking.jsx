@@ -911,7 +911,7 @@ export function ScreenBookingReview({ nav, goBack, params, draft, setDraft, toas
             <div style={{ marginTop: 4 }}>
               <SectionLabel>Guardian details</SectionLabel>
               <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, marginTop: -5, marginBottom: 10, ...fBody }}>
-                Use details already saved to CoachLink, or enter a different guardian for this booking.
+                Use details already saved to CoachNivo, or enter a different guardian for this booking.
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
                 <DetailChoice
@@ -1012,13 +1012,13 @@ export function ScreenBookingReview({ nav, goBack, params, draft, setDraft, toas
             <div style={{ marginTop: 14, borderTop: `1px solid ${C.border}`, paddingTop: 14 }}>
               <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 10, background: C.warnTint, borderRadius: 12, padding: 10 }}>
                 <AlertTriangle size={14} color={C.warnStrong} style={{ flexShrink: 0, marginTop: 1 }} />
-                <span style={{ fontSize: T.captionLg, color: C.jet, lineHeight: 1.5, ...fBody }}>Safeguarding: sessions involving minors require a checked-in guardian or approved drop-off arrangement, and any concerns can be reported to CoachLink support at any time.</span>
+                <span style={{ fontSize: T.captionLg, color: C.jet, lineHeight: 1.5, ...fBody }}>Safeguarding: sessions involving minors require a checked-in guardian or approved drop-off arrangement, and any concerns can be reported to CoachNivo support at any time.</span>
               </div>
               <button onClick={() => setConsent(!consent)} style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}>
                 <div style={{ width: 18, height: 18, borderRadius: 5, border: `1.5px solid ${consent ? C.brand : C.border}`, background: consent ? C.brand : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
                   {consent && <CheckCircle2 size={12} color={C.white} />}
                 </div>
-                <span style={{ fontSize: T.label, color: C.jet, lineHeight: 1.5, ...fBody }}>I confirm I am the parent or legal guardian and consent to this booking, including CoachLink's handling of the participant's data.<RequiredMark /></span>
+                <span style={{ fontSize: T.label, color: C.jet, lineHeight: 1.5, ...fBody }}>I confirm I am the parent or legal guardian and consent to this booking, including CoachNivo's handling of the participant's data.<RequiredMark /></span>
               </button>
             </div>
           </Card>

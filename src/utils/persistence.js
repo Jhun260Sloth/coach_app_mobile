@@ -2,7 +2,7 @@
    dark mode, discovery preferences) survives reloads without leaking keys.
    All access is guarded — storage can be unavailable or full. */
 
-const PREFIX = "coachlink.";
+const PREFIX = "coachnivo.";
 
 export const STORAGE_KEYS = {
   darkMode: "dark-mode",

@@ -191,7 +191,7 @@ export function ScreenSessionCompletion({
               <ShieldCheck size={19} color={C.success} style={{ flexShrink: 0 }} />
               <div>
                 <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>Protected until both confirm</div>
-                <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.55, marginTop: 4, ...fBody }}>CoachLink releases the secured payment only after final charges are paid and both coach and client confirm completion.</div>
+                <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.55, marginTop: 4, ...fBody }}>CoachNivo releases the secured payment only after final charges are paid and both coach and client confirm completion.</div>
               </div>
             </div>
           </Card>
@@ -267,7 +267,7 @@ export function ScreenFundsReleaseStatus({ nav, params, role: appRole, bookings 
           </div>
           <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.55, marginTop: 7, ...fBody }}>
             {released
-              ? role === "coach" ? "CoachLink has sent the net amount to your connected bank account." : `Your payment for the session with ${person} has been released.`
+              ? role === "coach" ? "CoachNivo has sent the net amount to your connected bank account." : `Your payment for the session with ${person} has been released.`
               : "Funds stay securely held until session completion is confirmed."}
           </div>
         </div>
@@ -283,7 +283,7 @@ export function ScreenFundsReleaseStatus({ nav, params, role: appRole, bookings 
             {role === "coach" ? (
               <>
                 <Row label="Session total" value={`$${gross.toFixed(2)}`} />
-                <Row label={`CoachLink commission (${Math.round(CONFIG.commissionRate * 100)}%)`} value={`−$${commission.toFixed(2)}`} />
+                <Row label={`CoachNivo commission (${Math.round(CONFIG.commissionRate * 100)}%)`} value={`−$${commission.toFixed(2)}`} />
                 <Row label="Net payout" value={`$${net.toFixed(2)}`} bold />
                 <Row label="Destination" value="Bank •••• 8042" last />
               </>
@@ -306,7 +306,7 @@ export function ScreenFundsReleaseStatus({ nav, params, role: appRole, bookings 
                 {role === "coach" ? "Expected in 2–3 business days" : "Protected from request to release"}
               </div>
               <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, marginTop: 3, ...fBody }}>
-                {role === "coach" ? "Your bank may take a little longer on weekends or public holidays." : "CoachLink held the funds securely and released them only after completion was confirmed."}
+                {role === "coach" ? "Your bank may take a little longer on weekends or public holidays." : "CoachNivo held the funds securely and released them only after completion was confirmed."}
               </div>
             </div>
           </Card>

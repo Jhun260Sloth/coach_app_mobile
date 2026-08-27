@@ -165,7 +165,7 @@ export function CoachProfileHero({
                 </span>
               </div>
               <div style={{ fontSize: T.caption, color: C.slate, marginTop: 2, ...fBody }}>
-                Independently verified by CoachLink Trust &amp; Safety
+                Independently verified by CoachNivo Trust &amp; Safety
               </div>
             </div>
           </div>
@@ -242,7 +242,7 @@ export function CoachProfileHero({
             <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
               <Info size={15} color={C.brand} style={{ marginTop: 2, flexShrink: 0 }} />
               <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, ...fBody }}>
-                All credentials are independently reviewed by the CoachLink Trust &amp; Safety team before coach profiles can accept bookings. Verifications are refreshed annually.
+                All credentials are independently reviewed by the CoachNivo Trust &amp; Safety team before coach profiles can accept bookings. Verifications are refreshed annually.
               </div>
             </div>
           </div>

@@ -369,10 +369,10 @@ export const BOOKING_ENQUIRY_MESSAGES = {
 
 export const CLIENT_PROFILES = {
   "Sarah Lin": { memberSince: "Jan 2025", totalSessions: 16, homeSuburb: "Bondi, Sydney", notes: "Regular client - usually books weekly sessions across netball and strength.", verifiedPayment: true },
-  "Marcus Webb": { memberSince: "Jun 2026", totalSessions: 1, homeSuburb: "Fitzroy, Melbourne", notes: "First-time booking with you. New to CoachLink.", verifiedPayment: true },
+  "Marcus Webb": { memberSince: "Jun 2026", totalSessions: 1, homeSuburb: "Fitzroy, Melbourne", notes: "First-time booking with you. New to CoachNivo.", verifiedPayment: true },
   "The Chen Family (u18)": { memberSince: "Mar 2026", totalSessions: 5, homeSuburb: "Bondi, Sydney", notes: "Books for two children (ages 10 & 13). Guardian consent on file.", verifiedPayment: true },
   "Ravi Patel": { memberSince: "Sep 2024", totalSessions: 22, homeSuburb: "Parramatta, Sydney", notes: "Long-term client, term-block subscriber.", verifiedPayment: true },
-  "Aiden Cross": { memberSince: "Jul 2026", totalSessions: 0, homeSuburb: "Bondi, Sydney", notes: "First-time booking with you. New to CoachLink.", verifiedPayment: true },
+  "Aiden Cross": { memberSince: "Jul 2026", totalSessions: 0, homeSuburb: "Bondi, Sydney", notes: "First-time booking with you. New to CoachNivo.", verifiedPayment: true },
   "Grace Liu": { memberSince: "May 2026", totalSessions: 2, homeSuburb: "Randwick, Sydney", notes: "Prefers group sessions over 1:1.", verifiedPayment: true },
   "Owen King": { memberSince: "Feb 2026", totalSessions: 8, homeSuburb: "Bondi, Sydney", notes: "Regular client - books most weeks.", verifiedPayment: true },
   "The Nguyen Family (u18)": { memberSince: "Jun 2026", totalSessions: 3, homeSuburb: "Bondi, Sydney", notes: "Books for one child (age 11). Guardian consent on file.", verifiedPayment: true },
@@ -387,12 +387,12 @@ export const FAQS = {
     { q: "What if I need to cancel?", a: "Open the booking from your dashboard and select Cancel or Reschedule. Refunds follow the individual coach's cancellation policy, shown at checkout." },
     { q: "How do refunds work?", a: "Approved refunds are returned to your original payment method within 5–10 business days." },
     { q: "Can I book a coach who coaches two sports?", a: "Yes! Multi-sport coaches offer distinct packages for each sport they coach. You can filter by either sport or select specific packages on their profile." },
-    { q: "Is my payment information secure?", a: "Yes - CoachLink never stores full card details. Payments are processed through an encrypted, PCI-compliant provider." },
+    { q: "Is my payment information secure?", a: "Yes - CoachNivo never stores full card details. Payments are processed through an encrypted, PCI-compliant provider." },
   ],
   coach: [
     { q: "How do I get verified?", a: "Submit an identity document and, if you coach under-18s, a Working with Children Check. Most reviews complete within 2 business days." },
     { q: "Can I coach multiple sports on one profile?", a: "Yes! In Onboarding or Profile Edit, select your Primary Sport and any Secondary Sports. You can create customized packages for each sport with separate pricing and venues." },
-    { q: "When do I get paid?", a: "Payouts release automatically once a client confirms a session is complete, minus CoachLink's commission. Funds typically land in 2–3 business days." },
+    { q: "When do I get paid?", a: "Payouts release automatically once a client confirms a session is complete, minus CoachNivo's commission. Funds typically land in 2–3 business days." },
     { q: "Can I set my own cancellation policy?", a: "Yes - choose Flexible, Moderate or Strict from your Services tab. This is shown to clients before they book." },
     { q: "How do booking requests work?", a: "When a client sends a booking request, you review the details and choose to accept or decline. Once accepted, the client is notified to confirm and pay." },
   ],
@@ -480,7 +480,7 @@ export const ADMIN_DISPUTES = [
     messages: [
       { from: "Sarah Lin", text: "I was at the gym at 6am but Noah never turned up.", time: "Fri, 6:20am" },
       { from: "Noah Kelly", text: "I'm so sorry - I had a family emergency and couldn't get to my phone in time.", time: "Fri, 9:02am" },
-      { from: "CoachLink Support", text: "Thanks both - reviewing the booking and check-in logs now.", time: "Fri, 11:40am" },
+      { from: "CoachNivo Support", text: "Thanks both - reviewing the booking and check-in logs now.", time: "Fri, 11:40am" },
     ],
   },
   {

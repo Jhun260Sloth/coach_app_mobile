@@ -16,7 +16,7 @@ export async function downloadElementAsPng(node, options = {}) {
   }
 
   const {
-    fileName = "coachlink-prototype",
+    fileName = "coachnivo-prototype",
     pixelRatio = 2,
     backgroundColor = null,
   } = options;

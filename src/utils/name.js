@@ -67,7 +67,7 @@ export function getPublicName(user, context = "public") {
 
   if (context === "self" || context === "confirmed") {
     return {
-      name: full || handle || "CoachLink user",
+      name: full || handle || "CoachNivo user",
       handle: handle || null,
       revealed: context === "confirmed" && !!full,
     };

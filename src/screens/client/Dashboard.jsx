@@ -55,7 +55,7 @@ function buildMonthGrid(cursor) {
 }
 
 /* ---- cancellation policy math (used by the Cancellation Summary sheet below) ----
-   CoachLink uses one platform-wide cancellation policy for every coach: free
+   CoachNivo uses one platform-wide cancellation policy for every coach: free
    cancellation up to 24h before the session, 50% refund inside 24h. We compare
    against how many hours remain until the session to pick the refund rule. */
 function bookingDateTime(dateStr, timeStr) {
@@ -81,10 +81,10 @@ function getCancellationOutcome(booking, coach) {
   let ruleLabel;
   if (hoursUntil == null || hoursUntil >= 24) {
     refundPct = 1;
-    ruleLabel = "Cancelled 24h+ before the session - fully refundable under CoachLink's cancellation policy.";
+    ruleLabel = "Cancelled 24h+ before the session - fully refundable under CoachNivo's cancellation policy.";
   } else {
     refundPct = 0.5;
-    ruleLabel = "Cancelled inside 24h - CoachLink's cancellation policy refunds 50% of the session fee.";
+    ruleLabel = "Cancelled inside 24h - CoachNivo's cancellation policy refunds 50% of the session fee.";
   }
   return { refundPct, ruleLabel, hoursUntil, tier: "standard" };
 }
@@ -412,7 +412,7 @@ function CancelSheet({ booking, onClose, onConfirm, pending }) {
       {booking && (
         <>
           <div style={{ fontSize: T.labelLg, color: C.slate, lineHeight: 1.55, marginBottom: 18, ...fBody }}>
-            Please review the cancellation outcome before confirming. Refunds and fees are calculated based on CoachLink's standard cancellation policy.
+            Please review the cancellation outcome before confirming. Refunds and fees are calculated based on CoachNivo's standard cancellation policy.
           </div>
 
           <SectionLabel>Booking details</SectionLabel>

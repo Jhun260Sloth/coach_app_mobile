@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 
 /* =========================================================================
-   COACHLINK THEME SYSTEM
+   COACHNIVO THEME SYSTEM
    -------------------------------------------------------------------------
    Two complete color palettes (light / dark) using an orange brand identity:
      brandColor     #F15A29   — main brand orange (status bars, gradients)
@@ -156,7 +156,7 @@ export const T = {
    FONTS
    ========================================================================= */
 
-const FONT_IMPORT_ID = "coachlink-fonts";
+const FONT_IMPORT_ID = "coachnivo-fonts";
 export function useFonts() {
   useEffect(() => {
     if (document.getElementById(FONT_IMPORT_ID)) return;
@@ -176,13 +176,14 @@ export const fBody = { fontFamily: "'Inter', sans-serif" };
    ASSETS
    ========================================================================= */
 
-export const LOGO_WHITE_SRC = "logo-green.png";
+export const LOGO_WHITE_SRC = "/logo.png";
 
 export const LOGO_SRCS = {
-  green: "logo-green.png",
-  iconGreen: "logo icon-green.png",
-  iconWhite: "logo icon-white.png",
-  white: "logo-white.png",
+  green: "/logo.png",
+  iconGreen: "/logo.png",
+  iconWhite: "/logo.png",
+  white: "/logo.png",
+  logo: "/logo.png",
 };
 
 /* =========================================================================

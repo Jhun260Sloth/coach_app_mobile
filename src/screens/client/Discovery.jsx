@@ -242,7 +242,7 @@ const GUIDE_STEPS = [
   {
     icon: MessageCircle,
     header: "Chat With Your Coach",
-    description: "Have a question before or after your session? Message your coach directly through CoachLink to discuss your booking and coaching needs.",
+    description: "Have a question before or after your session? Message your coach directly through CoachNivo to discuss your booking and coaching needs.",
     cta: "Continue",
   },
   {
@@ -276,11 +276,11 @@ export function PostSignupGuideModal({ open, onClose, onFindCoaches }) {
 
   return (
     <div style={{ position: "absolute", inset: 0, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-      <button type="button" aria-label="Skip CoachLink introduction" onClick={onClose} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none", borderRadius: 0, background: "rgba(22,24,29,.55)", animation: "clBackdropIn .18s ease" }} />
+      <button type="button" aria-label="Skip CoachNivo introduction" onClick={onClose} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none", borderRadius: 0, background: "rgba(22,24,29,.55)", animation: "clBackdropIn .18s ease" }} />
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Welcome to CoachLink"
+        aria-label="Welcome to CoachNivo"
         style={{
           position: "relative", width: 340, height: 600, maxWidth: "100%", maxHeight: "100%", background: C.white, borderRadius: 30,
           padding: "34px 28px 28px", boxSizing: "border-box", display: "flex", flexDirection: "column",

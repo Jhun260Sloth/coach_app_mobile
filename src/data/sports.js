@@ -1,7 +1,7 @@
 /* =========================================================================
    CANONICAL AUSTRALIAN SPORT CATALOGUE
    -------------------------------------------------------------------------
-   One value, label and icon source for every sport shown in CoachLink.
+   One value, label and icon source for every sport shown in CoachNivo.
    The catalogue prioritises activities reported by the Australian Sports
    Commission and common accredited coaching categories in Australia.
 

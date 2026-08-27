@@ -41,6 +41,7 @@ export const TAKEN_HANDLES = [
   CURRENT_CLIENT.handle,
   "admin",
   "support",
+  "coachnivo",
   "coachlink",
 ];
 

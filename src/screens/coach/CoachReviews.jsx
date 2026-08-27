@@ -50,7 +50,7 @@ export function ScreenCoachReviews({ nav, toast }) {
   const submitDisputeAction = () => {
     if (!disputeReason) return;
     submitDispute(disputeTarget.id, disputeReason, disputeDetail);
-    toast?.("Dispute submitted to CoachLink Support");
+    toast?.("Dispute submitted to CoachNivo Support");
     closeDispute();
   };
 
@@ -208,7 +208,7 @@ export function ScreenCoachReviews({ nav, toast }) {
           <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
             <div style={{ flex: 1, overflowY: "auto" }}>
               <div style={{ fontSize: T.body, color: C.slate, marginBottom: 14, ...fBody }}>
-                Tell us why this review seems unfair or made in bad faith. CoachLink Support will review it.
+                Tell us why this review seems unfair or made in bad faith. CoachNivo Support will review it.
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {DISPUTE_REASONS.map((reason) => (

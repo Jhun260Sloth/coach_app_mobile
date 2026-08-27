@@ -486,7 +486,7 @@ const toggleNotif = (key) => setNotifPrefs((p) => ({ ...p, [key]: !p[key] }));
                 <div>
                   <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>One policy for every coach</div>
                   <div style={{ fontSize: T.labelLg, color: C.slate, marginTop: 3, lineHeight: 1.5, ...fBody }}>{CONFIG.cancellationPolicy}</div>
-                  <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 4, ...fBody }}>This standard CoachLink policy applies to all bookings and can't be changed per coach.</div>
+                  <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 4, ...fBody }}>This standard CoachNivo policy applies to all bookings and can't be changed per coach.</div>
                 </div>
               </div>
             </Card>
@@ -721,7 +721,7 @@ const toggleNotif = (key) => setNotifPrefs((p) => ({ ...p, [key]: !p[key] }));
 
       <BottomSheet open={sheet === "privacy"} onClose={closeSheet} title="Privacy policy" heightPct={75}>
         <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.6, ...fBody }}>
-          <p style={{ marginBottom: 12 }}>CoachLink collects the information needed to run your coaching business on the platform, including your profile details, service packages, booking history and payout information.</p>
+          <p style={{ marginBottom: 12 }}>CoachNivo collects the information needed to run your coaching business on the platform, including your profile details, service packages, booking history and payout information.</p>
           <p style={{ marginBottom: 12 }}>We never sell your personal data. Your public profile is shown to prospective clients; payout and identity details are only shared with our payment and verification partners.</p>
           <p>You can request a copy of your data or ask us to delete your account at any time from this Profile tab.</p>
         </div>

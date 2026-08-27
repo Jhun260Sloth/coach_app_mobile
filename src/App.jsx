@@ -145,7 +145,7 @@ function AppShell() {
 
       const timeStamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
       const modeTag = captureMode === "screen" ? "screen" : (showFrame ? "mockup" : "screen");
-      const fileName = `coachlink-${screen}-${modeTag}-${timeStamp}`;
+      const fileName = `coachnivo-${screen}-${modeTag}-${timeStamp}`;
 
       await downloadElementAsPng(targetEl, {
         fileName,
@@ -283,7 +283,7 @@ function AppShell() {
             <LogoMark size={22} system />
             <div>
               <div style={{ fontSize: 14, fontWeight: 700, color: vSystem.textPrimary, letterSpacing: "-0.3px", fontFamily: vSystem.fontFamily }}>
-                CoachLink Studio
+                CoachNivo Studio
               </div>
               <div style={{ fontSize: 11, color: vSystem.textSecondary, fontWeight: 500, marginTop: -1 }}>
                 App Navigation

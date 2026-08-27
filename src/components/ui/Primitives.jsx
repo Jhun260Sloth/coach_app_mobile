@@ -756,7 +756,7 @@ const HEADER_DESCRIPTIONS = {
   "Client preview": "Review how this request will appear to your client.",
   "Payment request": "Review the payment request before sending it.",
   "Review request": "Review the details before responding.",
-  "Secure payment": "Your payment is processed securely through CoachLink.",
+  "Secure payment": "Your payment is processed securely through CoachNivo.",
   "Coaching services": "Create the sessions athletes can book with you.",
   "Reels & photos": "Show athletes what your coaching looks like in action.",
   "Profile setup": "Complete your profile so athletes can find and trust you.",
@@ -919,19 +919,27 @@ export function Toast({ toast }) {
   );
 }
 
-export function LogoMark({ size = 30, system = false }) {
-  const C = useColors();
-  const h = size * (207 / 179);
-  const src = system || C !== CD ? "logo icon-green.png" : "logo icon-white.png";
+export function LogoMark({ size = 30 }) {
   return (
-    <img src={src} alt="CoachLink" width={size} height={h} style={{ display: "block", objectFit: "contain" }} />
+    <img
+      src="/logo.png"
+      alt="CoachNivo"
+      width={size}
+      height={size}
+      style={{ display: "block", objectFit: "contain", borderRadius: Math.round(size * 0.22) }}
+    />
   );
 }
 
 export function LogoMarkWhite({ size = 120 }) {
-  const h = size * (207 / 179);
   return (
-    <img src="logo icon-white.png" alt="CoachLink" width={size} height={h} style={{ display: "block", objectFit: "contain" }} />
+    <img
+      src="/logo.png"
+      alt="CoachNivo"
+      width={size}
+      height={size}
+      style={{ display: "block", objectFit: "contain", borderRadius: Math.round(size * 0.22) }}
+    />
   );
 }
 

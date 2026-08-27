@@ -357,7 +357,7 @@ export function ScreenCoachBookingDetail({
             <LockKeyhole size={18} color={C.success} style={{ flexShrink: 0 }} />
             <div>
               <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>${Number(booking.paidTotal || booking.price).toFixed(2)} secured</div>
-              <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, marginTop: 3, ...fBody }}>Payment is held by CoachLink and releases after the session is confirmed complete.</div>
+              <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, marginTop: 3, ...fBody }}>Payment is held by CoachNivo and releases after the session is confirmed complete.</div>
             </div>
           </Card>
         )}

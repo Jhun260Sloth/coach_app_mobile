@@ -8,7 +8,7 @@ import { getPublicName } from "../../utils/name";
 import { Avatar, Card, Chip, EmptyState, SegTabs, TopBar, CoachCardSkeleton } from "../../components/ui/Primitives";
 import { SportBadge, SportIcon } from "../../components/ui/SportUI";
 
-const RECENT_SEARCHES_KEY = "coachlink.recent-searches";
+const RECENT_SEARCHES_KEY = "coachnivo.recent-searches";
 const RESULT_TABS = [
   { value: "all", label: "All" },
   { value: "coaches", label: "Coaches" },

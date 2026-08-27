@@ -56,7 +56,7 @@ export function ScreenSupport({ nav, params = {}, role }) {
           <div style={{ flex: 1, overflowY: "auto", padding: "6px 18px" }} className="cl-hide-scrollbar">
             <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: 10 }}>
               <div style={{ maxWidth: "80%", background: C.fog, borderRadius: 16, borderBottomLeftRadius: 4, padding: "10px 13px", fontSize: T.body, color: C.jet, lineHeight: 1.5, animation: "clSlideUp .3s ease", ...fBody }}>
-                Hi Sarah 👋 I'm the CoachLink support assistant. I can see your account details{params.bookingContext ? " and this booking" : params.faqTopic === "verification" ? " and your verification application" : " and recent booking"} already - what can I help with?
+                Hi Sarah 👋 I'm the CoachNivo support assistant. I can see your account details{params.bookingContext ? " and this booking" : params.faqTopic === "verification" ? " and your verification application" : " and recent booking"} already - what can I help with?
               </div>
             </div>
             {chatStarted && (

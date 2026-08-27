@@ -226,7 +226,7 @@ export function ScreenDisputeCreate({
               <div style={{ fontSize: T.caption, color: description.length >= 12 ? C.success : C.slateLight, textAlign: "right", marginTop: 5, ...fBody }}>{description.length < 12 ? `${12 - description.length} more characters` : "Enough detail to continue"}</div>
             </div>
             <div>
-              <SectionHeading hint={role === "coach" ? "The amount you’re asking CoachLink to protect or compensate." : "The refund amount you’re requesting. The final decision may differ."}>Requested amount</SectionHeading>
+              <SectionHeading hint={role === "coach" ? "The amount you’re asking CoachNivo to protect or compensate." : "The refund amount you’re requesting. The final decision may differ."}>Requested amount</SectionHeading>
               <MoneyField value={amount} onChange={setAmount} disabled={!!relatedCharge} />
             </div>
             <div>
@@ -453,7 +453,7 @@ export function ScreenAdditionalChargeCreate({
               <TextArea value={note} onChange={setNote} placeholder="For example: We agreed to extend the session by 20 minutes to finish the training plan…" minHeight={116} />
             </div>
             <div><SectionHeading hint="A receipt or session note makes the request easier to verify.">Receipt or evidence</SectionHeading><EvidenceUploader evidence={evidence} setEvidence={setEvidence} compact /></div>
-            <ReviewNotice>The client must pay this final amount before their completion control unlocks. CoachLink never charges them automatically.</ReviewNotice>
+            <ReviewNotice>The client must pay this final amount before their completion control unlocks. CoachNivo never charges them automatically.</ReviewNotice>
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>
@@ -533,11 +533,11 @@ export function ScreenAdditionalChargeReview({
             </div>
           </Card>
           {!paid && !disputed && (
-            <ReviewNotice>Approval creates a separate receipt tied to this session. If anything looks wrong, question the request before paying or send it to CoachLink for review.</ReviewNotice>
+            <ReviewNotice>Approval creates a separate receipt tied to this session. If anything looks wrong, question the request before paying or send it to CoachNivo for review.</ReviewNotice>
           )}
           {disputed && (
             <Card style={{ background: C.warnTint, border: "none" }}>
-              <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}><Scale size={18} color={C.brand} /><div><div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>Sent to resolution support</div><div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, marginTop: 3, ...fBody }}>Payment is paused while CoachLink reviews the session and this request.</div></div></div>
+              <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}><Scale size={18} color={C.brand} /><div><div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>Sent to resolution support</div><div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, marginTop: 3, ...fBody }}>Payment is paused while CoachNivo reviews the session and this request.</div></div></div>
             </Card>
           )}
           {paid && <SessionContext booking={booking} role={role} />}
@@ -660,7 +660,7 @@ export function ScreenAdditionalChargePayment({
         <SectionLabel>Payment method</SectionLabel>
         <div role="radiogroup" aria-label="Payment method" style={{ display: "flex", flexDirection: "column", gap: 9 }}>
           {methodOption("visa", CreditCard, "Visa •••• 4821", "Saved card · Expires 08/28")}
-          {methodOption("wallet", WalletCards, "CoachLink Pay", "Use your saved mobile wallet")}
+          {methodOption("wallet", WalletCards, "CoachNivo Pay", "Use your saved mobile wallet")}
         </div>
 
         <div style={{ marginTop: 12 }}>

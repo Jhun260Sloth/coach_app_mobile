@@ -56,7 +56,7 @@ function SelectField({ label, value, onChange, options, placeholder = "Select…
 
 const TERMS_POINTS = [
   "We collect your location to show nearby coaches and enable travel-radius search.",
-  "Payment details are processed by our PCI-compliant payment partner - CoachLink never stores full card numbers.",
+  "Payment details are processed by our PCI-compliant payment partner - CoachNivo never stores full card numbers.",
   "If you're booking for someone under 18, a parent or guardian must provide consent before the session is confirmed.",
   "Coaches working with minors must hold a valid Working with Children Check, verified before their profile goes live.",
   "You can request a full export or deletion of your data at any time from Account Settings.",
@@ -92,8 +92,9 @@ export function ScreenSplash({ nav }) {
 
   return (
     <div style={{ height: "100%", background: C.white, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 28, textAlign: "center" }}>
-      <div style={{ animation: "clFadeUp .5s ease" }}>
-        <img src={darkMode ? "/white.svg" : "/black.svg"} alt="CoachLink" style={{ width: 170, height: "auto" }} />
+      <div style={{ animation: "clFadeUp .5s ease", display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+        <img src="/logo.png" alt="CoachNivo" style={{ width: 72, height: 72, borderRadius: 16 }} />
+        <div style={{ fontSize: T.displayLg, fontWeight: 800, color: C.jet, letterSpacing: "-0.03em", ...fDisplay }}>CoachNivo</div>
       </div>
       <div style={{ marginTop: 34 }}>
         <Spinner size={22} color={C.slateLight} />
@@ -159,9 +160,9 @@ export function ScreenGetStarted({ nav }) {
         }}
       >
         <img
-          src="/white.svg"
-          alt="CoachLink"
-          style={{ height: 28, width: "auto" }}
+          src="/logo.png"
+          alt="CoachNivo"
+          style={{ height: 32, width: 32, borderRadius: 8 }}
         />
       </div>
 
@@ -201,7 +202,7 @@ export function ScreenGetStarted({ nav }) {
             ...fDisplay,
           }}
         >
-          CoachLink
+          CoachNivo
         </div>
 
         {/* Subtitle / Description */}
@@ -249,12 +250,11 @@ export function ScreenGetStarted({ nav }) {
   );
 }
 
-export function ScreenRoleSelect({ nav, setRole }) {
-  const { darkMode } = useApp();
-  const C = darkMode ? CD : CL;
-  const Option = ({ role, title, body, icon: Icon }) => (
+function RoleOption({ role, title, body, icon: Icon, onClick, C }) {
+  return (
     <button
-      onClick={() => nav("auth", { mode: "signup" }, role)}
+      type="button"
+      onClick={onClick}
       style={{
         width: "100%", textAlign: "left", background: C.white, border: `1.5px solid ${C.border}`,
         borderRadius: 18, padding: 16, display: "flex", gap: 14, alignItems: "center",
@@ -272,22 +272,51 @@ export function ScreenRoleSelect({ nav, setRole }) {
       <ChevronRight size={18} color={C.slateLight} style={{ flexShrink: 0 }} />
     </button>
   );
+}
+
+export function ScreenRoleSelect({ nav, setRole }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
+
+  const handleSelectRole = (selectedRole) => {
+    setRole?.(selectedRole);
+    nav("auth", { mode: "signup", backTo: "role-select" }, selectedRole);
+  };
+
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", background: C.white }}>
       <TopBar title="" onBack={() => nav("get-started")} />
       <div style={{ flex: 1, overflowY: "auto", padding: "14px 18px 24px" }} className="cl-hide-scrollbar">
-        <img src={darkMode ? "/white.svg" : "/black.svg"} alt="CoachLink" style={{ height: 26, width: "auto", marginBottom: 8 }} />
+        <img src="/logo.png" alt="CoachNivo" style={{ height: 36, width: 36, marginBottom: 8 }} />
         <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, marginTop: 18, ...fDisplay }}>
-          What brings you<br />to CoachLink?
+          What brings you<br />to CoachNivo?
         </div>
         <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 6, marginBottom: 22, ...fBody }}>
           You can add a coaching profile later from the same account.
         </div>
-        <Option role="client" icon={Search} title="Find a coach" body="Search, book and pay for sessions with verified coaches near you." />
-        <Option role="coach" icon={Users} title="Coach others" body="List your services, manage bookings and get paid automatically." />
+        <RoleOption
+          role="client"
+          icon={Search}
+          title="Find a coach"
+          body="Search, book and pay for sessions with verified coaches near you."
+          onClick={() => handleSelectRole("client")}
+          C={C}
+        />
+        <RoleOption
+          role="coach"
+          icon={Users}
+          title="Coach others"
+          body="List your services, manage bookings and get paid automatically."
+          onClick={() => handleSelectRole("coach")}
+          C={C}
+        />
       </div>
       <div style={{ padding: "12px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", textAlign: "center" }}>
-        <button onClick={() => nav("auth", { mode: "login" })} style={{ background: "none", border: "none", color: C.slate, fontSize: T.bodyLg, cursor: "pointer", ...fBody }}>
+        <button
+          type="button"
+          onClick={() => nav("auth", { mode: "login", backTo: "role-select" })}
+          style={{ background: "none", border: "none", color: C.slate, fontSize: T.bodyLg, cursor: "pointer", ...fBody }}
+        >
           Have an existing account? <span style={{ color: C.brand, fontWeight: 600 }}>Sign In</span>
         </button>
       </div>
@@ -299,6 +328,9 @@ export function ScreenAuth({ nav, resetNav, params, role, toast, biometric, upda
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const [mode, setMode] = useState(params?.mode || "login");
+  useEffect(() => {
+    if (params?.mode) setMode(params.mode);
+  }, [params?.mode]);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState(params?.email || "");
@@ -366,7 +398,7 @@ export function ScreenAuth({ nav, resetNav, params, role, toast, biometric, upda
       <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 6, marginBottom: 20, ...fBody }}>
         {mode === "signup"
           ? (role === "coach" ? "Signing up as a Coach." : "Signing up as a Client.")
-          : "Welcome back - sign in to your CoachLink account."}
+          : "Welcome back - sign in to your CoachNivo account."}
       </div>
 
        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -441,7 +473,7 @@ export function ScreenAuth({ nav, resetNav, params, role, toast, biometric, upda
 
       <div style={{ marginTop: "auto", textAlign: "center", paddingBottom: "max(28px, env(safe-area-inset-bottom))" }}>
         <button onClick={mode === "signup" ? () => setMode("login") : goCreateAccount} style={{ background: "none", border: "none", color: C.slate, fontSize: T.body, cursor: "pointer", ...fBody }}>
-          {mode === "signup" ? "Already have an account? " : "New to CoachLink? "}
+          {mode === "signup" ? "Already have an account? " : "New to CoachNivo? "}
           <span style={{ color: C.brand, fontWeight: 600 }}>{mode === "signup" ? "Sign in" : "Create an account"}</span>
         </button>
       </div>
@@ -1437,7 +1469,7 @@ export function ScreenVerificationPending({ nav, params, verificationStatus, set
         <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 8, lineHeight: 1.6, maxWidth: 300, marginLeft: "auto", marginRight: "auto", ...fBody }}>
           {approved
             ? "An admin has reviewed and approved your documents. You now have full access to the Coach dashboard and can start accepting bookings."
-            : "Your documents have been submitted successfully and are now awaiting review by a CoachLink administrator. This usually takes up to 2 business days - we'll notify you as soon as a decision is made."}
+            : "Your documents have been submitted successfully and are now awaiting review by a CoachNivo administrator. This usually takes up to 2 business days - we'll notify you as soon as a decision is made."}
         </div>
         {!approved && (
           <div style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "center", marginTop: 18 }}>
@@ -1471,9 +1503,10 @@ export function ScreenAdminLogin({ nav, toast }) {
   return (
     <div style={{ height: "100%", background: C.white, display: "flex", flexDirection: "column", padding: "40px 24px 28px" }}>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-        <div style={{ textAlign: "center", marginBottom: 30 }}>
-          <img src={darkMode ? "/white.svg" : "/black.svg"} alt="CoachLink" style={{ width: 170, height: "auto", marginBottom: 20 }} />
-          <div style={{ fontSize: T.body, color: C.onDarkMuted, marginTop: 4, ...fBody }}>Sign in with your CoachLink admin credentials</div>
+        <div style={{ textAlign: "center", marginBottom: 30, display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <img src="/logo.png" alt="CoachNivo" style={{ width: 56, height: 56, borderRadius: 14, marginBottom: 12 }} />
+          <div style={{ fontSize: T.display, fontWeight: 800, color: C.jet, ...fDisplay }}>CoachNivo</div>
+          <div style={{ fontSize: T.body, color: C.onDarkMuted, marginTop: 4, ...fBody }}>Sign in with your CoachNivo admin credentials</div>
         </div>
 
 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -1505,7 +1538,7 @@ export function ScreenAdminLogin({ nav, toast }) {
 
       <input
         type="email"
-        placeholder="you@coachlink.com"
+        placeholder="you@coachnivo.com"
         style={{
           border: "none",
           outline: "none",
@@ -1611,7 +1644,7 @@ export function ScreenAdminLogin({ nav, toast }) {
       </div>
 
       <div style={{ textAlign: "center", fontSize: T.captionLg, color: C.onDarkFaint, lineHeight: 1.6, ...fBody }}>
-        Admin access is restricted to authorised CoachLink staff and is logged for audit purposes.
+        Admin access is restricted to authorised CoachNivo staff and is logged for audit purposes.
       </div>
     </div>
   );
