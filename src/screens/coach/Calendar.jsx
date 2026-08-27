@@ -86,7 +86,7 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
   const [removalTarget, setRemovalTarget] = useState(null);
   const [section, setSection] = useState("schedule");
   const [view, setView] = useState("list");
-  const scheduledSessions = coachBookings.filter((booking) => [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.COMPLETION_PENDING].includes(booking.status));
+  const scheduledSessions = coachBookings.filter((booking) => [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.IN_PROGRESS, BOOKING_STATUS.COMPLETION_PENDING].includes(booking.status));
 
   // Calendar view — month grid navigation
   const [cursor, setCursor] = useState(() => new Date());

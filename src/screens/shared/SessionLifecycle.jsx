@@ -54,13 +54,16 @@ export function ScreenSessionCompletion({
   if (!booking) {
     return (
       <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-        <TopBar title="Confirm session" onBack={() => nav(role === "coach" ? "coach-bookings" : "client-dashboard")} />
+        <TopBar title="Finish session" onBack={() => nav(role === "coach" ? "coach-bookings" : "client-dashboard")} />
         <EmptyState icon={CalendarDays} title="Session not found" body="This session may no longer be available." />
       </div>
     );
   }
 
   const backTo = params?.backTo || (role === "coach" ? "coach-session-detail" : "client-booking-detail");
+  const backParams = params?.backParams || (backTo === "session-progress"
+    ? { bookingId: booking.id, role }
+    : { id: booking.id });
   const finalCharge = additionalCharges.find((charge) => (
     charge.bookingId === booking.id
     && charge.phase === ADDITIONAL_CHARGE_PHASE.COMPLETION
@@ -68,30 +71,24 @@ export function ScreenSessionCompletion({
     && charge.status !== ADDITIONAL_CHARGE_STATUS.CANCELLED
   ));
   const finalPaymentDue = finalCharge?.status === ADDITIONAL_CHARGE_STATUS.PENDING;
-  const completionConfirmations = booking.completionConfirmations || (booking.completionConfirmedBy ? [booking.completionConfirmedBy] : []);
-  const otherRole = role === "coach" ? "client" : "coach";
-  const otherConfirmed = completionConfirmations.includes(otherRole);
-  const currentRoleConfirmed = completionConfirmations.includes(role);
-  const canConfirm = [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.COMPLETION_PENDING].includes(booking.status)
-    && !currentRoleConfirmed
-    && !(role === "client" && (finalPaymentDue || !completionConfirmations.includes("coach")));
+  const completed = booking.status === BOOKING_STATUS.COMPLETED;
+  const coachWaiting = role === "coach" && finalPaymentDue;
+
+  // Coach-driven completion: no client confirm button — the client's payment
+  // of any final charge acts as their acceptance, and disputes remain
+  // available after completion.
   const handleComplete = () => {
-    if (submitting || !canConfirm) return;
+    if (submitting || role !== "coach") return;
     haptic(12);
     setSubmitting(true);
-    const accepted = confirmSessionCompletion?.(booking.id, role);
+    const accepted = confirmSessionCompletion?.(booking.id, "coach");
     if (!accepted) {
       setSubmitting(false);
-      toast?.("This session cannot be completed yet");
+      toast?.("This session can't be completed yet");
       return;
     }
-    if (otherConfirmed) {
-      toast?.("Both sides confirmed - releasing funds");
-      window.setTimeout(() => nav("funds-release-status", { bookingId: booking.id, role, backTo }), 1150);
-    } else {
-      toast?.(`${role === "coach" ? "Coach" : "Client"} confirmation saved`);
-      window.setTimeout(() => nav(backTo, { id: booking.id }), 550);
-    }
+    toast?.("Session completed - funds released");
+    window.setTimeout(() => nav("funds-release-status", { bookingId: booking.id, role: "coach", backTo, backParams }), 1150);
   };
 
   const chooseCard = (value, icon, title, detail) => {
@@ -128,36 +125,48 @@ export function ScreenSessionCompletion({
     bookingId: booking.id,
     role: "coach",
     phase: ADDITIONAL_CHARGE_PHASE.COMPLETION,
-    backTo,
+    backTo: "coach-session-completion",
   });
+
+  const heroIcon = completed
+    ? CheckCircle2
+    : coachWaiting || finalPaymentDue
+      ? LockKeyhole
+      : role === "coach"
+        ? BadgeDollarSign
+        : Clock3;
+
+  const heroTitle = completed
+    ? "Session completed"
+    : role === "coach"
+      ? coachWaiting ? "Waiting for final payment" : "Any final charges?"
+      : finalPaymentDue ? "One final payment is due" : "Coach is finishing up";
+
+  const heroBody = completed
+    ? "The session is complete and the held payment has been released."
+    : role === "coach"
+      ? coachWaiting
+        ? "The client must pay the agreed final amount — the session completes automatically once it's paid."
+        : "Confirm there are no extra agreed costs, or add one before you complete the session."
+      : finalPaymentDue
+        ? "Review and pay the coach's final request. Your payment completes the session and releases the funds."
+        : "Your coach is finishing the session. Any final charges will appear here for you to settle.";
+
+  const HeroIcon = heroIcon;
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", background: C.white }}>
-      <TopBar title={role === "coach" ? "Finish session" : "Confirm session"} onBack={() => nav(backTo, { id: booking.id })} />
+      <TopBar title={role === "coach" ? "Finish session" : "Session ended"} onBack={() => nav(backTo, backParams)} />
       <div style={{ flex: 1, overflowY: "auto", padding: `14px ${LAYOUT.pagePadX}px 26px` }} className="cl-hide-scrollbar">
         <div style={{ textAlign: "center", padding: "5px 12px 22px" }}>
           <div style={{
-            width: 66, height: 66, borderRadius: 22, background: C.brandTint, margin: "0 auto 14px",
+            width: 66, height: 66, borderRadius: 22, background: completed ? C.successTint : C.brandTint, margin: "0 auto 14px",
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
-            {role === "coach" ? <BadgeDollarSign size={30} color={C.brand} strokeWidth={2} /> : finalPaymentDue ? <LockKeyhole size={29} color={C.brand} strokeWidth={2} /> : <CheckCircle2 size={31} color={C.brand} strokeWidth={2} />}
+            <HeroIcon size={30} color={completed ? C.success : C.brand} strokeWidth={2} />
           </div>
-          <div style={{ fontSize: T.display, fontWeight: 750, color: C.jet, letterSpacing: "-0.35px", ...fDisplay }}>
-            {role === "coach"
-              ? finalPaymentDue ? "Waiting for final payment" : "Any final charges?"
-              : finalPaymentDue ? "One final payment is due" : !completionConfirmations.includes("coach") ? "Waiting for your coach" : "Did this session take place?"}
-          </div>
-          <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.55, marginTop: 7, ...fBody }}>
-            {role === "coach"
-              ? finalPaymentDue
-                ? "The client must pay the agreed final amount before they can confirm the session."
-                : "Confirm there are no extra agreed costs, or add one before you mark your side complete."
-              : finalPaymentDue
-                ? "Review and pay the coach’s final request. Completion stays locked until payment succeeds."
-                : !completionConfirmations.includes("coach")
-                  ? "Your coach needs to finish their session review before your completion control unlocks."
-                  : "Confirm only after the session has finished and you’re happy the service was delivered."}
-          </div>
+          <div style={{ fontSize: T.display, fontWeight: 750, color: C.jet, letterSpacing: "-0.35px", ...fDisplay }}>{heroTitle}</div>
+          <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.55, marginTop: 7, ...fBody }}>{heroBody}</div>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -172,15 +181,17 @@ export function ScreenSessionCompletion({
                     <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>{finalCharge.reason}</div>
                     <div style={{ fontSize: T.body, fontWeight: 800, color: C.jet, ...fDisplay }}>${Number(finalCharge.amount).toFixed(2)}</div>
                   </div>
-                  <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, marginTop: 4, ...fBody }}>{finalPaymentDue ? "Payment required before client confirmation" : "Paid securely and linked to this session"}</div>
+                  <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, marginTop: 4, ...fBody }}>
+                    {finalPaymentDue ? "Payment completes the session automatically" : "Paid securely and linked to this session"}
+                  </div>
                 </div>
               </div>
             </Card>
           )}
 
-          {role === "coach" && !finalPaymentDue && !currentRoleConfirmed && (
+          {role === "coach" && !finalPaymentDue && !completed && (
             <div role="radiogroup" aria-label="Final payment choice" style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-              {chooseCard("none", CheckCircle2, "No final charge", "Mark your side complete now. The client will receive a confirmation prompt.")}
+              {chooseCard("none", CheckCircle2, "No final charge", "Complete the session now. The held payment releases straight away.")}
               {chooseCard("charge", Plus, "Add a final charge", "For an agreed extension, equipment, venue cost, or another documented extra.")}
             </div>
           )}
@@ -190,8 +201,8 @@ export function ScreenSessionCompletion({
             <div style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
               <ShieldCheck size={19} color={C.success} style={{ flexShrink: 0 }} />
               <div>
-                <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>Protected until both confirm</div>
-                <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.55, marginTop: 4, ...fBody }}>CoachNivo releases the secured payment only after final charges are paid and both coach and client confirm completion.</div>
+                <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>Protected until completion</div>
+                <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.55, marginTop: 4, ...fBody }}>CoachNivo releases the secured payment only after any final charges are paid and the session is marked complete.</div>
               </div>
             </div>
           </Card>
@@ -201,18 +212,21 @@ export function ScreenSessionCompletion({
       <div style={{ padding: `12px ${LAYOUT.pagePadX}px max(${LAYOUT.ctaPadBottom}px, env(safe-area-inset-bottom))`, borderTop: `1px solid ${C.border}`, background: C.white, display: "flex", flexDirection: "column", gap: 9 }}>
         {role === "coach" && finalPaymentDue && <Btn full disabled icon={LockKeyhole}>Waiting for client payment</Btn>}
         {role === "coach" && finalPaymentDue && <Btn full variant="outline" icon={BadgeDollarSign} onClick={() => nav("additional-charge-review", { chargeId: finalCharge.id, role: "coach", backTo })}>View final payment</Btn>}
-        {role === "coach" && !finalPaymentDue && !currentRoleConfirmed && coachChoice === "charge" && <Btn full icon={Plus} onClick={coachAddCharge}>Add final charge</Btn>}
-        {role === "coach" && !finalPaymentDue && !currentRoleConfirmed && coachChoice !== "charge" && <Btn full loading={submitting} loadingText="Saving confirmation…" disabled={!canConfirm || coachChoice !== "none"} icon={CheckCircle2} onClick={handleComplete}>{coachChoice === "none" ? "No final charge - confirm" : "Choose an option to continue"}</Btn>}
-        {role === "coach" && currentRoleConfirmed && <Btn full disabled icon={Clock3}>Waiting for client confirmation</Btn>}
+        {role === "coach" && !finalPaymentDue && !completed && coachChoice === "charge" && <Btn full icon={Plus} onClick={coachAddCharge}>Add final charge</Btn>}
+        {role === "coach" && !finalPaymentDue && !completed && coachChoice !== "charge" && <Btn full loading={submitting} loadingText="Completing session…" disabled={coachChoice !== "none"} icon={CheckCircle2} onClick={handleComplete}>{coachChoice === "none" ? "No final charge - complete session" : "Choose an option to continue"}</Btn>}
+        {role === "coach" && completed && <Btn full icon={Banknote} onClick={() => nav("funds-release-status", { bookingId: booking.id, role: "coach", backTo })}>View payout release</Btn>}
         {role === "client" && finalPaymentDue && <Btn full icon={WalletCards} onClick={() => nav("additional-charge-payment", { chargeId: finalCharge.id, role: "client" })}>Pay final ${Number(finalCharge.amount).toFixed(2)}</Btn>}
-        {role === "client" && !finalPaymentDue && <Btn full loading={submitting} loadingText="Saving confirmation…" disabled={!canConfirm} icon={CheckCircle2} onClick={handleComplete}>{currentRoleConfirmed ? "Confirmation saved" : completionConfirmations.includes("coach") ? "Yes, session completed" : "Waiting for coach to finish"}</Btn>}
+        {role === "client" && !finalPaymentDue && !completed && <Btn full disabled icon={Clock3}>Waiting for your coach to finish</Btn>}
+        {role === "client" && completed && !booking.reviewed && <Btn full icon={Star} onClick={() => nav("leave-review", { bookingId: booking.id, name: booking.coachName })}>Leave a review</Btn>}
+        {role === "client" && completed && <Btn full variant="outline" icon={Banknote} onClick={() => nav("funds-release-status", { bookingId: booking.id, role: "client", backTo })}>View payment release</Btn>}
         <Btn full variant="outline" icon={AlertTriangle} onClick={() => nav("dispute-create", {
           bookingId: booking.id,
           role,
           category: role === "coach" ? "client_no_show" : "session_not_delivered",
-          backTo: "session-completion",
+          backTo,
+          backParams,
         })}>
-          No, report an issue
+          Report an issue
         </Btn>
       </div>
     </div>
@@ -246,10 +260,13 @@ export function ScreenFundsReleaseStatus({ nav, params, role: appRole, bookings 
   const net = gross - commission;
   const person = role === "coach" ? booking.clientName : booking.coachName;
   const backTo = params?.backTo || (role === "coach" ? "coach-earnings" : "client-history");
+  const backParams = params?.backParams || (backTo === "session-progress"
+    ? { bookingId: booking.id, role }
+    : { id: booking.id });
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", background: C.white }}>
-      <TopBar title={role === "coach" ? "Payout status" : "Payment status"} onBack={() => nav(backTo, { id: booking.id })} />
+      <TopBar title={role === "coach" ? "Payout status" : "Payment status"} onBack={() => nav(backTo, backParams)} />
       <div style={{ flex: 1, overflowY: "auto", padding: `10px ${LAYOUT.pagePadX}px 30px` }} className="cl-hide-scrollbar">
         <div style={{ textAlign: "center", padding: "8px 10px 22px" }}>
           <div style={{

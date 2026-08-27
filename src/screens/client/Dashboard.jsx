@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import {
   WifiOff, Calendar, ClipboardList, Heart, Download, Clock, MessageCircle, Star, CheckCircle2,
   AlertTriangle, CreditCard, ShieldCheck, LifeBuoy, Hourglass, RefreshCcw, ChevronLeft, ChevronRight, CalendarX2, CalendarDays,
-  Banknote, Scale, BadgeDollarSign,
+  Banknote, Scale, BadgeDollarSign, PlayCircle,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T, LAYOUT } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
@@ -115,7 +115,7 @@ export function ScreenClientDashboard({ nav, bookings = [], additionalCharges = 
     return 2;
   };
   const upcoming = safeBookings.filter((b) => (
-    [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.COMPLETION_PENDING].includes(b?.status)
+    [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.IN_PROGRESS, BOOKING_STATUS.COMPLETION_PENDING].includes(b?.status)
     && !pendingChargeBookingIds.has(b.id)
   ));
   const pending = safeBookings
@@ -522,6 +522,7 @@ export function BookingCard({ b, nav, past, additionalCharge, onAdditionalCharge
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const pending = b.status === BOOKING_STATUS.PENDING;
+  const live = b.status === BOOKING_STATUS.IN_PROGRESS;
   const paymentDue = !past
     && b.status === BOOKING_STATUS.AWAITING_PAYMENT
     && b.paymentStatus === PAYMENT_STATUS.DUE;
@@ -580,7 +581,9 @@ export function BookingCard({ b, nav, past, additionalCharge, onAdditionalCharge
             details, where clients can review the session before choosing a slot. */}
         {!past && (
           <>
-            {paymentDue ? (
+            {live ? (
+              <Btn size="sm" variant="dark" full icon={CheckCircle2} onClick={() => nav("session-progress", { bookingId: b.id, role: "client" })}>Live session</Btn>
+            ) : paymentDue ? (
               <Btn size="sm" variant="dark" full onClick={onPay}>Pay now</Btn>
             ) : additionalPaymentDue ? (
               <Btn size="sm" variant="dark" full onClick={onAdditionalCharge}>Review</Btn>
@@ -637,6 +640,7 @@ export function ScreenClientBookingDetail({ nav, goBack, params, bookings, toast
   const isPending = booking.status === BOOKING_STATUS.PENDING;
   const isAwaitingPayment = booking.status === BOOKING_STATUS.AWAITING_PAYMENT;
   const isUpcoming = booking.status === BOOKING_STATUS.CONFIRMED;
+  const isLive = booking.status === BOOKING_STATUS.IN_PROGRESS;
   const isCompletionPending = booking.status === BOOKING_STATUS.COMPLETION_PENDING;
   const isPast = [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.CANCELLED, BOOKING_STATUS.DECLINED, BOOKING_STATUS.EXPIRED].includes(booking.status);
   const priceLabel = typeof booking.price === "number" ? `$${booking.price.toFixed(2)}` : `$${booking.price}`;
@@ -660,9 +664,6 @@ export function ScreenClientBookingDetail({ nav, goBack, params, bookings, toast
     .reduce((sum, item) => sum + Number(item.amount || 0), 0);
   const requiredCheckoutTotal = Number(booking.price || 0) + requiredAcceptanceTotal;
   const pendingFinalCharge = completionCharge?.status === ADDITIONAL_CHARGE_STATUS.PENDING;
-  const completionConfirmations = booking.completionConfirmations || (booking.completionConfirmedBy ? [booking.completionConfirmedBy] : []);
-  const coachFinishedSession = completionConfirmations.includes("coach");
-  const clientConfirmedCompletion = completionConfirmations.includes("client");
 
   const handleReschedule = (id, when) => {
     rescheduleBooking(id, when);
@@ -868,6 +869,12 @@ export function ScreenClientBookingDetail({ nav, goBack, params, bookings, toast
           </div>
         )}
 
+        {isLive && (
+          <div style={{ display: "flex", gap: 8, marginTop: 4, marginBottom: 14 }}>
+            <Btn size="sm" variant="dark" full icon={MessageCircle} ariaLabel={`Message ${cn.name}`} onClick={() => nav("chat-thread", messageParams)} />
+          </div>
+        )}
+
         {isPast && booking.status === BOOKING_STATUS.COMPLETED && !booking.reviewed && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
             <Btn full variant="outline" icon={Banknote} onClick={() => nav("funds-release-status", { bookingId: booking.id, role: "client", backTo: "client-booking-detail" })}>View payment release</Btn>
@@ -915,27 +922,30 @@ export function ScreenClientBookingDetail({ nav, goBack, params, bookings, toast
         </BottomActionBar>
       )}
 
-      {(isUpcoming || isCompletionPending) && pendingFinalCharge && (
+      {(isLive || isCompletionPending) && pendingFinalCharge && (
         <BottomActionBar>
           <Btn full icon={CreditCard} onClick={() => nav("additional-charge-payment", { chargeId: completionCharge.id, role: "client" })}>Pay final ${Number(completionCharge.amount).toFixed(2)}</Btn>
         </BottomActionBar>
       )}
 
-      {(isUpcoming || isCompletionPending) && !pendingFinalCharge && (
+      {isCompletionPending && !pendingFinalCharge && (
         <BottomActionBar>
-          {clientConfirmedCompletion ? (
-            <div style={{ width: "100%", minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: C.fog, borderRadius: 12, padding: "10px 16px", color: C.slate, fontSize: T.body, fontWeight: 600, ...fBody }}>
-              <CheckCircle2 size={15} color={C.success} />
-              <span>Confirmation saved</span>
-            </div>
-          ) : !coachFinishedSession ? (
-            <div style={{ width: "100%", minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: C.fog, borderRadius: 12, padding: "10px 16px", color: C.slate, fontSize: T.body, fontWeight: 600, ...fBody }}>
-              <Clock size={15} color={C.brand} />
-              <span>Waiting for coach to finish</span>
-            </div>
-          ) : (
-            <Btn full icon={CheckCircle2} onClick={() => nav("session-completion", { bookingId: booking.id, role: "client", backTo: "client-booking-detail" })}>Confirm session completed</Btn>
-          )}
+          <div style={{ width: "100%", minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: C.fog, borderRadius: 12, padding: "10px 16px", color: C.slate, fontSize: T.body, fontWeight: 600, ...fBody }}>
+            <Clock size={15} color={C.brand} />
+            <span>Waiting for your coach to finish</span>
+          </div>
+        </BottomActionBar>
+      )}
+
+      {isUpcoming && (
+        <BottomActionBar>
+          <Btn full icon={PlayCircle} onClick={() => nav("client-session-start", { bookingId: booking.id })}>Start session</Btn>
+        </BottomActionBar>
+      )}
+
+      {isLive && !pendingFinalCharge && (
+        <BottomActionBar>
+          <Btn full icon={CheckCircle2} onClick={() => nav("session-progress", { bookingId: booking.id, role: "client" })}>View live session</Btn>
         </BottomActionBar>
       )}
 

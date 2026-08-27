@@ -61,6 +61,10 @@ import { ScreenMessages, ScreenChatThread } from "../screens/messaging/Messaging
 import { ScreenSupport } from "../screens/support/Support";
 import { ScreenSessionCompletion, ScreenFundsReleaseStatus } from "../screens/shared/SessionLifecycle";
 import {
+  ScreenClientSessionStart, ScreenClientSessionCode,
+  ScreenCoachSessionStart, ScreenSessionProgress,
+} from "../screens/shared/SessionFlow";
+import {
   ScreenAdditionalChargeCreate, ScreenAdditionalChargePayment, ScreenAdditionalChargeReview,
   ScreenDisputeCreate, ScreenDisputeStatus,
 } from "../screens/shared/Exceptions";
@@ -147,6 +151,10 @@ export const ROUTES = {
   "chat-thread": ScreenChatThread,
   "session-completion": ScreenSessionCompletion,
   "coach-session-completion": ScreenSessionCompletion,
+  "client-session-start": ScreenClientSessionStart,
+  "client-session-code": ScreenClientSessionCode,
+  "coach-session-start": ScreenCoachSessionStart,
+  "session-progress": ScreenSessionProgress,
   "funds-release-status": ScreenFundsReleaseStatus,
   "dispute-create": ScreenDisputeCreate,
   "dispute-status": ScreenDisputeStatus,
@@ -233,8 +241,12 @@ const ROUTE_METADATA_BASE = {
 
   // Shared
   "chat-thread": { title: "Interactive Chat Thread", category: "Shared", role: "client" },
-  "session-completion": { title: "Shared Session Completion", category: "Shared", role: "client" },
+  "session-completion": { title: "Session Ended & Final Charges", category: "Shared", role: "client" },
   "coach-session-completion": { title: "Coach: Finish Session", category: "Coach", role: "coach" },
+  "client-session-start": { title: "Client: Start Session (OTP)", category: "Client", role: "client" },
+  "client-session-code": { title: "Client: Session Code Display", category: "Client", role: "client" },
+  "coach-session-start": { title: "Coach: Enter Client Code (OTP)", category: "Coach", role: "coach" },
+  "session-progress": { title: "Live Session Progress", category: "Shared", role: "client" },
   "funds-release-status": { title: "Shared Funds Release Status", category: "Shared", role: "client" },
   "dispute-create": { title: "Report a Session Issue", category: "Shared", role: "client" },
   "dispute-status": { title: "Case Tracking & No-show Outcome", category: "Shared", role: "client" },
@@ -303,7 +315,11 @@ const ROUTE_DEMO_PARAMS = {
   "coach-edit-package": { id: "p1" },
   "chat-thread": { threadId: "t1", name: "Isla Ferguson", handle: "isla.netball", context: "Booking · Wed, 19 Aug", bookingId: "b1" },
   "session-completion": { bookingId: "s1", role: "client", backTo: "client-booking-detail" },
-  "coach-session-completion": { bookingId: "cb1", role: "coach", backTo: "coach-session-detail" },
+  "coach-session-completion": { bookingId: "cb7", role: "coach", backTo: "coach-session-detail" },
+  "client-session-start": { bookingId: "b1" },
+  "client-session-code": { bookingId: "b1" },
+  "coach-session-start": { bookingId: "cb1" },
+  "session-progress": { bookingId: "b8", role: "client" },
   "funds-release-status": { bookingId: "b3", role: "client", backTo: "client-history" },
   "verification-rejected": { variant: "rejected" },
   "dispute-create": { bookingId: "s1", role: "client", category: "session_not_delivered", backTo: "client-booking-detail" },

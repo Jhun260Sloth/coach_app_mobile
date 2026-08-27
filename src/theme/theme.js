@@ -228,6 +228,7 @@ export const KEYFRAMES = `
 @keyframes clTouchFade { 0%{opacity:.85; transform:translate(-50%,-50%) scale(.55)} 55%{opacity:.35} 100%{opacity:0; transform:translate(-50%,-50%) scale(1.2)} }
 @keyframes clSkeleton { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 @keyframes clHeroFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+@keyframes clShake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
 .cl-hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 .cl-hide-scrollbar::-webkit-scrollbar { display: none; width: 0; height: 0; }
 .cl-swipe-row { -webkit-overflow-scrolling: touch; touch-action: pan-x; scroll-snap-type: x proximity; overscroll-behavior-x: contain; }

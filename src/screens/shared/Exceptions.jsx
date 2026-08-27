@@ -187,6 +187,7 @@ export function ScreenDisputeCreate({
   const selectedIssue = issues.find((item) => item.value === category) || issues[0];
   const canReview = description.trim().length >= 12 && Number(amount) >= 0;
   const backTo = params?.backTo || (role === "coach" ? "coach-session-detail" : "client-booking-detail");
+  const backParams = params?.backParams || { id: booking.id };
   const submit = () => {
     if (submitting) return;
     setSubmitting(true);
@@ -204,12 +205,12 @@ export function ScreenDisputeCreate({
       return;
     }
     toast?.("Report submitted securely");
-    window.setTimeout(() => nav("dispute-status", { caseId, role, backTo }), 650);
+    window.setTimeout(() => nav("dispute-status", { caseId, role, backTo, backParams }), 650);
   };
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title={step === 1 ? "Report a session issue" : "Review your report"} onBack={() => step === 2 ? setStep(1) : nav(backTo, { id: booking.id })} />
+      <TopBar title={step === 1 ? "Report a session issue" : "Review your report"} onBack={() => step === 2 ? setStep(1) : nav(backTo, backParams)} />
       <div style={{ flex: 1, overflowY: "auto", padding: `${LAYOUT.pagePadTop}px ${LAYOUT.pagePadX}px 24px` }} className="cl-hide-scrollbar">
         <StepProgress step={step} total={2} label={step === 1 ? "Tell us what happened" : "Check before sending"} />
         <div style={{ marginBottom: 18 }}><SessionContext booking={booking} role={role} /></div>
@@ -349,9 +350,10 @@ export function ScreenDisputeStatus({ nav, params, role: appRole, bookings = [],
   const resolved = dispute.status === DISPUTE_STATUS.RESOLVED;
   const refunded = dispute.outcome === DISPUTE_OUTCOME.CLIENT_REFUNDED;
   const backTo = params?.backTo || (role === "coach" ? "coach-bookings" : "client-dashboard");
+  const backParams = params?.backParams || (params?.bookingId ? { id: params.bookingId } : {});
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title={`Case ${dispute.id.replace("case-", "#")}`} onBack={() => nav(backTo, params?.bookingId ? { id: params.bookingId } : {})} right={<Badge tone={status.tone}>{status.label}</Badge>} />
+      <TopBar title={`Case ${dispute.id.replace("case-", "#")}`} onBack={() => nav(backTo, backParams)} right={<Badge tone={status.tone}>{status.label}</Badge>} />
       <div style={{ flex: 1, overflowY: "auto", padding: `${LAYOUT.pagePadTop}px ${LAYOUT.pagePadX}px 24px` }} className="cl-hide-scrollbar">
         <div style={{ textAlign: "center", padding: "8px 10px 20px" }}>
           <div style={{ width: 66, height: 66, borderRadius: 22, margin: "0 auto 14px", background: resolved ? C.successTint : C.brandTint, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -397,7 +399,7 @@ export function ScreenDisputeStatus({ nav, params, role: appRole, bookings = [],
 }
 
 export function ScreenAdditionalChargeCreate({
-  nav, params, coachBookings = [], bookings = [], createAdditionalCharge, confirmSessionCompletion, toast,
+  nav, params, coachBookings = [], bookings = [], createAdditionalCharge, toast,
 }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
@@ -428,8 +430,7 @@ export function ScreenAdditionalChargeCreate({
       toast?.("We couldn’t send this request");
       return;
     }
-    if (phase === ADDITIONAL_CHARGE_PHASE.COMPLETION) confirmSessionCompletion?.(booking.id, "coach");
-    toast?.("Final payment sent - completion is now locked");
+    toast?.("Final payment sent - the session completes once it's paid");
     window.setTimeout(() => nav("additional-charge-review", { chargeId, role: "coach", backTo: params?.backTo || "coach-session-detail" }), 650);
   };
 
@@ -453,7 +454,7 @@ export function ScreenAdditionalChargeCreate({
               <TextArea value={note} onChange={setNote} placeholder="For example: We agreed to extend the session by 20 minutes to finish the training plan…" minHeight={116} />
             </div>
             <div><SectionHeading hint="A receipt or session note makes the request easier to verify.">Receipt or evidence</SectionHeading><EvidenceUploader evidence={evidence} setEvidence={setEvidence} compact /></div>
-            <ReviewNotice>The client must pay this final amount before their completion control unlocks. CoachNivo never charges them automatically.</ReviewNotice>
+            <ReviewNotice>The client must pay this final amount to complete the session. CoachNivo never charges them automatically.</ReviewNotice>
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>
@@ -471,7 +472,7 @@ export function ScreenAdditionalChargeCreate({
                 <DetailRow label="Attachment" value={evidence.length ? "Included" : "None"} last />
               </div>
             </Card>
-            <ReviewNotice>This is exactly what the client will see. Your completion confirmation is saved, but funds stay protected until they pay and confirm too.</ReviewNotice>
+            <ReviewNotice>This is exactly what the client will see. The session completes and funds release automatically once they pay.</ReviewNotice>
           </div>
         )}
       </div>

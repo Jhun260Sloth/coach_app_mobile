@@ -13,11 +13,19 @@ export const BOOKING_STATUS = Object.freeze({
   PENDING: "pending",
   AWAITING_PAYMENT: "awaiting_payment",
   CONFIRMED: "confirmed",
+  IN_PROGRESS: "in_progress",
   COMPLETION_PENDING: "completion_pending",
   COMPLETED: "completed",
   DECLINED: "declined",
   EXPIRED: "expired",
   CANCELLED: "cancelled",
+});
+
+/** Session OTP runtime — how long a generated code stays valid, and how many
+    wrong entries the coach gets before the code is voided. */
+export const SESSION_OTP = Object.freeze({
+  TTL_SECONDS: 600,
+  MAX_ATTEMPTS: 3,
 });
 
 export const PAYMENT_STATUS = Object.freeze({
@@ -80,6 +88,11 @@ export const BOOKING_LIFECYCLE = Object.freeze({
   [BOOKING_STATUS.CONFIRMED]: {
     label: "Confirmed",
     paymentStatus: PAYMENT_STATUS.HELD,
+    next: [BOOKING_STATUS.IN_PROGRESS, BOOKING_STATUS.CANCELLED],
+  },
+  [BOOKING_STATUS.IN_PROGRESS]: {
+    label: "Session in progress",
+    paymentStatus: PAYMENT_STATUS.HELD,
     next: [BOOKING_STATUS.COMPLETION_PENDING, BOOKING_STATUS.CANCELLED],
   },
   [BOOKING_STATUS.COMPLETION_PENDING]: {
@@ -131,8 +144,8 @@ export const INITIAL_BOOKINGS = [
 
   // Upcoming — confirmed on calendar
   { id: "s1", coachId: "c2", coachName: "Noah Kelly", clientName: "Sarah Lin", clientHandle: "sarahlin", service: "1:1 Programming Session", date: "Thu, 20 Aug", time: "6:00am", mode: "In-person", status: "completion_pending", paymentStatus: "held", payoutStatus: "not_ready", completionConfirmedBy: "coach", completionConfirmations: ["coach"], price: 65, reviewed: false, participants: "You", notes: "Focus on clean return-to-training technique." },
-  { id: "b1", coachId: "c1", coachName: "Isla Ferguson", clientName: "Sarah Lin", service: "1:1 Court Session", date: "Tue, 22 Jul", time: "4:00pm", mode: "In-person", status: "confirmed", price: 72, reviewed: false, participants: "You", notes: "" },
-  { id: "b8", coachId: "c3", coachName: "Ruby Hendricks", clientName: "Sarah Lin", service: "1:1 Beach Session", date: "Thu, 6 Aug", time: "7:00am", mode: "In-person", status: "confirmed", price: 65, reviewed: false, participants: "You", notes: "" },
+  { id: "b1", coachId: "c1", coachName: "Isla Ferguson", clientName: "Sarah Lin", service: "1:1 Court Session", date: "Tue, 22 Jul", time: "4:00pm", mode: "In-person", status: "confirmed", price: 72, reviewed: false, participants: "You", notes: "", sessionCode: "738291", codeGeneratedAt: "Just now" },
+  { id: "b8", coachId: "c3", coachName: "Ruby Hendricks", clientName: "Sarah Lin", service: "1:1 Beach Session", date: "Thu, 6 Aug", time: "7:00am", mode: "In-person", status: "in_progress", paymentStatus: "held", price: 65, reviewed: false, participants: "You", notes: "", sessionCode: "482931", codeGeneratedAt: "Just now", sessionStartedAt: "Just now" },
   { id: "b9", coachId: "c4", coachName: "Marcus Ude", clientName: "Sarah Lin", service: "1:1 Pad Session", date: "Sat, 8 Aug", time: "10:00am", mode: "In-person", status: "confirmed", price: 68, reviewed: false, participants: "You", notes: "" },
   { id: "b10", coachId: "c6", coachName: "Liam O'Connor", clientName: "Sarah Lin", service: "Small Group Ride", date: "Wed, 12 Aug", time: "5:00pm", mode: "In-person", status: "confirmed", price: 42, reviewed: false, participants: "You", notes: "" },
   { id: "b20", coachId: "c8", coachName: "Declan Murphy", clientName: "Sarah Lin", service: "1:1 Kicking Mechanics & Decision Making", date: "Sat, 22 Aug", time: "9:00am", mode: "In-person", status: "confirmed", price: 70, reviewed: false, participants: "You", notes: "Working on drop punt ball drop stability." },
@@ -176,8 +189,8 @@ export const COACH_BOOKINGS = [
 
   // Upcoming — confirmed on calendar
   { id: "s1", coachId: "c2", coachName: "Noah Kelly", clientName: "Sarah Lin", clientHandle: "sarahlin", service: "1:1 Programming Session", date: "Thu, 20 Aug", time: "6:00am", mode: "In-person", status: "completion_pending", paymentStatus: "held", payoutStatus: "not_ready", completionConfirmedBy: "coach", completionConfirmations: ["coach"], price: 65, notes: "Focus on clean return-to-training technique." },
-  { id: "cb1", clientName: "Sarah Lin", service: "1:1 Court Session", date: "Tue, 22 Jul", time: "4:00pm", mode: "In-person", status: "confirmed", price: 72, notes: "" },
-  { id: "cb7", clientName: "Ravi Patel", service: "1:1 Court Session", date: "Tue, 29 Jul", time: "7:00am", mode: "In-person", status: "confirmed", price: 72, notes: "" },
+  { id: "cb1", clientName: "Sarah Lin", service: "1:1 Court Session", date: "Tue, 22 Jul", time: "4:00pm", mode: "In-person", status: "confirmed", price: 72, notes: "", sessionCode: "738291", codeGeneratedAt: "Just now" },
+  { id: "cb7", clientName: "Ravi Patel", service: "1:1 Court Session", date: "Tue, 29 Jul", time: "7:00am", mode: "In-person", status: "in_progress", paymentStatus: "held", price: 72, notes: "", sessionCode: "739150", codeGeneratedAt: "Just now", sessionStartedAt: "Just now" },
   { id: "cb8", clientName: "Owen King", service: "1:1 Court Session", date: "Fri, 1 Aug", time: "5:30pm", mode: "In-person", status: "confirmed", price: 72, notes: "" },
   { id: "cb9", clientName: "The Nguyen Family (u18)", service: "Junior Group (max 4)", date: "Sun, 3 Aug", time: "10:00am", mode: "In-person", status: "confirmed", price: 30, notes: "" },
   { id: "cb19", clientName: "Jordan Lee", service: "Small Group WOD (max 3)", date: "Sat, 22 Aug", time: "8:00am", mode: "In-person", status: "confirmed", price: 38, notes: "Metcon conditioning session." },
@@ -392,7 +405,8 @@ export const FAQS = {
   coach: [
     { q: "How do I get verified?", a: "Submit an identity document and, if you coach under-18s, a Working with Children Check. Most reviews complete within 2 business days." },
     { q: "Can I coach multiple sports on one profile?", a: "Yes! In Onboarding or Profile Edit, select your Primary Sport and any Secondary Sports. You can create customized packages for each sport with separate pricing and venues." },
-    { q: "When do I get paid?", a: "Payouts release automatically once a client confirms a session is complete, minus CoachNivo's commission. Funds typically land in 2–3 business days." },
+    { q: "When do I get paid?", a: "You end the session from the live session screen. If there are no final charges, funds release right away; if you add a final charge, the payout releases automatically once the client pays it. It's always minus CoachNivo's commission, and typically lands in 2–3 business days." },
+    { q: "How does the session check-in code work?", a: "When the client arrives, they generate a 6-digit code in their app. Enter it on your start-session screen to begin the session - it proves you're both at the right session and keeps the payout protected." },
     { q: "Can I set my own cancellation policy?", a: "Yes - choose Flexible, Moderate or Strict from your Services tab. This is shown to clients before they book." },
     { q: "How do booking requests work?", a: "When a client sends a booking request, you review the details and choose to accept or decline. Once accepted, the client is notified to confirm and pay." },
   ],
@@ -406,6 +420,7 @@ export const FAQS = {
 
 export const CLIENT_NOTIFICATIONS = [
   { id: "n4", type: "payment", title: "Additional payment requested", body: "Noah Kelly requested $18.00 for extra session time.", time: "Just now", unread: true, bookingId: "s1", chargeId: "charge-101" },
+  { id: "n6", type: "session", title: "Session code generated", body: "Your session code for Ruby Hendricks is ready to share with your coach.", time: "Just now", unread: true, bookingId: "b8" },
   { id: "n1", type: "booking", title: "Booking confirmed", body: "Your session with Isla Ferguson is confirmed for Tue, 4:00pm.", time: "9:41am", unread: true, coachId: "c1", coachName: "Isla Ferguson" },
   { id: "n2", type: "message", title: "New message from Noah Kelly", body: "Do you have any morning slots next week?", time: "Yesterday", unread: true, coachName: "Noah Kelly" },
   { id: "n3", type: "review", title: "How was your session?", body: "Leave a quick review for Ruby Hendricks to help other clients.", time: "2 days ago", unread: true, coachName: "Ruby Hendricks" },
@@ -421,6 +436,7 @@ export const COACH_VERIFICATION_DOCS = [
 
 export const COACH_NOTIFICATIONS = [
   { id: "cn1", type: "message", title: "New message from Marcus Webb", body: "Do you run sessions on weekends?", time: "Yesterday", unread: true, threadId: "ct2", clientName: "Marcus Webb" },
+  { id: "cn6", type: "session", title: "Session in progress", body: "Your session with Ravi Patel is live — the client's code was verified.", time: "Just now", unread: true, bookingId: "cb7" },
   { id: "cn2", type: "verification", title: "Working with Children Check expiring soon", body: "Your WWCC expires in 18 days - renew it to keep accepting under-18 bookings.", time: "Today", unread: true },
   { id: "cn3", type: "booking", title: "New booking request", body: "Marcus Webb requested a 1:1 Programming Session for Sat, 9:00am.", time: "2 hours ago", unread: true },
   { id: "cn4", type: "review", title: "New 5-star review", body: "Sarah L. left you a review after your last session.", time: "3 days ago", unread: false },

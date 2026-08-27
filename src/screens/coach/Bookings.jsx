@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import {
   ClipboardList, Info, MessagesSquare, MessageCircle,
   ChevronLeft, ChevronRight, CalendarX2, BellRing, CalendarClock,
-  CheckCircle2, Banknote, LifeBuoy, LockKeyhole, Scale, BadgeDollarSign, Clock,
+  CheckCircle2, Banknote, LifeBuoy, LockKeyhole, Scale, BadgeDollarSign, Clock, PlayCircle,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { CLIENT_PROFILES, BOOKING_ENQUIRY_MESSAGES, CONFIG } from "../../data/mockData";
@@ -68,7 +68,7 @@ export function ScreenCoachBookings({ nav, coachBookings }) {
   const list = coachBookings.filter((b) => tab === "pending"
     ? [BOOKING_STATUS.PENDING, BOOKING_STATUS.AWAITING_PAYMENT].includes(b.status)
     : tab === "upcoming"
-      ? [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.COMPLETION_PENDING].includes(b.status)
+      ? [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.IN_PROGRESS, BOOKING_STATUS.COMPLETION_PENDING].includes(b.status)
       : [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.DECLINED, BOOKING_STATUS.EXPIRED, BOOKING_STATUS.CANCELLED].includes(b.status));
   const emptyState = {
     pending: { title: "No booking requests", body: "New requests and payments awaiting action will appear here." },
@@ -248,7 +248,8 @@ export function ScreenCoachBookingDetail({
     [BOOKING_STATUS.PENDING]: "Booking request",
     [BOOKING_STATUS.AWAITING_PAYMENT]: "Waiting for payment",
     [BOOKING_STATUS.CONFIRMED]: "Upcoming session",
-    [BOOKING_STATUS.COMPLETION_PENDING]: "Confirm completion",
+    [BOOKING_STATUS.IN_PROGRESS]: "Live session",
+    [BOOKING_STATUS.COMPLETION_PENDING]: "Finishing up",
     [BOOKING_STATUS.COMPLETED]: "Completed session",
     [BOOKING_STATUS.DECLINED]: "Declined request",
     [BOOKING_STATUS.EXPIRED]: "Expired request",
@@ -352,12 +353,12 @@ export function ScreenCoachBookingDetail({
           </div>
         )}
 
-        {[BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.COMPLETION_PENDING].includes(booking.status) && (
+        {[BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.IN_PROGRESS, BOOKING_STATUS.COMPLETION_PENDING].includes(booking.status) && (
           <Card style={{ marginBottom: 14, display: "flex", gap: 11, alignItems: "flex-start", background: C.successTint, border: "none" }}>
             <LockKeyhole size={18} color={C.success} style={{ flexShrink: 0 }} />
             <div>
               <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>${Number(booking.paidTotal || booking.price).toFixed(2)} secured</div>
-              <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, marginTop: 3, ...fBody }}>Payment is held by CoachNivo and releases after the session is confirmed complete.</div>
+              <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, marginTop: 3, ...fBody }}>Payment is held by CoachNivo and releases after the session is complete.</div>
             </div>
           </Card>
         )}
@@ -457,7 +458,7 @@ export function ScreenCoachBookingDetail({
         </BottomActionBar>
       )}
 
-      {[BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.COMPLETION_PENDING].includes(booking.status) && (
+      {[BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.IN_PROGRESS, BOOKING_STATUS.COMPLETION_PENDING].includes(booking.status) && (
         <BottomActionBar>
           {coachConfirmedCompletion ? (
             <div
@@ -478,14 +479,22 @@ export function ScreenCoachBookingDetail({
               }}
             >
               <Clock size={15} color={C.brand} />
-              <span>Waiting for client confirmation</span>
+              <span>Waiting for client payment</span>
             </div>
           ) : (
             <>
               {booking.status === BOOKING_STATUS.CONFIRMED && (
                 <Btn variant="outline" icon={CalendarClock} ariaLabel="Reschedule session" title="Reschedule session" onClick={() => setRescheduleOpen(true)} />
               )}
-              <Btn full icon={CheckCircle2} onClick={() => nav("coach-session-completion", { bookingId: booking.id, role: "coach", backTo: "coach-session-detail" })}>Finish session</Btn>
+              {booking.status === BOOKING_STATUS.CONFIRMED && (
+                <Btn full icon={PlayCircle} onClick={() => nav("coach-session-start", { bookingId: booking.id })}>Start session</Btn>
+              )}
+              {booking.status === BOOKING_STATUS.IN_PROGRESS && (
+                <Btn full icon={CheckCircle2} onClick={() => nav("session-progress", { bookingId: booking.id, role: "coach" })}>View live session</Btn>
+              )}
+              {booking.status === BOOKING_STATUS.COMPLETION_PENDING && (
+                <Btn full icon={CheckCircle2} onClick={() => nav("coach-session-completion", { bookingId: booking.id, role: "coach", backTo: "coach-session-detail" })}>Finish session</Btn>
+              )}
             </>
           )}
         </BottomActionBar>

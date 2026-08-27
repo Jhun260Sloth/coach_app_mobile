@@ -1,5 +1,5 @@
 import React from "react";
-import { Check, Clock3, LockKeyhole, Send, ShieldCheck, WalletCards } from "lucide-react";
+import { Check, Clock3, KeyRound, LockKeyhole, Send, ShieldCheck, WalletCards } from "lucide-react";
 import { CL, CD, T, fBody, fDisplay } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { BOOKING_STATUS, PAYMENT_STATUS, PAYOUT_STATUS } from "../../data/bookings";
@@ -16,11 +16,9 @@ export function SessionJourneyTimeline({ booking, role = "client", compact = fal
   const terminal = TERMINAL_STATUSES.includes(status);
   const accepted = ![BOOKING_STATUS.PENDING, BOOKING_STATUS.DECLINED].includes(status);
   const paid = [PAYMENT_STATUS.HELD, PAYMENT_STATUS.RELEASED].includes(booking.paymentStatus);
-  const confirmed = [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.COMPLETION_PENDING, BOOKING_STATUS.COMPLETED].includes(status);
-  const completionConfirmations = booking.completionConfirmations || (booking.completionConfirmedBy ? [booking.completionConfirmedBy] : []);
-  const oneSideConfirmed = completionConfirmations.length > 0;
-  const completionConfirmed = status === BOOKING_STATUS.COMPLETED
-    || (completionConfirmations.includes("coach") && completionConfirmations.includes("client"));
+  const confirmed = [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.IN_PROGRESS, BOOKING_STATUS.COMPLETION_PENDING, BOOKING_STATUS.COMPLETED].includes(status);
+  const sessionStarted = [BOOKING_STATUS.IN_PROGRESS, BOOKING_STATUS.COMPLETION_PENDING, BOOKING_STATUS.COMPLETED].includes(status);
+  const completionConfirmed = status === BOOKING_STATUS.COMPLETED;
   const released = booking.payoutStatus === PAYOUT_STATUS.RELEASED || booking.paymentStatus === PAYMENT_STATUS.RELEASED;
   const activeKey = terminal
     ? "stopped"
@@ -30,18 +28,21 @@ export function SessionJourneyTimeline({ booking, role = "client", compact = fal
         ? "payment"
         : !confirmed
           ? "confirmed"
-          : !completionConfirmed
-            ? "completion"
-            : !released
-              ? "release"
-              : null;
+          : !sessionStarted
+            ? "session"
+            : !completionConfirmed
+              ? "completion"
+              : !released
+                ? "release"
+                : null;
 
   const steps = [
     { key: "request", label: "Request sent", detail: role === "coach" ? "Received from the client" : "Sent to the coach", complete: true, icon: Send },
     { key: "accepted", label: "Coach accepted", detail: accepted ? "Slot reserved for payment" : "Waiting for a response", complete: accepted, icon: Check },
     { key: "payment", label: paid ? "Payment secured" : booking.paymentStatus === PAYMENT_STATUS.DUE ? "Payment due" : "Payment", detail: paid ? "Funds held securely" : booking.paymentStatus === PAYMENT_STATUS.DUE ? "Payment is due" : "Not collected", complete: paid, icon: LockKeyhole },
     { key: "confirmed", label: confirmed ? "Session confirmed" : "Session confirmation", detail: confirmed ? `${booking.date} · ${booking.time}` : "Confirms after payment", complete: confirmed, icon: ShieldCheck },
-    { key: "completion", label: completionConfirmed ? "Completion confirmed" : oneSideConfirmed ? "One confirmation received" : "Confirm completion", detail: completionConfirmed ? "Confirmed by coach and client" : oneSideConfirmed ? `${completionConfirmations.includes("coach") ? "Coach" : "Client"} confirmed · waiting for the other side` : "Both sides confirm after the session", complete: completionConfirmed, icon: Check },
+    { key: "session", label: sessionStarted ? "Session started" : "Session start", detail: sessionStarted ? "OTP verified by coach and client" : "Client generates a code, coach enters it", complete: sessionStarted, icon: KeyRound },
+    { key: "completion", label: completionConfirmed ? "Completion confirmed" : "Session completion", detail: completionConfirmed ? "Coach-driven completion agreed" : "Coach ends and settles any final charges", complete: completionConfirmed, icon: Check },
     { key: "release", label: released ? "Funds released" : "Funds release", detail: released ? (role === "coach" ? "Payout is on the way" : "Paid to the coach") : "Releases after completion", complete: released, icon: WalletCards },
   ];
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Bell, Calendar, Check, MessageCircle, Percent, ShieldAlert, Star } from "lucide-react";
+import { Bell, Calendar, Check, MessageCircle, Percent, ShieldAlert, Star, Timer } from "lucide-react";
 import { CL, CD, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { EmptyState, TopBar, ThreadSkeleton } from "../../components/ui/Primitives";
@@ -11,9 +11,10 @@ const NOTIFICATION_ICON = {
   review: Star,
   verification: ShieldAlert,
   promo: Percent,
+  session: Timer,
 };
 
-export function ScreenCoachNotifications({ nav, coachNotifications: notifications = [], setCoachNotifications }) {
+export function ScreenCoachNotifications({ nav, coachNotifications: notifications = [], setCoachNotifications, coachBookings = [] }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const [loading, setLoading] = useState(true);
@@ -32,6 +33,12 @@ export function ScreenCoachNotifications({ nav, coachNotifications: notification
         backTo: "coach-notifications",
       });
     } else if (notification.type === "verification") nav("coach-profile-edit");
+    else if (notification.type === "session" && notification.bookingId) {
+      const live = coachBookings.some((booking) => booking.id === notification.bookingId && booking.status === "in_progress");
+      if (live) nav("session-progress", { bookingId: notification.bookingId, role: "coach" });
+      else if (coachBookings.some((booking) => booking.id === notification.bookingId)) nav("coach-session-detail", { id: notification.bookingId });
+      else nav("coach-bookings");
+    }
     else if (notification.type === "booking") nav("coach-bookings");
     else if (notification.type === "review") nav("coach-dashboard");
   };

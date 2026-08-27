@@ -86,7 +86,7 @@ export function ScreenCoachDashboard({
   const pendingRequests = coachBookings.filter((b) => b.status === BOOKING_STATUS.PENDING);
   const awaitingPayment = coachBookings.filter((b) => b.status === BOOKING_STATUS.AWAITING_PAYMENT);
   const pending = [...pendingRequests, ...awaitingPayment];
-  const upcoming = coachBookings.filter((b) => [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.COMPLETION_PENDING].includes(b.status));
+  const upcoming = coachBookings.filter((b) => [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.IN_PROGRESS, BOOKING_STATUS.COMPLETION_PENDING].includes(b.status));
   const completed = coachBookings.filter((b) => b.status === BOOKING_STATUS.COMPLETED);
 
   const earningsThisWeek = upcoming.reduce((s, b) => s + b.price, 0);

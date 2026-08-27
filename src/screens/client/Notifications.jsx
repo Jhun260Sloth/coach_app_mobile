@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Bell, Calendar, MessageCircle, Star, Sparkles, Percent, CreditCard, Check, ShieldCheck } from "lucide-react";
+import { Bell, Calendar, MessageCircle, Star, Sparkles, Percent, CreditCard, Check, ShieldCheck, Timer } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { TopBar, EmptyState, ThreadSkeleton } from "../../components/ui/Primitives";
 
-const NOTIF_ICON = { booking: Calendar, message: MessageCircle, review: Star, availability: Sparkles, promo: Percent, payment: CreditCard, verification: ShieldCheck };
+const NOTIF_ICON = { booking: Calendar, message: MessageCircle, review: Star, availability: Sparkles, promo: Percent, payment: CreditCard, verification: ShieldCheck, session: Timer };
 
 // Dedicated screen instead of a bottom sheet — gives notifications room to
 // breathe (full list, no clipped height) and a natural place to grow into
@@ -30,6 +30,12 @@ export function ScreenNotifications({
     else if (n.type === "verification") nav("client-profile");
     else if (n.type === "payment" && n.chargeId) {
       nav("additional-charge-review", { chargeId: n.chargeId, role: "client", backTo: "notifications" });
+    }
+    else if (n.type === "session" && n.bookingId) {
+      const live = bookings.some((booking) => booking.id === n.bookingId && booking.status === "in_progress");
+      if (live) nav("session-progress", { bookingId: n.bookingId, role: "client" });
+      else if (bookings.some((booking) => booking.id === n.bookingId)) nav("client-booking-detail", { id: n.bookingId });
+      else nav("client-dashboard");
     }
     else if (["booking", "review", "payment"].includes(n.type)) {
       const bookingExists = n.bookingId && bookings.some((booking) => booking.id === n.bookingId);
