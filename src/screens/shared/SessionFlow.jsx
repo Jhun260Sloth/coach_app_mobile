@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle, ArrowRight, BadgeCheck, CalendarDays, CheckCircle2, Clock3,
-  Copy, KeyRound, LifeBuoy, MapPin, MessageCircle, Navigation, Phone,
-  PlayCircle, RefreshCcw, ShieldCheck, Smartphone, Timer, Video, XCircle,
+  KeyRound, LifeBuoy, MapPin, MessageCircle, Navigation, Phone,
+  PlayCircle, ShieldCheck, Smartphone, Timer, Video, XCircle,
   BellRing, ChevronRight,
 } from "lucide-react";
 import { CL, CD, T, fBody, fDisplay, LAYOUT } from "../../theme/theme";
@@ -49,8 +49,8 @@ function resolveSessionDetails(booking, role, coachProfile) {
 }
 
 function mmss(totalSeconds) {
-  const s = Math.max(0, Math.floor(totalSeconds));
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  const seconds = Math.max(0, Math.floor(totalSeconds));
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
 /* -------------------------------------------------------------------------
@@ -119,24 +119,27 @@ function CodeBoxes({ digits, onSetDigit, disabled = false, error = false, onKeyD
 /* -------------------------------------------------------------------------
    BigCodeDisplay — read-only 6-digit display for the client
    ------------------------------------------------------------------------- */
-function BigCodeDisplay({ code }) {
+function BigCodeDisplay({ code, color }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const digits = String(code || "").padEnd(6, "•").split("");
   return (
-    <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+    <div
+      role="group"
+      aria-label={`Your six-digit session PIN is ${digits.join(" ")}`}
+      style={{ display: "grid", gridTemplateColumns: "repeat(6, minmax(0, 1fr))", gap: 4, width: "100%" }}
+    >
       {digits.map((d, i) => (
-        <div
+        <span
           key={i}
           style={{
-            width: 48, height: 62, borderRadius: 16, background: C.brandTint,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: T.displayLg, fontWeight: 800, color: C.brandIcon || C.brand, ...fDisplay,
-            letterSpacing: "0.5px",
+            minWidth: 0, textAlign: "center", lineHeight: 1,
+            fontSize: T.heroLg, fontWeight: 700, color: color || C.jet,
+            letterSpacing: "0.5px", ...fDisplay,
           }}
         >
           {d}
-        </div>
+        </span>
       ))}
     </div>
   );
@@ -164,22 +167,27 @@ export function ScreenClientSessionStart({
 
   const details = resolveSessionDetails(booking, "client", coachProfile);
   const person = booking.coachName || "your coach";
+  const coach = COACHES.find((item) => item.id === booking.coachId)
+    || COACHES.find((item) => item.name === booking.coachName);
   const hasActiveCode = !!booking.sessionCode && booking.status === BOOKING_STATUS.CONFIRMED;
 
   const handleGenerate = () => {
     if (generating) return;
+    if (hasActiveCode) {
+      nav("client-session-code", { bookingId: booking.id });
+      return;
+    }
     setGenerating(true);
     haptic(12);
     window.setTimeout(() => {
       const code = generateSessionCode?.(booking.id);
       setGenerating(false);
       if (code) {
-        toast("Session code generated");
         nav("client-session-code", { bookingId: booking.id });
       } else {
-        toast("This session can't start yet");
+        toast("Check-in isn't available yet");
       }
-    }, 550);
+    }, 350);
   };
 
   const goLive = () => nav("session-progress", { bookingId: booking.id, role: "client" });
@@ -188,42 +196,20 @@ export function ScreenClientSessionStart({
     <div style={{ height: "100%", display: "flex", flexDirection: "column", background: C.white }}>
       <TopBar title="Start session" onBack={() => nav("client-booking-detail", { id: booking.id })} right={<StatusPill status={booking.status} />} />
       <div style={{ flex: 1, overflowY: "auto", padding: `12px ${LAYOUT.pagePadX}px 26px` }} className="cl-hide-scrollbar">
-        <div style={{ textAlign: "center", padding: "6px 10px 20px" }}>
-          <div style={{ width: 66, height: 66, borderRadius: 22, background: C.brandTint, margin: "0 auto 14px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <PlayCircle size={31} color={C.brand} strokeWidth={2} />
+        <div style={{ textAlign: "center", padding: "8px 10px 22px" }}>
+          <div style={{ width: 66, height: 66, borderRadius: 22, background: C.black, margin: "0 auto 14px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <PlayCircle size={30} color={C.white} strokeWidth={2} />
           </div>
-          <div style={{ fontSize: T.display, fontWeight: 750, color: C.jet, letterSpacing: "-0.35px", ...fDisplay }}>Ready to start?</div>
+          <div style={{ fontSize: T.display, fontWeight: 750, color: C.jet, letterSpacing: "-0.35px", ...fDisplay }}>Meet your coach</div>
           <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.55, marginTop: 7, ...fBody }}>
-            Generate a check-in code and share it with {person.split(" ")[0]} — they'll enter it to start your session.
+            When you're together, show {person.split(" ")[0]} your check-in PIN to begin the session.
           </div>
         </div>
-
-        <Card style={{ marginBottom: 12, padding: 15 }}>
-          <SectionLabel>How check-in works</SectionLabel>
-          {[
-            { icon: KeyRound, title: "Generate your code", detail: `A unique 6-digit code, valid for ${Math.round(SESSION_OTP.TTL_SECONDS / 60)} minutes.` },
-            { icon: Smartphone, title: "Share it with your coach", detail: "Show it in person or message it to them in the chat." },
-            { icon: BadgeCheck, title: "Coach starts the session", detail: "Once they enter the code, your session goes live — and your payment stays protected." },
-          ].map((step, i) => {
-            const Icon = step.icon;
-            return (
-              <div key={step.title} style={{ display: "flex", gap: 11, alignItems: "flex-start", padding: "9px 0", borderTop: i > 0 ? `1px solid ${C.border}` : "none" }}>
-                <div style={{ width: 30, height: 30, borderRadius: 10, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <Icon size={15} color={C.brandIcon || C.brand} />
-                </div>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>{i + 1}. {step.title}</div>
-                  <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, marginTop: 2, ...fBody }}>{step.detail}</div>
-                </div>
-              </div>
-            );
-          })}
-        </Card>
 
         <SectionLabel>Session details</SectionLabel>
         <Card style={{ marginBottom: 12, padding: 15 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 11 }}>
-            <Avatar name={person} size={42} />
+            <Avatar name={person} size={42} src={coach?.avatar} />
             <div style={{ minWidth: 0, flex: 1 }}>
               <div style={{ fontSize: T.subtitle, fontWeight: 700, color: C.jet, ...fDisplay }}>{booking.service}</div>
               <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 3, ...fBody }}>with {person}</div>
@@ -244,7 +230,7 @@ export function ScreenClientSessionStart({
               <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>{details.online ? "Online session" : details.venue}</div>
               <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, marginTop: 3, ...fBody }}>
                 {details.online
-                  ? "Your coach admits you once the code is verified. Make sure your camera and connection are ready."
+                  ? "Your coach will meet you here at the scheduled time. Make sure your camera and connection are ready."
                   : `${details.suburb ? `${details.suburb} · ` : ""}Arrive a few minutes early and look out for your coach.`}
               </div>
             </div>
@@ -275,8 +261,8 @@ export function ScreenClientSessionStart({
           </>
         )}
 
-        <Card style={{ display: "flex", gap: 11, alignItems: "flex-start", background: C.successTint, border: "none" }}>
-          <ShieldCheck size={19} color={C.success} style={{ flexShrink: 0 }} />
+        <Card style={{ display: "flex", gap: 11, alignItems: "flex-start", background: C.fog }}>
+          <ShieldCheck size={19} color={C.jet} style={{ flexShrink: 0 }} />
           <div>
             <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>Your payment is protected</div>
             <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.55, marginTop: 4, ...fBody }}>CoachNivo holds your payment securely and releases it only after the session is complete.</div>
@@ -290,8 +276,8 @@ export function ScreenClientSessionStart({
         )}
         {booking.status !== BOOKING_STATUS.IN_PROGRESS && (
           <>
-            <Btn full loading={generating} loadingText="Generating code…" icon={KeyRound} onClick={handleGenerate}>
-              {hasActiveCode ? "View your session code" : "Generate session code"}
+            <Btn full loading={generating} loadingText="Preparing check-in…" icon={KeyRound} onClick={handleGenerate}>
+              Show check-in PIN
             </Btn>
             <Btn full variant="outline" icon={MessageCircle} onClick={() => nav("chat-thread", { name: booking.coachName, context: `${booking.service} · ${booking.date}`, bookingId: booking.id, backTo: "client-session-start", backParams: { bookingId: booking.id } })}>
               Message {person.split(" ")[0]}
@@ -304,7 +290,7 @@ export function ScreenClientSessionStart({
 }
 
 /* -------------------------------------------------------------------------
-   ScreenClientSessionCode — big code display + countdown + live handoff
+   ScreenClientSessionCode — calm, ride-style PIN handoff + coach details
    ------------------------------------------------------------------------- */
 export function ScreenClientSessionCode({
   nav, goBack, params, bookings = [], coachBookings = [], generateSessionCode, toast,
@@ -313,23 +299,32 @@ export function ScreenClientSessionCode({
   const C = darkMode ? CD : CL;
   const booking = findBooking(params?.bookingId, "client", bookings, coachBookings);
   const [starting, setStarting] = useState(false);
-  const [now, setNow] = useState(Date.now());
-  const [regenerating, setRegenerating] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   // Seeded demo codes may not carry an expiry — give them a fresh TTL window
-  // when first viewed so the countdown behaves like a real generated code.
+  // while keeping that implementation detail out of the customer experience.
   const [fallbackExpiresAt] = useState(() => Date.now() + SESSION_OTP.TTL_SECONDS * 1000);
 
   const code = booking?.sessionCode;
   const storedExpiresAt = Number(booking?.codeExpiresAt || 0);
   const expiresAt = storedExpiresAt > 0 ? storedExpiresAt : fallbackExpiresAt;
-  const remaining = code ? Math.max(0, (expiresAt - now) / 1000) : 0;
-  const expired = !!code && remaining <= 0 && booking?.status === BOOKING_STATUS.CONFIRMED;
-  const voided = !code && booking?.status === BOOKING_STATUS.CONFIRMED;
+  const [expired, setExpired] = useState(() => (
+    !!code && booking?.status === BOOKING_STATUS.CONFIRMED && expiresAt <= Date.now()
+  ));
 
   useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(t);
-  }, []);
+    if (!code || booking?.status !== BOOKING_STATUS.CONFIRMED) {
+      setExpired(false);
+      return undefined;
+    }
+    const remainingMs = expiresAt - Date.now();
+    if (remainingMs <= 0) {
+      setExpired(true);
+      return undefined;
+    }
+    setExpired(false);
+    const timeout = window.setTimeout(() => setExpired(true), remainingMs + 50);
+    return () => window.clearTimeout(timeout);
+  }, [code, expiresAt, booking?.status]);
 
   // Coach verified the code — celebrate briefly, then jump to the live screen.
   useEffect(() => {
@@ -343,160 +338,159 @@ export function ScreenClientSessionCode({
   if (!booking) {
     return (
       <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-        <TopBar title="Session code" onBack={() => goBack("client-dashboard")} />
+        <TopBar title="Session PIN" subtitle="Show this to your coach at check-in." onBack={() => goBack("client-dashboard")} />
         <EmptyState icon={KeyRound} title="Session not found" body="This session may no longer be available." />
       </div>
     );
   }
 
   const person = booking.coachName || "your coach";
-  const expiresAtLabel = expiresAt ? new Date(expiresAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
-  const progressPct = expiresAt ? Math.min(100, Math.max(0, (remaining / SESSION_OTP.TTL_SECONDS) * 100)) : 0;
+  const shortName = person.split(" ")[0];
+  const coach = COACHES.find((item) => item.id === booking.coachId)
+    || COACHES.find((item) => item.name === booking.coachName);
+  const details = resolveSessionDetails(booking, "client");
+  const unavailable = !code || expired;
+  const heroMuted = darkMode ? C.slate : C.onDark;
+  const heroDivider = darkMode ? C.border : C.onDarkDivider;
 
-  const regenerate = () => {
-    if (regenerating) return;
-    setRegenerating(true);
+  const refreshPin = () => {
+    if (refreshing) return;
+    setRefreshing(true);
     haptic(12);
     window.setTimeout(() => {
       const next = generateSessionCode?.(booking.id);
-      setRegenerating(false);
-      if (next) toast("A new code was generated");
-      else toast("Couldn't refresh the code");
-    }, 500);
+      setRefreshing(false);
+      if (next) toast("Your check-in PIN is ready");
+      else toast("Check-in isn't available yet");
+    }, 350);
   };
 
-  const copyCode = () => {
-    if (!code) return;
+  const callCoach = () => {
     haptic(8);
-    try {
-      navigator.clipboard?.writeText?.(code);
-      toast("Code copied to clipboard");
-    } catch {
-      toast(`Your code is ${code}`);
-    }
+    toast(`Calling ${shortName}…`);
   };
+
+  const messageCoach = () => nav("chat-thread", {
+    name: booking.coachName,
+    context: `${booking.service} · ${booking.date}`,
+    bookingId: booking.id,
+    backTo: "client-session-code",
+    backParams: { bookingId: booking.id },
+  });
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", background: C.white }}>
-      <TopBar title="Session code" onBack={() => nav("client-session-start", { bookingId: booking.id })} />
+      <TopBar title="Session PIN" subtitle="Show this to your coach at check-in." onBack={() => nav("client-session-start", { bookingId: booking.id })} />
 
       {starting && (
         <div style={{ position: "absolute", inset: 0, zIndex: 40, background: C.white, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 28, animation: "clFadeIn .25s ease" }}>
-          <div style={{ width: 92, height: 92, borderRadius: 30, background: C.successTint, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, animation: "clPopIn .35s cubic-bezier(.22,1,.36,1)" }}>
-            <CheckCircle2 size={44} color={C.success} />
+          <div style={{ width: 92, height: 92, borderRadius: 30, background: C.black, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, animation: "clPopIn .35s cubic-bezier(.22,1,.36,1)" }}>
+            <CheckCircle2 size={44} color={C.white} />
           </div>
-          <div style={{ fontSize: T.displayLg, fontWeight: 750, color: C.jet, ...fDisplay }}>Session started!</div>
+          <div style={{ fontSize: T.displayLg, fontWeight: 750, color: C.jet, ...fDisplay }}>Check-in confirmed</div>
           <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.55, marginTop: 8, textAlign: "center", ...fBody }}>
-            {person.split(" ")[0]} verified your code. Taking you to the live session…
+            {shortName} confirmed the PIN. Your session is starting…
           </div>
         </div>
       )}
 
-      <div style={{ flex: 1, overflowY: "auto", padding: `12px ${LAYOUT.pagePadX}px 26px` }} className="cl-hide-scrollbar">
-        <div style={{ textAlign: "center", padding: "6px 10px 20px" }}>
-          <div style={{ width: 66, height: 66, borderRadius: 22, background: C.brandTint, margin: "0 auto 14px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <KeyRound size={30} color={C.brand} strokeWidth={2} />
+      <div style={{ flex: 1, overflowY: "auto", padding: `16px ${LAYOUT.pagePadX}px max(${LAYOUT.ctaPadBottom}px, env(safe-area-inset-bottom))` }} className="cl-hide-scrollbar">
+        <Card style={{ padding: 22, borderRadius: 26, marginBottom: 20, background: C.black, border: `1px solid ${C.black}`, boxShadow: "0 16px 34px rgba(0,0,0,.16)", animation: "clFadeUp .35s ease" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+              <ShieldCheck size={16} color={C.white} strokeWidth={2.2} style={{ flexShrink: 0 }} />
+              <span style={{ fontSize: T.label, fontWeight: 700, letterSpacing: "0.7px", color: C.white, textTransform: "uppercase", ...fBody }}>
+                Session check-in
+              </span>
+            </div>
+            {!unavailable && (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: T.captionLg, fontWeight: 600, color: heroMuted, ...fBody }}>
+                <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: LAYOUT.pillRadius, background: C.brand }} />
+                Ready
+              </span>
+            )}
           </div>
-          <div style={{ fontSize: T.display, fontWeight: 750, color: C.jet, letterSpacing: "-0.35px", ...fDisplay }}>
-            {voided ? (expired ? "Your code expired" : "No active code") : "Share this code"}
+
+          <div style={{ marginTop: 28 }}>
+            <div style={{ fontSize: T.displayLg, fontWeight: 700, lineHeight: 1.15, letterSpacing: "-0.45px", color: C.white, ...fDisplay }}>
+              {unavailable ? "Your PIN isn't ready" : `Check in with ${shortName}`}
+            </div>
+            <div style={{ marginTop: 8, fontSize: T.body, lineHeight: 1.55, color: heroMuted, ...fBody }}>
+              {unavailable
+                ? "Get a new PIN when you're with your coach."
+                : `Show ${shortName} this PIN when you meet.`}
+            </div>
           </div>
-          <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.55, marginTop: 7, ...fBody }}>
-            {voided
-              ? "Generate a fresh code and share it with your coach to continue."
-              : `Tell ${person.split(" ")[0]} these 6 digits — they'll enter them to start the session.`}
-          </div>
-        </div>
 
-        {!voided && (
-          <>
-            <button type="button" onClick={copyCode} aria-label="Copy session code" style={{ width: "100%", background: "none", border: "none", padding: "6px 0 4px", cursor: "pointer" }}>
-              <BigCodeDisplay code={code} />
-              <div style={{ marginTop: 12, display: "flex", justifyContent: "center", gap: 6, alignItems: "center", fontSize: T.label, fontWeight: 600, color: C.brand, ...fBody }}>
-                <Copy size={13} /> Tap to copy
-              </div>
-            </button>
-
-            <Card style={{ marginTop: 16, marginBottom: 12, padding: 15 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Timer size={15} color={C.brand} />
-                  <span style={{ fontSize: T.labelLg, fontWeight: 700, color: C.jet, ...fBody }}>
-                    {expired ? "Code expired" : `Expires in ${mmss(remaining)}`}
-                  </span>
-                </div>
-                <span style={{ fontSize: T.caption, color: C.slateLight, ...fBody }}>{expiresAtLabel}</span>
-              </div>
-              <div style={{ height: 5, borderRadius: 99, background: C.fog, marginTop: 10, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${progressPct}%`, borderRadius: 99, background: expired ? C.error : C.brand, transition: "width 1s linear" }} />
-              </div>
-              <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, marginTop: 9, ...fBody }}>
-                Codes refresh automatically after {Math.round(SESSION_OTP.TTL_SECONDS / 60)} minutes for security.
-              </div>
-            </Card>
-          </>
-        )}
-
-        {expired && (
-          <Card style={{ marginBottom: 12, display: "flex", alignItems: "flex-start", gap: 11, background: C.warnTint, border: "none" }}>
-            <XCircle size={19} color={C.warnStrong} style={{ flexShrink: 0 }} />
-            <div>
-              <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>This code is no longer valid</div>
-              <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.55, marginTop: 4, ...fBody }}>Generate a new one and share it with your coach — the old code can't be used again.</div>
+          {!unavailable && (
+            <div style={{ marginTop: 30, padding: "22px 0 20px", borderTop: `1px solid ${heroDivider}`, borderBottom: `1px solid ${heroDivider}` }}>
+              <BigCodeDisplay code={code} color={C.white} />
             </div>
-          </Card>
-        )}
+          )}
 
-        {voided && (
-          <Card style={{ marginBottom: 12, display: "flex", alignItems: "flex-start", gap: 11, background: C.errorTint, border: "none" }}>
-            <XCircle size={19} color={C.error} style={{ flexShrink: 0 }} />
-            <div>
-              <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>Code not available</div>
-              <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.55, marginTop: 4, ...fBody }}>Generate a new code to continue your check-in.</div>
-            </div>
-          </Card>
-        )}
-
-        {!voided && (
-          <Card style={{ marginBottom: 12, display: "flex", gap: 11, alignItems: "flex-start" }}>
-            <div style={{ width: 38, height: 38, borderRadius: 12, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <Clock3 size={18} color={C.brandIcon || C.brand} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>
-                Waiting for your coach
-                <span style={{ width: 6, height: 6, borderRadius: 99, background: C.brand, animation: "clPulse 1.4s infinite" }} />
-              </div>
-              <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.55, marginTop: 3, ...fBody }}>
-                Once {person.split(" ")[0]} enters the code, your session goes live and we'll take you straight there.
-              </div>
-            </div>
-          </Card>
-        )}
-
-        <Card style={{ marginBottom: 12, display: "flex", gap: 11, alignItems: "flex-start", background: C.successTint, border: "none" }}>
-          <ShieldCheck size={19} color={C.success} style={{ flexShrink: 0 }} />
-          <div>
-            <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>Why a code?</div>
-            <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.55, marginTop: 4, ...fBody }}>It proves you and your coach are both at the right session, and keeps your payment protected until you're done.</div>
+          <div style={{ marginTop: unavailable ? 24 : 18, fontSize: T.captionLg, lineHeight: 1.5, color: heroMuted, ...fBody }}>
+            {unavailable
+              ? "We'll prepare it securely for this session."
+              : "Your coach enters the PIN to confirm you're together and begin."}
           </div>
         </Card>
 
-        <Btn full variant="ghost" icon={RefreshCcw} loading={regenerating} loadingText="Generating…" onClick={regenerate}>
-          Generate a new code
-        </Btn>
-      </div>
-
-      <div style={{ padding: `12px ${LAYOUT.pagePadX}px max(${LAYOUT.ctaPadBottom}px, env(safe-area-inset-bottom))`, borderTop: `1px solid ${C.border}`, background: C.white, display: "flex", flexDirection: "column", gap: 9 }}>
-        {!voided ? (
-          <>
-            <Btn full icon={Copy} onClick={copyCode}>Copy code</Btn>
-            <Btn full variant="outline" icon={MessageCircle} onClick={() => { haptic(8); toast(`Code shared with ${person.split(" ")[0]} in chat`); }}>
-              Share with coach
-            </Btn>
-          </>
-        ) : (
-          <Btn full icon={KeyRound} loading={regenerating} loadingText="Generating…" onClick={regenerate}>Generate session code</Btn>
+        {unavailable && (
+          <Btn full icon={KeyRound} loading={refreshing} loadingText="Preparing check-in…" style={{ marginBottom: 20 }} onClick={refreshPin}>
+            Get check-in PIN
+          </Btn>
         )}
+
+        <SectionLabel>Your coach</SectionLabel>
+        <Card style={{ padding: 16, marginBottom: 18 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <Avatar name={person} src={coach?.avatar} size={58} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+                <div style={{ fontSize: T.title, fontWeight: 700, color: C.jet, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", ...fDisplay }}>{person}</div>
+                {coach?.verified?.identity && <BadgeCheck aria-label="Verified coach" size={16} color={C.brand} fill={C.brandTint} style={{ flexShrink: 0 }} />}
+              </div>
+              <div style={{ marginTop: 3, fontSize: T.captionLg, color: C.slate, ...fBody }}>
+                {[coach?.sport, coach?.rating ? `${coach.rating} rating` : null].filter(Boolean).join(" · ") || "Your coach"}
+              </div>
+            </div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 16 }}>
+            <Btn full variant="secondary" icon={Phone} onClick={callCoach}>Call</Btn>
+            <Btn full variant="outline" icon={MessageCircle} onClick={messageCoach}>Message</Btn>
+          </div>
+        </Card>
+
+        <SectionLabel>Session</SectionLabel>
+        <Card style={{ padding: 16 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 11, paddingBottom: 13, marginBottom: 13, borderBottom: `1px solid ${C.border}` }}>
+            <div style={{ width: 40, height: 40, borderRadius: 13, background: C.fog, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <PlayCircle size={18} color={C.jet} />
+            </div>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.jet, lineHeight: 1.35, ...fBody }}>{booking.service}</div>
+              <div style={{ marginTop: 3, fontSize: T.captionLg, color: C.slate, ...fBody }}>{booking.mode}</div>
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+              <CalendarDays size={17} color={C.slate} style={{ flexShrink: 0 }} />
+              <span style={{ flex: 1, minWidth: 0, fontSize: T.body, color: C.jet, ...fBody }}>{booking.date}</span>
+              <span style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{booking.time}</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 11 }}>
+              {details.online ? <Video size={17} color={C.slate} style={{ flexShrink: 0, marginTop: 1 }} /> : <MapPin size={17} color={C.slate} style={{ flexShrink: 0, marginTop: 1 }} />}
+              <span style={{ minWidth: 0, fontSize: T.body, lineHeight: 1.45, color: C.jet, ...fBody }}>{details.online ? "Online session" : details.venue}</span>
+            </div>
+          </div>
+
+          {!details.online && (
+            <Btn full variant="outline" icon={Navigation} style={{ marginTop: 16 }} onClick={() => { haptic(8); toast(`Opening directions to ${details.venue}`); }}>
+              Get directions
+            </Btn>
+          )}
+        </Card>
       </div>
     </div>
   );

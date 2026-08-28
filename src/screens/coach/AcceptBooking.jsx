@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { haptic } from "../../utils/haptics";
 import {
-  ArrowRight, BadgeDollarSign, CalendarDays, Check, Info,
+  ArrowRight, BadgeDollarSign, CalendarDays, Info,
   LockKeyhole, MessageSquareText, Plus, ShieldCheck, Sparkles, Trash2,
 } from "lucide-react";
 import { CL, CD, fBody, fDisplay, T, LAYOUT } from "../../theme/theme";
@@ -13,7 +13,7 @@ import {
 
 function CostTypeBadge({ kind }) {
   const required = kind === ADDITIONAL_CHARGE_KIND.REQUIRED;
-  return <Badge tone={required ? "orange" : "success"}>{required ? "Required" : "Optional"}</Badge>;
+  return <Badge tone="orange">{required ? "Required" : "Optional"}</Badge>;
 }
 
 function CostEditor({ open, kind, onClose, onSave }) {
@@ -50,8 +50,8 @@ function CostEditor({ open, kind, onClose, onSave }) {
       footer={<Btn full disabled={!valid} icon={Plus} onClick={save}>Add to payment request</Btn>}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <div style={{ padding: 12, borderRadius: 14, background: required ? C.warnTint : C.successTint, display: "flex", gap: 10 }}>
-          {required ? <LockKeyhole size={17} color={C.warnStrong} style={{ flexShrink: 0, marginTop: 1 }} /> : <Sparkles size={17} color={C.success} style={{ flexShrink: 0, marginTop: 1 }} />}
+        <div style={{ padding: 12, borderRadius: 14, background: required ? C.warnTint : C.brandTint, display: "flex", gap: 10 }}>
+          {required ? <LockKeyhole size={17} color={C.warnStrong} style={{ flexShrink: 0, marginTop: 1 }} /> : <Sparkles size={17} color={C.brand} style={{ flexShrink: 0, marginTop: 1 }} />}
           <div style={{ fontSize: T.captionLg, lineHeight: 1.5, color: C.slate, ...fBody }}>
             {required
               ? "The client must pay this amount with the package price to confirm their booking."
@@ -129,8 +129,8 @@ export function ScreenCoachAcceptBooking({ nav, params, coachBookings = [], acce
         borderRadius: 14, background: C.white,
       }}
     >
-      <div style={{ width: 36, height: 36, borderRadius: 11, background: cost.kind === ADDITIONAL_CHARGE_KIND.REQUIRED ? C.warnTint : C.successTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-        {cost.kind === ADDITIONAL_CHARGE_KIND.REQUIRED ? <LockKeyhole size={16} color={C.warnStrong} /> : <Sparkles size={16} color={C.success} />}
+      <div style={{ width: 36, height: 36, borderRadius: 11, background: cost.kind === ADDITIONAL_CHARGE_KIND.REQUIRED ? C.warnTint : C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        {cost.kind === ADDITIONAL_CHARGE_KIND.REQUIRED ? <LockKeyhole size={16} color={C.warnStrong} /> : <Sparkles size={16} color={C.brand} />}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
@@ -244,12 +244,9 @@ export function ScreenCoachAcceptBooking({ nav, params, coachBookings = [], acce
             <Btn full variant="secondary" icon={Sparkles} onClick={() => setEditorKind(ADDITIONAL_CHARGE_KIND.OPTIONAL)}>Add optional add-on</Btn>
 
             <Card style={{ marginTop: 20, padding: 16, background: C.brandTint, border: "none" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 10 }}>
-                <div>
-                  <div style={{ fontSize: T.captionLg, color: C.slate, ...fBody }}>Required at checkout</div>
-                  <div style={{ fontSize: T.headingLg, fontWeight: 800, color: C.jet, marginTop: 2, ...fDisplay }}>${dueNow.toFixed(2)}</div>
-                </div>
-                <Badge tone="success" icon={Check}>Client reviews first</Badge>
+              <div style={{ marginBottom: 10 }}>
+                <div style={{ fontSize: T.captionLg, color: C.slate, ...fBody }}>Required at checkout</div>
+                <div style={{ fontSize: T.headingLg, fontWeight: 800, color: C.jet, marginTop: 2, ...fDisplay }}>${dueNow.toFixed(2)}</div>
               </div>
               <Row label="Package" value={`$${Number(booking.price).toFixed(2)}`} />
               <Row label="Required costs" value={`$${requiredTotal.toFixed(2)}`} />
