@@ -1127,7 +1127,7 @@ export function ScreenBookingParticipantDetails({ nav, params, draft, toast }) {
         title="Participant details"
         onBack={() => {
           if (currentIndex > 0) setCurrentIndex((i) => i - 1);
-          else nav("booking-datetime", params);
+          else nav("booking-participants", params);
         }}
       />
 

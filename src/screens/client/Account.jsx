@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Edit3, Bell, CreditCard, Fingerprint, Lock, FileText, Shield, HelpCircle, LogOut, Users, ChevronRight,
+  Edit3, Bell, CreditCard, Fingerprint, Lock, Shield, HelpCircle, LogOut, Users, ChevronRight,
   Mail, Phone, User, Plus, Trash2, Eye, EyeOff, AlertTriangle, Camera, MapPin, Target, Calendar, UserPlus, Download,
   CalendarDays, CreditCard as CardIcon, Stethoscope, UserCheck, History as HistoryIcon, MessageCircle, Star,
   Sparkles, Percent, ShieldCheck,
@@ -376,7 +376,6 @@ const closeSheet = () => setSheet(null);
         </SettingsGroup>
 
         <SettingsGroup title="Privacy">
-          <SettingsRow icon={FileText} label="Export my data" onClick={() => toast("We'll email your data export shortly")} />
           <SettingsRow icon={Shield} label="Privacy policy" onClick={() => setSheet("privacy")} />
         </SettingsGroup>
 

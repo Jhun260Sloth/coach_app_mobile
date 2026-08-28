@@ -412,7 +412,19 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
       </div>
 
       <div style={{ padding: "14px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
-        <Btn full disabled={!canContinue} onClick={() => nav("booking-datetime", { coachId: coach.id, packageId: pkg.id, participants, presetDate: params.presetDate, presetTime: params.presetTime })}>Continue</Btn>
+        <Btn
+          full
+          disabled={!canContinue}
+          onClick={() => {
+            const includesChildProfile = participants.some((id) => id !== "self" && children.some((child) => child.id === id));
+            nav(
+              includesChildProfile ? "booking-participant-details" : "booking-review",
+              { coachId: coach.id, packageId: pkg.id, participants, presetDate: params.presetDate, presetTime: params.presetTime }
+            );
+          }}
+        >
+          Continue
+        </Btn>
       </div>
 
       {/* Slide-in "Add Child Profile" modal — creates the participant right
@@ -469,21 +481,29 @@ export function ScreenBookingParticipants({ nav, params, children = [], addChild
   );
 }
 
-export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings = [] }) {
-  const { darkMode, children, coachProfile } = useApp();
+/**
+ * Unified Review & Confirm Booking screen:
+ * Consolidates session date/time overview, participant confirmation,
+ * optional recurring schedule, child safeguarding details (if minor),
+ * pre-session message, cancellation notice, price breakdown, and submission.
+ */
+export function ScreenBookingReview({ nav, goBack, params, draft, setDraft, toast, children = [], bookings = [], addBooking }) {
+  const { darkMode, clientIdentity, clientPrefs, coachProfile } = useApp();
   const C = darkMode ? CD : CL;
   const { coach, pkg } = resolveBookingCoachPkg(params, draft, coachProfile);
   const pub = getPublicName(coach, "public");
+
   const participantIds = Array.isArray(params?.participants) && params.participants.length
     ? params.participants
-    : ["self"];
+    : (Array.isArray(draft?.participants) ? draft.participants : ["self"]);
+  const selectedChildren = children.filter((c) => participantIds.includes(c.id));
   const participantNames = participantIds.map((id) => {
     if (id === "self") return "You";
     return children.find((child) => String(child.id) === String(id))?.name || "Participant";
   });
   const participantSummary = participantNames.length > 2
     ? `${participantNames.slice(0, 2).join(", ")} +${participantNames.length - 2}`
-    : participantNames.join(" and ");
+    : (participantNames.length ? participantNames.join(" and ") : "You");
 
   const changeParticipant = () => nav("booking-participants", {
     coachId: coach.id,
@@ -493,24 +513,14 @@ export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings =
     presetTime: params.presetTime,
   });
 
-  // Date & time are chosen earlier in the flow (the coach's Packages tab, or
-  // the package details screen) and simply arrive here as params — this
-  // screen no longer re-picks them, it just confirms them alongside repeat
-  // options and the running total.
-  const selectedDate = params.presetDate ? new Date(params.presetDate) : null;
-  const time = params.presetTime || null;
+  const selectedDate = params.presetDate ? new Date(params.presetDate) : (draft?.day ? new Date(draft.day) : null);
+  const time = params.presetTime || draft?.time || null;
   const hasDateTime = !!selectedDate && !!time;
 
-  // If the client already stepped through this screen for this exact
-  // coach/package (e.g. they continued to Review Booking and then hit back),
-  // restore whatever repeat settings they'd chosen instead of resetting to
-  // the defaults below.
+  // Repeat booking state (optional)
   const savedRepeat = draft && draft.coach?.id === coach.id && draft.pkg?.id === pkg.id
     ? draft.repeat
     : null;
-
-  // Repeat booking — optional. Off by default, so a one-time session needs
-  // no extra input at all.
   const [repeatEnabled, setRepeatEnabled] = useState(!!savedRepeat && savedRepeat.freq !== "once");
   const [repeatFreq, setRepeatFreq] = useState(savedRepeat && savedRepeat.freq !== "once" ? savedRepeat.freq : "weekly");
   const [repeatEvery, setRepeatEvery] = useState(savedRepeat?.every || 1);
@@ -521,8 +531,7 @@ export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings =
     ? { freq: repeatFreq, every: repeatEvery, endType: endAfterType, endDate }
     : { freq: "once" };
 
-  // Schedule conflict — does the client already have a pending/confirmed session
-  // at this exact day & time (with any coach)?
+  // Conflict detection
   const conflictBooking = hasDateTime
     ? bookings.find((b) => {
         if (!["pending", "confirmed"].includes(b.status)) return false;
@@ -531,196 +540,13 @@ export function ScreenBookingDateTime({ nav, params, draft, setDraft, bookings =
       })
     : null;
 
-  const sessionCount = hasDateTime ? computeSessionCount(repeat, params.presetDate) : null;
+  const sessionCount = hasDateTime ? computeSessionCount(repeat, params.presetDate) : 1;
   const needsEndDate = repeatEnabled && endAfterType === "date" && !endDate;
-  const totalPrice = sessionCount ? pkg.price * sessionCount : null;
+  const subtotal = pkg.price * sessionCount;
+  const fee = Math.round(subtotal * CONFIG.serviceFeeRate * 100) / 100;
+  const totalPrice = subtotal + fee;
 
-  const canContinue = hasDateTime && !conflictBooking && !needsEndDate;
-
-  return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title="Confirm Session" onBack={changeParticipant} />
-
-      <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
-        <div style={{ fontSize: T.labelLg, color: C.slate, lineHeight: 1.5, marginBottom: 18, ...fBody }}>
-          Review your session below, and set it up to repeat if you'd like.
-        </div>
-
-        <Card style={{ marginBottom: 18, border: `1px solid ${C.border}` }}>
-          <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: hasDateTime ? 12 : 0 }}>
-            <Avatar name={pub.name} size={40} />
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: T.subtitle, fontWeight: 700, color: C.jet, ...fDisplay }}>{pkg.name}</div>
-              <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, ...fBody }}>with {pub.name} · {pkg.duration} min</div>
-            </div>
-            <div style={{ marginLeft: "auto", fontSize: T.subtitleLg, fontWeight: 800, color: C.jet, whiteSpace: "nowrap", ...fDisplay }}>${pkg.price}</div>
-          </div>
-          {hasDateTime && (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
-              <Calendar size={15} color={C.brand} />
-              <span style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>
-                {formatFullDateFromDate(selectedDate)} · {formatTimeRange12(time, pkg.duration)}
-              </span>
-            </div>
-          )}
-        </Card>
-
-        <div
-          role="note"
-          aria-label={`Booking participants: ${participantSummary}`}
-          style={{
-            display: "flex", alignItems: "center", gap: 10, marginBottom: 18, padding: "11px 12px",
-            borderRadius: 14, border: `1px solid ${C.border}`, background: C.fog,
-          }}
-        >
-          <div style={{ width: 34, height: 34, borderRadius: 11, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <Users size={16} color={C.brand} aria-hidden="true" />
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: T.labelLg, fontWeight: 700, color: C.jet, ...fBody }}>Attending: {participantSummary}</div>
-            <div style={{ marginTop: 2, fontSize: T.caption, lineHeight: 1.4, color: C.slate, ...fBody }}>
-              Booking for someone else? Select a different participant.
-            </div>
-          </div>
-          <Btn variant="ghost" size="sm" onClick={changeParticipant}>Change</Btn>
-        </div>
-
-        {!hasDateTime && (
-          <Card style={{ marginBottom: 18, textAlign: "center" }}>
-            <span style={{ fontSize: T.labelLg, color: C.slate, ...fBody }}>No date or time was selected for this package yet.</span>
-            <div style={{ marginTop: 12 }}>
-              <Btn size="sm" onClick={() => nav("coach-profile", { id: coach.id })}>Choose a time</Btn>
-            </div>
-          </Card>
-        )}
-
-        {hasDateTime && conflictBooking && (
-          <div style={{ marginBottom: 18 }}>
-            <StatusBanner
-              state="scheduleConflict"
-              message={`You already have ${conflictBooking.service} with ${(() => { const cc = COACHES.find((c) => c.id === conflictBooking.coachId); return getPublicName(cc || { name: conflictBooking.coachName }, "confirmed").name; })()} at this time.`}
-              onPrimary={() => nav("coach-profile", { id: coach.id })}
-              primaryLabel="Choose new time"
-              onSecondary={() => nav("client-booking-detail", { id: conflictBooking.id })}
-              secondaryLabel="View booking"
-              equalActions
-            />
-          </div>
-        )}
-
-        {hasDateTime && !conflictBooking && (
-          <>
-            {/* Repeat Booking (Optional) */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-              <SectionLabel>Repeat Booking (Optional)</SectionLabel>
-            </div>
-            <Card style={{ marginBottom: 18 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <RepeatIcon size={15} color={C.jet} />
-                  <span style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>Repeat this session</span>
-                </div>
-                <Toggle label="Repeat this session" on={repeatEnabled} onClick={() => setRepeatEnabled((v) => !v)} />
-              </div>
-
-              {repeatEnabled && (
-                <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.border}` }}>
-                  <div style={{ fontSize: T.label, color: C.slate, marginBottom: 10, ...fBody }}>How often would you like to repeat this session?</div>
-                  {REPEAT_FREQ_OPTIONS.map((o) => (
-                    <RadioRow key={o.value} label={o.label} selected={repeatFreq === o.value} onClick={() => setRepeatFreq(o.value)} />
-                  ))}
-
-                  {repeatFreq === "weekly" && (
-                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
-                      <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Repeat every</div>
-                      <div className="cl-input" style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", background: C.white }}>
-                        <RepeatIcon size={14} color={C.slateLight} />
-                        <input
-                          type="number" min={1} value={repeatEvery}
-                          onChange={(e) => setRepeatEvery(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                          style={{ border: "none", outline: "none", width: 40, fontSize: T.body, color: C.jet, ...fBody }}
-                        />
-                        <span style={{ fontSize: T.labelLg, color: C.slate, ...fBody }}>week{repeatEvery > 1 ? "s" : ""}</span>
-                      </div>
-                    </div>
-                  )}
-
-                  <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
-                    <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>End after</div>
-                    {END_AFTER_OPTIONS.map((o) => (
-                      <RadioRow key={o.value} label={o.label} selected={endAfterType === o.value} onClick={() => setEndAfterType(o.value)} />
-                    ))}
-                    {endAfterType === "date" && (
-                      <input
-                        type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
-                        style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", marginTop: 6, color: C.jet, background: C.white, ...fBody }}
-                      />
-                    )}
-                    {needsEndDate && (
-                      <div style={{ fontSize: T.caption, color: C.slateLight, marginTop: 6, ...fBody }}>Pick an end date to see how many sessions that covers.</div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </Card>
-
-            {/* Session Summary */}
-            <SectionLabel>Session Summary</SectionLabel>
-            <Card style={{ marginBottom: 18, background: C.fog, border: "none" }}>
-              <Row label="Package" value={pkg.name} />
-              <Row label="Coach" value={pub.name} />
-              <Row label="Date" value={formatFullDateFromDate(selectedDate)} />
-              <Row label="Time" value={formatTimeRange12(time, pkg.duration)} />
-              <Row label="Repeats" value={repeatSummaryText(repeat)} />
-              <Row label="Sessions" value={sessionCount ? `${sessionCount} session${sessionCount > 1 ? "s" : ""}` : "Pick an end date above"} />
-              <Row label="Price per session" value={`$${pkg.price}`} />
-              <Row label="Total" value={totalPrice != null ? `$${totalPrice.toFixed(2)}` : "-"} bold last />
-            </Card>
-          </>
-        )}
-      </div>
-
-      <div style={{ padding: "14px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
-        <Btn
-          full
-          disabled={!canContinue}
-          onClick={() => {
-            setDraft({
-              coach, pkg,
-              day: formatFullDateFromDate(selectedDate),
-              time: formatTimeRange12(time, pkg.duration),
-              mode: pkg.mode,
-              participants: params.participants || ["self"],
-              repeat,
-              sessionCount,
-              total: totalPrice,
-            });
-            const participantIds = params.participants || ["self"];
-            const includesChildProfile = participantIds.some((id) => id !== "self" && children.some((child) => child.id === id));
-            nav(
-              includesChildProfile ? "booking-participant-details" : "booking-review",
-              { coachId: coach.id, packageId: pkg.id, participants: participantIds },
-            );
-          }}
-        >
-          Continue
-        </Btn>
-      </div>
-    </div>
-  );
-}
-
-export function ScreenBookingReview({ nav, goBack, params, draft, setDraft, toast, children = [], bookings = [], addBooking }) {
-  const { darkMode, clientIdentity, clientPrefs, coachProfile } = useApp();
-  const C = darkMode ? CD : CL;
-  const d = buildFallbackDraft(params, draft, coachProfile);
-  const pub = getPublicName(d.coach, "public");
-  // Who's attending was already chosen on the previous step (ScreenBookingParticipants).
-  const participants = d.participants || ["self"];
-  const selectedChildren = children.filter((c) => participants.includes(c.id));
-  // Child safety details are only relevant for participants who are actually
-  // under 18 — an unset age is treated as a minor too, since these are child
-  // profiles and simply haven't had an age filled in yet.
+  // Minor / safeguarding
   const isMinor = (c) => {
     const age = Number(c.age);
     return c.age === "" || c.age === undefined || c.age === null || Number.isNaN(age) || age < 18;
@@ -744,9 +570,6 @@ export function ScreenBookingReview({ nav, goBack, params, draft, setDraft, toas
     .map((child) => participantDetails[child.id])
     .find((detail) => detail?.emergencyName || detail?.emergencyPhone || detail?.conditions || detail?.allergies);
 
-  // Medical notes alone do not count as a complete emergency contact. Only ask
-  // for a booking-level contact when at least one selected child has no complete
-  // emergency name and phone saved on their profile.
   const childrenMissingEmergencyContact = minorParticipants.filter((child) => !(child.emergencyName && child.emergencyMobile));
   const needsEmergencyContact = childrenMissingEmergencyContact.length > 0;
 
@@ -760,7 +583,7 @@ export function ScreenBookingReview({ nav, goBack, params, draft, setDraft, toas
   const [conditions, setConditions] = useState(
     [detailFromEarlierStep?.conditions, detailFromEarlierStep?.allergies].filter(Boolean).join(" · "),
   );
-  const [bookingNotes, setBookingNotes] = useState(d.bookingNotes || "");
+  const [bookingNotes, setBookingNotes] = useState(draft?.bookingNotes || "");
   const [consent, setConsent] = useState(false);
 
   useEffect(() => {
@@ -768,21 +591,11 @@ export function ScreenBookingReview({ nav, goBack, params, draft, setDraft, toas
     setEmergencyName(guardianName);
     setEmergencyPhone(guardianPhone);
   }, [emergencySource, guardianName, guardianPhone]);
-  const participantLabel = participants.length === 0
-    ? "Not selected"
-    : [
-      ...(participants.includes("self") ? ["You"] : []),
-      ...selectedChildren.map((c) => c.name || "Unnamed profile"),
-    ].join(", ");
 
-  const sessionCount = d.sessionCount || 1;
-  const subtotal = d.pkg.price * sessionCount;
-  const fee = Math.round(subtotal * CONFIG.serviceFeeRate * 100) / 100;
-  const total = subtotal + fee;
   const guardianDetailsComplete = guardianName.trim() && guardianRelationship.trim() && guardianPhone.trim();
   const emergencyDetailsComplete = !needsEmergencyContact || (emergencyName.trim() && emergencyPhone.trim());
   const minorDetailsComplete = guardianDetailsComplete && emergencyDetailsComplete;
-  const canContinue = participants.length > 0 && (!includesMinor || (consent && minorDetailsComplete));
+  const canContinue = hasDateTime && !conflictBooking && !needsEndDate && (!includesMinor || (consent && minorDetailsComplete));
 
   const applyAccountGuardian = () => {
     setGuardianName(accountName);
@@ -837,35 +650,171 @@ export function ScreenBookingReview({ nav, goBack, params, draft, setDraft, toas
     </button>
   );
 
+  const handleSubmit = () => {
+    if (!canContinue) return;
+    const profileSafetyNotes = minorParticipants
+      .filter((c) => c.emergencyName || c.emergencyMobile || c.medicalConditions || c.allergies || c.medicalNotes)
+      .map((c) => {
+        const bits = [];
+        if (c.medicalConditions) bits.push(`Medical: ${c.medicalConditions}`);
+        if (c.allergies) bits.push(`Allergies: ${c.allergies}`);
+        if (c.medicalNotes) bits.push(c.medicalNotes);
+        if (c.emergencyName || c.emergencyMobile) {
+          bits.push(`Emergency contact: ${c.emergencyName || "-"}${c.emergencyRelationship ? ` (${c.emergencyRelationship})` : ""}${c.emergencyMobile ? ` - ${c.emergencyMobile}` : ""}`);
+        }
+        return `${c.name || "Participant"} - ${bits.join("; ")}`;
+      }).join("\n");
+    const safetyNotes = [conditions.trim(), profileSafetyNotes].filter(Boolean).join("\n");
+    const finalDraft = {
+      coach, pkg,
+      day: selectedDate ? formatFullDateFromDate(selectedDate) : "",
+      time: time ? formatTimeRange12(time, pkg.duration) : "",
+      mode: pkg.mode,
+      participants: participantSummary,
+      repeat,
+      sessionCount,
+      total: totalPrice,
+      includesMinor,
+      guardianName, guardianRelationship, guardianPhone,
+      emergencyName, emergencyPhone,
+      bookingNotes: bookingNotes.trim(), safetyNotes,
+    };
+    setDraft(finalDraft);
+    const newId = addBooking(finalDraft);
+    if (!newId) {
+      toast("Could not create this booking. Please try again.");
+      return;
+    }
+    toast("Booking request sent");
+    nav("booking-request-sent", { id: newId, coachName: coach.name });
+  };
+
   return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title="Review booking" onBack={() => goBack("booking-datetime", { coachId: d.coach.id, packageId: d.pkg.id, participants })} />
+    <div style={{ height: "100%", display: "flex", flexDirection: "column", background: C.white }}>
+      <TopBar title="Review & confirm" onBack={changeParticipant} />
+
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
-        <Card style={{ marginBottom: 14}}>
-          <Row label="Coach" value={pub.name} />
-          <Row label="Service" value={d.pkg.name} />
-          <Row label="When" value={`${d.day} at ${d.time}`} />
-          <Row label="Venue" value={venueLabel(d.pkg, d.coach)} />
-          <Row label="Mode of Delivery" value={deliveryModeLabel(d.pkg)} />
-          <Row label="For" value={participantLabel} last={!d.repeat || d.repeat.freq === "once"} />
-          {d.repeat && d.repeat.freq !== "once" && (
-            <Row label="Repeats" value={repeatSummaryText(d.repeat)} last />
+        {/* Coach & Package Overview Card */}
+        <Card style={{ marginBottom: 16 }}>
+          <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 12 }}>
+            <Avatar name={pub.name} size={44} />
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ fontSize: T.subtitleLg, fontWeight: 700, color: C.jet, ...fDisplay }}>{pkg.name}</div>
+              <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>with {pub.name} · {pkg.duration} min</div>
+            </div>
+            <div style={{ fontSize: T.titleLg, fontWeight: 800, color: C.jet, whiteSpace: "nowrap", ...fDisplay }}>${pkg.price}</div>
+          </div>
+          {hasDateTime && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
+              <Calendar size={15} color={C.brand} />
+              <span style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>
+                {formatFullDateFromDate(selectedDate)} · {formatTimeRange12(time, pkg.duration)}
+              </span>
+            </div>
           )}
         </Card>
 
-        <Card style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, marginBottom: 6, ...fDisplay }}>Cancellation policy</div>
-          <div style={{ fontSize: T.labelLg, color: C.slate, lineHeight: 1.55, ...fBody }}>{CONFIG.cancellationPolicy}</div>
-        </Card>
+        {/* Participants Pill */}
+        <div
+          role="note"
+          aria-label={`Booking participants: ${participantSummary}`}
+          style={{
+            display: "flex", alignItems: "center", gap: 10, marginBottom: 16, padding: "11px 12px",
+            borderRadius: 14, border: `1px solid ${C.border}`, background: C.fog,
+          }}
+        >
+          <div style={{ width: 34, height: 34, borderRadius: 11, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <Users size={16} color={C.brand} aria-hidden="true" />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: T.labelLg, fontWeight: 700, color: C.jet, ...fBody }}>Attending: {participantSummary}</div>
+            <div style={{ marginTop: 2, fontSize: T.caption, lineHeight: 1.4, color: C.slate, ...fBody }}>
+              Change who is attending this session.
+            </div>
+          </div>
+          <Btn variant="ghost" size="sm" onClick={changeParticipant}>Change</Btn>
+        </div>
 
+        {/* Schedule conflict warning */}
+        {hasDateTime && conflictBooking && (
+          <div style={{ marginBottom: 16 }}>
+            <StatusBanner
+              state="scheduleConflict"
+              message={`You already have ${conflictBooking.service} with ${(() => { const cc = COACHES.find((c) => c.id === conflictBooking.coachId); return getPublicName(cc || { name: conflictBooking.coachName }, "confirmed").name; })()} at this time.`}
+              onPrimary={() => nav("coach-profile", { id: coach.id })}
+              primaryLabel="Choose new time"
+              onSecondary={() => nav("client-booking-detail", { id: conflictBooking.id })}
+              secondaryLabel="View booking"
+              equalActions
+            />
+          </div>
+        )}
+
+        {/* Optional Repeat Booking */}
+        {hasDateTime && !conflictBooking && (
+          <>
+            <SectionLabel>Repeat Booking (Optional)</SectionLabel>
+            <Card style={{ marginTop: 8, marginBottom: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <RepeatIcon size={15} color={C.jet} />
+                  <span style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fBody }}>Repeat this session</span>
+                </div>
+                <Toggle label="Repeat this session" on={repeatEnabled} onClick={() => setRepeatEnabled((v) => !v)} />
+              </div>
+
+              {repeatEnabled && (
+                <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.border}` }}>
+                  <div style={{ fontSize: T.label, color: C.slate, marginBottom: 10, ...fBody }}>How often would you like to repeat this session?</div>
+                  {REPEAT_FREQ_OPTIONS.map((o) => (
+                    <RadioRow key={o.value} label={o.label} selected={repeatFreq === o.value} onClick={() => setRepeatFreq(o.value)} />
+                  ))}
+
+                  {repeatFreq === "weekly" && (
+                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
+                      <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>Repeat every</div>
+                      <div className="cl-input" style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", background: C.white }}>
+                        <RepeatIcon size={14} color={C.slateLight} />
+                        <input
+                          type="number" min={1} value={repeatEvery}
+                          onChange={(e) => setRepeatEvery(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                          style={{ border: "none", outline: "none", width: 40, fontSize: T.body, color: C.jet, ...fBody }}
+                        />
+                        <span style={{ fontSize: T.labelLg, color: C.slate, ...fBody }}>week{repeatEvery > 1 ? "s" : ""}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
+                    <div style={{ fontSize: T.labelLg, fontWeight: 600, color: C.jet, marginBottom: 6, ...fBody }}>End after</div>
+                    {END_AFTER_OPTIONS.map((o) => (
+                      <RadioRow key={o.value} label={o.label} selected={endAfterType === o.value} onClick={() => setEndAfterType(o.value)} />
+                    ))}
+                    {endAfterType === "date" && (
+                      <input
+                        type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
+                        style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", marginTop: 6, color: C.jet, background: C.white, ...fBody }}
+                      />
+                    )}
+                    {needsEndDate && (
+                      <div style={{ fontSize: T.caption, color: C.slateLight, marginTop: 6, ...fBody }}>Pick an end date to see how many sessions that covers.</div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </Card>
+          </>
+        )}
+
+        {/* Child Safeguarding details (if minor) */}
         {includesMinor && (
-          <Card style={{ marginBottom: 14 }}>
+          <Card style={{ marginBottom: 16 }}>
             <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 12 }}>
               <ShieldCheck size={16} color={C.brand} style={{ flexShrink: 0, marginTop: 1 }} />
               <div>
                 <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Child safety details</div>
                 <div style={{ fontSize: T.label, color: C.slate, marginTop: 2, lineHeight: 1.55, ...fBody }}>
-                  This booking includes a participant under 18, so we share a few extra details with your coach to keep sessions safe. {pub.name.split(" ")[0]} holds the required Working with Children Check, and this information is shared with them only as needed for the session.
+                  This booking includes a participant under 18, so we share a few extra details with your coach to keep sessions safe. {pub.name.split(" ")[0]} holds the required Working with Children Check.
                 </div>
               </div>
             </div>
@@ -933,7 +882,7 @@ export function ScreenBookingReview({ nav, goBack, params, draft, setDraft, toas
                 )}
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-<Field label="Guardian full name" name="guardian-name" autoComplete="name" placeholder="e.g. Jamie Chen" icon={User} value={guardianName} onChange={(e) => { setGuardianName(e.target.value); setGuardianSource("manual"); }} required />
+                <Field label="Guardian full name" name="guardian-name" autoComplete="name" placeholder="e.g. Jamie Chen" icon={User} value={guardianName} onChange={(e) => { setGuardianName(e.target.value); setGuardianSource("manual"); }} required />
                 <Field label="Relationship to participant" name="guardian-relationship" placeholder="e.g. Parent or legal guardian" value={guardianRelationship} onChange={(e) => { setGuardianRelationship(e.target.value); setGuardianSource("manual"); }} required />
                 <Field label="Guardian phone" name="guardian-phone" autoComplete="tel" inputMode="tel" placeholder="04XX XXX XXX" icon={Phone} type="tel" value={guardianPhone} onChange={(e) => { setGuardianPhone(e.target.value.replace(/[^0-9+\s]/g, "")); setGuardianSource("manual"); }} required />
               </div>
@@ -988,7 +937,7 @@ export function ScreenBookingReview({ nav, goBack, params, draft, setDraft, toas
                     )}
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-<Field label="Emergency contact name" name="emergency-contact-name" autoComplete="name" placeholder="e.g. Alex Chen" icon={User} value={emergencyName} onChange={(e) => { setEmergencyName(e.target.value); setEmergencySource("manual"); }} required />
+                    <Field label="Emergency contact name" name="emergency-contact-name" autoComplete="name" placeholder="e.g. Alex Chen" icon={User} value={emergencyName} onChange={(e) => { setEmergencyName(e.target.value); setEmergencySource("manual"); }} required />
                     <Field label="Emergency contact phone" name="emergency-contact-phone" autoComplete="tel" inputMode="tel" placeholder="04XX XXX XXX" icon={Phone} type="tel" value={emergencyPhone} onChange={(e) => { setEmergencyPhone(e.target.value.replace(/[^0-9+\s]/g, "")); setEmergencySource("manual"); }} required />
                   </div>
                 </div>
@@ -1012,19 +961,20 @@ export function ScreenBookingReview({ nav, goBack, params, draft, setDraft, toas
             <div style={{ marginTop: 14, borderTop: `1px solid ${C.border}`, paddingTop: 14 }}>
               <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 10, background: C.warnTint, borderRadius: 12, padding: 10 }}>
                 <AlertTriangle size={14} color={C.warnStrong} style={{ flexShrink: 0, marginTop: 1 }} />
-                <span style={{ fontSize: T.captionLg, color: C.jet, lineHeight: 1.5, ...fBody }}>Safeguarding: sessions involving minors require a checked-in guardian or approved drop-off arrangement, and any concerns can be reported to CoachNivo support at any time.</span>
+                <span style={{ fontSize: T.captionLg, color: C.jet, lineHeight: 1.5, ...fBody }}>Safeguarding: sessions involving minors require a checked-in guardian or approved drop-off arrangement.</span>
               </div>
               <button onClick={() => setConsent(!consent)} style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}>
                 <div style={{ width: 18, height: 18, borderRadius: 5, border: `1.5px solid ${consent ? C.brand : C.border}`, background: consent ? C.brand : C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
                   {consent && <CheckCircle2 size={12} color={C.white} />}
                 </div>
-                <span style={{ fontSize: T.label, color: C.jet, lineHeight: 1.5, ...fBody }}>I confirm I am the parent or legal guardian and consent to this booking, including CoachNivo's handling of the participant's data.<RequiredMark /></span>
+                <span style={{ fontSize: T.label, color: C.jet, lineHeight: 1.5, ...fBody }}>I confirm I am the parent or legal guardian and consent to this booking.<RequiredMark /></span>
               </button>
             </div>
           </Card>
         )}
 
-        <div style={{ marginBottom: 14 }}>
+        {/* Message for Coach (Optional) */}
+        <div style={{ marginBottom: 16 }}>
           <SectionLabel
             icon={MessageCircle}
             hint={`Optional · Share a goal, accessibility need, or anything ${pub.name.split(" ")[0]} should know before the session.`}
@@ -1035,8 +985,8 @@ export function ScreenBookingReview({ nav, goBack, params, draft, setDraft, toas
             className="cl-input"
             style={{
               display: "flex", alignItems: "flex-start", gap: 10,
-              minHeight: 104, padding: "12px 13px", borderRadius: 13,
-              border: `1.5px solid ${C.border}`, background: C.white,
+              minHeight: 96, padding: "12px 13px", borderRadius: 13,
+              border: `1.5px solid ${C.border}`, background: C.white, marginTop: 6,
             }}
           >
             <MessageCircle aria-hidden="true" size={17} color={C.slateLight} style={{ marginTop: 2, flexShrink: 0 }} />
@@ -1047,61 +997,42 @@ export function ScreenBookingReview({ nav, goBack, params, draft, setDraft, toas
               onChange={(event) => setBookingNotes(event.target.value)}
               placeholder="e.g. I’d like to focus on footwork and shooting technique."
               maxLength={500}
-              rows={4}
+              rows={3}
               style={{
-                flex: 1, minHeight: 78, padding: 0, border: "none", outline: "none",
+                flex: 1, minHeight: 70, padding: 0, border: "none", outline: "none",
                 resize: "none", background: "transparent", color: C.jet,
                 fontSize: T.bodyLg, lineHeight: 1.5, ...fBody,
               }}
             />
           </div>
-          <div style={{ marginTop: 6, textAlign: "right", fontSize: T.caption, color: C.slateLight, ...fBody }}>
+          <div style={{ marginTop: 4, textAlign: "right", fontSize: T.caption, color: C.slateLight, ...fBody }}>
             {bookingNotes.length}/500
           </div>
         </div>
 
-        <Card>
-          <Row label={sessionCount > 1 ? `Session (×${sessionCount})` : "Session"} value={`$${d.pkg.price.toFixed(2)}${sessionCount > 1 ? ` × ${sessionCount} = $${subtotal.toFixed(2)}` : ""}`} />
+        {/* Cancellation policy */}
+        <Card style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, marginBottom: 4, ...fDisplay }}>Cancellation policy</div>
+          <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, ...fBody }}>{CONFIG.cancellationPolicy}</div>
+        </Card>
+
+        {/* Price Breakdown */}
+        <Card style={{ marginBottom: 8 }}>
+          <Row label={sessionCount > 1 ? `Session (×${sessionCount})` : "Session"} value={`$${pkg.price.toFixed(2)}${sessionCount > 1 ? ` × ${sessionCount} = $${subtotal.toFixed(2)}` : ""}`} />
           <Row label="Service fee" value={`$${fee.toFixed(2)}`} />
-          <Row label="Total" value={`$${total.toFixed(2)}`} bold last />
+          <Row label="Total" value={`$${totalPrice.toFixed(2)}`} bold last />
         </Card>
       </div>
+
+      {/* Sticky Bottom Action */}
       <div style={{ padding: "14px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
-        <Btn full disabled={!canContinue} onClick={() => {
-          // Fold any safety details already saved on a child's profile into the notes
-          // that travel with the booking, alongside anything freshly typed above.
-          const profileSafetyNotes = minorParticipants
-            .filter((c) => c.emergencyName || c.emergencyMobile || c.medicalConditions || c.allergies || c.medicalNotes)
-            .map((c) => {
-              const bits = [];
-              if (c.medicalConditions) bits.push(`Medical: ${c.medicalConditions}`);
-              if (c.allergies) bits.push(`Allergies: ${c.allergies}`);
-              if (c.medicalNotes) bits.push(c.medicalNotes);
-              if (c.emergencyName || c.emergencyMobile) {
-                bits.push(`Emergency contact: ${c.emergencyName || "-"}${c.emergencyRelationship ? ` (${c.emergencyRelationship})` : ""}${c.emergencyMobile ? ` - ${c.emergencyMobile}` : ""}`);
-              }
-              return `${c.name || "Participant"} - ${bits.join("; ")}`;
-            }).join("\n");
-          const safetyNotes = [conditions.trim(), profileSafetyNotes].filter(Boolean).join("\n");
-          const finalDraft = {
-            ...d, total, participants: participantLabel, includesMinor,
-            guardianName, guardianRelationship, guardianPhone,
-            emergencyName, emergencyPhone,
-            bookingNotes: bookingNotes.trim(), safetyNotes,
-          };
-          setDraft(finalDraft);
-          const newId = addBooking(finalDraft);
-          if (!newId) {
-            toast("Could not create this booking. Please try again.");
-            return;
-          }
-          toast("Booking request sent");
-          nav("booking-request-sent", { id: newId, coachName: d.coach.name });
-        }}>Submit request</Btn>
+        <Btn full disabled={!canContinue} onClick={handleSubmit}>Submit request</Btn>
       </div>
     </div>
   );
 }
+
+export const ScreenBookingDateTime = ScreenBookingReview;
 
 export function ScreenPayment({ nav, params, draft, bookings = [], additionalCharges = [], toast, markBookingPaid, biometric, offline }) {
   const { darkMode, coachProfile } = useApp();
