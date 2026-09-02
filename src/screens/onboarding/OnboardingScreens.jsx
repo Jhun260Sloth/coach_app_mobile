@@ -1394,15 +1394,16 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
   );
 }
 
-export function ScreenVerificationPending({ nav, params, verificationStatus, setReachedDashboardAfterVerification }) {
+export function ScreenVerificationPending({ nav, params, verificationStatus, setReachedDashboardAfterVerification, simulateVerificationDecision }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const rejected = verificationStatus === "rejected" || params?.variant === "rejected";
   const approved = verificationStatus === "approved";
   const goToSetup = () => {
     if (approved && setReachedDashboardAfterVerification) setReachedDashboardAfterVerification(true);
-    nav("coach-services-setup");
+    nav("coach-create-package");
   };
+  const simulateLinkStyle = { background: "none", border: "none", cursor: "pointer", fontSize: T.caption, color: C.slateLight, textDecoration: "underline", ...fBody };
   if (rejected) {
     const documents = [
       { label: "Photo ID", detail: "Glare obscures the expiry date and the lower edge is cropped.", action: true },
@@ -1468,7 +1469,7 @@ export function ScreenVerificationPending({ nav, params, verificationStatus, set
         </div>
         <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 8, lineHeight: 1.6, maxWidth: 300, marginLeft: "auto", marginRight: "auto", ...fBody }}>
           {approved
-            ? "An admin has reviewed and approved your documents. You now have full access to the Coach dashboard and can start accepting bookings."
+            ? "An admin has reviewed and approved your documents. Create your first package to start accepting bookings."
             : "Your documents have been submitted successfully and are now awaiting review by a CoachNivo administrator. This usually takes up to 2 business days - we'll notify you as soon as a decision is made."}
         </div>
         {!approved && (
@@ -1484,13 +1485,19 @@ export function ScreenVerificationPending({ nav, params, verificationStatus, set
       </div>
 
       <div style={{ marginTop: "auto", padding: "14px 0", display: "flex", flexDirection: "column", gap: 10 }}>
-        <Btn full disabled={!approved} onClick={goToSetup}>Proceed to setup</Btn>
+        <Btn full disabled={!approved} onClick={goToSetup}>Create your first package</Btn>
         {!approved && (
           <div style={{ fontSize: T.captionLg, color: C.slateLight, textAlign: "center", lineHeight: 1.5, ...fBody }}>
             This unlocks once an admin approves your application.
           </div>
         )}
         <Btn full variant="ghost" onClick={() => nav("support", { faqTopic: "verification", backTo: "verification-pending" })}>Contact support</Btn>
+        {!approved && !rejected && (
+          <div style={{ display: "flex", justifyContent: "center", gap: 16, marginTop: 2 }}>
+            <button onClick={() => simulateVerificationDecision(true)} style={simulateLinkStyle}>Simulate admin approval (success)</button>
+            <button onClick={() => simulateVerificationDecision(false)} style={simulateLinkStyle}>Simulate admin rejection (rejected)</button>
+          </div>
+        )}
       </div>
     </div>
   );

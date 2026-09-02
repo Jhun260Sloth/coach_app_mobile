@@ -990,6 +990,17 @@ export function AppProvider({ children }) {
     toast(approve ? `${applicant ? applicant.name : "Coach"} approved` : `${applicant ? applicant.name : "Coach"} rejected`);
   };
 
+  const simulateVerificationDecision = (approve) => {
+    const applicant = [...verificationQueue].reverse().find((v) => v.submittedByUser);
+    if (applicant) {
+      decideVerification(applicant.id, approve);
+    } else {
+      setVerificationStatus(approve ? "approved" : "rejected");
+      if (approve) setVerified(true);
+      toast(approve ? "Verification approved" : "Verification rejected");
+    }
+  };
+
   const resolveDispute = (id) => setDisputes((d) => d.filter((x) => x.id !== id));
 
   // ---- Coach packages ----
@@ -1073,7 +1084,7 @@ export function AppProvider({ children }) {
     coachAvailableNow, setCoachAvailableNow,
     addCoachRole: () => setHasCoachRole(true),
     // Verification & admin
-    submitVerification, verificationQueue, decideVerification, disputes, resolveDispute,
+    submitVerification, verificationQueue, decideVerification, simulateVerificationDecision, disputes, resolveDispute,
     // Notifications
     pushNotification, notifications, clientNotifications, coachNotifications, setClientNotifications, setCoachNotifications,
     // Location
