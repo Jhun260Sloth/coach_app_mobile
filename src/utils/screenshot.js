@@ -62,4 +62,3 @@ function triggerDownload(dataUrl, fileName) {
   downloadLink.click();
   document.body.removeChild(downloadLink);
 }
-

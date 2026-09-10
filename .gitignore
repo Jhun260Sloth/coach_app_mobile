@@ -6,3 +6,5 @@ dist
 .agents
 .vite
 .docs
+output
+tmp
