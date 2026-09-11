@@ -7,7 +7,7 @@ import {
   CLIENT_NOTIFICATIONS, COACH_NOTIFICATIONS, SESSION_OTP,
 } from "../data/bookings";
 import { COACHES } from "../data/coaches";
-import { getCoachMedia } from "../data/media";
+import { getCoachMedia, BUSINESS_MEDIA_SOURCE } from "../data/media";
 import { CURRENT_CLIENT, isHandleTaken as isHandleTakenBase } from "../data/users";
 import { getPublicName, fullNameOf } from "../utils/name";
 import { formatCoachLocation, getCoachPublicProfile } from "../utils/coachProfile";
@@ -15,6 +15,12 @@ import { useUserLocation } from "../utils/useUserLocation";
 import { applyTheme, CL } from "../theme/theme";
 import { usesBrandedStatusBar } from "../utils/screenChrome";
 import { loadStored, saveStored, clearStored, STORAGE_KEYS } from "../utils/persistence";
+import { getRoleHome } from "../utils/roles";
+import {
+  BUSINESS_STATUS, INITIAL_BUSINESS, INITIAL_BUSINESSES, INITIAL_BUSINESS_LOCATIONS,
+  INITIAL_BUSINESS_ROSTER, INITIAL_BUSINESS_PROGRAMS, INITIAL_BUSINESS_BOOKINGS,
+  BUSINESS_NOTIFICATIONS, BUSINESS_REVIEWS, getBusinessLaunchProgress, getBusinessPlan,
+} from "../data/businesses";
 
 /* =========================================================================
    APP CONTEXT
@@ -36,6 +42,7 @@ const getNextBookingNumber = () => {
 const seedNotifications = () => [
   ...CLIENT_NOTIFICATIONS.map((notification) => ({ ...notification, audience: "client" })),
   ...COACH_NOTIFICATIONS.map((notification) => ({ ...notification, audience: "coach" })),
+  ...BUSINESS_NOTIFICATIONS.map((notification) => ({ ...notification, audience: "business" })),
 ];
 
 export function useApp() {
@@ -75,7 +82,10 @@ export function AppProvider({ children }) {
   const [clientIdentity, setClientIdentity] = useState(CURRENT_CLIENT);
 
   // ---- Booking state ----
-  const [bookings, setBookings] = useState(INITIAL_BOOKINGS);
+  const [bookings, setBookings] = useState(() => [
+    ...INITIAL_BOOKINGS,
+    ...INITIAL_BUSINESS_BOOKINGS.filter((item) => item.clientName === "Sarah Lin"),
+  ]);
   const [coachBookings, setCoachBookings] = useState(COACH_BOOKINGS);
   const [sessionDisputes, setSessionDisputes] = useState(SESSION_DISPUTES);
   const [additionalCharges, setAdditionalCharges] = useState(ADDITIONAL_CHARGES);
@@ -92,6 +102,25 @@ export function AppProvider({ children }) {
   const [coachMedia, setCoachMedia] = useState(() => getCoachMedia(COACHES[1].id));
   const [availabilityBlocks, setAvailabilityBlocks] = useState(INITIAL_AVAILABILITY_BLOCKS);
   const [coachAvailableNow, setCoachAvailableNow] = useState(true);
+
+  // ---- Business state ----
+  const [businessOnboarding, setBusinessOnboarding] = useState({});
+  const [business, setBusiness] = useState(INITIAL_BUSINESS);
+  const [businesses, setBusinesses] = useState(INITIAL_BUSINESSES);
+  const [businessLocations, setBusinessLocations] = useState(INITIAL_BUSINESS_LOCATIONS);
+  const [businessRoster, setBusinessRoster] = useState(INITIAL_BUSINESS_ROSTER);
+  const [businessPrograms, setBusinessPrograms] = useState(INITIAL_BUSINESS_PROGRAMS);
+  const [businessBookings, setBusinessBookings] = useState(INITIAL_BUSINESS_BOOKINGS);
+  const [businessMedia, setBusinessMedia] = useState(() =>
+    Object.entries(BUSINESS_MEDIA_SOURCE).flatMap(([bizId, sourceCoachId]) =>
+      getCoachMedia(sourceCoachId).map((item) => ({
+        ...item,
+        id: `biz-media-${bizId}-${item.id}`,
+        businessId: bizId,
+      }))
+    )
+  );
+  const [businessReviews, setBusinessReviews] = useState(BUSINESS_REVIEWS);
 
   // ---- Admin state ----
   const [verificationQueue, setVerificationQueue] = useState(ADMIN_VERIFICATION_QUEUE);
@@ -117,6 +146,11 @@ export function AppProvider({ children }) {
   useEffect(() => { saveStored(STORAGE_KEYS.favorites, favorites); }, [favorites]);
   useEffect(() => { saveStored(STORAGE_KEYS.clientFilters, clientFilters); }, [clientFilters]);
   useEffect(() => { saveStored(STORAGE_KEYS.discoveryPrefs, discoveryPrefs); }, [discoveryPrefs]);
+  useEffect(() => {
+    setBusinesses((items) => items.some((item) => item.id === business.id)
+      ? items.map((item) => item.id === business.id ? business : item)
+      : [business, ...items]);
+  }, [business]);
 
   useEffect(() => { screenRef.current = screen; }, [screen]);
   useEffect(() => { paramsRef.current = params; }, [params]);
@@ -128,6 +162,7 @@ export function AppProvider({ children }) {
   // ======== Derived state ========
   const clientNotifications = notifications.filter((n) => n.audience === "client");
   const coachNotifications = notifications.filter((n) => n.audience === "coach");
+  const businessNotifications = notifications.filter((n) => n.audience === "business" && (!n.businessId || n.businessId === business.id));
 
   // Public identity of the current coach (onboarding data over directory seed).
   const coachIdentity = {
@@ -234,7 +269,7 @@ export function AppProvider({ children }) {
 
     const explicitFallback = typeof fallbackScreen === "string" ? fallbackScreen : null;
     const safeFallback = explicitFallback
-      || (roleRef.current === "coach" ? "coach-dashboard" : "client-home");
+      || getRoleHome(roleRef.current);
     commitHistory([]);
     commitRoute(safeFallback, explicitFallback && fallbackParams && !fallbackParams.nativeEvent ? fallbackParams : {}, roleRef.current);
   };
@@ -259,11 +294,11 @@ export function AppProvider({ children }) {
   const toggleFav = (id) =>
     setFavorites((f) => (f.includes(id) ? f.filter((x) => x !== id) : [...f, id]));
 
-  const pushNotification = ({ audience, type = "booking", title, body, bookingId, chargeId }) => {
+  const pushNotification = ({ audience, type = "booking", title, body, bookingId, chargeId, businessId }) => {
     setNotifications((n) => [
       {
         id: `rt${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
-        audience, type, title, body, bookingId, chargeId, time: "Just now", unread: true,
+        audience, type, title, body, bookingId, chargeId, businessId, time: "Just now", unread: true,
       },
       ...n,
     ]);
@@ -606,7 +641,8 @@ export function AppProvider({ children }) {
 
   const generateSessionCode = (id) => {
     const target = bookings.find((booking) => booking.id === id)
-      || coachBookings.find((booking) => booking.id === id);
+      || coachBookings.find((booking) => booking.id === id)
+      || businessBookings.find((booking) => booking.id === id);
     if (!target || target.status !== BOOKING_STATUS.CONFIRMED) return null;
 
     const code = String(Math.floor(100000 + Math.random() * 900000));
@@ -618,6 +654,7 @@ export function AppProvider({ children }) {
     };
     setBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...codePatch } : booking)));
     setCoachBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...codePatch } : booking)));
+    setBusinessBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...codePatch } : booking)));
     pushNotification({
       audience: "coach",
       type: "session",
@@ -630,7 +667,8 @@ export function AppProvider({ children }) {
 
   const verifySessionCode = (id, code) => {
     const target = coachBookings.find((booking) => booking.id === id)
-      || bookings.find((booking) => booking.id === id);
+      || bookings.find((booking) => booking.id === id)
+      || businessBookings.find((booking) => booking.id === id);
     if (!target || target.status !== BOOKING_STATUS.CONFIRMED) {
       return { ok: false, reason: "state" };
     }
@@ -653,6 +691,7 @@ export function AppProvider({ children }) {
       }
       setBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...failedPatch } : booking)));
       setCoachBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...failedPatch } : booking)));
+      setBusinessBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...failedPatch } : booking)));
       return { ok: false, reason: attemptsLeft === 0 ? "voided" : "mismatch", attemptsLeft };
     }
 
@@ -667,6 +706,7 @@ export function AppProvider({ children }) {
     };
     setBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...startPatch } : booking)));
     setCoachBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...startPatch } : booking)));
+    setBusinessBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...startPatch } : booking)));
     pushNotification({
       audience: "client",
       type: "session",
@@ -686,7 +726,8 @@ export function AppProvider({ children }) {
 
   const completeBookingAndRelease = (id, actorLabel) => {
     const target = bookings.find((booking) => booking.id === id)
-      || coachBookings.find((booking) => booking.id === id);
+      || coachBookings.find((booking) => booking.id === id)
+      || businessBookings.find((booking) => booking.id === id);
     if (!target) return;
     const releasePatch = {
       status: BOOKING_STATUS.COMPLETED,
@@ -700,8 +741,10 @@ export function AppProvider({ children }) {
     };
     setCoachBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...releasePatch } : booking)));
     setBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...releasePatch } : booking)));
+    setBusinessBookings((items) => items.map((booking) => (booking.id === id ? { ...booking, ...releasePatch } : booking)));
     pushNotification({
-      audience: "coach",
+      audience: target.providerType === "business" ? "business" : "coach",
+      businessId: target.businessId,
       type: "payment",
       title: "Payout released",
       body: `Your payout for ${target.service} is on its way to your bank account.`,
@@ -723,7 +766,8 @@ export function AppProvider({ children }) {
     // completion for anything that went wrong.
     if (actorRole !== "coach") return false;
     const target = coachBookings.find((booking) => booking.id === id)
-      || bookings.find((booking) => booking.id === id);
+      || bookings.find((booking) => booking.id === id)
+      || businessBookings.find((booking) => booking.id === id);
     if (!target || ![BOOKING_STATUS.IN_PROGRESS, BOOKING_STATUS.COMPLETION_PENDING].includes(target.status)) return false;
     const unpaidFinalCharge = additionalCharges.some((charge) => (
       charge.bookingId === id
@@ -764,7 +808,8 @@ export function AppProvider({ children }) {
     amountRequested, evidence = [], includeChat = true, chargeId,
   }) => {
     const target = bookings.find((booking) => booking.id === bookingId)
-      || coachBookings.find((booking) => booking.id === bookingId);
+      || coachBookings.find((booking) => booking.id === bookingId)
+      || businessBookings.find((booking) => booking.id === bookingId);
     if (!target) return null;
 
     const id = `case-${Date.now()}`;
@@ -781,6 +826,7 @@ export function AppProvider({ children }) {
     const exceptionPatch = { exceptionStatus: DISPUTE_STATUS.SUBMITTED, payoutStatus: PAYOUT_STATUS.PROCESSING };
     setBookings((items) => items.map((booking) => (booking.id === bookingId ? { ...booking, ...exceptionPatch } : booking)));
     setCoachBookings((items) => items.map((booking) => (booking.id === bookingId ? { ...booking, ...exceptionPatch } : booking)));
+    setBusinessBookings((items) => items.map((booking) => (booking.id === bookingId ? { ...booking, ...exceptionPatch } : booking)));
     pushNotification({
       audience: filedByRole === "coach" ? "client" : "coach",
       type: "dispute",
@@ -796,6 +842,7 @@ export function AppProvider({ children }) {
       )));
       setBookings((items) => items.map((booking) => (booking.id === bookingId ? { ...booking, exceptionStatus: DISPUTE_STATUS.REVIEWING } : booking)));
       setCoachBookings((items) => items.map((booking) => (booking.id === bookingId ? { ...booking, exceptionStatus: DISPUTE_STATUS.REVIEWING } : booking)));
+      setBusinessBookings((items) => items.map((booking) => (booking.id === bookingId ? { ...booking, exceptionStatus: DISPUTE_STATUS.REVIEWING } : booking)));
     }, 900);
     return id;
   };
@@ -804,7 +851,8 @@ export function AppProvider({ children }) {
     const target = sessionDisputes.find((item) => item.id === id);
     if (!target) return false;
     const booking = bookings.find((item) => item.id === target.bookingId)
-      || coachBookings.find((item) => item.id === target.bookingId);
+      || coachBookings.find((item) => item.id === target.bookingId)
+      || businessBookings.find((item) => item.id === target.bookingId);
     const financialPatch = outcome === DISPUTE_OUTCOME.CLIENT_REFUNDED
       ? { paymentStatus: PAYMENT_STATUS.REFUNDED, refundStatus: "refunded", payoutStatus: PAYOUT_STATUS.NOT_READY }
       : { paymentStatus: PAYMENT_STATUS.RELEASED, payoutStatus: PAYOUT_STATUS.RELEASED };
@@ -815,6 +863,7 @@ export function AppProvider({ children }) {
     )));
     setBookings((items) => items.map((item) => (item.id === target.bookingId ? { ...item, ...financialPatch, exceptionStatus: DISPUTE_STATUS.RESOLVED } : item)));
     setCoachBookings((items) => items.map((item) => (item.id === target.bookingId ? { ...item, ...financialPatch, exceptionStatus: DISPUTE_STATUS.RESOLVED } : item)));
+    setBusinessBookings((items) => items.map((item) => (item.id === target.bookingId ? { ...item, ...financialPatch, exceptionStatus: DISPUTE_STATUS.RESOLVED } : item)));
     pushNotification({
       audience: "client", type: "dispute", title: "Case decision ready",
       body: outcome === DISPUTE_OUTCOME.CLIENT_REFUNDED
@@ -838,7 +887,7 @@ export function AppProvider({ children }) {
     kind = ADDITIONAL_CHARGE_KIND.REQUIRED,
   }) => {
     const coachBooking = coachBookings.find((booking) => booking.id === bookingId);
-    const target = coachBooking || bookings.find((booking) => booking.id === bookingId);
+    const target = coachBooking || bookings.find((booking) => booking.id === bookingId) || businessBookings.find((booking) => booking.id === bookingId);
     if (!target) return null;
     const currentClientName = fullNameOf(clientIdentity).trim().toLowerCase();
     const requestClientName = String(target.clientName || "").trim().toLowerCase();
@@ -881,6 +930,7 @@ export function AppProvider({ children }) {
       };
       setBookings((items) => items.map((booking) => (booking.id === bookingId ? { ...booking, ...endPatch } : booking)));
       setCoachBookings((items) => items.map((booking) => (booking.id === bookingId ? { ...booking, ...endPatch } : booking)));
+      setBusinessBookings((items) => items.map((booking) => (booking.id === bookingId ? { ...booking, ...endPatch } : booking)));
     }
     pushNotification({
       audience: "client", type: "payment",
@@ -898,7 +948,8 @@ export function AppProvider({ children }) {
     if (!charge || charge.status !== ADDITIONAL_CHARGE_STATUS.PENDING) return false;
     if (charge.phase === ADDITIONAL_CHARGE_PHASE.ACCEPTANCE) return false;
     const target = bookings.find((booking) => booking.id === charge.bookingId)
-      || coachBookings.find((booking) => booking.id === charge.bookingId);
+      || coachBookings.find((booking) => booking.id === charge.bookingId)
+      || businessBookings.find((booking) => booking.id === charge.bookingId);
     const finalChargeTotal = Number(target?.finalChargeTotal || 0) + Number(charge.amount || 0);
     const paidTotal = Number(target?.paidTotal || target?.price || 0) + Number(charge.amount || 0);
     setAdditionalCharges((items) => items.map((item) => (
@@ -907,7 +958,8 @@ export function AppProvider({ children }) {
     const paymentPatch = { finalChargeTotal, paidTotal };
     setBookings((items) => items.map((booking) => (booking.id === charge.bookingId ? { ...booking, ...paymentPatch } : booking)));
     setCoachBookings((items) => items.map((booking) => (booking.id === charge.bookingId ? { ...booking, ...paymentPatch } : booking)));
-    pushNotification({ audience: "coach", type: "payment", title: "Final payment received", body: `$${Number(charge.amount).toFixed(2)} has been paid and added to your payout.`, bookingId: charge.bookingId, chargeId: charge.id });
+    setBusinessBookings((items) => items.map((booking) => (booking.id === charge.bookingId ? { ...booking, ...paymentPatch } : booking)));
+    pushNotification({ audience: target?.providerType === "business" ? "business" : "coach", businessId: target?.businessId, type: "payment", title: "Final payment received", body: `$${Number(charge.amount).toFixed(2)} has been paid and added to your payout.`, bookingId: charge.bookingId, chargeId: charge.id });
     pushNotification({ audience: "client", type: "payment", title: "Final payment complete", body: `$${Number(charge.amount).toFixed(2)} was paid securely. Your receipt is ready.`, bookingId: charge.bookingId, chargeId: charge.id });
 
     // Coach-driven completion: once the coach has ended the session and every
@@ -1001,6 +1053,115 @@ export function AppProvider({ children }) {
     }
   };
 
+  const setBusinessNotifications = (updater) => {
+    setNotifications((all) => {
+      const businessItems = all.filter((notification) => notification.audience === "business");
+      const nextBusinessItems = typeof updater === "function" ? updater(businessItems) : updater;
+      const nextById = new Map(nextBusinessItems.map((notification) => [notification.id, notification]));
+      return all.map((notification) => (
+        notification.audience === "business"
+          ? nextById.get(notification.id) || notification
+          : notification
+      ));
+    });
+  };
+
+  // ---- Business onboarding & operations ----
+  const updateBusinessOnboarding = (patch) => setBusinessOnboarding((current) => ({ ...current, ...patch }));
+
+  const updateBusiness = (patch) => setBusiness((current) => {
+    const next = { ...current, ...patch };
+    setBusinesses((items) => items.map((item) => item.id === current.id ? next : item));
+    return next;
+  });
+
+  const submitBusinessApplication = ({ planId }) => {
+    setBusiness((current) => {
+      const plan = getBusinessPlan(planId);
+      return {
+        ...current,
+        ...businessOnboarding,
+        ownerName: businessOnboarding.representativeName || current.ownerName,
+        tradingName: businessOnboarding.tradingName || current.tradingName,
+        legalName: businessOnboarding.legalName || current.legalName,
+        planId,
+        status: BUSINESS_STATUS.VERIFYING,
+        agreement: { version: "B2B-2026.1", acceptedBy: businessOnboarding.representativeName || current.ownerName, acceptedAt: "Just now" },
+        trialEndsAt: plan.trialMonths ? "10 Oct 2026" : null,
+        paymentsStatus: "information_required",
+        payoutsStatus: "information_required",
+        launchChecklist: { identity: true, insurance: false, payments: false, profile: false, location: false, roster: false, program: false },
+      };
+    });
+    pushNotification({ audience: "business", businessId: business.id, type: "verification", title: "Application received", body: "Your business identity is ready for review. We’ll notify you when verification is complete." });
+  };
+
+  const completeBusinessChecklistItem = (key, complete = true) => setBusiness((current) => {
+    const next = { ...current, launchChecklist: { ...current.launchChecklist, [key]: complete } };
+    return next;
+  });
+
+  const simulateBusinessDecision = (status) => {
+    const live = status === BUSINESS_STATUS.LIVE;
+    setBusiness((current) => ({
+      ...current,
+      status,
+      launchChecklist: live
+        ? Object.fromEntries(Object.keys(current.launchChecklist).map((key) => [key, true]))
+        : current.launchChecklist,
+    }));
+    pushNotification({ audience: "business", businessId: business.id, type: "verification", title: live ? "Your business is live" : "Application status updated", body: live ? "Clients can now discover and book your approved programs." : `Your application is now ${String(status).replaceAll("_", " ")}.` });
+  };
+
+  const inviteBusinessCoach = (email) => {
+    const plan = getBusinessPlan(business.planId);
+    const used = businessRoster.filter((member) => member.businessId === business.id && member.status !== "removed").length;
+    if (used >= plan.coachLimit) return false;
+    setBusinessRoster((items) => [...items, { id: `rm${Date.now()}`, businessId: business.id, coachId: null, name: "Invite pending", email, sport: business.sports?.[0] || "Coaching", status: "pending", verification: "not_started", wwcc: "not_started", programs: [] }]);
+    completeBusinessChecklistItem("roster");
+    return true;
+  };
+
+  const updateBusinessRosterMember = (id, patch) => setBusinessRoster((items) => items.map((item) => item.id === id ? { ...item, ...patch } : item));
+
+  const saveBusinessProgram = (record) => {
+    const item = { ...record, id: record.id || `prog${Date.now()}`, businessId: business.id };
+    setBusinessPrograms((items) => items.some((program) => program.id === item.id) ? items.map((program) => program.id === item.id ? item : program) : [...items, item]);
+    completeBusinessChecklistItem("program");
+    return item;
+  };
+
+  const saveBusinessLocation = (record) => {
+    const item = { ...record, id: record.id || `loc${Date.now()}`, businessId: business.id };
+    setBusinessLocations((items) => items.some((location) => location.id === item.id) ? items.map((location) => location.id === item.id ? item : location) : [...items, item]);
+    completeBusinessChecklistItem("location");
+    return item;
+  };
+
+  const addBusinessBooking = (record) => {
+    const id = record.id || `bb${Date.now()}`;
+    const item = { ...record, id, providerType: "business" };
+    setBusinessBookings((items) => [item, ...items]);
+    setBookings((items) => [item, ...items]);
+    const confirmed = item.status === "confirmed";
+    pushNotification({
+      audience: "business",
+      businessId: item.businessId,
+      type: "booking",
+      title: confirmed ? "New confirmed program booking" : "New program booking request",
+      body: `${item.clientName || "A client"} ${confirmed ? "booked" : "requested"} ${item.programTitle || "a program"}.`,
+      bookingId: id,
+    });
+    return id;
+  };
+
+  const updateBusinessBooking = (id, patch) => {
+    setBusinessBookings((items) => items.map((item) => item.id === id ? { ...item, ...patch } : item));
+    setBookings((items) => items.map((item) => item.id === id ? { ...item, ...patch } : item));
+  };
+
+  const getBusinessProgress = () => getBusinessLaunchProgress(business);
+
   const resolveDispute = (id) => setDisputes((d) => d.filter((x) => x.id !== id));
 
   // ---- Coach packages ----
@@ -1018,11 +1179,28 @@ export function AppProvider({ children }) {
   // ---- Media ----
   const addMedia = (item) => setCoachMedia((m) => [{ id: Date.now(), ...item }, ...m]);
   const removeMedia = (id) => setCoachMedia((m) => m.filter((x) => x.id !== id));
+  const addBusinessMedia = (item) => setBusinessMedia((items) => [{ id: `biz-media-${business.id}-${Date.now()}`, businessId: business.id, ...item }, ...items]);
+  const removeBusinessMedia = (id) => setBusinessMedia((items) => {
+    const idStr = String(id);
+    return items.filter((item) => {
+      const itemId = String(item.id);
+      return (
+        itemId !== idStr &&
+        !itemId.endsWith(`-${idStr}`) &&
+        !idStr.endsWith(`-${itemId}`)
+      );
+    });
+  });
+  const replyToBusinessReview = (reviewId, reply) => setBusinessReviews((all) => ({ ...all, [business.id]: (all[business.id] || []).map((review) => review.id === reviewId ? { ...review, reply } : review) }));
+  const setBusinessReviewVisibility = (reviewId, hidden) => setBusinessReviews((all) => ({ ...all, [business.id]: (all[business.id] || []).map((review) => review.id === reviewId ? { ...review, hidden } : review) }));
 
   // ---- Reset (for prototype controls) ----
   const resetAll = () => {
     resetNav("splash", {}, "client");
-    setBookings(INITIAL_BOOKINGS);
+    setBookings([
+      ...INITIAL_BOOKINGS,
+      ...INITIAL_BUSINESS_BOOKINGS.filter((item) => item.clientName === "Sarah Lin"),
+    ]);
     setCoachBookings(COACH_BOOKINGS);
     setSessionDisputes(SESSION_DISPUTES);
     setAdditionalCharges(ADDITIONAL_CHARGES);
@@ -1040,12 +1218,23 @@ export function AppProvider({ children }) {
     setCoachPackages(COACHES[1].packages);
     setAvailabilityBlocks(INITIAL_AVAILABILITY_BLOCKS);
     setCoachMedia(getCoachMedia(COACHES[1].id));
-    nextBookingNumberRef.current = getNextBookingNumber();
-    setIsFirstTimeClient(false);
-    setDiscoveryPrefs({ seeded: true });
-    setFavorites(["c1"]);
-    setClientFilters(null);
-    setDarkMode(false);
+    setBusinessOnboarding({});
+    setBusiness(INITIAL_BUSINESS);
+    setBusinesses(INITIAL_BUSINESSES);
+    setBusinessLocations(INITIAL_BUSINESS_LOCATIONS);
+    setBusinessRoster(INITIAL_BUSINESS_ROSTER);
+    setBusinessPrograms(INITIAL_BUSINESS_PROGRAMS);
+    setBusinessBookings(INITIAL_BUSINESS_BOOKINGS);
+    setBusinessMedia(
+      Object.entries(BUSINESS_MEDIA_SOURCE).flatMap(([bizId, sourceCoachId]) =>
+        getCoachMedia(sourceCoachId).map((item) => ({
+          ...item,
+          id: `biz-media-${bizId}-${item.id}`,
+          businessId: bizId,
+        }))
+      )
+    );
+    setBusinessReviews(BUSINESS_REVIEWS);
     clearStored(STORAGE_KEYS.favorites);
     clearStored(STORAGE_KEYS.clientFilters);
     clearStored(STORAGE_KEYS.discoveryPrefs);
@@ -1083,10 +1272,17 @@ export function AppProvider({ children }) {
     availabilityBlocks, setAvailabilityBlocks,
     coachAvailableNow, setCoachAvailableNow,
     addCoachRole: () => setHasCoachRole(true),
+    // Business
+    businessOnboarding, updateBusinessOnboarding, submitBusinessApplication,
+    business, businesses, updateBusiness, businessLocations, saveBusinessLocation,
+    businessRoster, inviteBusinessCoach, updateBusinessRosterMember,
+    businessPrograms, saveBusinessProgram, businessBookings, addBusinessBooking, updateBusinessBooking,
+    businessMedia, addBusinessMedia, removeBusinessMedia, businessReviews, replyToBusinessReview, setBusinessReviewVisibility,
+    completeBusinessChecklistItem, simulateBusinessDecision, getBusinessProgress,
     // Verification & admin
     submitVerification, verificationQueue, decideVerification, simulateVerificationDecision, disputes, resolveDispute,
     // Notifications
-    pushNotification, notifications, clientNotifications, coachNotifications, setClientNotifications, setCoachNotifications,
+    pushNotification, notifications, clientNotifications, coachNotifications, businessNotifications, setClientNotifications, setCoachNotifications, setBusinessNotifications,
     // Location
     ...userLocationState,
     // Reset

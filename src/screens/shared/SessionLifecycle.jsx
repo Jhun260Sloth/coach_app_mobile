@@ -14,10 +14,10 @@ import {
 import { Avatar, Badge, Btn, Card, EmptyState, Row, StatusPill, TopBar } from "../../components/ui/Primitives";
 import { SessionJourneyTimeline } from "../../components/booking/SessionJourneyTimeline";
 
-function findBooking(id, role, bookings, coachBookings) {
+function findBooking(id, role, bookings, coachBookings, businessBookings = []) {
   const preferred = role === "coach" ? coachBookings : bookings;
   const fallback = role === "coach" ? bookings : coachBookings;
-  return preferred.find((item) => item.id === id) || fallback.find((item) => item.id === id);
+  return preferred.find((item) => item.id === id) || fallback.find((item) => item.id === id) || businessBookings.find((item) => item.id === id);
 }
 
 function SessionSummary({ booking, role }) {
@@ -42,12 +42,12 @@ function SessionSummary({ booking, role }) {
 }
 
 export function ScreenSessionCompletion({
-  nav, params, role: appRole, bookings = [], coachBookings = [], additionalCharges = [], confirmSessionCompletion, toast,
+  nav, params, role: appRole, bookings = [], coachBookings = [], businessBookings = [], additionalCharges = [], confirmSessionCompletion, toast,
 }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const role = params?.role || appRole || "client";
-  const booking = findBooking(params?.bookingId, role, bookings, coachBookings);
+  const booking = findBooking(params?.bookingId, role, bookings, coachBookings, businessBookings);
   const [submitting, setSubmitting] = useState(false);
   const [coachChoice, setCoachChoice] = useState(null);
 
@@ -233,11 +233,11 @@ export function ScreenSessionCompletion({
   );
 }
 
-export function ScreenFundsReleaseStatus({ nav, params, role: appRole, bookings = [], coachBookings = [], additionalCharges = [] }) {
+export function ScreenFundsReleaseStatus({ nav, params, role: appRole, bookings = [], coachBookings = [], businessBookings = [], additionalCharges = [] }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const role = params?.role || appRole || "client";
-  const booking = findBooking(params?.bookingId, role, bookings, coachBookings);
+  const booking = findBooking(params?.bookingId, role, bookings, coachBookings, businessBookings);
 
   if (!booking) {
     return (

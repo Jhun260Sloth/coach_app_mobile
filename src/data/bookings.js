@@ -416,6 +416,12 @@ export const FAQS = {
     { q: "Why was my verification rejected?", a: "Usually a photo was unclear, expired, or didn't match your ID. You'll be told exactly which document failed - resubmit it from the verification screen and the review restarts." },
     { q: "Can I accept bookings while verification is pending?", a: "Not yet - your profile stays hidden until you're approved. You can keep setting up your services, availability and payouts in the meantime." },
   ],
+  business: [
+    { q: "When will my business appear in search?", a: "Your organisation becomes discoverable after the launch checklist is complete and CoachNivo approves the application. You can keep building your roster, profile and programs while review is underway." },
+    { q: "Does business approval verify every coach?", a: "No. Each coach completes their own identity and credential checks. Programs for children can only use coaches with the required current safeguarding documents." },
+    { q: "How does the Starter trial work?", a: "New Starter subscriptions receive their first month free. Billing begins at $49 AUD per month after the trial unless you change or cancel the plan." },
+    { q: "Who assigns a coach to a program booking?", a: "Each program can let the client choose a coach or allow your organisation to assign an eligible verified coach based on availability." },
+  ],
 };
 
 export const CLIENT_NOTIFICATIONS = [

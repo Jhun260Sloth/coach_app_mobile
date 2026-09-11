@@ -61,6 +61,10 @@ export const AU_SUBURBS = [
   { suburb: "Fortitude Valley", state: "QLD", postcode: "4006", lat: -27.4560, lng: 153.0350 },
   { suburb: "New Farm", state: "QLD", postcode: "4005", lat: -27.4660, lng: 153.0470 },
   { suburb: "Surfers Paradise", state: "QLD", postcode: "4217", lat: -28.0020, lng: 153.4290 },
+  { suburb: "Broadbeach", state: "QLD", postcode: "4218", lat: -28.0260, lng: 153.4310 },
+  { suburb: "Robina", state: "QLD", postcode: "4226", lat: -28.0730, lng: 153.3830 },
+  { suburb: "Burleigh Heads", state: "QLD", postcode: "4220", lat: -28.1000, lng: 153.4480 },
+  { suburb: "Southport", state: "QLD", postcode: "4215", lat: -27.9670, lng: 153.4000 },
 
   // SA
   { suburb: "North Adelaide", state: "SA", postcode: "5006", lat: -34.9060, lng: 138.5930 },

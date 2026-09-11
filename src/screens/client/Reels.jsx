@@ -3,24 +3,29 @@ import { MapPin, Volume2, VolumeX, Trash2 } from "lucide-react";
 import { CL, fBody, fDisplay, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { COACHES } from "../../data/mockData";
-import { getCoachMedia } from "../../data/media";
+import { getCoachMedia, getBusinessMediaSource } from "../../data/media";
 import { Avatar, BackButton, HandleTag, ConfirmDialog } from "../../components/ui/Primitives";
 import { getPublicName } from "../../utils/name";
 
 const oneLine = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
 
-/** Immersive, swipeable presentation of a coach's reels and session photos. */
+/** Immersive, swipeable presentation of a coach's or business's reels and
+    session photos. Reused verbatim for the business profile's Media tab. */
 export function ScreenCoachMedia({ nav, goBack, params = {} }) {
-  const { coachMedia, coachProfile, removeMedia, toast } = useApp();
+  const { coachMedia, coachProfile, removeMedia, businessMedia, removeBusinessMedia, toast, businesses } = useApp();
   // Reels stay intentionally cinematic in either app theme, so their media
   // chrome uses the light palette's on-dark tokens rather than inverting.
   const C = CL;
+  const isBusinessMedia = !!params.businessId;
+  const business = isBusinessMedia ? (businesses || []).find((item) => item.id === params.businessId) : null;
   const listedCoach = COACHES.find((item) => item.id === params.coachId) || COACHES[0];
   const coach = listedCoach.id === COACHES[1].id ? coachProfile : listedCoach;
   const isManaging = params.manage === true;
+  const mediaSource = isBusinessMedia ? getBusinessMediaSource(business?.id) : coach.id;
+  const businessItems = businessMedia?.filter((item) => item.businessId === business?.id);
   const media = useMemo(
-    () => (coach.id === COACHES[1].id ? coachMedia : getCoachMedia(coach.id)),
-    [coach.id, coachMedia],
+    () => (isBusinessMedia ? (businessItems?.length ? businessItems : getCoachMedia(mediaSource)) : (coach.id !== COACHES[1].id ? getCoachMedia(mediaSource) : coachMedia)),
+    [isBusinessMedia, businessItems, coach.id, mediaSource, coachMedia],
   );
   const initialIndex = Math.max(0, media.findIndex((item) => item.id === params.mediaId));
   const [activeIndex, setActiveIndex] = useState(initialIndex);
@@ -29,6 +34,16 @@ export function ScreenCoachMedia({ nav, goBack, params = {} }) {
   const scrollRef = useRef(null);
   const videoRefs = useRef({});
   const pub = getPublicName(coach, "public");
+  const returnTo = isManaging
+    ? (isBusinessMedia ? "business-media" : "coach-reels")
+    : (isBusinessMedia ? "business-public-profile" : "coach-profile");
+  const returnParams = isManaging ? {} : (isBusinessMedia ? { id: business?.id } : { id: coach.id });
+  const displayName = isBusinessMedia ? (business?.tradingName || "CoachNivo business") : pub.name;
+  const displayAvatar = isBusinessMedia ? business?.profile?.logo : coach.avatar;
+  const displayHandle = isBusinessMedia ? null : pub.handle;
+  const displayLocation = isBusinessMedia
+    ? business?.registeredAddress?.split(",").slice(-2).join(",").trim()
+    : coach.suburb;
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -53,11 +68,15 @@ export function ScreenCoachMedia({ nav, goBack, params = {} }) {
   const confirmDelete = () => {
     if (!deleteTarget) return;
     const remaining = media.filter((item) => item.id !== deleteTarget.id);
-    removeMedia?.(deleteTarget.id);
+    if (isBusinessMedia) {
+      removeBusinessMedia?.(deleteTarget.id);
+    } else {
+      removeMedia?.(deleteTarget.id);
+    }
     setDeleteTarget(null);
     toast?.(deleteTarget.type === "reel" ? "Reel removed" : "Photo removed");
     if (!remaining.length) {
-      goBack("coach-profile-edit");
+      goBack(isBusinessMedia ? "business-media" : "coach-reels");
       return;
     }
     const nextIndex = Math.min(activeIndex, remaining.length - 1);
@@ -75,8 +94,8 @@ export function ScreenCoachMedia({ nav, goBack, params = {} }) {
     return (
       <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: C.black, color: C.white, padding: 24, textAlign: "center" }}>
         <div>
-          <div style={{ fontSize: T.heading, fontWeight: 700, ...fDisplay }}>No highlights yet</div>
-          <button type="button" onClick={() => goBack("coach-profile")} style={{ minHeight: 44, marginTop: 14, border: "none", background: "transparent", color: C.white, cursor: "pointer", fontSize: T.bodyLg, fontWeight: 600, ...fBody }}>Go back</button>
+        <div style={{ fontSize: T.heading, fontWeight: 700, ...fDisplay }}>No highlights yet</div>
+        <button type="button" onClick={() => goBack(returnTo, returnParams)} style={{ minHeight: 44, marginTop: 14, border: "none", background: "transparent", color: C.white, cursor: "pointer", fontSize: T.bodyLg, fontWeight: 600, ...fBody }}>Go back</button>
         </div>
       </div>
     );
@@ -96,15 +115,15 @@ export function ScreenCoachMedia({ nav, goBack, params = {} }) {
 
             <div style={{ position: "absolute", left: 18, right: 18, bottom: 30, display: "flex", alignItems: "flex-end", gap: 14, color: C.white }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <button type="button" onClick={() => nav("coach-profile", { id: coach.id })} style={{ padding: 0, border: "none", background: "transparent", color: C.white, display: "flex", alignItems: "center", gap: 10, cursor: "pointer", textAlign: "left" }}>
-                  <Avatar name={pub.name} src={coach.avatar} size={42} />
+                <button type="button" onClick={() => nav(returnTo, returnParams)} style={{ padding: 0, border: "none", background: "transparent", color: C.white, display: "flex", alignItems: "center", gap: 10, cursor: "pointer", textAlign: "left" }}>
+                  <Avatar name={displayName} src={displayAvatar} size={42} />
                   <span style={{ minWidth: 0 }}>
-                    <span style={{ display: "block", fontSize: T.bodyLg, fontWeight: 700, ...oneLine, ...fDisplay }}>{pub.name}</span>
-                    {pub.handle && <HandleTag handle={pub.handle} size={11} color={C.onDark} />}
+                    <span style={{ display: "block", fontSize: T.bodyLg, fontWeight: 700, ...oneLine, ...fDisplay }}>{displayName}</span>
+                    {displayHandle && <HandleTag handle={displayHandle} size={11} color={C.onDark} />}
                   </span>
                 </button>
                 <div style={{ fontSize: T.bodyLg, fontWeight: 600, lineHeight: 1.35, marginTop: 12, ...fBody }}>{item.caption}</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 5, fontSize: T.label, color: C.onDark, ...fBody }}><MapPin size={13} />{coach.suburb}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 5, fontSize: T.label, color: C.onDark, ...fBody }}><MapPin size={13} />{displayLocation}</div>
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "center" }}>
@@ -116,7 +135,7 @@ export function ScreenCoachMedia({ nav, goBack, params = {} }) {
         ))}
       </div>
 
-      <div style={{ position: "absolute", top: 52, left: 16 }}><BackButton floating onClick={() => goBack("coach-profile")} /></div>
+      <div style={{ position: "absolute", top: 52, left: 16 }}><BackButton floating onClick={() => goBack(returnTo, returnParams)} /></div>
       <div style={{ position: "absolute", top: 60, right: 18, color: C.white, fontSize: T.label, fontWeight: 700, ...fBody }}>{activeIndex + 1} / {media.length}</div>
 
       <ConfirmDialog

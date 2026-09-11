@@ -106,6 +106,9 @@ export function getBookingClientName(booking) {
 
 /** Name a client should see for a booking's coach — full name once confirmed. */
 export function getBookingCoachName(booking, coach) {
+  if (booking?.providerType === "business") {
+    return { name: booking.providerName || booking.coachName || "Organisation", handle: null, revealed: true };
+  }
   const confirmed = ["confirmed", "completion_pending", "completed", "paid"].includes(booking?.status);
   if (confirmed && booking?.coachName) {
     return {

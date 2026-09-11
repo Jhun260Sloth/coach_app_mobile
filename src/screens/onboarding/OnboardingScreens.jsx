@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   Search, Users, Mail, Eye, EyeOff, Fingerprint, Check,
   Upload, CheckCircle2, ClipboardList, Clock, Lock, Camera,
-  Plus, Trash2, CreditCard, ScanFace, FileCheck2, Smartphone, XCircle, ChevronRight,
+  Plus, Trash2, CreditCard, ScanFace, FileCheck2, Smartphone, XCircle, ChevronRight, Building2,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, LOGO_WHITE_SRC, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
@@ -16,6 +16,7 @@ import { HandleField } from "../../components/ui/PublicIdentityFields";
 import { LocationField } from "../../components/ui/LocationField";
 import { isValidHandle } from "../../utils/name";
 import { EMPTY_VERIFICATION_CODE, isAcceptedPrototypeCode, isValidPhone } from "../../utils/contactVerification";
+import { getRoleHome, getRoleOnboarding } from "../../utils/roles";
 import {
   LANGUAGE_OPTIONS, GENDER_OPTIONS, SPORT_OPTIONS_FULL,
   COACHING_CATEGORY_OPTIONS, SKILL_LEVEL_OPTIONS, AGE_GROUP_OPTIONS,
@@ -310,6 +311,14 @@ export function ScreenRoleSelect({ nav, setRole }) {
           onClick={() => handleSelectRole("coach")}
           C={C}
         />
+        <RoleOption
+          role="business"
+          icon={Building2}
+          title="Run a business or club"
+          body="Manage your organisation, coaching roster, programs, locations and bookings."
+          onClick={() => handleSelectRole("business")}
+          C={C}
+        />
       </div>
       <div style={{ padding: "12px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", textAlign: "center" }}>
         <button
@@ -324,7 +333,7 @@ export function ScreenRoleSelect({ nav, setRole }) {
   );
 }
 
-export function ScreenAuth({ nav, resetNav, params, role, toast, biometric, updateCoachOnboarding, updateClientIdentity }) {
+export function ScreenAuth({ nav, resetNav, params, role, toast, biometric, updateCoachOnboarding, updateClientIdentity, updateBusinessOnboarding }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const [mode, setMode] = useState(params?.mode || "login");
@@ -346,7 +355,7 @@ export function ScreenAuth({ nav, resetNav, params, role, toast, biometric, upda
   const canSubmit = mode === "login"
     ? true
     : firstName.trim() && lastName.trim() && email.trim() && isValidPhone(phone) && passwordValid(password) && passwordsMatch && agree;
-  const homeScreen = role === "coach" ? "coach-dashboard" : "client-home";
+  const homeScreen = getRoleHome(role);
 
   const proceedAfterAuth = (method) => {
     const isSocial = method === "apple" || method === "google";
@@ -369,11 +378,16 @@ export function ScreenAuth({ nav, resetNav, params, role, toast, biometric, upda
         phone: phone.trim(), phoneVerified: false,
       });
     }
+    if (role === "business") {
+      const fn = firstName.trim() || (isSocial ? (method === "apple" ? "Apple" : "Google") : "");
+      const ln = lastName.trim() || (isSocial ? "User" : "");
+      updateBusinessOnboarding?.({ representativeName: `${fn} ${ln}`.trim(), ownerEmail: email.trim(), phone: phone.trim(), phoneVerified: false });
+    }
     if (isSocial) {
       nav("verify-phone", {
         phone: isValidPhone(phone) ? phone.trim() : "",
         next: "enable-biometric",
-        nextParams: { next: role === "coach" ? "coach-info" : "about-you-profile" },
+        nextParams: { next: getRoleOnboarding(role) },
       });
       return;
     }
@@ -383,7 +397,7 @@ export function ScreenAuth({ nav, resetNav, params, role, toast, biometric, upda
       nextParams: {
         phone: phone.trim(),
         next: "enable-biometric",
-        nextParams: { next: role === "coach" ? "coach-info" : "about-you-profile" },
+        nextParams: { next: getRoleOnboarding(role) },
       },
     });
   };
@@ -397,11 +411,11 @@ export function ScreenAuth({ nav, resetNav, params, role, toast, biometric, upda
       <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>{mode === "signup" ? "Create your account" : "Welcome back"}</div>
       <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 6, marginBottom: 20, ...fBody }}>
         {mode === "signup"
-          ? (role === "coach" ? "Signing up as a Coach." : "Signing up as a Client.")
+          ? (role === "coach" ? "Signing up as a Coach." : role === "business" ? "Signing up as a Business." : "Signing up as a Client.")
           : "Welcome back - sign in to your CoachNivo account."}
       </div>
 
-       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {mode === "signup" && (
           <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 10, width: "100%", minWidth: 0 }}>
             <Field label="First name" name="given-name" autoComplete="given-name" placeholder="Josh" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
@@ -515,7 +529,7 @@ export function ScreenForgotPassword({ nav, params, role, toast }) {
       </div>
       <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Forgot your password?</div>
       <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 6, marginBottom: 24, lineHeight: 1.55, ...fBody }}>
-        Enter the email on your {effectiveRole === "coach" ? "coach" : "client"} account and we'll send you a 6-digit code to reset it.
+        Enter the email on your {effectiveRole === "coach" ? "coach" : effectiveRole === "business" ? "business" : "client"} account and we'll send you a 6-digit code to reset it.
       </div>
       <Field label="Email address" placeholder="you@email.com" icon={Mail} value={email} onChange={(e) => setEmail(e.target.value)} required />
       <div style={{ marginTop: 22 }}>
@@ -652,7 +666,7 @@ export function ScreenVerifyEmail({ nav, params, toast, role }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const email = params?.email || "your email";
-  const next = params?.next || (role === "coach" ? "coach-info" : "about-you-profile");
+  const next = params?.next || getRoleOnboarding(role);
   const nextParams = params?.nextParams || {};
 
   const [phase, setPhase] = useState("code"); // "code" | "error" | "success"
@@ -805,12 +819,12 @@ export function ScreenVerifyEmail({ nav, params, toast, role }) {
    The prototype accepts any complete numeric code except an all-zero code;
    no generated code is exposed in the UI.
    ========================================================================= */
-export function ScreenVerifyPhone({ nav, params, toast, role, updateClientIdentity, updateCoachOnboarding, onComplete }) {
+export function ScreenVerifyPhone({ nav, params, toast, role, updateClientIdentity, updateCoachOnboarding, updateBusinessOnboarding, onComplete }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const initialPhone = params?.phone || "";
   const next = params?.next || "enable-biometric";
-  const nextParams = params?.nextParams || { next: role === "coach" ? "coach-info" : "about-you-profile" };
+  const nextParams = params?.nextParams || { next: getRoleOnboarding(role) };
   const [phone, setPhone] = useState(initialPhone);
   const [stage, setStage] = useState(initialPhone ? "code" : "phone");
   const [phase, setPhase] = useState("code");
@@ -874,6 +888,7 @@ export function ScreenVerifyPhone({ nav, params, toast, role, updateClientIdenti
     }
     const verifiedPhone = phone.trim();
     if (role === "coach") updateCoachOnboarding?.({ phone: verifiedPhone, phoneVerified: true });
+    else if (role === "business") updateBusinessOnboarding?.({ phone: verifiedPhone, phoneVerified: true });
     else updateClientIdentity?.({ phone: verifiedPhone, phoneVerified: true });
     if (params?.pendingClientPrefs) onComplete?.({ ...params.pendingClientPrefs, mobile: verifiedPhone, phoneVerified: true });
     setPhase("success");
@@ -990,7 +1005,7 @@ export function ScreenVerifyPhone({ nav, params, toast, role, updateClientIdenti
 export function ScreenEnableBiometric({ nav, params, toast, biometric, setBiometric, role }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
-  const next = params?.next || (role === "coach" ? "coach-info" : "about-you-profile");
+  const next = params?.next || getRoleOnboarding(role);
 
   const enable = () => {
     setBiometric(true);

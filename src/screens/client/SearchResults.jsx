@@ -238,9 +238,12 @@ export function ScreenClientSearchResults() {
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", background: C.white }}>
-      <TopBar title="Search" subtitle="Coaches, packages and sports" onBack={() => goBack("client-home")} />
+      <TopBar title="Search" subtitle="Coaches, businesses, programs and sports" onBack={() => goBack("client-home")} />
 
       <div style={{ padding: "12px 18px 10px", background: C.white, flexShrink: 0 }}>
+        <div style={{ marginBottom: 10 }}>
+          <SegTabs items={[{ value: "coaches", label: "Individual coaches" }, { value: "businesses", label: "Businesses & clubs" }]} value="coaches" onChange={(value) => value === "businesses" && nav("business-directory")} />
+        </div>
         <form role="search" onSubmit={submitSearch}>
           <div className="cl-input" style={{ minHeight: 50, display: "flex", alignItems: "center", gap: 10, border: `1.5px solid ${q ? C.brand : C.border}`, background: C.fog, borderRadius: 14, padding: "0 4px 0 14px" }}>
             <Search size={17} color={q ? C.brand : C.slateLight} aria-hidden="true" />

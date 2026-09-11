@@ -41,8 +41,8 @@ const STATUS_COPY = {
   [DISPUTE_STATUS.RESOLVED]: { label: "Decision made", tone: "success", title: "Your case has been resolved" },
 };
 
-function findBooking(id, bookings, coachBookings) {
-  return bookings.find((item) => item.id === id) || coachBookings.find((item) => item.id === id);
+function findBooking(id, bookings, coachBookings, businessBookings = []) {
+  return bookings.find((item) => item.id === id) || coachBookings.find((item) => item.id === id) || businessBookings.find((item) => item.id === id);
 }
 
 function SectionHeading({ children, hint }) {
@@ -162,13 +162,13 @@ function ReviewNotice({ children }) {
 }
 
 export function ScreenDisputeCreate({
-  nav, params, role: appRole, bookings = [], coachBookings = [],
+  nav, params, role: appRole, bookings = [], coachBookings = [], businessBookings = [],
   additionalCharges = [], createSessionDispute, disputeAdditionalCharge, toast,
 }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const role = params?.role || appRole || "client";
-  const booking = findBooking(params?.bookingId, bookings, coachBookings);
+  const booking = findBooking(params?.bookingId, bookings, coachBookings, businessBookings);
   const relatedCharge = additionalCharges.find((item) => item.id === params?.chargeId);
   const issues = role === "coach" ? COACH_ISSUES : CLIENT_ISSUES;
   const initialCategory = params?.category || issues[0].value;
@@ -333,14 +333,14 @@ function OutcomeCard({ dispute, role, booking }) {
   );
 }
 
-export function ScreenDisputeStatus({ nav, params, role: appRole, bookings = [], coachBookings = [], sessionDisputes = [] }) {
+export function ScreenDisputeStatus({ nav, params, role: appRole, bookings = [], coachBookings = [], businessBookings = [], sessionDisputes = [] }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const role = params?.role || appRole || "client";
   const dispute = sessionDisputes.find((item) => item.id === (params?.caseId || params?.id))
     || sessionDisputes.find((item) => item.filedByRole === role)
     || sessionDisputes[0];
-  const booking = dispute ? findBooking(dispute.bookingId, bookings, coachBookings) : null;
+  const booking = dispute ? findBooking(dispute.bookingId, bookings, coachBookings, businessBookings) : null;
 
   if (!dispute || !booking) {
     return <EmptyState icon={Scale} title="Case not found" body="This case may have been archived. Contact support if you still need help." />;
@@ -399,11 +399,11 @@ export function ScreenDisputeStatus({ nav, params, role: appRole, bookings = [],
 }
 
 export function ScreenAdditionalChargeCreate({
-  nav, params, coachBookings = [], bookings = [], createAdditionalCharge, toast,
+  nav, params, coachBookings = [], bookings = [], businessBookings = [], createAdditionalCharge, toast,
 }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
-  const booking = findBooking(params?.bookingId || params?.id, bookings, coachBookings);
+  const booking = findBooking(params?.bookingId || params?.id, bookings, coachBookings, businessBookings);
   const [step, setStep] = useState(1);
   const [reason, setReason] = useState(CHARGE_REASONS[0]);
   const [amount, setAmount] = useState("");
@@ -484,14 +484,14 @@ export function ScreenAdditionalChargeCreate({
 }
 
 export function ScreenAdditionalChargeReview({
-  nav, goBack, params, role: appRole, bookings = [], coachBookings = [], additionalCharges = [],
+  nav, goBack, params, role: appRole, bookings = [], coachBookings = [], businessBookings = [], additionalCharges = [],
   cancelAdditionalCharge, toast,
 }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const role = params?.role || appRole || "client";
   const charge = additionalCharges.find((item) => item.id === (params?.chargeId || params?.id)) || additionalCharges[0];
-  const booking = charge ? findBooking(charge.bookingId, bookings, coachBookings) : null;
+  const booking = charge ? findBooking(charge.bookingId, bookings, coachBookings, businessBookings) : null;
 
   if (!charge || !booking) return <EmptyState icon={ReceiptText} title="Request not found" body="This payment request may have been withdrawn." />;
   const pending = charge.status === ADDITIONAL_CHARGE_STATUS.PENDING;
@@ -565,13 +565,13 @@ export function ScreenAdditionalChargeReview({
 }
 
 export function ScreenAdditionalChargePayment({
-  nav, params, bookings = [], coachBookings = [], additionalCharges = [],
+  nav, params, bookings = [], coachBookings = [], businessBookings = [], additionalCharges = [],
   payAdditionalCharge, toast, offline,
 }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const charge = additionalCharges.find((item) => item.id === params?.chargeId);
-  const booking = charge ? findBooking(charge.bookingId, bookings, coachBookings) : null;
+  const booking = charge ? findBooking(charge.bookingId, bookings, coachBookings, businessBookings) : null;
   const [method, setMethod] = useState("visa");
   const [processing, setProcessing] = useState(false);
 

@@ -273,6 +273,50 @@ for (let i = 1; i <= 56; i++) {
 /** Returns a fresh array so screen actions never mutate the default library. */
 export const getCoachMedia = (coachId) => (DEFAULT_COACH_MEDIA[coachId] || DEFAULT_COACH_MEDIA.c1).map((media) => ({ ...media }));
 
+/* Which coach's local reel/photo library each business showcase borrows. */
+export const BUSINESS_MEDIA_SOURCE = {
+  biz1: "c7",   // Tennis
+  biz2: "c3",   // Swimming
+  biz3: "c25",  // AFL / Athletic performance
+  biz4: "c25",  // Football / Soccer
+  biz5: "c6",   // Rowing
+  biz6: "c18",  // Basketball
+  biz7: "c21",  // Running
+  biz8: "c4",   // Boxing
+  biz9: "c11",  // Badminton
+  biz10: "c14", // Cricket
+  biz11: "c15", // Yoga & Pilates
+  biz12: "c2",  // Strength & Conditioning
+  biz13: "c20", // Padel
+  biz14: "c6",  // Cycling
+  biz15: "c21", // Athletics & Sprint
+};
+export const getBusinessMediaSource = (businessId) => BUSINESS_MEDIA_SOURCE[businessId] || "c1";
+
+/* Verified business brand logos present in public/businesslogs/ */
+export const BUSINESS_LOGOS = {
+  biz1: asset("businesslogs/blogo (1).webp"),
+  biz2: asset("businesslogs/blogo (2).webp"),
+  biz3: asset("businesslogs/blogo (3).webp"),
+  biz4: asset("businesslogs/blogo (4).webp"),
+  biz5: asset("businesslogs/blogo (5).webp"),
+  biz6: asset("businesslogs/blogo (6).webp"),
+  biz7: asset("businesslogs/blogo (7).webp"),
+  biz8: asset("businesslogs/blogo (8).webp"),
+  biz9: asset("businesslogs/blogo (9).webp"),
+  biz10: asset("businesslogs/blogo (10).webp"),
+  biz11: asset("businesslogs/blogo (11).webp"),
+  biz12: asset("businesslogs/blogo (12).webp"),
+  biz13: asset("businesslogs/blogo (13).webp"),
+  biz14: asset("businesslogs/blogo (14).webp"),
+  biz15: asset("businesslogs/blogo (15).webp"),
+};
+
+export const getBusinessLogo = (idOrNum) => {
+  if (typeof idOrNum === "number") return asset(`businesslogs/blogo (${idOrNum}).webp`);
+  return BUSINESS_LOGOS[idOrNum] || asset("businesslogs/blogo (1).webp");
+};
+
 /* -------------------------------------------------------------------------
    FEATURED PROMOTIONAL BANNERS
    -------------------------------------------------------------------------

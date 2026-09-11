@@ -1113,6 +1113,10 @@ export function ScreenBookingParticipantDetails({ nav, params, draft, toast }) {
   };
 
   const next = () => {
+    if (!currentDetail.emergencyName.trim() || !currentDetail.emergencyPhone.trim()) {
+      toast && toast("Add an emergency contact name and phone");
+      return;
+    }
     if (isLast) {
       toast && toast("All participant details saved");
       nav("booking-review", { ...params, participantDetails: details });

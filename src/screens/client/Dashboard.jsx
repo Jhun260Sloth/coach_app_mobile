@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import {
   WifiOff, Calendar, ClipboardList, Heart, Download, Clock, MessageCircle, Star, CheckCircle2,
   AlertTriangle, CreditCard, ShieldCheck, LifeBuoy, Hourglass, RefreshCcw, ChevronLeft, ChevronRight, CalendarX2, CalendarDays,
-  Banknote, Scale, BadgeDollarSign, PlayCircle,
+  Banknote, Scale, BadgeDollarSign, PlayCircle, Building2,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T, LAYOUT } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
@@ -19,6 +19,7 @@ import { StatusBanner } from "../../systems/StateSystem";
 import { getBookingCoachName } from "../../utils/name";
 import { PaymentDeadlineCard, SessionJourneyTimeline } from "../../components/booking/SessionJourneyTimeline";
 import { SportBadge } from "../../components/ui/SportUI";
+import { ScreenClientBusinessBookingDetail } from "./BusinessDiscovery";
 
 /** Resolved name for a booking's coach — public name until the booking is
     confirmed, full name afterwards (partner reveal). */
@@ -165,8 +166,8 @@ export function ScreenClientDashboard({ nav, bookings = [], additionalCharges = 
         past={[BOOKING_STATUS.COMPLETED, BOOKING_STATUS.CANCELLED, BOOKING_STATUS.DECLINED, BOOKING_STATUS.EXPIRED].includes(b.status)}
         additionalCharge={pendingAdditionalCharge}
         onAdditionalCharge={() => nav("additional-charge-review", { chargeId: pendingAdditionalCharge?.id, role: "client", backTo: "client-dashboard" })}
-        onCancel={() => setCancelTarget(b)}
-        onPay={() => nav("payment", { bookingId: b.id })}
+        onCancel={() => b.providerType === "business" ? nav("client-booking-detail", { id: b.id }) : setCancelTarget(b)}
+        onPay={() => b.providerType === "business" ? nav("client-booking-detail", { id: b.id }) : nav("payment", { bookingId: b.id })}
         style={{ animationDelay: `${Math.min(i || 0, 8) * 45}ms` }}
       />
     );
@@ -519,7 +520,7 @@ export function ReceiptSheet({ booking, onClose }) {
 }
 
 export function BookingCard({ b, nav, past, additionalCharge, onAdditionalCharge, onCancel, onPay, style }) {
-  const { darkMode } = useApp();
+  const { darkMode, businesses = [] } = useApp();
   const C = darkMode ? CD : CL;
   const pending = b.status === BOOKING_STATUS.PENDING;
   const live = b.status === BOOKING_STATUS.IN_PROGRESS;
@@ -529,6 +530,10 @@ export function BookingCard({ b, nav, past, additionalCharge, onAdditionalCharge
   const additionalPaymentDue = additionalCharge?.status === ADDITIONAL_CHARGE_STATUS.PENDING;
   const needsAttention = paymentDue || additionalPaymentDue;
   const cn = coachNameFor(b);
+  const isBusiness = b.providerType === "business";
+  const business = isBusiness ? businesses.find((item) => item.id === b.businessId) : null;
+  const providerName = isBusiness ? (business?.tradingName || b.providerName || "Organisation") : (cn.name || b.clientName);
+  const providerLogo = isBusiness ? business?.profile?.logo : undefined;
   const coach = COACHES.find((c) => c.id === b.coachId);
   return (
     <Card
@@ -542,11 +547,19 @@ export function BookingCard({ b, nav, past, additionalCharge, onAdditionalCharge
         ...style,
       }}
     >
-      <div style={{ display: "flex", gap: 10, minWidth: 0, marginBottom: 10 }}>
-        <Avatar name={cn.name || b.clientName} size={42} />
+      <div style={{ display: "flex", gap: 12, minWidth: 0, marginBottom: 10 }}>
+        {isBusiness ? (
+          <div style={{ width: 48, height: 48, borderRadius: 14, padding: 4, overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: C.white, border: `1px solid ${C.border}` }}>
+            {providerLogo ? <img src={providerLogo} alt={`${providerName} logo`} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} /> : <Avatar name={providerName} size={40} />}
+          </div>
+        ) : <Avatar name={providerName} src={coach?.avatar} size={46} />}
         <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{ fontSize: T.subtitleLg, fontWeight: 700, color: C.jet, letterSpacing: "-0.1px", ...fDisplay }}>{b.service}</div>
-          <div style={{ fontSize: T.labelLg, color: C.slate, marginTop: 3, ...fBody }}>{cn.name || b.clientName}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0, marginTop: 3 }}>
+            {isBusiness && <span style={{ display: "inline-flex", alignItems: "center", color: C.brand, flexShrink: 0 }}><Building2 size={12} /></span>}
+            <div style={{ minWidth: 0, fontSize: T.labelLg, color: C.slate, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", ...fBody }}>{providerName}</div>
+          </div>
+          {isBusiness && (b.coachName || coach?.name) && <div style={{ fontSize: T.caption, color: C.slateLight, marginTop: 3, ...fBody }}>Coach · {b.coachName || coach?.name}</div>}
           <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: T.label, color: C.slateLight, marginTop: 6, ...fBody }}>
             <Clock size={11} /> {b.date} · {b.time}
           </div>
@@ -573,7 +586,7 @@ export function BookingCard({ b, nav, past, additionalCharge, onAdditionalCharge
       {paymentDue && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.brandTint, borderRadius: 12, padding: "9px 12px", marginTop: 12 }} onClick={(e) => e.stopPropagation()}>
           <CreditCard size={14} color={C.brand} style={{ flexShrink: 0 }} />
-          <span style={{ flex: 1, fontSize: T.label, color: C.jet, lineHeight: 1.4, ...fBody }}>{(cn.name || "Your coach").split(" ")[0]} accepted - send your payment to lock in the session.</span>
+          <span style={{ flex: 1, fontSize: T.label, color: C.jet, lineHeight: 1.4, ...fBody }}>{isBusiness ? "Your organisation assigned a coach" : `${(cn.name || "Your coach").split(" ")[0]} accepted`} - send your payment to lock in the session.</span>
         </div>
       )}
       <div style={{ display: "flex", gap: 8, marginTop: 14, alignItems: "center" }} onClick={(e) => e.stopPropagation()}>
@@ -587,28 +600,33 @@ export function BookingCard({ b, nav, past, additionalCharge, onAdditionalCharge
               <Btn size="sm" variant="dark" full onClick={onPay}>Pay now</Btn>
             ) : additionalPaymentDue ? (
               <Btn size="sm" variant="dark" full onClick={onAdditionalCharge}>Review</Btn>
+            ) : isBusiness ? (
+              <Btn size="sm" variant="secondary" full onClick={() => nav("client-booking-detail", { id: b.id })}>View details</Btn>
             ) : (
               <Btn size="sm" variant="secondary" full onClick={onCancel}>{pending ? "Withdraw request" : "Cancel booking"}</Btn>
             )}
-            <Btn size="sm" variant="dark" icon={MessageCircle} ariaLabel={`Message ${cn.name}`} onClick={() => nav("chat-thread", { name: b.coachName || b.clientName, handle: coach?.handle, context: `${b.service} · ${b.date}`, bookingId: b.id })} />
+            <Btn size="sm" variant="dark" icon={MessageCircle} ariaLabel={`Message ${providerName}`} onClick={() => nav("chat-thread", { name: isBusiness ? providerName : (b.coachName || b.clientName), handle: coach?.handle, context: `${b.service} · ${b.date}`, bookingId: b.id })} />
           </>
         )}
         {/* Completed / cancelled: always offer a fast rebook path alongside whatever review state applies. */}
-        {past && b.status === BOOKING_STATUS.COMPLETED && !b.reviewed && (
+        {past && isBusiness && (
+          <Btn size="sm" variant="outline" full icon={RefreshCcw} onClick={() => nav("business-public-profile", { id: b.businessId })}>Book again</Btn>
+        )}
+        {past && !isBusiness && b.status === BOOKING_STATUS.COMPLETED && !b.reviewed && (
           <>
             <Btn size="sm" full onClick={() => nav("leave-review", { bookingId: b.id, name: cn.name || b.coachName })}>Leave a review</Btn>
             <Btn size="sm" variant="outline" full icon={RefreshCcw} onClick={() => nav("coach-profile", { id: b.coachId })}>Book again</Btn>
           </>
         )}
-        {past && b.status === BOOKING_STATUS.COMPLETED && b.reviewed && (
+        {past && !isBusiness && b.status === BOOKING_STATUS.COMPLETED && b.reviewed && (
           <>
             <Btn size="sm" variant="outline" full icon={RefreshCcw} onClick={() => nav("coach-profile", { id: b.coachId })}>Book again</Btn>
           </>
         )}
-        {past && [BOOKING_STATUS.DECLINED, BOOKING_STATUS.EXPIRED].includes(b.status) && (
+        {past && !isBusiness && [BOOKING_STATUS.DECLINED, BOOKING_STATUS.EXPIRED].includes(b.status) && (
           <Btn size="sm" variant="outline" full icon={RefreshCcw} onClick={() => nav("coach-profile", { id: b.coachId })}>Find another time</Btn>
         )}
-        {past && b.status === BOOKING_STATUS.CANCELLED && (
+        {past && !isBusiness && b.status === BOOKING_STATUS.CANCELLED && (
           <Btn size="sm" variant="outline" full icon={RefreshCcw} onClick={() => nav("coach-profile", { id: b.coachId })}>Book again</Btn>
         )}
       </div>
@@ -619,7 +637,7 @@ export function BookingCard({ b, nav, past, additionalCharge, onAdditionalCharge
 /* Booking details — the client-side counterpart to the coach's booking detail page.
    Surfaces the same categories of information (party info, session details, notes,
    booking policy) but never exposes the Accept/Decline workflow, which is coach-only. */
-export function ScreenClientBookingDetail({ nav, goBack, params, bookings, toast, cancelBooking, rescheduleBooking, sessionDisputes = [], additionalCharges = [] }) {
+export function ScreenClientBookingDetail({ nav, goBack, params, bookings = [], toast, cancelBooking, rescheduleBooking, sessionDisputes = [], additionalCharges = [] }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const booking = bookings.find((b) => b.id === params.id);
@@ -633,6 +651,10 @@ export function ScreenClientBookingDetail({ nav, goBack, params, bookings, toast
         <EmptyState icon={ClipboardList} title="Booking not found" body="This booking may have been removed." />
       </div>
     );
+  }
+
+  if (booking.providerType === "business") {
+    return <ScreenClientBusinessBookingDetail />;
   }
 
   const coach = COACHES.find((c) => c.id === booking.coachId);

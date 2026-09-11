@@ -3,10 +3,10 @@ import { MapPin, Search, LocateFixed, CheckCircle2 } from "lucide-react";
 import { CL, CD, fBody, T, LAYOUT } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { AU_SUBURBS } from "../../data/mockData";
-import { haversineKm, FALLBACK_USER_LOCATION } from "../../lib/mapUtils";
+import { haversineKm } from "../../lib/mapUtils";
 import { Spinner, RequiredMark } from "./Primitives";
 
-const FALLBACK_SUBURB = AU_SUBURBS.find((s) => s.suburb === "Sydney" && s.postcode === "2000");
+const FALLBACK_SUBURB = AU_SUBURBS.find((s) => s.suburb === "Sydney CBD" && s.postcode === "2000") || AU_SUBURBS[0];
 
 function nearestSuburb(lat, lng) {
   let best = null;
@@ -22,49 +22,59 @@ function nearestSuburb(lat, lng) {
 /* Shared structured location picker — { suburb, state, postcode } — used by
    coach onboarding, client setup, participant profiles and account editing.
    Includes a "use my current location" detector with a locating state. */
-export function LocationField({ value, onChange, label = "Location", helper, placeholder = "Search suburb or postcode…", required }) {
+export function LocationField({ value, onChange, label = "Location", name = "location", helper, placeholder = "Search address, suburb or postcode…", required }) {
   const { darkMode, toast } = useApp();
   const C = darkMode ? CD : CL;
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [locating, setLocating] = useState(false);
-  const detectTimerRef = useRef(null);
+  const detectRequestRef = useRef(0);
 
-  useEffect(() => () => { if (detectTimerRef.current) clearTimeout(detectTimerRef.current); }, []);
+  useEffect(() => () => {
+    detectRequestRef.current += 1;
+  }, []);
 
+  const searchTokens = query.toLowerCase().split(/[\s,]+/).filter(Boolean);
   const filtered = AU_SUBURBS.filter((s) =>
-    query.length > 0 && (s.suburb.toLowerCase().includes(query.toLowerCase()) || s.postcode.includes(query))
+    searchTokens.length > 0 && searchTokens.some((token) => s.suburb.toLowerCase().includes(token) || (token.length >= 3 && s.postcode.includes(token)))
   ).slice(0, 6);
 
-  const pick = (s) => { onChange?.(s); setQuery(""); setOpen(false); };
+  const pick = (s) => {
+    detectRequestRef.current += 1;
+    setLocating(false);
+    onChange?.(s);
+    setQuery("");
+    setOpen(false);
+  };
 
   const detect = () => {
     if (locating) return;
-    setLocating(true);
-    const done = (suburb, msg) => {
-      setLocating(false);
-      onChange?.(suburb);
-      setQuery("");
-      setOpen(false);
-      if (toast) toast(msg);
-    };
+    const fallback = FALLBACK_SUBURB;
+    const requestId = detectRequestRef.current + 1;
+    detectRequestRef.current = requestId;
+
+    // Always give the user a usable result immediately. Browser geolocation can
+    // be unavailable, denied, or left pending in a prototype/browser preview.
+    setLocating(false);
+    onChange?.(fallback);
+    setQuery("");
+    setOpen(false);
+    if (toast) toast(`Using ${fallback.suburb} as your default area`);
+
     if (!navigator.geolocation) {
-      detectTimerRef.current = setTimeout(() => done(FALLBACK_SUBURB, `Set your area to ${FALLBACK_SUBURB.suburb}`), 500);
       return;
     }
-    const fallbackTimer = setTimeout(() => {
-      done(FALLBACK_SUBURB, `Set your area to ${FALLBACK_SUBURB.suburb}`);
-    }, 6000);
+
+    // Best effort: replace the default only if the browser returns a location.
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        clearTimeout(fallbackTimer);
+        if (detectRequestRef.current !== requestId) return;
         const nearest = nearestSuburb(pos.coords.latitude, pos.coords.longitude);
-        done(nearest, `Location detected - ${nearest.suburb}`);
+        if (!nearest) return;
+        onChange?.(nearest);
+        if (toast && nearest.suburb !== fallback.suburb) toast(`Location detected - ${nearest.suburb}`);
       },
-      () => {
-        clearTimeout(fallbackTimer);
-        done(FALLBACK_SUBURB, `Set your area to ${FALLBACK_SUBURB.suburb}`);
-      },
+      () => {},
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
     );
   };
@@ -87,7 +97,8 @@ export function LocationField({ value, onChange, label = "Location", helper, pla
             </div>
           </div>
           <button
-            onClick={() => onChange?.(null)}
+            type="button"
+            onClick={() => { detectRequestRef.current += 1; setLocating(false); onChange?.(null); }}
             style={{ minHeight: LAYOUT.touchTarget, background: "none", border: "none", color: C.brand, fontSize: T.label, fontWeight: 600, cursor: "pointer", padding: "6px 4px", ...fBody }}
           >
             Change
@@ -100,6 +111,8 @@ export function LocationField({ value, onChange, label = "Location", helper, pla
             <input
               value={locating ? "" : query}
               disabled={locating}
+              name={name}
+              autoComplete="off"
               onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
               onFocus={() => setOpen(true)}
               onBlur={() => setTimeout(() => setOpen(false), 150)}

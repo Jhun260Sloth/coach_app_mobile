@@ -113,7 +113,7 @@ export function ScreenCoachBookings({ nav, coachBookings }) {
         <ChevronRight size={17} color={C.slateLight} style={{ flexShrink: 0 }} />
       </div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 12, paddingTop: 10, borderTop: `1px solid ${C.border}` }}>
-        <StatusPill status={b.status} />
+        <StatusPill status={b.status} perspective="coach" />
         {b.status === BOOKING_STATUS.COMPLETED && (
           <span style={{ fontSize: T.label, color: C.success, fontWeight: 600, textAlign: "right", ...fBody }}>
             ${Math.round(b.price * (1 - CONFIG.commissionRate))} payout released
@@ -297,7 +297,7 @@ export function ScreenCoachBookingDetail({
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
-      <TopBar title={titleByStatus[booking.status] || "Session details"} onBack={() => goBack("coach-bookings")} right={<StatusPill status={booking.status} />} />
+      <TopBar title={titleByStatus[booking.status] || "Session details"} onBack={() => goBack("coach-bookings")} right={<StatusPill status={booking.status} perspective="coach" />} />
       <div style={{ flex: 1, overflowY: "auto", padding: "14px 18px 28px" }} className="cl-hide-scrollbar">
         <Card style={{ marginBottom: 14 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>

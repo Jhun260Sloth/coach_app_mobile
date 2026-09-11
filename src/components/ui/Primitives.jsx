@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  ChevronLeft, ChevronRight, Star, CheckCircle2, Search, Wifi, Battery, AlertTriangle, CalendarDays, List, X,
+  ChevronLeft, ChevronRight, ChevronDown, Check, Star, CheckCircle2, Search, Wifi, Battery, AlertTriangle, CalendarDays, List, X,
 } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T, LAYOUT } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
@@ -462,87 +462,245 @@ export function SearchMultiSelect({ options, value, onChange, placeholder = "Sea
   );
 }
 
-export function SearchSelect({ options, value, onChange, placeholder = "Search…", allowCustom = true, renderOption, renderValue }) {
+export function SearchSelect({ options = [], value, onChange, placeholder = "Select…", allowCustom = true, renderOption, renderValue, name = "single-select-search", ariaLabel, disabled }) {
   const C = useColors();
   const inputId = React.useId();
+  const containerRef = React.useRef(null);
+  const searchInputRef = React.useRef(null);
   const [query, setQuery] = React.useState("");
   const [open, setOpen] = React.useState(false);
 
-  const filtered = options
-    .filter((o) => o.toLowerCase().includes(query.trim().toLowerCase()))
-    .slice(0, 6);
+  // Close when tapping outside
+  React.useEffect(() => {
+    if (!open) return;
+    const handleOutside = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setOpen(false);
+        setQuery("");
+      }
+    };
+    document.addEventListener("mousedown", handleOutside);
+    document.addEventListener("touchstart", handleOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleOutside);
+      document.removeEventListener("touchstart", handleOutside);
+    };
+  }, [open]);
+
+  // Focus search input on open if search bar is present
+  React.useEffect(() => {
+    if (open && (options.length > 5 || allowCustom)) {
+      const timer = setTimeout(() => searchInputRef.current?.focus(), 50);
+      return () => clearTimeout(timer);
+    }
+  }, [open, options.length, allowCustom]);
+
+  const filtered = query.trim()
+    ? options.filter((o) => String(o).toLowerCase().includes(query.trim().toLowerCase()))
+    : options;
   const trimmed = query.trim();
-  const showAddCustom = allowCustom && trimmed.length > 0 && !options.some((o) => o.toLowerCase() === trimmed.toLowerCase());
+  const showAddCustom = allowCustom && trimmed.length > 0 && !options.some((o) => String(o).toLowerCase() === trimmed.toLowerCase());
 
-  const choose = (v) => { onChange(v); setQuery(""); setOpen(false); };
-  const clear = () => onChange("");
+  const choose = (v) => {
+    onChange(v);
+    setQuery("");
+    setOpen(false);
+  };
 
-  if (value) {
-    return (
-      <div className="cl-input" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, minHeight: LAYOUT.touchTarget, boxSizing: "border-box", border: `1.5px solid ${C.border}`, borderRadius: LAYOUT.inputRadius, padding: "0 13px", background: C.white }}>
-        <span style={{ minWidth: 0, fontSize: T.bodyLg, color: C.jet, fontWeight: 500, ...fBody }}>{renderValue ? renderValue(value) : value}</span>
-        <button type="button" onClick={clear} aria-label="Clear selection" style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: C.slateLight, flexShrink: 0 }}>
-          <svg width={13} height={13} viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth={2.3} strokeLinecap="round" /></svg>
-        </button>
-      </div>
-    );
-  }
+  const toggleOpen = () => {
+    if (disabled) return;
+    setOpen((prev) => !prev);
+    setQuery("");
+  };
+
+  const showSearch = options.length > 5 || allowCustom;
 
   return (
-    <div style={{ position: "relative" }}>
-      <div className="cl-input" style={{ display: "flex", alignItems: "center", gap: 8, minHeight: LAYOUT.touchTarget, boxSizing: "border-box", border: `1.5px solid ${C.border}`, borderRadius: LAYOUT.inputRadius, padding: "0 13px", background: C.white }}>
-        <Search size={15} color={C.slateLight} />
-        <input
-          id={inputId}
-          name="single-select-search"
-          type="search"
-          autoComplete="off"
-          aria-label={placeholder}
-          value={query}
-          onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
-          onFocus={() => setOpen(true)}
-          onBlur={() => setTimeout(() => setOpen(false), 150)}
-          placeholder={placeholder}
-          style={{ border: "none", outline: "none", flex: 1, fontSize: T.bodyLg, minWidth: 0, background: "transparent", color: C.jet, ...fBody }}
-        />
-      </div>
-      {open && (filtered.length > 0 || showAddCustom) && (
-        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.white, border: `1px solid ${C.border}`, borderRadius: 13, boxShadow: "0 10px 24px rgba(0,0,0,.10)", zIndex: 30, maxHeight: 190, overflowY: "auto", animation: "clFadeUp .18s ease" }}>
-          {filtered.map((o) => (
-            <button
-              type="button"
-              key={o}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => choose(o)}
-              style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 13px", background: "none", border: "none", cursor: "pointer", fontSize: T.body, color: C.jet, ...fBody }}
-            >
-              {renderOption ? renderOption(o) : o}
-            </button>
-          ))}
-          {showAddCustom && (
-            <button
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => choose(trimmed)}
-              style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 13px", background: "none", border: "none", borderTop: filtered.length ? `1px solid ${C.border}` : "none", cursor: "pointer", fontSize: T.body, color: C.brand, fontWeight: 600, ...fBody }}
-            >
-              Add "{trimmed}"
-            </button>
+    <div ref={containerRef} style={{ position: "relative", width: "100%" }}>
+      <button
+        type="button"
+        id={inputId}
+        name={name}
+        aria-label={ariaLabel || placeholder}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        disabled={disabled}
+        onClick={toggleOpen}
+        className="cl-input"
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 8,
+          minHeight: LAYOUT.touchTarget,
+          boxSizing: "border-box",
+          border: `1.5px solid ${open ? C.brand : C.border}`,
+          borderRadius: LAYOUT.inputRadius,
+          padding: "0 14px",
+          background: C.white,
+          cursor: disabled ? "not-allowed" : "pointer",
+          textAlign: "left",
+          boxShadow: open ? `0 0 0 3px ${C.brandTint}` : "none",
+          transition: "border-color .15s ease, box-shadow .15s ease",
+        }}
+      >
+        <div style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {value ? (
+            <span style={{ fontSize: T.bodyLg, color: C.jet, fontWeight: 500, ...fBody }}>
+              {renderValue ? renderValue(value) : value}
+            </span>
+          ) : (
+            <span style={{ fontSize: T.bodyLg, color: C.slateLight, fontWeight: 400, ...fBody }}>
+              {placeholder}
+            </span>
           )}
+        </div>
+        <ChevronDown
+          size={18}
+          color={open ? C.brand : C.slate}
+          aria-hidden="true"
+          style={{
+            flexShrink: 0,
+            marginLeft: 8,
+            transition: "transform .2s cubic-bezier(.2,.7,.3,1), color .15s ease",
+            transform: open ? "rotate(180deg)" : "rotate(0deg)",
+          }}
+        />
+      </button>
+
+      {open && (
+        <div
+          role="listbox"
+          style={{
+            position: "absolute",
+            top: "calc(100% + 5px)",
+            left: 0,
+            right: 0,
+            background: C.white,
+            border: `1px solid ${C.border}`,
+            borderRadius: 14,
+            boxShadow: "0 12px 30px rgba(0,0,0,.12), 0 2px 6px rgba(0,0,0,.04)",
+            zIndex: 60,
+            overflow: "hidden",
+            animation: "clFadeUp .18s cubic-bezier(.2,.7,.3,1)",
+          }}
+        >
+          {showSearch && (
+            <div
+              style={{
+                padding: "8px 12px",
+                borderBottom: `1px solid ${C.border}`,
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                background: C.fog,
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Search size={14} color={C.slateLight} style={{ flexShrink: 0 }} />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search options…"
+                autoComplete="off"
+                style={{
+                  border: "none",
+                  outline: "none",
+                  width: "100%",
+                  fontSize: T.body,
+                  background: "transparent",
+                  color: C.jet,
+                  ...fBody,
+                }}
+              />
+            </div>
+          )}
+
+          <div style={{ maxHeight: 210, overflowY: "auto" }}>
+            {filtered.length === 0 && !showAddCustom ? (
+              <div style={{ padding: "14px 12px", textAlign: "center", fontSize: T.captionLg, color: C.slateLight, ...fBody }}>
+                No options found
+              </div>
+            ) : (
+              filtered.map((o) => {
+                const isSelected = o === value;
+                return (
+                  <button
+                    type="button"
+                    key={o}
+                    role="option"
+                    aria-selected={isSelected}
+                    onClick={() => choose(o)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      width: "100%",
+                      minHeight: 42,
+                      textAlign: "left",
+                      padding: "10px 14px",
+                      background: isSelected ? C.brandTint : "transparent",
+                      border: "none",
+                      borderBottom: `1px solid ${C.border}15`,
+                      cursor: "pointer",
+                      fontSize: T.body,
+                      color: isSelected ? C.brand : C.jet,
+                      fontWeight: isSelected ? 600 : 400,
+                      transition: "background .12s ease",
+                      ...fBody,
+                    }}
+                  >
+                    <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {renderOption ? renderOption(o) : o}
+                    </span>
+                    {isSelected && <Check size={16} color={C.brand} style={{ flexShrink: 0, marginLeft: 8 }} />}
+                  </button>
+                );
+              })
+            )}
+
+            {showAddCustom && (
+              <button
+                type="button"
+                onClick={() => choose(trimmed)}
+                style={{
+                  display: "block",
+                  width: "100%",
+                  minHeight: 42,
+                  textAlign: "left",
+                  padding: "10px 14px",
+                  background: "transparent",
+                  border: "none",
+                  borderTop: `1px solid ${C.border}`,
+                  cursor: "pointer",
+                  fontSize: T.body,
+                  color: C.brand,
+                  fontWeight: 600,
+                  ...fBody,
+                }}
+              >
+                + Add "{trimmed}"
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-export function StatusPill({ status }) {
+export function StatusPill({ status, perspective = "client" }) {
   const C = useColors();
+  const providerView = perspective === "coach" || perspective === "business" || perspective === "provider";
   const map = {
-    pending: { label: "Awaiting coach", tone: "orange", pulse: true },
-    awaiting_payment: { label: "Payment due", tone: "orange", pulse: true },
+    pending: { label: providerView ? "Needs response" : "Awaiting coach", tone: "orange", pulse: true },
+    awaiting_payment: { label: providerView ? "Awaiting payment" : "Payment due", tone: "orange", pulse: true },
     confirmed: { label: "Confirmed", tone: "success" },
     in_progress: { label: "Live now", tone: "success", pulse: true },
-    completion_pending: { label: "Finishing up", tone: "orange", pulse: true },
+    completion_pending: { label: providerView ? "Finish session" : "Finishing up", tone: "orange", pulse: true },
     completed: { label: "Completed", tone: "neutral" },
     cancelled: { label: "Cancelled", tone: "neutral" },
     declined: { label: "Declined", tone: "danger" },

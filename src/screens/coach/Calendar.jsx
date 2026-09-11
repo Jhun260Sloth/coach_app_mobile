@@ -196,7 +196,7 @@ export function ScreenCoachCalendar({ nav, toast, coachPackages, availabilityBlo
                     </div>
                   </div>
                   <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
-                    <StatusPill status={booking.status} />
+                    <StatusPill status={booking.status} perspective="coach" />
                   </div>
                 </Card>
               );

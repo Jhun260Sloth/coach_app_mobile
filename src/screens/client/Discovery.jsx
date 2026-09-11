@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { Search, SlidersHorizontal, ArrowUpDown, ArrowDown, ChevronDown, ChevronRight, Navigation, Star, MapPin, Heart, X, LocateFixed, Calendar, MessageCircle, Sparkles, BadgeCheck, CheckCircle2, Clock, Award, Map as MapIcon } from "lucide-react";
+import { Search, SlidersHorizontal, ArrowUpDown, ArrowDown, ChevronDown, ChevronRight, Navigation, Star, MapPin, Heart, X, LocateFixed, Calendar, MessageCircle, Sparkles, BadgeCheck, CheckCircle2, Clock, Award, Building2, User, Map as MapIcon } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T, LAYOUT } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 
 import { COACHES, ALL_SUBURBS, SUBURB_COORDS, PROMO_BANNERS } from "../../data/mockData";
+import { isBusinessDiscoverable } from "../../data/businesses";
+import { BusinessCard } from "./BusinessDiscovery";
 import { Card, Chip, Badge, SectionLabel, Avatar, Btn, BottomSheet, Spinner, ScrollFadeRow, HandleTag, Skeleton } from "../../components/ui/Primitives";
 import { PromoBannerCarousel } from "../../components/ui/PromoBannerCarousel";
 import { SportBadge, SportIcon, SportSearchMultiSelect, SportTile } from "../../components/ui/SportUI";
@@ -33,6 +35,10 @@ const SORT_OPTIONS = [
   { value: "distance", label: "Distance", detail: "Closest coaches first" },
   { value: "rating", label: "Highest rated", detail: "Top client ratings first" },
   { value: "price", label: "Price: low to high", detail: "Lowest session price first" },
+];
+const PROVIDER_OPTIONS = [
+  { value: "coaches", label: "Individual coaches", icon: User },
+  { value: "businesses", label: "Businesses & clubs", icon: Building2 },
 ];
 
 const oneLine = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
@@ -439,7 +445,7 @@ export function PersonalisedRecommendationModal({ open, onClose, onSubmit }) {
 }
 
 export function ScreenClientHome({ nav, params = {}, favorites = [], toggleFav, filters, onFiltersChange, clientNotifications: notifications = [], coachAvailableNow, isFirstTimeClient, discoveryPrefs, setDiscoveryPrefs, showPostSignupGuide, setShowPostSignupGuide }) {
-  const { darkMode } = useApp();
+  const { darkMode, businesses, businessPrograms, businessRoster } = useApp();
   const C = darkMode ? CD : CL;
   const heroText = darkMode ? C.jet : CL.white;
   const heroMuted = `color-mix(in srgb, ${heroText} 76%, transparent)`;
@@ -453,6 +459,7 @@ export function ScreenClientHome({ nav, params = {}, favorites = [], toggleFav, 
   const [activeSheet, setActiveSheet] = useState(null);
   const [sortBy, setSortBy] = useState("recommended");
   const [filterDraft, setFilterDraft] = useState(DEFAULT_FILTERS);
+  const [providerType, setProviderType] = useState("coaches");
   const [locationQuery, setLocationQuery] = useState("");
   const [listLoading, setListLoading] = useState(false);
 
@@ -548,6 +555,58 @@ export function ScreenClientHome({ nav, params = {}, favorites = [], toggleFav, 
       return score(b) - score(a);
     });
   }, [searchAndAreaFiltered, radiusKm, sortBy]);
+
+  // Businesses & clubs share the same sport / price / rating filters so the
+  // "Looking for" choice in Filters is a real provider toggle, not a dead end.
+  // Distance and saved-coach criteria don't apply to organisations.
+  const discoverableBusinesses = useMemo(
+    () => (Array.isArray(businesses) ? businesses : []).filter(isBusinessDiscoverable),
+    [businesses]
+  );
+  const businessResults = useMemo(() => {
+    const programs = Array.isArray(businessPrograms) ? businessPrograms : [];
+    const maxPrice = appliedFilters.maxPrice ?? DEFAULT_FILTERS.maxPrice;
+    const minRating = appliedFilters.minRating ?? 0;
+    const sports = appliedFilters.sports || [];
+    const matches = discoverableBusinesses.filter((b) => {
+      const bSports = b.sports || [];
+      if (sports.length && !bSports.some((s) => sports.includes(s))) return false;
+      const livePrices = programs
+        .filter((p) => p.businessId === b.id && p.status === "live")
+        .map((p) => Number(p.price) || 0);
+      const minPrice = livePrices.length ? Math.min(...livePrices) : null;
+      if (minPrice != null && minPrice > maxPrice) return false;
+      if ((b.profile?.rating ?? 0) < minRating) return false;
+      return true;
+    });
+    const minProgramPrice = (biz) => {
+      const prices = programs
+        .filter((p) => p.businessId === biz.id && p.status === "live")
+        .map((p) => Number(p.price) || 0);
+      return prices.length ? Math.min(...prices) : Infinity;
+    };
+    return [...matches].sort((a, b) => {
+      if (sortBy === "price") return minProgramPrice(a) - minProgramPrice(b) || (b.profile?.rating ?? 0) - (a.profile?.rating ?? 0);
+      return (b.profile?.rating ?? 0) - (a.profile?.rating ?? 0);
+    });
+  }, [discoverableBusinesses, appliedFilters, businessPrograms, sortBy]);
+  const businessDraftCount = useMemo(() => {
+    const programs = Array.isArray(businessPrograms) ? businessPrograms : [];
+    const maxPrice = filterDraft.maxPrice ?? DEFAULT_FILTERS.maxPrice;
+    const minRating = filterDraft.minRating ?? 0;
+    const sports = filterDraft.sports || [];
+    return discoverableBusinesses.filter((b) => {
+      const bSports = b.sports || [];
+      if (sports.length && !bSports.some((s) => sports.includes(s))) return false;
+      const livePrices = programs
+        .filter((p) => p.businessId === b.id && p.status === "live")
+        .map((p) => Number(p.price) || 0);
+      const minPrice = livePrices.length ? Math.min(...livePrices) : null;
+      if (minPrice != null && minPrice > maxPrice) return false;
+      if ((b.profile?.rating ?? 0) < minRating) return false;
+      return true;
+    }).length;
+  }, [filterDraft, discoverableBusinesses, businessPrograms]);
   // Count filter categories rather than every selected value, keeping the
   // sticky control compact even when several sports or areas are selected.
   const activeFilterCount = useMemo(() => {
@@ -601,6 +660,11 @@ export function ScreenClientHome({ nav, params = {}, favorites = [], toggleFav, 
       remove: () => updateAppliedFilters({ favoritesOnly: false }),
     }] : []),
   ];
+  // Distance and saved-coach criteria only apply to individual coaches, so
+  // their tokens are dropped from the businesses view.
+  const visibleFilterTokens = providerType === "businesses"
+    ? appliedFilterTokens.filter((t) => t.key !== "distance" && t.key !== "favorites")
+    : appliedFilterTokens;
 
   // Filter and sort changes briefly show shimmer rows so list updates read as
   // a deliberate refresh rather than an abrupt swap.
@@ -625,6 +689,7 @@ export function ScreenClientHome({ nav, params = {}, favorites = [], toggleFav, 
 
   const openFilters = () => {
     setFilterDraft({ ...appliedFilters, sports: [...appliedFilters.sports], areas: [...appliedFilters.areas] });
+    setProviderType("coaches");
     setActiveSheet("filters");
   };
   const updateDraft = patch => setFilterDraft(current => ({ ...current, ...patch }));
@@ -724,30 +789,72 @@ export function ScreenClientHome({ nav, params = {}, favorites = [], toggleFav, 
       heightPct={88}
       footer={(
         <div style={{ display: "flex", gap: 10 }}>
-          <Btn variant="outline" onClick={() => setFilterDraft({ ...DEFAULT_FILTERS, sports: [], areas: [] })}>Reset</Btn>
-          <div style={{ flex: 1 }}><Btn full onClick={() => { haptic(12); setAppliedFilters(filterDraft); setActiveSheet(null); }}>Show {draftPreviewCount} result{draftPreviewCount === 1 ? "" : "s"}</Btn></div>
+          <Btn variant="outline" onClick={() => { setFilterDraft({ ...DEFAULT_FILTERS, sports: [], areas: [] }); setProviderType("coaches"); }}>Reset</Btn>
+          <div style={{ flex: 1 }}>
+            {providerType === "businesses"
+              ? <Btn full onClick={() => { haptic(12); setAppliedFilters({ ...filterDraft }); setActiveSheet(null); }}>Show {businessDraftCount} result{businessDraftCount === 1 ? "" : "s"}</Btn>
+              : <Btn full onClick={() => { haptic(12); setAppliedFilters(filterDraft); setActiveSheet(null); }}>Show {draftPreviewCount} result{draftPreviewCount === 1 ? "" : "s"}</Btn>}
+          </div>
         </div>
       )}
     >
       <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.5, marginBottom: 20, ...fBody }}>Refine results without leaving Discover.</div>
 
-      <button
-        type="button"
-        aria-pressed={!!filterDraft.favoritesOnly}
-        onClick={() => updateDraft({ favoritesOnly: !filterDraft.favoritesOnly })}
-        style={{ width: "100%", minHeight: 56, display: "flex", alignItems: "center", gap: 12, padding: "8px 12px", marginBottom: 24, border: "none", borderRadius: 16, background: filterDraft.favoritesOnly ? C.brandTint : C.fog, color: C.jet, cursor: "pointer", textAlign: "left" }}
-      >
-        <span style={{ width: 38, height: 38, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", background: C.white, flexShrink: 0 }}>
-          <Heart size={17} color={filterDraft.favoritesOnly ? C.brand : C.slate} fill={filterDraft.favoritesOnly ? C.brand : "none"} />
-        </span>
-        <span style={{ minWidth: 0, flex: 1 }}>
-          <span style={{ display: "block", fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...fBody }}>Favorites only</span>
-          <span style={{ display: "block", marginTop: 2, fontSize: T.captionLg, color: C.slate, ...fBody }}>Show coaches you have saved</span>
-        </span>
-        <span aria-hidden="true" style={{ width: 42, height: 24, padding: 3, boxSizing: "border-box", borderRadius: 999, background: filterDraft.favoritesOnly ? C.brand : C.border, display: "flex", justifyContent: filterDraft.favoritesOnly ? "flex-end" : "flex-start", transition: "background .18s ease" }}>
-          <span style={{ width: 18, height: 18, borderRadius: 999, background: C.white }} />
-        </span>
-      </button>
+      <SectionLabel>Looking for</SectionLabel>
+      <div role="radiogroup" aria-label="Provider type" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 24 }}>
+        {PROVIDER_OPTIONS.map((option) => {
+          const selected = providerType === option.value;
+          const Icon = option.icon;
+          return (
+            <button
+              key={option.value}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              onClick={() => { haptic(8); setProviderType(option.value); }}
+              style={{ minHeight: 74, display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "center", gap: 7, padding: "10px 12px", borderRadius: 14, cursor: "pointer", textAlign: "left", border: `1.5px solid ${selected ? C.brand : C.border}`, background: selected ? C.brandTint : C.white }}
+            >
+              <Icon size={18} color={selected ? C.brand : C.slate} aria-hidden="true" />
+              <span style={{ fontSize: T.labelLg, fontWeight: 700, color: selected ? C.brand : C.jet, ...fBody }}>{option.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {providerType === "coaches" && (
+        <>
+          <button
+            type="button"
+            aria-pressed={!!filterDraft.favoritesOnly}
+            onClick={() => updateDraft({ favoritesOnly: !filterDraft.favoritesOnly })}
+            style={{ width: "100%", minHeight: 56, display: "flex", alignItems: "center", gap: 12, padding: "8px 12px", marginBottom: 24, border: "none", borderRadius: 16, background: filterDraft.favoritesOnly ? C.brandTint : C.fog, color: C.jet, cursor: "pointer", textAlign: "left" }}
+          >
+            <span style={{ width: 38, height: 38, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", background: C.white, flexShrink: 0 }}>
+              <Heart size={17} color={filterDraft.favoritesOnly ? C.brand : C.slate} fill={filterDraft.favoritesOnly ? C.brand : "none"} />
+            </span>
+            <span style={{ minWidth: 0, flex: 1 }}>
+              <span style={{ display: "block", fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...fBody }}>Favorites only</span>
+              <span style={{ display: "block", marginTop: 2, fontSize: T.captionLg, color: C.slate, ...fBody }}>Show coaches you have saved</span>
+            </span>
+            <span aria-hidden="true" style={{ width: 42, height: 24, padding: 3, boxSizing: "border-box", borderRadius: 999, background: filterDraft.favoritesOnly ? C.brand : C.border, display: "flex", justifyContent: filterDraft.favoritesOnly ? "flex-end" : "flex-start", transition: "background .18s ease" }}>
+              <span style={{ width: 18, height: 18, borderRadius: 999, background: C.white }} />
+            </span>
+          </button>
+
+          <SectionLabel>Distance</SectionLabel>
+          <div style={{ display: "grid", gap: 8, marginBottom: 24 }}>
+            {[...NEARBY_RADIUS_PRESETS.map(km => ({ value: km, label: `Within ${km} km` })), { value: null, label: "Any distance" }].map((option) => {
+              const selected = filterDraft.radiusKm === option.value;
+              return (
+                <button key={option.label} type="button" role="radio" aria-checked={selected} onClick={() => updateDraft({ radiusKm: option.value })} style={{ width: "100%", minHeight: 48, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 14px", border: "none", borderRadius: 13, background: selected ? C.brandTint : C.fog, color: C.jet, cursor: "pointer", textAlign: "left", fontSize: T.bodyLg, fontWeight: selected ? 700 : 500, ...fBody }}>
+                  {option.label}
+                  <span aria-hidden="true" style={{ width: 20, height: 20, borderRadius: 999, border: `2px solid ${selected ? C.brand : C.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>{selected && <span style={{ width: 10, height: 10, borderRadius: 999, background: C.brand }} />}</span>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
 
       <SectionLabel>Sport</SectionLabel>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
@@ -760,19 +867,6 @@ export function ScreenClientHome({ nav, params = {}, favorites = [], toggleFav, 
       </div>
       <div style={{ marginBottom: 24 }}>
         <SportSearchMultiSelect options={SPORT_NAMES} value={filterDraft.sports || []} onChange={(sports) => updateDraft({ sports })} placeholder="Search all sports…" />
-      </div>
-
-      <SectionLabel>Distance</SectionLabel>
-      <div style={{ display: "grid", gap: 8, marginBottom: 24 }}>
-        {[...NEARBY_RADIUS_PRESETS.map(km => ({ value: km, label: `Within ${km} km` })), { value: null, label: "Any distance" }].map((option) => {
-          const selected = filterDraft.radiusKm === option.value;
-          return (
-            <button key={option.label} type="button" role="radio" aria-checked={selected} onClick={() => updateDraft({ radiusKm: option.value })} style={{ width: "100%", minHeight: 48, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 14px", border: "none", borderRadius: 13, background: selected ? C.brandTint : C.fog, color: C.jet, cursor: "pointer", textAlign: "left", fontSize: T.bodyLg, fontWeight: selected ? 700 : 500, ...fBody }}>
-              {option.label}
-              <span aria-hidden="true" style={{ width: 20, height: 20, borderRadius: 999, border: `2px solid ${selected ? C.brand : C.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>{selected && <span style={{ width: 10, height: 10, borderRadius: 999, background: C.brand }} />}</span>
-            </button>
-          );
-        })}
       </div>
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
@@ -917,7 +1011,7 @@ export function ScreenClientHome({ nav, params = {}, favorites = [], toggleFav, 
                 </span>
                 <span style={{ flex: 1, minWidth: 0 }}>
                   <span style={{ display: "block", fontSize: T.subtitle, fontWeight: 700, color: C.jet, ...fDisplay }}>
-                    {listLoading ? "Updating matches…" : `${filtered.length} coach${filtered.length === 1 ? "" : "es"} match`}
+                    {listLoading ? "Updating matches…" : providerType === "businesses" ? `${businessResults.length} organisation${businessResults.length === 1 ? "" : "s"} match` : `${filtered.length} coach${filtered.length === 1 ? "" : "es"} match`}
                   </span>
                   <span style={{ display: "block", marginTop: 2, fontSize: T.captionLg, color: C.slate, ...fBody }}>
                     {activeFilterCount} filter {activeFilterCount === 1 ? "is" : "categories are"} shaping these results
@@ -929,7 +1023,7 @@ export function ScreenClientHome({ nav, params = {}, favorites = [], toggleFav, 
               </div>
 
               <div className="cl-hide-scrollbar" style={{ display: "flex", gap: 7, margin: "6px -18px 0", padding: "0 18px", overflowX: "auto", scrollSnapType: "x proximity" }}>
-                {appliedFilterTokens.map(token => (
+                {visibleFilterTokens.map(token => (
                   <button
                     key={token.key}
                     type="button"
@@ -954,30 +1048,64 @@ export function ScreenClientHome({ nav, params = {}, favorites = [], toggleFav, 
           )}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
             <div style={{ minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: T.title, fontWeight: 700, color: C.jet, ...fDisplay }}>
-                {appliedFilters.favoritesOnly ? <><Heart size={15} color={C.brand} fill={C.brand} /> Saved coaches</> : hasActiveFilters ? <><SlidersHorizontal size={15} color={C.brand} /> Filtered coaches</> : <><Navigation size={15} color={C.brand} /> Coaches near you</>}
-              </div>
-              <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...oneLine, ...fBody }}>
-                <span key={filtered.length} style={{ display: "inline-block", fontWeight: 700, animation: "clScaleIn .28s cubic-bezier(.22,1,.36,1)" }}>{filtered.length}</span>
-                {" "}match{filtered.length === 1 ? "" : "es"} near {nearestLocationLabel}
-              </div>
+              {providerType === "businesses" ? (
+                <>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: T.title, fontWeight: 700, color: C.jet, ...fDisplay }}>
+                    {hasActiveFilters ? <><SlidersHorizontal size={15} color={C.brand} /> Filtered businesses</> : <><Building2 size={15} color={C.brand} /> Businesses & clubs</>}
+                  </div>
+                  <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...oneLine, ...fBody }}>
+                    <span key={businessResults.length} style={{ display: "inline-block", fontWeight: 700, animation: "clScaleIn .28s cubic-bezier(.22,1,.36,1)" }}>{businessResults.length}</span>
+                    {" "}verified organisation{businessResults.length === 1 ? "" : "s"}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: T.title, fontWeight: 700, color: C.jet, ...fDisplay }}>
+                    {appliedFilters.favoritesOnly ? <><Heart size={15} color={C.brand} fill={C.brand} /> Saved coaches</> : hasActiveFilters ? <><SlidersHorizontal size={15} color={C.brand} /> Filtered coaches</> : <><Navigation size={15} color={C.brand} /> Coaches near you</>}
+                  </div>
+                  <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...oneLine, ...fBody }}>
+                    <span key={filtered.length} style={{ display: "inline-block", fontWeight: 700, animation: "clScaleIn .28s cubic-bezier(.22,1,.36,1)" }}>{filtered.length}</span>
+                    {" "}match{filtered.length === 1 ? "" : "es"} near {nearestLocationLabel}
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
-          {listLoading ? (
-            <ListSkeleton />
-          ) : filtered.length === 0 ? (
-            <StatusBanner state="noResults" style={{ marginTop: 10 }} onPrimary={() => setAppliedFilters(DEFAULT_FILTERS)} onSecondary={() => setAppliedFilters({ ...appliedFilters, radiusKm: CUSTOM_RADIUS_MAX_KM })} secondaryLabel="Browse all coaches" />
+          {providerType === "businesses" ? (
+            listLoading ? (
+              <ListSkeleton />
+            ) : businessResults.length === 0 ? (
+              <StatusBanner state="noResults" style={{ marginTop: 10 }} onPrimary={() => setAppliedFilters(DEFAULT_FILTERS)} onSecondary={() => setAppliedFilters(DEFAULT_FILTERS)} secondaryLabel="Browse all businesses" />
+            ) : (
+              <div className="cl-stagger">{businessResults.map((b, i) => (
+                <BusinessCard
+                  key={b.id}
+                  business={b}
+                  programCount={businessPrograms.filter((p) => p.businessId === b.id && p.status === "live").length}
+                  rosterCount={businessRoster.filter((m) => m.businessId === b.id && m.status === "active").length || (b.id === "biz2" ? 3 : 6)}
+                  onOpen={() => nav("business-public-profile", { id: b.id })}
+                  C={C}
+                  style={{ animationDelay: `${Math.min(i, 8) * 45}ms` }}
+                />
+              ))}</div>
+            )
           ) : (
-            <div className="cl-stagger">{filtered.map((c, i) => (
-              <CoachListCard
-                key={c.id}
-                coach={c}
-                unavailable={c.id === LIVE_AVAILABILITY_COACH_ID && !coachAvailableNow}
-                style={{ animationDelay: `${Math.min(i, 8) * 45}ms` }}
-                onOpen={() => nav("coach-profile", { id: c.id })}
-              />
-            ))}</div>
+            listLoading ? (
+              <ListSkeleton />
+            ) : filtered.length === 0 ? (
+              <StatusBanner state="noResults" style={{ marginTop: 10 }} onPrimary={() => setAppliedFilters(DEFAULT_FILTERS)} onSecondary={() => setAppliedFilters({ ...appliedFilters, radiusKm: CUSTOM_RADIUS_MAX_KM })} secondaryLabel="Browse all coaches" />
+            ) : (
+              <div className="cl-stagger">{filtered.map((c, i) => (
+                <CoachListCard
+                  key={c.id}
+                  coach={c}
+                  unavailable={c.id === LIVE_AVAILABILITY_COACH_ID && !coachAvailableNow}
+                  style={{ animationDelay: `${Math.min(i, 8) * 45}ms` }}
+                  onOpen={() => nav("coach-profile", { id: c.id })}
+                />
+              ))}</div>
+            )
           )}
         </div>
       </div>
@@ -1004,7 +1132,7 @@ export function ScreenClientHome({ nav, params = {}, favorites = [], toggleFav, 
       {locationSheet}
       {filterSheet}
 
-      {!mapOpen && (
+      {!mapOpen && providerType === "coaches" && (
         <button
           type="button"
           aria-label="Open coach map"

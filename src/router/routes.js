@@ -56,6 +56,23 @@ import { ScreenCoachAvailabilitySetup } from "../screens/coach/AvailabilitySetup
 import { ScreenCoachPayoutSetup } from "../screens/coach/PayoutSetup";
 import { ScreenCoachSetupComplete } from "../screens/coach/SetupComplete";
 
+// Business
+import {
+  ScreenBusinessEligibility, ScreenBusinessIdentity, ScreenBusinessPlan,
+  ScreenBusinessApplicationSubmitted,
+} from "../screens/business/Onboarding";
+import {
+  ScreenBusinessDashboard, ScreenBusinessRoster, ScreenBusinessCoachDetail, ScreenBusinessPrograms,
+  ScreenBusinessProgramForm, ScreenBusinessProgramOverview, ScreenBusinessBookingDetail, ScreenBusinessMore,
+  ScreenBusinessLocations, ScreenBusinessProfileEdit, ScreenBusinessMedia, ScreenBusinessReviews, ScreenBusinessFinance,
+  ScreenBusinessAnalytics, ScreenBusinessCompliance, ScreenBusinessBookings,
+  ScreenBusinessNotifications,
+} from "../screens/business/BusinessScreens";
+import {
+  ScreenBusinessDirectory, ScreenBusinessPublicProfile, ScreenBusinessProgramDetail,
+  ScreenBusinessBookingReview, ScreenBusinessBookingConfirmation,
+} from "../screens/client/BusinessDiscovery";
+
 // Shared: messaging & support
 import { ScreenMessages, ScreenChatThread } from "../screens/messaging/Messaging";
 import { ScreenSupport } from "../screens/support/Support";
@@ -95,6 +112,10 @@ export const ROUTES = {
   "verification": ScreenVerification,
   "verification-pending": ScreenVerificationPending,
   "verification-rejected": ScreenVerificationPending,
+  "business-eligibility": ScreenBusinessEligibility,
+  "business-identity": ScreenBusinessIdentity,
+  "business-plan": ScreenBusinessPlan,
+  "business-application-submitted": ScreenBusinessApplicationSubmitted,
 
   // Client
   "client-home": ScreenClientHome,
@@ -124,6 +145,11 @@ export const ROUTES = {
   "client-messages": ScreenMessages,
   "client-profile": ScreenClientProfile,
   "client-history": ScreenClientHistory,
+  "business-directory": ScreenBusinessDirectory,
+  "business-public-profile": ScreenBusinessPublicProfile,
+  "business-program-detail": ScreenBusinessProgramDetail,
+  "business-booking-review": ScreenBusinessBookingReview,
+  "business-booking-confirmation": ScreenBusinessBookingConfirmation,
 
   // Coach
   "coach-dashboard": ScreenCoachDashboard,
@@ -146,6 +172,26 @@ export const ROUTES = {
   "coach-earnings": ScreenCoachEarnings,
   "coach-history": ScreenCoachHistory,
   "coach-messages": ScreenMessages,
+
+  // Business
+  "business-dashboard": ScreenBusinessDashboard,
+  "business-bookings": ScreenBusinessBookings,
+  "business-notifications": ScreenBusinessNotifications,
+  "business-roster": ScreenBusinessRoster,
+  "business-coach-detail": ScreenBusinessCoachDetail,
+  "business-programs": ScreenBusinessPrograms,
+  "business-program-overview": ScreenBusinessProgramOverview,
+  "business-program-form": ScreenBusinessProgramForm,
+  "business-booking-detail": ScreenBusinessBookingDetail,
+  "business-messages": ScreenMessages,
+  "business-more": ScreenBusinessMore,
+  "business-locations": ScreenBusinessLocations,
+  "business-profile-edit": ScreenBusinessProfileEdit,
+  "business-media": ScreenBusinessMedia,
+  "business-reviews": ScreenBusinessReviews,
+  "business-finance": ScreenBusinessFinance,
+  "business-analytics": ScreenBusinessAnalytics,
+  "business-compliance": ScreenBusinessCompliance,
 
   // Shared
   "chat-thread": ScreenChatThread,
@@ -187,6 +233,10 @@ const ROUTE_METADATA_BASE = {
   "verification": { title: "Submit Verification Docs", category: "Onboarding", role: "coach" },
   "verification-pending": { title: "Verification Pending Banner", category: "Onboarding", role: "coach" },
   "verification-rejected": { title: "Verification Rejected & Resubmit", category: "Onboarding", role: "coach" },
+  "business-eligibility": { title: "Business Signup: Eligibility", category: "Business Onboarding", role: "business" },
+  "business-identity": { title: "Business Signup: Identity", category: "Business Onboarding", role: "business" },
+  "business-plan": { title: "Business Signup: Plan", category: "Business Onboarding", role: "business" },
+  "business-application-submitted": { title: "Business Verification", category: "Business Onboarding", role: "business" },
 
   // Client Flow
   "client-home": { title: "Client Discover Home", category: "Client", role: "client" },
@@ -216,6 +266,11 @@ const ROUTE_METADATA_BASE = {
   "client-messages": { title: "Client Messages Inbox", category: "Client", role: "client" },
   "client-profile": { title: "Account", category: "Client", role: "client" },
   "client-history": { title: "Client Payment & Session History", category: "Client", role: "client" },
+  "business-directory": { title: "Businesses & Clubs Directory", category: "Client", role: "client" },
+  "business-public-profile": { title: "Public Business Profile", category: "Client", role: "client" },
+  "business-program-detail": { title: "Business Program Detail", category: "Client", role: "client" },
+  "business-booking-review": { title: "Business Program Checkout", category: "Client", role: "client" },
+  "business-booking-confirmation": { title: "Business Booking Confirmation", category: "Client", role: "client" },
 
   // Coach Flow
   "coach-dashboard": { title: "Coach Dashboard", category: "Coach", role: "coach" },
@@ -238,6 +293,26 @@ const ROUTE_METADATA_BASE = {
   "coach-history": { title: "Completed Sessions History", category: "Coach", role: "coach" },
   "coach-accept-booking": { title: "Accept Booking & Set Payment", category: "Coach", role: "coach" },
   "coach-messages": { title: "Coach Messages Inbox", category: "Coach", role: "coach" },
+
+  // Business Flow
+  "business-dashboard": { title: "Business Dashboard", category: "Business", role: "business" },
+  "business-bookings": { title: "Business Bookings", category: "Business", role: "business" },
+  "business-notifications": { title: "Business Notifications", category: "Business", role: "business" },
+  "business-roster": { title: "Business Coach Roster", category: "Business", role: "business" },
+  "business-coach-detail": { title: "Business Coach Profile", category: "Business", role: "business" },
+  "business-programs": { title: "Business Programs & Schedule", category: "Business", role: "business" },
+  "business-program-overview": { title: "Business Program Overview", category: "Business", role: "business" },
+  "business-program-form": { title: "Create or Edit Business Program", category: "Business", role: "business" },
+  "business-booking-detail": { title: "Business Booking Request", category: "Business", role: "business" },
+  "business-messages": { title: "Business Messages", category: "Business", role: "business" },
+  "business-more": { title: "Business Account", category: "Business", role: "business" },
+  "business-locations": { title: "Business Locations", category: "Business", role: "business" },
+  "business-profile-edit": { title: "Edit Business Profile", category: "Business", role: "business" },
+  "business-media": { title: "Business Reels & Photos", category: "Business", role: "business" },
+  "business-reviews": { title: "Business Review Management", category: "Business", role: "business" },
+  "business-finance": { title: "Business Finance & Billing", category: "Business", role: "business" },
+  "business-analytics": { title: "Business Analytics", category: "Business", role: "business" },
+  "business-compliance": { title: "Business Launch Checklist", category: "Business", role: "business" },
 
   // Shared
   "chat-thread": { title: "Interactive Chat Thread", category: "Shared", role: "client" },
@@ -322,6 +397,14 @@ const ROUTE_DEMO_PARAMS = {
   "session-progress": { bookingId: "b8", role: "client" },
   "funds-release-status": { bookingId: "b3", role: "client", backTo: "client-history" },
   "verification-rejected": { variant: "rejected" },
+  "business-public-profile": { id: "biz1" },
+  "business-program-detail": { businessId: "biz1", programId: "prog1" },
+  "business-booking-review": { businessId: "biz1", programId: "prog3", assignedCoachId: "rm1", participant: "You", date: "Fri, 18 Sep", time: "4:00pm" },
+  "business-booking-confirmation": { bookingId: "bb2" },
+  "business-program-overview": { id: "prog1" },
+  "business-program-form": { id: "prog1" },
+  "business-booking-detail": { id: "bb1" },
+  "business-coach-detail": { id: "rm1" },
   "dispute-create": { bookingId: "s1", role: "client", category: "session_not_delivered", backTo: "client-booking-detail" },
   "dispute-status": { caseId: "case-102", role: "client", backTo: "client-history" },
   "additional-charge-create": { bookingId: "cb1", role: "coach", phase: "completion", backTo: "coach-session-detail" },

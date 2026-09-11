@@ -22,10 +22,10 @@ import { haptic } from "../../utils/haptics";
    Completion stays coach-driven (see SessionLifecycle.jsx).
    ========================================================================= */
 
-function findBooking(id, role, bookings, coachBookings) {
+function findBooking(id, role, bookings, coachBookings, businessBookings = []) {
   const preferred = role === "coach" ? coachBookings : bookings;
   const fallback = role === "coach" ? bookings : coachBookings;
-  return preferred.find((item) => item.id === id) || fallback.find((item) => item.id === id);
+  return preferred.find((item) => item.id === id) || fallback.find((item) => item.id === id) || businessBookings.find((item) => item.id === id);
 }
 
 function resolveSessionDetails(booking, role, coachProfile) {
@@ -149,11 +149,11 @@ function BigCodeDisplay({ code, color }) {
    ScreenClientSessionStart — client reviews details and generates the code
    ------------------------------------------------------------------------- */
 export function ScreenClientSessionStart({
-  nav, goBack, params, bookings = [], coachBookings = [], generateSessionCode, toast,
+  nav, goBack, params, bookings = [], coachBookings = [], businessBookings = [], generateSessionCode, toast,
 }) {
   const { darkMode, coachProfile } = useApp();
   const C = darkMode ? CD : CL;
-  const booking = findBooking(params?.bookingId, "client", bookings, coachBookings);
+  const booking = findBooking(params?.bookingId, "client", bookings, coachBookings, businessBookings);
   const [generating, setGenerating] = useState(false);
 
   if (!booking) {
@@ -293,11 +293,11 @@ export function ScreenClientSessionStart({
    ScreenClientSessionCode — calm, ride-style PIN handoff + coach details
    ------------------------------------------------------------------------- */
 export function ScreenClientSessionCode({
-  nav, goBack, params, bookings = [], coachBookings = [], generateSessionCode, toast,
+  nav, goBack, params, bookings = [], coachBookings = [], businessBookings = [], generateSessionCode, toast,
 }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
-  const booking = findBooking(params?.bookingId, "client", bookings, coachBookings);
+  const booking = findBooking(params?.bookingId, "client", bookings, coachBookings, businessBookings);
   const [starting, setStarting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   // Seeded demo codes may not carry an expiry — give them a fresh TTL window
@@ -500,11 +500,11 @@ export function ScreenClientSessionCode({
    ScreenCoachSessionStart — coach enters the client's code to go live
    ------------------------------------------------------------------------- */
 export function ScreenCoachSessionStart({
-  nav, goBack, params, bookings = [], coachBookings = [], verifySessionCode, toast, pushNotification,
+  nav, goBack, params, bookings = [], coachBookings = [], businessBookings = [], verifySessionCode, toast, pushNotification,
 }) {
   const { darkMode, coachProfile } = useApp();
   const C = darkMode ? CD : CL;
-  const booking = findBooking(params?.bookingId, "coach", bookings, coachBookings);
+  const booking = findBooking(params?.bookingId, "coach", bookings, coachBookings, businessBookings);
   const [digits, setDigits] = useState(["", "", "", "", "", ""]);
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState(null);
@@ -772,12 +772,12 @@ export function ScreenCoachSessionStart({
    ScreenSessionProgress — live session screen for both roles
    ------------------------------------------------------------------------- */
 export function ScreenSessionProgress({
-  nav, goBack, params, role: appRole, bookings = [], coachBookings = [], additionalCharges = [], toast,
+  nav, goBack, params, role: appRole, bookings = [], coachBookings = [], businessBookings = [], additionalCharges = [], toast,
 }) {
   const { darkMode, coachProfile } = useApp();
   const C = darkMode ? CD : CL;
   const role = params?.role || appRole || "client";
-  const booking = findBooking(params?.bookingId, role, bookings, coachBookings);
+  const booking = findBooking(params?.bookingId, role, bookings, coachBookings, businessBookings);
   const [seconds, setSeconds] = useState(0);
   const [endSheetOpen, setEndSheetOpen] = useState(false);
 

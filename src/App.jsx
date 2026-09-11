@@ -3,7 +3,7 @@ import {
   Home, Calendar, MessageCircle, User, ClipboardList, ShieldCheck, AlertCircle, Flag, Settings,
   WifiOff, RefreshCcw, Sparkles, ChevronRight, ChevronDown, ChevronUp, Layers, ArrowLeft, Search, Compass, ExternalLink, Activity,
   Smartphone, Tablet, Sun, Moon, Maximize2, RotateCw, Sliders, Eye, EyeOff, Monitor, ZoomIn, ZoomOut,
-  Camera, Download, Loader2
+  Camera, Download, Loader2, Building2, UsersRound, LayoutGrid
 } from "lucide-react";
 
 import { CL, CD, fBody, fDisplay, useFonts, KEYFRAMES, T } from "./theme/theme";
@@ -77,6 +77,13 @@ const COACH_TABS = [
   { value: "coach-messages", label: "Messages", icon: MessageCircle },
   { value: "coach-profile-edit", label: "Profile", icon: User },
 ];
+const BUSINESS_TABS = [
+  { value: "business-dashboard", label: "Dashboard", icon: Home },
+  { value: "business-bookings", label: "Bookings", icon: ClipboardList },
+  { value: "business-roster", label: "Roster", icon: UsersRound },
+  { value: "business-programs", label: "Programs", icon: LayoutGrid },
+  { value: "business-more", label: "Account", icon: User },
+];
 
 /* =========================================================================
    SIDEBAR & CANVAS DESKTOP SHELL — Vercel / Notion Style System UI
@@ -115,7 +122,7 @@ function AppShell() {
 
   const C = darkMode ? CD : CL;
   const isDarkScreen = screen === "splash";
-  const tabsForRole = role === "coach" ? COACH_TABS : CLIENT_TABS;
+  const tabsForRole = role === "coach" ? COACH_TABS : role === "business" ? BUSINESS_TABS : CLIENT_TABS;
   const activeTabScreen = screen;
   const showTabs = tabsForRole.some((t) => t.value === activeTabScreen);
 
@@ -301,7 +308,7 @@ function AppShell() {
               Roles
             </div>
             <div style={{ display: "flex", background: vSystem.bgHover, borderRadius: 8, padding: 2, border: `1px solid ${vSystem.border}` }}>
-              {["client", "coach"].map((r) => {
+              {["client", "coach", "business"].map((r) => {
                 const active = role === r;
                 return (
                   <button
@@ -310,6 +317,8 @@ function AppShell() {
                       if (r === "coach") {
                         const stillOnVerification = (verificationStatus === "pending" || verificationStatus === "approved") && !reachedDashboardAfterVerification;
                         resetNav(verificationStatus === "rejected" ? "verification-rejected" : stillOnVerification ? "verification-pending" : "coach-dashboard", {}, r);
+                      } else if (r === "business") {
+                        resetNav("business-dashboard", {}, r);
                       } else {
                         resetNav("client-home", {}, r);
                       }
@@ -450,7 +459,7 @@ function AppShell() {
 
             {/* Category Chips */}
             <div style={{ display: "flex", gap: 4, overflowX: "auto", paddingBottom: 6, marginBottom: 8, flexShrink: 0 }} className="cl-hide-scrollbar">
-              {["all", "Client", "Coach", "Onboarding", "Shared"].map((cat) => {
+              {["all", "Client", "Coach", "Business", "Onboarding", "Shared"].map((cat) => {
                 const active = dirFilter === cat;
                 return (
                   <button

@@ -514,7 +514,7 @@ export function ScreenCoachDashboard({
                       <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>{cn.name}</div>
                       <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{b.service} · {b.date}</div>
                     </div>
-                    <StatusPill status={b.status} />
+                    <StatusPill status={b.status} perspective="coach" />
                   </div>
                   <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 10, padding: "9px 10px", borderRadius: 12, background: C.strongTint }}>
                     <Clock size={14} color={C.strong} />
@@ -596,7 +596,7 @@ export function ScreenCoachDashboard({
                 </div>
               </div>
 
-              <StatusPill status={b.status} />
+              <StatusPill status={b.status} perspective="coach" />
             </Card>
             );
           })}
