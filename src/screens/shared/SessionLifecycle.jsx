@@ -23,7 +23,8 @@ function findBooking(id, role, bookings, coachBookings, businessBookings = []) {
 function SessionSummary({ booking, role }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
-  const person = role === "coach" ? booking.clientName : booking.coachName;
+  const providerView = ["coach", "business", "businessCoach"].includes(role);
+  const person = providerView ? booking.clientName : booking.coachName;
   return (
     <Card style={{ padding: 15 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 11 }}>
@@ -47,6 +48,8 @@ export function ScreenSessionCompletion({
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const role = params?.role || appRole || "client";
+  const providerView = ["coach", "business", "businessCoach"].includes(role);
+  const canManageCharges = role === "coach";
   const booking = findBooking(params?.bookingId, role, bookings, coachBookings, businessBookings);
   const [submitting, setSubmitting] = useState(false);
   const [coachChoice, setCoachChoice] = useState(null);
@@ -54,13 +57,13 @@ export function ScreenSessionCompletion({
   if (!booking) {
     return (
       <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-        <TopBar title="Finish session" onBack={() => nav(role === "coach" ? "coach-bookings" : "client-dashboard")} />
+        <TopBar title="Finish session" onBack={() => nav(role === "businessCoach" ? "business-coach-bookings" : role === "business" ? "business-bookings" : role === "coach" ? "coach-bookings" : "client-dashboard")} />
         <EmptyState icon={CalendarDays} title="Session not found" body="This session may no longer be available." />
       </div>
     );
   }
 
-  const backTo = params?.backTo || (role === "coach" ? "coach-session-detail" : "client-booking-detail");
+  const backTo = params?.backTo || (role === "businessCoach" ? "business-coach-booking-detail" : role === "business" ? "business-booking-detail" : role === "coach" ? "coach-session-detail" : "client-booking-detail");
   const backParams = params?.backParams || (backTo === "session-progress"
     ? { bookingId: booking.id, role }
     : { id: booking.id });
@@ -72,16 +75,16 @@ export function ScreenSessionCompletion({
   ));
   const finalPaymentDue = finalCharge?.status === ADDITIONAL_CHARGE_STATUS.PENDING;
   const completed = booking.status === BOOKING_STATUS.COMPLETED;
-  const coachWaiting = role === "coach" && finalPaymentDue;
+  const coachWaiting = providerView && finalPaymentDue;
 
   // Coach-driven completion: no client confirm button — the client's payment
   // of any final charge acts as their acceptance, and disputes remain
   // available after completion.
   const handleComplete = () => {
-    if (submitting || role !== "coach") return;
+    if (submitting || !providerView) return;
     haptic(12);
     setSubmitting(true);
-    const accepted = confirmSessionCompletion?.(booking.id, "coach");
+    const accepted = confirmSessionCompletion?.(booking.id, role);
     if (!accepted) {
       setSubmitting(false);
       toast?.("This session can't be completed yet");
@@ -123,28 +126,33 @@ export function ScreenSessionCompletion({
 
   const coachAddCharge = () => nav("additional-charge-create", {
     bookingId: booking.id,
-    role: "coach",
+    role,
     phase: ADDITIONAL_CHARGE_PHASE.COMPLETION,
     backTo: "coach-session-completion",
+    backParams: { bookingId: booking.id, role, backTo, backParams },
   });
 
   const heroIcon = completed
     ? CheckCircle2
     : coachWaiting || finalPaymentDue
       ? LockKeyhole
-      : role === "coach"
+      : providerView
         ? BadgeDollarSign
         : Clock3;
 
   const heroTitle = completed
     ? "Session completed"
-    : role === "coach"
+    : role === "businessCoach" ? "Ready to complete"
+      : role === "business" ? "Review session completion"
+      : providerView
       ? coachWaiting ? "Waiting for final payment" : "Any final charges?"
       : finalPaymentDue ? "One final payment is due" : "Coach is finishing up";
 
   const heroBody = completed
     ? "The session is complete and the held payment has been released."
-    : role === "coach"
+    : role === "businessCoach" ? "Confirm the assigned session was delivered. Customer payments remain managed by your organisation."
+      : role === "business" ? "Confirm delivery to complete the booking and release the protected customer payment to the business."
+      : providerView
       ? coachWaiting
         ? "The client must pay the agreed final amount — the session completes automatically once it's paid."
         : "Confirm there are no extra agreed costs, or add one before you complete the session."
@@ -156,7 +164,7 @@ export function ScreenSessionCompletion({
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", background: C.white }}>
-      <TopBar title={role === "coach" ? "Finish session" : "Session ended"} onBack={() => nav(backTo, backParams)} />
+      <TopBar title={providerView ? "Finish session" : "Session ended"} onBack={() => nav(backTo, backParams)} />
       <div style={{ flex: 1, overflowY: "auto", padding: `14px ${LAYOUT.pagePadX}px 26px` }} className="cl-hide-scrollbar">
         <div style={{ textAlign: "center", padding: "5px 12px 22px" }}>
           <div style={{
@@ -172,7 +180,7 @@ export function ScreenSessionCompletion({
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <SessionSummary booking={booking} role={role} />
 
-          {finalCharge && (
+          {finalCharge && role !== "businessCoach" && (
             <Card style={{ background: finalPaymentDue ? C.warnTint : C.successTint, border: "none" }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 11 }}>
                 <div style={{ width: 38, height: 38, borderRadius: 12, background: C.white, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><BadgeDollarSign size={18} color={finalPaymentDue ? C.warnStrong : C.success} /></div>
@@ -189,7 +197,7 @@ export function ScreenSessionCompletion({
             </Card>
           )}
 
-          {role === "coach" && !finalPaymentDue && !completed && (
+          {canManageCharges && !finalPaymentDue && !completed && (
             <div role="radiogroup" aria-label="Final payment choice" style={{ display: "flex", flexDirection: "column", gap: 9 }}>
               {chooseCard("none", CheckCircle2, "No final charge", "Complete the session now. The held payment releases straight away.")}
               {chooseCard("charge", Plus, "Add a final charge", "For an agreed extension, equipment, venue cost, or another documented extra.")}
@@ -210,11 +218,14 @@ export function ScreenSessionCompletion({
       </div>
 
       <div style={{ padding: `12px ${LAYOUT.pagePadX}px max(${LAYOUT.ctaPadBottom}px, env(safe-area-inset-bottom))`, borderTop: `1px solid ${C.border}`, background: C.white, display: "flex", flexDirection: "column", gap: 9 }}>
-        {role === "coach" && finalPaymentDue && <Btn full disabled icon={LockKeyhole}>Waiting for client payment</Btn>}
-        {role === "coach" && finalPaymentDue && <Btn full variant="outline" icon={BadgeDollarSign} onClick={() => nav("additional-charge-review", { chargeId: finalCharge.id, role: "coach", backTo })}>View final payment</Btn>}
-        {role === "coach" && !finalPaymentDue && !completed && coachChoice === "charge" && <Btn full icon={Plus} onClick={coachAddCharge}>Add final charge</Btn>}
-        {role === "coach" && !finalPaymentDue && !completed && coachChoice !== "charge" && <Btn full loading={submitting} loadingText="Completing session…" disabled={coachChoice !== "none"} icon={CheckCircle2} onClick={handleComplete}>{coachChoice === "none" ? "No final charge - complete session" : "Choose an option to continue"}</Btn>}
+        {providerView && finalPaymentDue && <Btn full disabled icon={LockKeyhole}>Waiting for client payment</Btn>}
+        {canManageCharges && finalPaymentDue && <Btn full variant="outline" icon={BadgeDollarSign} onClick={() => nav("additional-charge-review", { chargeId: finalCharge.id, role, backTo })}>View final payment</Btn>}
+        {canManageCharges && !finalPaymentDue && !completed && coachChoice === "charge" && <Btn full icon={Plus} onClick={coachAddCharge}>Add final charge</Btn>}
+        {canManageCharges && !finalPaymentDue && !completed && coachChoice !== "charge" && <Btn full loading={submitting} loadingText="Completing session…" disabled={coachChoice !== "none"} icon={CheckCircle2} onClick={handleComplete}>{coachChoice === "none" ? "No final charge - complete session" : "Choose an option to continue"}</Btn>}
+        {["business", "businessCoach"].includes(role) && !finalPaymentDue && !completed && <Btn full loading={submitting} loadingText="Completing session…" icon={CheckCircle2} onClick={handleComplete}>{role === "businessCoach" ? "Complete assigned session" : "Complete business session"}</Btn>}
         {role === "coach" && completed && <Btn full icon={Banknote} onClick={() => nav("funds-release-status", { bookingId: booking.id, role: "coach", backTo })}>View payout release</Btn>}
+        {role === "business" && completed && <Btn full icon={Banknote} onClick={() => nav("business-earnings")}>View business earnings</Btn>}
+        {role === "businessCoach" && completed && <Btn full icon={Banknote} onClick={() => nav("business-coach-earnings")}>View earnings from business</Btn>}
         {role === "client" && finalPaymentDue && <Btn full icon={WalletCards} onClick={() => nav("additional-charge-payment", { chargeId: finalCharge.id, role: "client" })}>Pay final ${Number(finalCharge.amount).toFixed(2)}</Btn>}
         {role === "client" && !finalPaymentDue && !completed && <Btn full disabled icon={Clock3}>Waiting for your coach to finish</Btn>}
         {role === "client" && completed && !booking.reviewed && <Btn full icon={Star} onClick={() => nav("leave-review", { bookingId: booking.id, name: booking.coachName })}>Leave a review</Btn>}
@@ -222,7 +233,7 @@ export function ScreenSessionCompletion({
         <Btn full variant="outline" icon={AlertTriangle} onClick={() => nav("dispute-create", {
           bookingId: booking.id,
           role,
-          category: role === "coach" ? "client_no_show" : "session_not_delivered",
+          category: providerView ? "client_no_show" : "session_not_delivered",
           backTo,
           backParams,
         })}>

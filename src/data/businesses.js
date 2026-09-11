@@ -61,6 +61,11 @@ export const INITIAL_BUSINESS = {
   expectedBookings: "51–100 per month",
   status: BUSINESS_STATUS.CONDITIONAL,
   planId: "growth",
+  subscriptionStatus: "active",
+  billingMethod: { id: "bpm1", brand: "Visa", last4: "4821", exp: "08/28", isDefault: true, addedAt: "2 Sep 2026" },
+  billingMethods: [{ id: "bpm1", brand: "Visa", last4: "4821", exp: "08/28", isDefault: true, addedAt: "2 Sep 2026" }],
+  payoutMethod: null,
+  lastSubscriptionInvoice: { id: "sub-sep-2026", label: "Growth monthly subscription", amount: 129, status: "Paid", date: "2 Sep 2026" },
   agreement: { version: "B2B-2026.1", acceptedBy: "Priya Nair", acceptedAt: "10 Sep 2026" },
   paymentsStatus: "enabled",
   payoutsStatus: "information_required",
@@ -579,6 +584,16 @@ export const INITIAL_BUSINESS_PROGRAMS = [
 export const INITIAL_BUSINESS_BOOKINGS = [
   { id: "bb1", providerType: "business", providerId: "biz1", providerName: "Apex Tennis Academy", businessId: "biz1", programId: "prog1", programTitle: "Junior Development Program", service: "Junior Development Program", assignedCoachId: "rm1", clientName: "The Morgan Family", participants: "Ava Morgan (11)", date: "Thu, 17 Sep", time: "4:30pm", mode: "In-person", status: "pending", paymentStatus: "not_requested", price: 280, total: 296.8 },
   { id: "bb2", providerType: "business", providerId: "biz1", providerName: "Apex Tennis Academy", businessId: "biz1", programId: "prog2", programTitle: "Adult Cardio Tennis", service: "Adult Cardio Tennis", assignedCoachId: "rm2", coachId: "rm2", coachName: "Mia Vasilev", clientName: "Sarah Lin", participants: "You", date: "Sat, 19 Sep", time: "8:00am", mode: "In-person", status: "confirmed", paymentStatus: "held", price: 150, total: 159 },
+  { id: "bb3", providerType: "business", providerId: "biz1", providerName: "Apex Tennis Academy", businessId: "biz1", programId: "prog1", programTitle: "Junior Development Program", service: "Junior Development Program", assignedCoachId: "rm1", coachId: "rm1", coachName: "Priya Sharma", clientName: "Daniel Reed", participants: "Mason Reed (12)", date: "Sat, 5 Sep", time: "9:00am", mode: "In-person", status: "completed", paymentStatus: "released", payoutStatus: "released", price: 280, total: 296.8 },
+  { id: "bb4", providerType: "business", providerId: "biz1", providerName: "Apex Tennis Academy", businessId: "biz1", programId: "prog2", programTitle: "Adult Cardio Tennis", service: "Adult Cardio Tennis", assignedCoachId: "rm2", coachId: "rm2", coachName: "Mia Vasilev", clientName: "Sophie Grant", participants: "Sophie Grant", date: "Sat, 29 Aug", time: "8:00am", mode: "In-person", status: "completed", paymentStatus: "released", payoutStatus: "released", price: 150, total: 159 },
+  { id: "bb5", providerType: "business", providerId: "biz1", providerName: "Apex Tennis Academy", businessId: "biz1", programId: "prog3", programTitle: "Private Academy Session", service: "Private Academy Session", assignedCoachId: "rm1", coachId: "rm1", coachName: "Priya Sharma", clientName: "Jordan Lee", participants: "Jordan Lee", date: "Fri, 18 Sep", time: "4:00pm", mode: "In-person", status: "confirmed", paymentStatus: "held", price: 75, total: 79.5 },
+];
+
+export const INITIAL_BUSINESS_COACH_PAYOUTS = [
+  { id: "bcp1", businessId: "biz1", coachId: "rm2", coachName: "Mia Vasilev", period: "1–7 Sep 2026", sessions: 4, amount: 312, status: "due", dueDate: "15 Sep" },
+  { id: "bcp2", businessId: "biz1", coachId: "rm1", coachName: "Priya Sharma", period: "1–7 Sep 2026", sessions: 5, amount: 425, status: "processing", dueDate: "12 Sep" },
+  { id: "bcp3", businessId: "biz1", coachId: "rm2", coachName: "Mia Vasilev", period: "18–24 Aug 2026", sessions: 3, amount: 234, status: "paid", paidAt: "28 Aug" },
+  { id: "bcp4", businessId: "biz1", coachId: "rm1", coachName: "Priya Sharma", period: "25–31 Aug 2026", sessions: 4, amount: 340, status: "paid", paidAt: "4 Sep" },
 ];
 
 export const BUSINESS_THREADS = [

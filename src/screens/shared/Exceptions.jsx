@@ -70,7 +70,8 @@ function DetailRow({ label, value, bold, last }) {
 function SessionContext({ booking, role }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
-  const person = role === "coach" ? booking.clientName : booking.coachName;
+  const providerView = ["coach", "business", "businessCoach"].includes(role);
+  const person = providerView ? booking.clientName : booking.coachName;
   return (
     <Card style={{ display: "flex", alignItems: "center", gap: 12, background: C.fog, borderColor: "transparent" }}>
       <div style={{ width: 42, height: 42, borderRadius: 14, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -80,7 +81,7 @@ function SessionContext({ booking, role }) {
         <div style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.jet, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", ...fDisplay }}>{booking.service}</div>
         <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{booking.date} · {booking.time} · {person}</div>
       </div>
-      <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>${Number(booking.paidTotal || booking.price).toFixed(2)}</div>
+      {role !== "businessCoach" ? <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>${Number(booking.paidTotal || booking.price).toFixed(2)}</div> : null}
     </Card>
   );
 }
@@ -170,23 +171,25 @@ export function ScreenDisputeCreate({
   const role = params?.role || appRole || "client";
   const booking = findBooking(params?.bookingId, bookings, coachBookings, businessBookings);
   const relatedCharge = additionalCharges.find((item) => item.id === params?.chargeId);
-  const issues = role === "coach" ? COACH_ISSUES : CLIENT_ISSUES;
+  const providerView = ["coach", "business", "businessCoach"].includes(role);
+  const issues = providerView ? COACH_ISSUES : CLIENT_ISSUES;
   const initialCategory = params?.category || issues[0].value;
   const [step, setStep] = useState(1);
   const [category, setCategory] = useState(initialCategory);
   const [description, setDescription] = useState(params?.description || "");
-  const [amount, setAmount] = useState(relatedCharge?.amount != null ? String(relatedCharge.amount) : booking?.price ? String(booking.price) : "");
+  const [amount, setAmount] = useState(role === "businessCoach" ? "0" : relatedCharge?.amount != null ? String(relatedCharge.amount) : booking?.price ? String(booking.price) : "");
   const [evidence, setEvidence] = useState([]);
   const [includeChat, setIncludeChat] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   if (!booking) {
-    return <EmptyState icon={Scale} title="Session not found" body="Open a session first, then choose Report an issue." ctaLabel="View sessions" onCta={() => nav(role === "coach" ? "coach-bookings" : "client-dashboard")} />;
+    const sessionsRoute = role === "business" ? "business-bookings" : role === "businessCoach" ? "business-coach-bookings" : role === "coach" ? "coach-bookings" : "client-dashboard";
+    return <EmptyState icon={Scale} title="Session not found" body="Open a session first, then choose Report an issue." ctaLabel="View sessions" onCta={() => nav(sessionsRoute)} />;
   }
 
   const selectedIssue = issues.find((item) => item.value === category) || issues[0];
   const canReview = description.trim().length >= 12 && Number(amount) >= 0;
-  const backTo = params?.backTo || (role === "coach" ? "coach-session-detail" : "client-booking-detail");
+  const backTo = params?.backTo || (role === "business" ? "business-booking-detail" : role === "businessCoach" ? "business-coach-booking-detail" : role === "coach" ? "coach-session-detail" : "client-booking-detail");
   const backParams = params?.backParams || { id: booking.id };
   const submit = () => {
     if (submitting) return;
@@ -223,13 +226,13 @@ export function ScreenDisputeCreate({
             </div>
             <div>
               <SectionHeading hint="Include what happened, when, and how you tried to resolve it.">Describe the issue</SectionHeading>
-              <TextArea value={description} onChange={setDescription} placeholder={role === "coach" ? "For example: I arrived on time, waited through the arrival window, and messaged the client…" : "For example: I arrived before the session, waited 25 minutes, and messaged the coach…"} />
+              <TextArea value={description} onChange={setDescription} placeholder={providerView ? "For example: I arrived on time, waited through the arrival window, and messaged the client…" : "For example: I arrived before the session, waited 25 minutes, and messaged the coach…"} />
               <div style={{ fontSize: T.caption, color: description.length >= 12 ? C.success : C.slateLight, textAlign: "right", marginTop: 5, ...fBody }}>{description.length < 12 ? `${12 - description.length} more characters` : "Enough detail to continue"}</div>
             </div>
-            <div>
-              <SectionHeading hint={role === "coach" ? "The amount you’re asking CoachNivo to protect or compensate." : "The refund amount you’re requesting. The final decision may differ."}>Requested amount</SectionHeading>
+            {role !== "businessCoach" ? <div>
+              <SectionHeading hint={providerView ? "The amount you’re asking CoachNivo to protect or compensate." : "The refund amount you’re requesting. The final decision may differ."}>Requested amount</SectionHeading>
               <MoneyField value={amount} onChange={setAmount} disabled={!!relatedCharge} />
-            </div>
+            </div> : <ReviewNotice>Your organisation manages customer payments and compensation requests. Your report will be shared with the business and support without exposing customer pricing.</ReviewNotice>}
             <div>
               <SectionHeading hint="Evidence is optional, but it can help us resolve the case faster.">Add evidence</SectionHeading>
               <EvidenceUploader evidence={evidence} setEvidence={setEvidence} />
@@ -247,7 +250,7 @@ export function ScreenDisputeCreate({
           <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>
             <Card>
               <DetailRow label="Issue" value={selectedIssue.label} />
-              <DetailRow label="Requested" value={`$${Number(amount || 0).toFixed(2)}`} />
+              {role !== "businessCoach" ? <DetailRow label="Requested" value={`$${Number(amount || 0).toFixed(2)}`} /> : null}
               <DetailRow label="Evidence" value={`${evidence.length} attachment${evidence.length === 1 ? "" : "s"}`} />
               <DetailRow label="Session chat" value={includeChat ? "Included" : "Not included"} last />
             </Card>
@@ -307,12 +310,13 @@ function OutcomeCard({ dispute, role, booking }) {
   const refunded = dispute.outcome === DISPUTE_OUTCOME.CLIENT_REFUNDED;
   const compensated = dispute.outcome === DISPUTE_OUTCOME.COACH_COMPENSATED;
   const amount = Number(dispute.amountRequested || booking.price || 0);
-  const favourable = (refunded && role === "client") || (compensated && role === "coach");
+  const providerView = ["coach", "business", "businessCoach"].includes(role);
+  const favourable = (refunded && role === "client") || (compensated && providerView);
   const title = refunded ? "Full refund approved" : compensated ? "No-show compensation approved" : "No payment adjustment";
   const body = refunded
-    ? role === "client" ? "Your refund is returning to the original payment method." : "The client received a refund and no payout will be released."
+    ? role === "client" ? "Your refund is returning to the original payment method." : role === "businessCoach" ? "The business was notified of the client refund decision." : "The client received a refund and no payout will be released."
     : compensated
-      ? role === "coach" ? "Your protected payout has been released under your no-show policy." : "The coach’s no-show protection applies to this booking."
+      ? role === "businessCoach" ? "Your organisation was notified and will reconcile your compensation separately." : providerView ? "The protected payment has been released under the no-show policy." : "The coach’s no-show protection applies to this booking."
       : "The original session payment remains unchanged.";
   return (
     <Card style={{ padding: 17, background: favourable ? C.successTint : C.fog, border: favourable ? "none" : `1px solid ${C.border}` }}>
@@ -325,10 +329,10 @@ function OutcomeCard({ dispute, role, booking }) {
           <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.55, marginTop: 5, ...fBody }}>{body}</div>
         </div>
       </div>
-      <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${favourable ? C.success : C.border}` }}>
+      {role !== "businessCoach" ? <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${favourable ? C.success : C.border}` }}>
         <DetailRow label={refunded ? "Refund amount" : compensated ? "Protected session amount" : "Adjustment"} value={refunded || compensated ? `$${amount.toFixed(2)}` : "$0.00"} bold />
         <DetailRow label="Decision" value={favourable ? "In your favour" : "Case closed"} last />
-      </div>
+      </div> : null}
     </Card>
   );
 }
@@ -349,7 +353,7 @@ export function ScreenDisputeStatus({ nav, params, role: appRole, bookings = [],
   const status = STATUS_COPY[dispute.status] || STATUS_COPY[DISPUTE_STATUS.SUBMITTED];
   const resolved = dispute.status === DISPUTE_STATUS.RESOLVED;
   const refunded = dispute.outcome === DISPUTE_OUTCOME.CLIENT_REFUNDED;
-  const backTo = params?.backTo || (role === "coach" ? "coach-bookings" : "client-dashboard");
+  const backTo = params?.backTo || (role === "business" ? "business-bookings" : role === "businessCoach" ? "business-coach-bookings" : role === "coach" ? "coach-bookings" : "client-dashboard");
   const backParams = params?.backParams || (params?.bookingId ? { id: params.bookingId } : {});
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
@@ -372,7 +376,7 @@ export function ScreenDisputeStatus({ nav, params, role: appRole, bookings = [],
           <Card>
             <SectionHeading>Report summary</SectionHeading>
             <DetailRow label="Issue" value={dispute.categoryLabel} />
-            <DetailRow label="Requested" value={`$${Number(dispute.amountRequested || 0).toFixed(2)}`} />
+            {role !== "businessCoach" ? <DetailRow label="Requested" value={`$${Number(dispute.amountRequested || 0).toFixed(2)}`} /> : null}
             <DetailRow label="Evidence" value={`${dispute.evidence?.length || 0} item${dispute.evidence?.length === 1 ? "" : "s"}`} />
             <DetailRow label="Session chat" value={dispute.includeChat ? "Included" : "Not included"} last />
           </Card>
@@ -389,10 +393,12 @@ export function ScreenDisputeStatus({ nav, params, role: appRole, bookings = [],
         <Btn full icon={resolved ? ReceiptText : MessageCircle} onClick={() => {
           if (!resolved) nav("support", { presetTab: "contact", faqTopic: role, bookingId: booking.id, backTo: "dispute-status" });
           else if (refunded && role === "client") nav("refund-status", { booking: { ...booking, paymentStatus: "refunded", refundStatus: "refunded" } });
-          else if (refunded) nav("coach-session-detail", { id: booking.id });
+          else if (refunded) nav(role === "business" ? "business-booking-detail" : role === "businessCoach" ? "business-coach-booking-detail" : "coach-session-detail", { id: booking.id });
+          else if (role === "business") nav("business-earnings");
+          else if (role === "businessCoach") nav("business-coach-earnings");
           else nav("funds-release-status", { bookingId: booking.id, role, backTo: "dispute-status" });
         }}>{!resolved ? "Message resolution support" : refunded && role === "client" ? "View refund status" : refunded ? "View session record" : "View payment outcome"}</Btn>
-        <Btn full variant="outline" onClick={() => nav(role === "coach" ? "coach-bookings" : "client-dashboard")}>Back to sessions</Btn>
+        <Btn full variant="outline" onClick={() => nav(role === "business" ? "business-bookings" : role === "businessCoach" ? "business-coach-bookings" : role === "coach" ? "coach-bookings" : "client-dashboard")}>Back to sessions</Btn>
       </div>
     </div>
   );

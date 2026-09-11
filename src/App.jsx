@@ -3,7 +3,7 @@ import {
   Home, Calendar, MessageCircle, User, ClipboardList, ShieldCheck, AlertCircle, Flag, Settings,
   WifiOff, RefreshCcw, Sparkles, ChevronRight, ChevronDown, ChevronUp, Layers, ArrowLeft, Search, Compass, ExternalLink, Activity,
   Smartphone, Tablet, Sun, Moon, Maximize2, RotateCw, Sliders, Eye, EyeOff, Monitor, ZoomIn, ZoomOut,
-  Camera, Download, Loader2, Building2, UsersRound, LayoutGrid
+  Camera, Download, Loader2, Building2, UsersRound, LayoutGrid, WalletCards
 } from "lucide-react";
 
 import { CL, CD, fBody, fDisplay, useFonts, KEYFRAMES, T } from "./theme/theme";
@@ -84,6 +84,13 @@ const BUSINESS_TABS = [
   { value: "business-programs", label: "Programs", icon: LayoutGrid },
   { value: "business-more", label: "Account", icon: User },
 ];
+const BUSINESS_COACH_TABS = [
+  { value: "business-coach-home", label: "Home", icon: Home },
+  { value: "business-coach-bookings", label: "Sessions", icon: Calendar },
+  { value: "business-coach-programs", label: "Programs", icon: LayoutGrid },
+  { value: "business-coach-earnings", label: "Earnings", icon: WalletCards },
+  { value: "business-coach-account", label: "Account", icon: User },
+];
 
 /* =========================================================================
    SIDEBAR & CANVAS DESKTOP SHELL — Vercel / Notion Style System UI
@@ -122,7 +129,7 @@ function AppShell() {
 
   const C = darkMode ? CD : CL;
   const isDarkScreen = screen === "splash";
-  const tabsForRole = role === "coach" ? COACH_TABS : role === "business" ? BUSINESS_TABS : CLIENT_TABS;
+  const tabsForRole = role === "coach" ? COACH_TABS : role === "business" ? BUSINESS_TABS : role === "businessCoach" ? BUSINESS_COACH_TABS : CLIENT_TABS;
   const activeTabScreen = screen;
   const showTabs = tabsForRole.some((t) => t.value === activeTabScreen);
 
@@ -308,7 +315,7 @@ function AppShell() {
               Roles
             </div>
             <div style={{ display: "flex", background: vSystem.bgHover, borderRadius: 8, padding: 2, border: `1px solid ${vSystem.border}` }}>
-              {["client", "coach", "business"].map((r) => {
+              {["client", "coach", "business", "businessCoach"].map((r) => {
                 const active = role === r;
                 return (
                   <button
@@ -319,6 +326,8 @@ function AppShell() {
                         resetNav(verificationStatus === "rejected" ? "verification-rejected" : stillOnVerification ? "verification-pending" : "coach-dashboard", {}, r);
                       } else if (r === "business") {
                         resetNav("business-dashboard", {}, r);
+                      } else if (r === "businessCoach") {
+                        resetNav("business-coach-login", {}, r);
                       } else {
                         resetNav("client-home", {}, r);
                       }
@@ -332,7 +341,7 @@ function AppShell() {
                       textTransform: "capitalize", transition: "all 0.12s ease", fontFamily: vSystem.fontFamily,
                     }}
                   >
-                    {r}
+                    {r === "businessCoach" ? "Business Coach" : r}
                   </button>
                 );
               })}

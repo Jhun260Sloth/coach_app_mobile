@@ -672,7 +672,7 @@ export function ScreenClientHome({ nav, params = {}, favorites = [], toggleFav, 
     setListLoading(true);
     const timer = setTimeout(() => setListLoading(false), 520);
     return () => clearTimeout(timer);
-  }, [appliedFilters, sortBy]);
+  }, [appliedFilters, sortBy, providerType]);
 
   // "Recommended for you" rail — top-rated, high-match coaches based on the client's profile
   const recommendedCoaches = useMemo(() => {
@@ -689,7 +689,6 @@ export function ScreenClientHome({ nav, params = {}, favorites = [], toggleFav, 
 
   const openFilters = () => {
     setFilterDraft({ ...appliedFilters, sports: [...appliedFilters.sports], areas: [...appliedFilters.areas] });
-    setProviderType("coaches");
     setActiveSheet("filters");
   };
   const updateDraft = patch => setFilterDraft(current => ({ ...current, ...patch }));
@@ -789,7 +788,7 @@ export function ScreenClientHome({ nav, params = {}, favorites = [], toggleFav, 
       heightPct={88}
       footer={(
         <div style={{ display: "flex", gap: 10 }}>
-          <Btn variant="outline" onClick={() => { setFilterDraft({ ...DEFAULT_FILTERS, sports: [], areas: [] }); setProviderType("coaches"); }}>Reset</Btn>
+          <Btn variant="outline" onClick={() => setFilterDraft({ ...DEFAULT_FILTERS, sports: [], areas: [] })}>Reset</Btn>
           <div style={{ flex: 1 }}>
             {providerType === "businesses"
               ? <Btn full onClick={() => { haptic(12); setAppliedFilters({ ...filterDraft }); setActiveSheet(null); }}>Show {businessDraftCount} result{businessDraftCount === 1 ? "" : "s"}</Btn>
@@ -941,13 +940,13 @@ export function ScreenClientHome({ nav, params = {}, favorites = [], toggleFav, 
             <NotificationBellButton count={unreadCount} color={heroText} onClick={() => nav("notifications")} />
           </div>
 
-          <div style={{ marginTop: 20, fontSize: T.displayLg, lineHeight: 1.12, fontWeight: 500, letterSpacing: "-0.5px", color: heroText, textWrap: "balance", ...fDisplay }}>Discover your next coach</div>
-          <div style={{ marginTop: 6, fontSize: T.body, color: heroMuted, ...fBody }}>Trusted local experts for your goals.</div>
+          <div style={{ marginTop: 20, fontSize: T.displayLg, lineHeight: 1.12, fontWeight: 500, letterSpacing: "-0.5px", color: heroText, textWrap: "balance", ...fDisplay }}>{providerType === "businesses" ? "Discover coaching organisations" : "Discover your next coach"}</div>
+          <div style={{ marginTop: 6, fontSize: T.body, color: heroMuted, ...fBody }}>{providerType === "businesses" ? "Verified clubs, academies and programs." : "Trusted local experts for your goals."}</div>
 
           <button
             type="button"
-            aria-label="Search coaches, packages and sports"
-            onClick={() => nav("client-search")}
+            aria-label={providerType === "businesses" ? "Search businesses, clubs and programs" : "Search coaches, packages and sports"}
+            onClick={() => providerType === "businesses" ? nav("business-directory") : nav("client-search")}
             style={{
               width: "100%", minHeight: 50, marginTop: 16, display: "flex", alignItems: "center", gap: 10,
               border: `1.5px solid ${C.border}`, background: C.white, borderRadius: 14, padding: "0 14px",
@@ -955,12 +954,19 @@ export function ScreenClientHome({ nav, params = {}, favorites = [], toggleFav, 
             }}
           >
             <Search size={16} color={C.slateLight} aria-hidden="true" />
-            <span style={{ flex: 1, minWidth: 0, fontSize: T.bodyLg, color: C.slateLight, ...fBody }}>Search coaches, packages or sports…</span>
+            <span style={{ flex: 1, minWidth: 0, fontSize: T.bodyLg, color: C.slateLight, ...fBody }}>{providerType === "businesses" ? "Search clubs, programs or sports…" : "Search coaches, packages or sports…"}</span>
             <ChevronRight size={16} color={C.slateLight} aria-hidden="true" />
           </button>
 
           <div style={{ margin: "14px -18px 0", padding: "0 18px", overflowX: "auto" }} className="cl-hide-scrollbar">
             <div style={{ display: "flex", gap: 8, width: "max-content", paddingBottom: 2 }}>
+              <Chip
+                compact
+                active={providerType === "businesses"}
+                onClick={() => { haptic(8); setProviderType((current) => current === "businesses" ? "coaches" : "businesses"); }}
+              >
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Building2 size={13} />Businesses & clubs</span>
+              </Chip>
               <Chip
                 compact
                 active={!appliedFilters.sports?.length}
@@ -1040,7 +1046,7 @@ export function ScreenClientHome({ nav, params = {}, favorites = [], toggleFav, 
             </section>
           )}
 
-          {!hasActiveFilters && (
+          {!hasActiveFilters && providerType === "coaches" && (
             <PromoBannerCarousel
               banners={PROMO_BANNERS}
               onSelectBanner={handleBannerSelect}

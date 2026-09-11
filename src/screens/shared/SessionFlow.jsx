@@ -504,6 +504,9 @@ export function ScreenCoachSessionStart({
 }) {
   const { darkMode, coachProfile } = useApp();
   const C = darkMode ? CD : CL;
+  const role = params?.role || "coach";
+  const backTo = params?.backTo || (role === "businessCoach" ? "business-coach-booking-detail" : "coach-session-detail");
+  const backParams = params?.backParams || { id: params?.bookingId };
   const booking = findBooking(params?.bookingId, "coach", bookings, coachBookings, businessBookings);
   const [digits, setDigits] = useState(["", "", "", "", "", ""]);
   const [verifying, setVerifying] = useState(false);
@@ -522,7 +525,7 @@ export function ScreenCoachSessionStart({
     if (booking?.status === BOOKING_STATUS.IN_PROGRESS && !started) {
       setStarted(true);
       haptic([10, 60, 10]);
-      window.setTimeout(() => nav("session-progress", { bookingId: booking.id, role: "coach" }), 1400);
+      window.setTimeout(() => nav("session-progress", { bookingId: booking.id, role, backTo, backParams }), 1400);
     }
   }, [booking?.status, started, booking?.id, nav]);
 
@@ -592,7 +595,7 @@ export function ScreenCoachSessionStart({
       if (result.ok) {
         setStarted(true);
         haptic([10, 60, 10]);
-        window.setTimeout(() => nav("session-progress", { bookingId: booking.id, role: "coach" }), 1400);
+        window.setTimeout(() => nav("session-progress", { bookingId: booking.id, role, backTo, backParams }), 1400);
         return;
       }
       if (result.reason === "expired") {
@@ -613,7 +616,7 @@ export function ScreenCoachSessionStart({
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", background: C.white }}>
-      <TopBar title="Start session" onBack={() => nav("coach-session-detail", { id: booking.id })} right={<StatusPill status={booking.status} />} />
+      <TopBar title="Start session" onBack={() => nav(backTo, backParams)} right={<StatusPill status={booking.status} />} />
 
       {started && (
         <div style={{ position: "absolute", inset: 0, zIndex: 40, background: C.white, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 28, animation: "clFadeIn .25s ease" }}>
@@ -777,6 +780,7 @@ export function ScreenSessionProgress({
   const { darkMode, coachProfile } = useApp();
   const C = darkMode ? CD : CL;
   const role = params?.role || appRole || "client";
+  const providerView = ["coach", "business", "businessCoach"].includes(role);
   const booking = findBooking(params?.bookingId, role, bookings, coachBookings, businessBookings);
   const [seconds, setSeconds] = useState(0);
   const [endSheetOpen, setEndSheetOpen] = useState(false);
@@ -790,14 +794,14 @@ export function ScreenSessionProgress({
   if (!booking) {
     return (
       <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-        <TopBar title="Session" onBack={() => goBack(role === "coach" ? "coach-bookings" : "client-dashboard")} />
+        <TopBar title="Session" onBack={() => goBack(role === "businessCoach" ? "business-coach-bookings" : role === "business" ? "business-bookings" : role === "coach" ? "coach-bookings" : "client-dashboard")} />
         <EmptyState icon={Timer} title="Session not found" body="This session may no longer be available." />
       </div>
     );
   }
 
   const details = resolveSessionDetails(booking, role, coachProfile);
-  const person = role === "coach" ? booking.clientName : booking.coachName;
+  const person = providerView ? booking.clientName : booking.coachName;
   const live = booking.status === BOOKING_STATUS.IN_PROGRESS;
   const completed = booking.status === BOOKING_STATUS.COMPLETED;
   const pendingCharge = additionalCharges.find((charge) => (
@@ -806,12 +810,13 @@ export function ScreenSessionProgress({
     && charge.status === "pending"
   ));
 
-  const backScreen = role === "coach" ? "coach-session-detail" : "client-booking-detail";
-  const messageName = role === "coach" ? booking.clientName : booking.coachName;
+  const backScreen = params?.backTo || (role === "businessCoach" ? "business-coach-booking-detail" : role === "business" ? "business-booking-detail" : role === "coach" ? "coach-session-detail" : "client-booking-detail");
+  const backParams = params?.backParams || { id: booking.id };
+  const messageName = providerView ? booking.clientName : booking.coachName;
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", background: C.white }}>
-      <TopBar title="Live session" onBack={() => nav(backScreen, { id: booking.id })} right={live ? <Badge tone="success" icon={CheckCircle2}>Live</Badge> : <StatusPill status={booking.status} />} />
+      <TopBar title="Live session" onBack={() => nav(backScreen, backParams)} right={live ? <Badge tone="success" icon={CheckCircle2}>Live</Badge> : <StatusPill status={booking.status} />} />
 
       <div style={{ flex: 1, overflowY: "auto", padding: `12px ${LAYOUT.pagePadX}px 26px` }} className="cl-hide-scrollbar">
         {/* Hero band */}
@@ -846,7 +851,7 @@ export function ScreenSessionProgress({
         </Card>
 
         {/* Partner */}
-        <SectionLabel>{role === "coach" ? "Your client" : "Your coach"}</SectionLabel>
+        <SectionLabel>{providerView ? "Your client" : "Your coach"}</SectionLabel>
         <Card style={{ marginBottom: 12, padding: 15 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 11 }}>
             <Avatar name={person} size={46} />
@@ -920,7 +925,7 @@ export function ScreenSessionProgress({
           </button>
           <button
             type="button"
-            onClick={() => nav("dispute-create", { bookingId: booking.id, role, category: role === "coach" ? "client_no_show" : "session_not_delivered", backTo: "session-progress", backParams: { bookingId: booking.id, role } })}
+            onClick={() => nav("dispute-create", { bookingId: booking.id, role, category: providerView ? "client_no_show" : "session_not_delivered", backTo: "session-progress", backParams: { bookingId: booking.id, role, backTo: backScreen, backParams } })}
             style={{ width: "100%", minHeight: 56, padding: "0 15px", background: "none", border: "none", display: "flex", alignItems: "center", gap: 11, cursor: "pointer", textAlign: "left" }}
           >
             <div style={{ width: 36, height: 36, borderRadius: 11, background: C.dangerTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -939,8 +944,8 @@ export function ScreenSessionProgress({
           <div>
             <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>Session protected</div>
             <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.55, marginTop: 4, ...fBody }}>
-              {role === "coach"
-                ? `$${Number(booking.paidTotal || booking.price).toFixed(2)} is held securely and releases when the session completes.`
+              {providerView
+                ? role === "businessCoach" ? "Customer payment is protected and managed by your organisation." : `$${Number(booking.paidTotal || booking.price).toFixed(2)} is held securely and releases when the session completes.`
                 : "Your payment stays held by CoachNivo until the session is complete."}
             </div>
           </div>
@@ -948,7 +953,7 @@ export function ScreenSessionProgress({
       </div>
 
       <div style={{ padding: `12px ${LAYOUT.pagePadX}px max(${LAYOUT.ctaPadBottom}px, env(safe-area-inset-bottom))`, borderTop: `1px solid ${C.border}`, background: C.white }}>
-        {live && role === "coach" && (
+        {live && providerView && (
           <Btn full icon={CheckCircle2} onClick={() => setEndSheetOpen(true)}>End session</Btn>
         )}
         {live && role === "client" && (
@@ -957,8 +962,8 @@ export function ScreenSessionProgress({
             <span>Your coach ends the session when you're done</span>
           </div>
         )}
-        {!live && role === "coach" && !completed && (
-          <Btn full icon={ArrowRight} onClick={() => nav("coach-session-completion", { bookingId: booking.id, role: "coach", backTo: backScreen })}>Finish session</Btn>
+        {!live && providerView && !completed && (
+          <Btn full icon={ArrowRight} onClick={() => nav("coach-session-completion", { bookingId: booking.id, role, backTo: backScreen, backParams })}>Finish session</Btn>
         )}
         {!live && role === "client" && completed && (
           <Btn full icon={CheckCircle2} onClick={() => nav("funds-release-status", { bookingId: booking.id, role: "client", backTo: backScreen })}>View payment release</Btn>
@@ -970,18 +975,18 @@ export function ScreenSessionProgress({
 
       <BottomSheet open={endSheetOpen} onClose={() => setEndSheetOpen(false)} title="End this session?" heightPct={56}>
         <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.55, marginBottom: 14, ...fBody }}>
-          Once you end the session, you can add any agreed final charges — like extra time, equipment, or venue costs — before the funds are released.
+          {role === "businessCoach" ? "End the session when delivery is complete. Your organisation manages customer charges and payment release." : "Once you end the session, you can add any agreed final charges — like extra time, equipment, or venue costs — before the funds are released."}
         </div>
         <Card style={{ marginBottom: 18, display: "flex", gap: 11, alignItems: "flex-start", background: C.fog, border: "none" }}>
           <ShieldCheck size={18} color={C.brand} style={{ flexShrink: 0 }} />
           <div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.55, ...fBody }}>
-            {pendingCharge
+            {role === "businessCoach" ? "Your session record will be sent to the business for payment reconciliation." : pendingCharge
               ? `A final payment of $${Number(pendingCharge.amount).toFixed(2)} is waiting for ${(booking.clientName || "your client").split(" ")[0]} — the session completes once it's paid.`
               : "No charges yet — you can finish without one, and the held payment releases right away."}
           </div>
         </Card>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <Btn full onClick={() => { haptic(12); setEndSheetOpen(false); nav("coach-session-completion", { bookingId: booking.id, role: "coach", backTo: "session-progress" }); }}>
+          <Btn full onClick={() => { haptic(12); setEndSheetOpen(false); nav("coach-session-completion", { bookingId: booking.id, role, backTo: "session-progress", backParams: { bookingId: booking.id, role, backTo: backScreen, backParams } }); }}>
             Continue to finish
           </Btn>
           <Btn full variant="secondary" onClick={() => setEndSheetOpen(false)}>Keep session live</Btn>

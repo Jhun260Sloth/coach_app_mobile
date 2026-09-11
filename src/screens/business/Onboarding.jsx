@@ -5,6 +5,7 @@ import { useApp } from "../../context/AppContext";
 import { BUSINESS_PLANS, BUSINESS_STATUS, BUSINESS_TYPES } from "../../data/businesses";
 import { SPORT_NAMES } from "../../data/sports";
 import { Badge, Btn, Card, CheckboxRow, Chip, Field, RadioRow, StepProgress, TopBar } from "../../components/ui/Primitives";
+import { BusinessPlanCard } from "../../components/business/BusinessPlanUI";
 
 const shell = (C) => ({ height: "100%", display: "flex", flexDirection: "column", background: C.white });
 const content = { flex: 1, overflowY: "auto", padding: "8px 18px 32px" };
@@ -91,36 +92,26 @@ export function ScreenBusinessIdentity() {
   </div>;
 }
 
-function PlanCard({ plan, selected, onSelect, C }) {
-  return <Card onClick={onSelect} ariaLabel={`Choose ${plan.name}`} style={{ marginBottom: 12, padding: 16, border: `1.5px solid ${selected ? C.brand : C.border}`, background: selected ? C.brandTint : C.white }}>
-    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-      <div><div style={{ fontSize: T.title, fontWeight: 700, color: C.jet, ...fDisplay }}>{plan.name}</div><div style={{ marginTop: 3, fontSize: T.captionLg, color: C.slate, ...fBody }}>{plan.description}</div></div>
-      <div style={{ textAlign: "right" }}><span style={{ fontSize: T.heading, fontWeight: 800, color: C.jet, ...fDisplay }}>${plan.monthlyPrice}</span><span style={{ fontSize: T.caption, color: C.slate, ...fBody }}>/month</span></div>
-    </div>
-    {plan.trialMonths ? <div style={{ display: "inline-flex", marginTop: 10, padding: "4px 8px", borderRadius: 999, background: C.successTint, color: C.success, fontSize: T.caption, fontWeight: 700, ...fBody }}>First month free</div> : null}
-    <div style={{ marginTop: 12, display: "grid", gap: 6 }}>{plan.features.map((feature) => <div key={feature} style={{ display: "flex", gap: 7, color: C.slate, fontSize: T.captionLg, ...fBody }}><CheckCircle2 size={14} color={C.brand} />{feature}</div>)}</div>
-  </Card>;
-}
-
 export function ScreenBusinessPlan() {
-  const { darkMode, nav, businessOnboarding, updateBusinessOnboarding, submitBusinessApplication, toast } = useApp();
+  const { darkMode, nav, businessOnboarding, updateBusinessOnboarding, toast } = useApp();
   const C = darkMode ? CD : CL;
   const [planId, setPlanId] = useState(businessOnboarding.planId || "starter");
   const [agreement, setAgreement] = useState(false);
   const submit = () => {
     if (!agreement) { toast("Accept the provider agreement first"); return; }
-    updateBusinessOnboarding({ planId, agreementAccepted: true }); submitBusinessApplication({ planId }); nav("business-application-submitted");
+    updateBusinessOnboarding({ planId, agreementAccepted: true });
+    nav("business-plan-checkout", { planId, source: "onboarding" });
   };
   return <div style={shell(C)}>
     <TopBar title="Plan & commercial terms" onBack={() => nav("business-identity")} />
     <div style={content} className="cl-hide-scrollbar">
-      <StepProgress step={3} total={3} label="Choose a plan" />
+      <StepProgress step={3} total={4} label="Choose a plan" />
       <h1 style={heading(C)}>Choose what fits today</h1>
       <p style={body(C)}>Plans are billed monthly in AUD. You can change plans as your roster grows.</p>
-      {BUSINESS_PLANS.map((plan) => <PlanCard key={plan.id} plan={plan} selected={planId === plan.id} onSelect={() => setPlanId(plan.id)} C={C} />)}
+      {BUSINESS_PLANS.map((plan) => <BusinessPlanCard key={plan.id} plan={plan} selected={planId === plan.id} onSelect={() => setPlanId(plan.id)} C={C} />)}
       <Card style={{ padding: "6px 14px", marginTop: 4 }}><CheckboxRow label="I am authorised to accept the Provider Agreement, privacy obligations, marketplace rules and cancellation responsibilities." checked={agreement} onClick={() => setAgreement((value) => !value)} /></Card>
     </div>
-    <div style={footer(C)}><Btn full onClick={submit}>Submit application</Btn></div>
+    <div style={footer(C)}><Btn full icon={CreditCard} onClick={submit}>Continue to payment</Btn></div>
   </div>;
 }
 
