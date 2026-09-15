@@ -2,15 +2,16 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle, Award, Banknote, BarChart3, Bell, Building2, CalendarDays, Check, CheckCircle2, ChevronRight,
   Camera, CircleDollarSign, ClipboardCheck, Clock3, CreditCard, FileCheck2, Film, HelpCircle, Image as ImageIcon, Landmark, Mail, MapPin, MessageCircle,
-  MoreHorizontal, Pencil, Phone, Play, PlayCircle, Plus, RefreshCw, Scale, ShieldCheck, Sparkles, Star, Trash2, UploadCloud, UserCheck, Users, WalletCards,
+  MoreHorizontal, Pencil, Phone, Play, PlayCircle, Plus, RefreshCw, Scale, Search, ShieldCheck, Sparkles, Star, Trash2, UploadCloud, UserCheck, Users, WalletCards,
 } from "lucide-react";
 import { CL, CD, fBody, fDisplay, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { BUSINESS_PLANS, BUSINESS_STATUS, BUSINESS_STATUS_LABELS, getBusinessPlan } from "../../data/businesses";
 import { BOOKING_STATUS, PAYMENT_STATUS } from "../../data/bookings";
+import { COACHES } from "../../data/coaches";
 import { SPORT_NAMES } from "../../data/sports";
 import { LocationField } from "../../components/ui/LocationField";
-import { Avatar, Badge, BottomSheet, Btn, Card, CheckboxRow, Chip, ConfirmDialog, EmptyState, Field, Row, SearchSelect, SectionLabel, SegTabs, SettingsGroup, SettingsRow, StatusPill, StepProgress, ThreadSkeleton, Toggle, TopBar } from "../../components/ui/Primitives";
+import { Avatar, Badge, BottomSheet, Btn, Card, CheckboxRow, ConfirmDialog, EmptyState, Field, Row, SearchSelect, SectionLabel, SegTabs, SettingsGroup, SettingsRow, StatusPill, StepProgress, ThreadSkeleton, Toggle, TopBar } from "../../components/ui/Primitives";
 import { SportSearchSelect } from "../../components/ui/SportUI";
 import { SessionJourneyTimeline } from "../../components/booking/SessionJourneyTimeline";
 import { NotificationBellButton } from "../../systems/StateSystem";
@@ -172,7 +173,7 @@ export function ScreenBusinessCoachDetail() {
   ];
   return <div style={page(C)}><TopBar title="Coach profile" onBack={() => nav("business-roster")} right={<button type="button" aria-label={`Manage ${member.name}`} onClick={() => setActionsOpen(true)} style={{ width: 44, height: 44, border: "none", borderRadius: 12, background: C.fog, color: C.jet, cursor: "pointer" }}><MoreHorizontal size={20} /></button>} />
     <div style={{ ...scroll, paddingTop: 10, paddingBottom: 32 }} className="cl-hide-scrollbar">
-      <Card style={{ padding: 18, textAlign: "center" }}><Avatar name={member.name} size={76} /><div style={{ marginTop: 11, fontSize: T.headingLg, fontWeight: 700, color: C.jet, ...fDisplay }}>{member.name}</div><div style={{ marginTop: 4, fontSize: T.body, color: C.slate, ...fBody }}>{member.sport} coach at {business.tradingName}</div><div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 6, marginTop: 10 }}><Badge tone={memberTone(member.status)}>{member.status}</Badge><Badge tone={verified ? "success" : "orange"}>{verified ? "Coach verified" : "Verification pending"}</Badge></div></Card>
+      <Card style={{ padding: "20px 18px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}><Avatar name={member.name} size={76} /><div style={{ marginTop: 11, fontSize: T.headingLg, fontWeight: 700, color: C.jet, ...fDisplay }}>{member.name}</div><div style={{ marginTop: 4, fontSize: T.body, color: C.slate, ...fBody }}>{member.sport} coach at {business.tradingName}</div><div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 6, marginTop: 10 }}><Badge tone={memberTone(member.status)}>{member.status}</Badge><Badge tone={verified ? "success" : "orange"}>{verified ? "Coach verified" : "Verification pending"}</Badge></div></Card>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginTop: 12 }}><StatCard icon={CalendarDays} value={upcoming} label="Upcoming" C={C} /><StatCard icon={ClipboardCheck} value={bookings.length} label="Bookings" C={C} /><StatCard icon={Award} value={programs.length} label="Programs" C={C} /></div>
       <SectionLabel style={{ marginTop: 24 }}>Organisation details</SectionLabel><Card style={{ marginTop: 10, padding: "4px 14px" }}><div style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 54 }}><Building2 size={17} color={C.brand} /><div><div style={{ fontSize: T.caption, color: C.slate, ...fBody }}>Organisation</div><div style={{ marginTop: 2, fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>{business.tradingName}</div></div></div><div style={{ borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 10, minHeight: 54 }}><Mail size={17} color={C.brand} /><div><div style={{ fontSize: T.caption, color: C.slate, ...fBody }}>Roster email</div><div style={{ marginTop: 2, fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{member.email}</div></div></div></Card>
       <SectionLabel style={{ marginTop: 24 }}>Compliance</SectionLabel><Card style={{ marginTop: 10, padding: "4px 14px" }}>{checkItems.map((item, index) => <div key={item.label} style={{ minHeight: 52, display: "flex", alignItems: "center", gap: 10, borderBottom: index < checkItems.length - 1 ? `1px solid ${C.border}` : "none" }}><span style={{ width: 30, height: 30, borderRadius: 10, background: item.done ? C.successTint : C.warnTint, display: "flex", alignItems: "center", justifyContent: "center" }}>{item.done ? <CheckCircle2 size={16} color={C.success} /> : <Clock3 size={16} color={C.warnStrong} />}</span><span style={{ flex: 1, fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{item.label}</span><Badge tone={item.done ? "success" : "orange"}>{item.done ? "Current" : "Pending"}</Badge></div>)}</Card>
@@ -359,6 +360,97 @@ function formatBusinessAddress(area, streetAddress) {
   return [streetAddress?.trim(), areaLabel].filter(Boolean).join(", ");
 }
 
+function CoachAssignmentPicker({ coaches, selectedIds, servesMinors, onToggle, C }) {
+  const [query, setQuery] = useState("");
+  const [previewCoachId, setPreviewCoachId] = useState(null);
+  const profilesById = useMemo(() => new Map(COACHES.map((profile) => [profile.id, profile])), []);
+  const visibleCoaches = useMemo(() => {
+    const search = query.trim().toLowerCase();
+    if (!search) return coaches;
+    return coaches.filter((coach) => {
+      const profile = profilesById.get(coach.coachId);
+      return [coach.name, coach.email, coach.sport, profile?.experience, ...(profile?.tags || []), ...(profile?.accreditations || [])]
+        .some((value) => String(value || "").toLowerCase().includes(search));
+    });
+  }, [coaches, profilesById, query]);
+  const previewCoach = coaches.find((coach) => coach.id === previewCoachId);
+  const previewProfile = profilesById.get(previewCoach?.coachId);
+
+  if (!coaches.length) {
+    return <EmptyState icon={UserCheck} title="No verified coaches yet" body="Invite a coach and complete their verification before adding them to a program." />;
+  }
+
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, marginBottom: 8 }}>
+        <div>
+          <div style={{ fontSize: T.labelLg, fontWeight: 700, color: C.jet, ...fBody }}>Eligible verified coaches</div>
+          <div style={{ marginTop: 3, fontSize: T.captionLg, color: C.slate, ...fBody }}>{selectedIds.length} selected · Choose everyone who can deliver this program</div>
+        </div>
+      </div>
+
+      <label style={{ minHeight: 48, display: "flex", alignItems: "center", gap: 9, padding: "0 12px", border: `1.5px solid ${C.border}`, borderRadius: 13, background: C.fog }}>
+        <Search size={17} color={C.slateLight} aria-hidden="true" />
+        <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} aria-label="Search verified coaches" placeholder="Search by coach, sport or qualification…" style={{ flex: 1, minWidth: 0, minHeight: 44, padding: 0, border: "none", outline: "none", background: "transparent", color: C.jet, fontSize: T.bodyLg, ...fBody }} />
+      </label>
+
+      <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+        {visibleCoaches.map((coach) => {
+          const profile = profilesById.get(coach.coachId);
+          const selected = selectedIds.includes(coach.id);
+          const safeguardsReady = coach.wwcc === "current";
+          const unavailableForProgram = servesMinors && !safeguardsReady;
+          return (
+            <Card key={coach.id} style={{ padding: 0, overflow: "hidden", border: `1.5px solid ${selected ? C.brand : C.border}`, opacity: unavailableForProgram ? .56 : 1 }}>
+              <button type="button" disabled={unavailableForProgram && !selected} aria-pressed={selected} aria-label={`${selected ? "Remove" : "Select"} ${coach.name}`} onClick={() => onToggle(coach.id)} style={{ width: "100%", minHeight: 76, display: "flex", alignItems: "center", gap: 11, padding: "12px 13px", border: "none", background: selected ? C.brandTint : C.white, textAlign: "left", cursor: unavailableForProgram && !selected ? "default" : "pointer" }}>
+                <Avatar name={coach.name} src={profile?.avatar} size={50} />
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: T.subtitleLg, fontWeight: 700, color: C.jet, ...fDisplay }}>{coach.name}</span><ShieldCheck size={14} color={C.success} aria-label="Verified" style={{ flexShrink: 0 }} /></span>
+                  <span style={{ display: "block", marginTop: 3, fontSize: T.captionLg, color: C.slate, ...fBody }}>{coach.sport}{profile?.experience ? ` · ${profile.experience}` : " · Business coach"}</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6, fontSize: T.caption, color: C.slate, ...fBody }}>
+                    {profile?.rating ? <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}><Star size={11} color={C.brand} fill={C.brand} aria-hidden="true" />{profile.rating} ({profile.reviews})</span> : null}
+                    <span style={{ color: safeguardsReady ? C.success : C.warnStrong }}>{safeguardsReady ? "WWCC current" : "Adults only"}</span>
+                  </span>
+                </span>
+                <span aria-hidden="true" style={{ width: 22, height: 22, flexShrink: 0, borderRadius: 999, display: "grid", placeItems: "center", border: `1.5px solid ${selected ? C.brand : C.border}`, background: selected ? C.brand : C.white }}>{selected ? <Check size={13} color={C.white} strokeWidth={3} /> : null}</span>
+              </button>
+              <div style={{ minHeight: 44, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "0 13px", borderTop: `1px solid ${C.border}`, background: C.white }}>
+                <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: T.captionLg, color: C.slate, ...fBody }}>{profile?.accreditations?.[0] || "Identity and credentials verified"}</span>
+                <button type="button" onClick={() => setPreviewCoachId(coach.id)} style={{ minHeight: 44, flexShrink: 0, padding: "0 0 0 10px", border: "none", background: "transparent", color: C.brandIcon || C.brand, fontSize: T.labelLg, fontWeight: 700, cursor: "pointer", ...fBody }}>View profile</button>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+
+      {!visibleCoaches.length ? <EmptyState icon={Search} title="No coaches found" body="Try another name, sport or qualification." /> : null}
+
+      <BottomSheet open={Boolean(previewCoach)} onClose={() => setPreviewCoachId(null)} title="Coach profile" heightPct={78}>
+        {previewCoach ? <div style={{ paddingBottom: 18 }}>
+          <div style={{ textAlign: "center" }}>
+            <Avatar name={previewCoach.name} src={previewProfile?.avatar} size={78} ring />
+            <div style={{ marginTop: 10, fontSize: T.headingLg, fontWeight: 800, color: C.jet, ...fDisplay }}>{previewCoach.name}</div>
+            <div style={{ marginTop: 4, fontSize: T.body, color: C.slate, ...fBody }}>{previewCoach.sport} coach{previewProfile?.experience ? ` · ${previewProfile.experience}` : ""}</div>
+            <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 6, marginTop: 10 }}><Badge tone="success" icon={ShieldCheck}>Identity verified</Badge><Badge tone={previewCoach.wwcc === "current" ? "success" : "orange"}>{previewCoach.wwcc === "current" ? "WWCC current" : "Adults only"}</Badge></div>
+          </div>
+
+          {previewProfile ? <>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginTop: 18 }}>
+              {[{ label: "Rating", value: previewProfile.rating }, { label: "Reviews", value: previewProfile.reviews }, { label: "Repeat clients", value: `${previewProfile.repeatClientRate || 0}%` }].map((item) => <Card key={item.label} style={{ padding: "10px 6px", textAlign: "center" }}><div style={{ fontSize: T.title, fontWeight: 800, color: C.jet, ...fDisplay }}>{item.value}</div><div style={{ marginTop: 2, fontSize: T.micro, color: C.slate, ...fBody }}>{item.label}</div></Card>)}
+            </div>
+            <div style={{ marginTop: 18, fontSize: T.title, fontWeight: 700, color: C.jet, ...fDisplay }}>About</div>
+            <div style={{ marginTop: 6, fontSize: T.body, lineHeight: 1.6, color: C.slate, ...fBody }}>{previewProfile.bio}</div>
+            <div style={{ marginTop: 18, fontSize: T.title, fontWeight: 700, color: C.jet, ...fDisplay }}>Qualifications</div>
+            <div style={{ display: "grid", gap: 8, marginTop: 8 }}>{previewProfile.accreditations?.map((item) => <div key={item} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: T.body, lineHeight: 1.45, color: C.slate, ...fBody }}><CheckCircle2 size={16} color={C.success} style={{ flexShrink: 0, marginTop: 1 }} />{item}</div>)}</div>
+          </> : <Card style={{ padding: 14, marginTop: 18, background: C.fog }}><div style={{ fontSize: T.body, lineHeight: 1.55, color: C.slate, ...fBody }}>This coach’s identity, credentials and safeguarding checks are verified in your business roster. Their public marketplace profile has not been published yet.</div></Card>}
+
+          <div style={{ marginTop: 20 }}><Btn full variant={selectedIds.includes(previewCoach.id) ? "outline" : "primary"} disabled={servesMinors && previewCoach.wwcc !== "current" && !selectedIds.includes(previewCoach.id)} onClick={() => { onToggle(previewCoach.id); setPreviewCoachId(null); }}>{selectedIds.includes(previewCoach.id) ? "Remove from program" : "Select this coach"}</Btn></div>
+        </div> : null}
+      </BottomSheet>
+    </div>
+  );
+}
+
 export function ScreenBusinessProgramForm() {
   const { darkMode, nav, params, business, businessPrograms, businessLocations, businessRoster, saveBusinessProgram, saveBusinessLocation, toast } = useApp();
   const C = darkMode ? CD : CL;
@@ -384,6 +476,8 @@ export function ScreenBusinessProgramForm() {
   };
   const save = () => {
     if (!form.title.trim() || !form.description.trim() || !form.startDate || !form.startTime) { toast("Complete the required program details"); setStep(1); return; }
+    if (form.status === "live" && !form.eligibleCoachIds.length) { toast("Select at least one verified coach"); setStep(3); return; }
+    if (form.status === "live" && form.servesMinors && coaches.some((coach) => form.eligibleCoachIds.includes(coach.id) && coach.wwcc !== "current")) { toast("Remove coaches without a current WWCC"); setStep(3); return; }
     let locationId = form.locationId;
     if (form.deliveryMode === "In-person" && locationMode === "custom") {
       const savedLocation = saveBusinessLocation({ id: form.locationId || undefined, name: customLocation.name.trim(), address: formatBusinessAddress(customLocation.area, customLocation.streetAddress), locationArea: customLocation.area, indoor: customLocation.indoor, accessibility: "Contact the venue for access details", amenities: [], instructions: "", weatherPolicy: customLocation.indoor ? "Indoor venue — sessions run in all weather." : "Weather updates are sent before the session." });
@@ -400,7 +494,7 @@ export function ScreenBusinessProgramForm() {
     <div style={{ ...scroll, paddingBottom: 116 }} className="cl-hide-scrollbar"><div style={{ paddingTop: 14 }}><StepProgress step={step} total={3} label={stepLabels[step - 1]} />
       {step === 1 ? <div style={{ display: "grid", gap: 14 }}><Card style={{ padding: 15, background: C.fog }}><div style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...fDisplay }}>Build a clear offer</div><div style={{ marginTop: 4, fontSize: T.captionLg, lineHeight: 1.5, color: C.slate, ...fBody }}>Clients should understand who the program is for, what they’ll do and what they’ll pay.</div></Card><Field label="Program title" name="program-title" placeholder="e.g., Junior Development Program" value={form.title} onChange={(e) => set("title", e.target.value)} required /><SelectField C={C} label="Sport" name="sport" value={form.sport} onChange={(e) => set("sport", e.target.value)} options={SPORT_NAMES} required /><SelectField C={C} label="Program format" name="type" value={form.type} onChange={(e) => set("type", e.target.value)} options={PROGRAM_TYPES} required /><TextareaField C={C} label="Client-facing description" name="description" placeholder="Explain the outcomes, session style and what clients can expect…" value={form.description} onChange={(e) => set("description", e.target.value)} required /><div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}><Field label="Price (AUD)" name="price" type="number" inputMode="decimal" value={form.price} onChange={(e) => set("price", e.target.value)} required /><Field label="Places" name="capacity" type="number" inputMode="numeric" value={form.capacity} onChange={(e) => set("capacity", e.target.value)} required /></div><div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}><SelectField C={C} label="Age range" name="age-range" value={form.ageRange} onChange={(e) => set("ageRange", e.target.value)} options={["All ages", "8–14", "13+", "16+", "18+"]} /><SelectField C={C} label="Skill level" name="skill-level" value={form.skillLevel} onChange={(e) => set("skillLevel", e.target.value)} options={["All levels", "Beginner", "Beginner to intermediate", "Intermediate", "Intermediate to advanced", "Advanced"]} /></div></div> : null}
       {step === 2 ? <div style={{ display: "grid", gap: 14 }}><Card style={{ padding: 15, background: C.fog }}><div style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...fDisplay }}>Make the next session obvious</div><div style={{ marginTop: 4, fontSize: T.captionLg, lineHeight: 1.5, color: C.slate, ...fBody }}>Use the date and time controls so clients see a consistent booking summary.</div></Card><div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}><Field label="First session date" name="start-date" type="date" value={form.startDate} onChange={(e) => set("startDate", e.target.value)} required /><Field label="Start time" name="start-time" type="time" value={form.startTime} onChange={(e) => set("startTime", e.target.value)} required /></div><SelectField C={C} label="Cadence" name="cadence" value={form.cadence} onChange={(e) => set("cadence", e.target.value)} options={PROGRAM_CADENCES} required /><SelectField C={C} label="Delivery mode" name="delivery-mode" value={form.deliveryMode} onChange={(e) => { const nextMode = e.target.value; set("deliveryMode", nextMode); if (nextMode !== "In-person") set("locationId", ""); else if (!form.locationId && locations[0]?.id) set("locationId", locations[0].id); }} options={PROGRAM_DELIVERY_MODES} required />{form.deliveryMode === "In-person" ? <><div><div style={{ marginBottom: 8, fontSize: T.labelLg, fontWeight: 700, color: C.jet, ...fBody }}>Where will it run?</div><SegTabs items={locations.length ? [{ value: "saved", label: "Saved location" }, { value: "custom", label: "Add custom venue" }] : [{ value: "custom", label: "Add custom venue" }]} value={locationMode} onChange={(value) => { setLocationMode(value); if (value === "saved" && !form.locationId) set("locationId", locations[0]?.id || ""); if (value === "custom") set("locationId", ""); }} /></div>{locationMode === "saved" ? <SelectField C={C} label="Business location" name="location" value={form.locationId} onChange={(e) => set("locationId", e.target.value)} options={locations.map((location) => ({ value: location.id, label: location.name }))} required /> : <Card style={{ padding: 14, display: "grid", gap: 12, background: C.fog }}><Field label="Venue name" name="custom-venue-name" placeholder="e.g., Riverside Reserve" value={customLocation.name} onChange={(e) => setCustomLocation((current) => ({ ...current, name: e.target.value }))} required /><LocationField value={customLocation.area} onChange={(area) => setCustomLocation((current) => ({ ...current, area }))} label="Find venue area" helper="Search an address, suburb or postcode, or detect your current location" placeholder="Search address, suburb or postcode…" required /><Field label="Street address" name="custom-venue-address" placeholder="e.g., 18 Ocean Street" value={customLocation.streetAddress} onChange={(e) => setCustomLocation((current) => ({ ...current, streetAddress: e.target.value }))} required /><CheckboxRow label="Indoor venue" checked={customLocation.indoor} onClick={() => setCustomLocation((current) => ({ ...current, indoor: !current.indoor }))} /></Card>}<BusinessLocationPreview C={C} location={previewLocation} /></> : form.deliveryMode === "Online" ? <Card style={{ padding: 15, display: "flex", gap: 11, alignItems: "flex-start", background: C.brandTint, border: "none" }}><PlayCircle size={19} color={C.brand} /><div><div style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...fDisplay }}>Online session</div><div style={{ marginTop: 3, fontSize: T.captionLg, lineHeight: 1.5, color: C.slate, ...fBody }}>Clients will receive the online access details after their booking is confirmed.</div></div></Card> : <Card style={{ padding: 14, display: "grid", gap: 12, background: C.fog }}><div style={{ fontSize: T.body, lineHeight: 1.5, color: C.slate, ...fBody }}>The coach travels to the client. Add a service area so clients know where you operate.</div><Field label="Service area (optional)" name="travel-area" placeholder="e.g., Within 10 km of Broadbeach" value={form.travelArea} onChange={(e) => set("travelArea", e.target.value)} /></Card>}</div> : null}
-      {step === 3 ? <div style={{ display: "grid", gap: 14 }}><Card style={{ padding: 15, background: C.fog }}><div style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...fDisplay }}>Set up your delivery team</div><div style={{ marginTop: 4, fontSize: T.captionLg, lineHeight: 1.5, color: C.slate, ...fBody }}>Choose how bookings are matched and which verified coaches can deliver this program.</div></Card><Card style={{ padding: 14 }}><Row label="Program" value={form.title || "Untitled program"} /><Row label="First session" value={`${formatProgramDate(form.startDate)} · ${formatProgramTime(form.startTime)}`} /><Row label="Delivery" value={form.deliveryMode} />{form.deliveryMode === "In-person" ? <Row label="Location" value={previewLocation?.name || "To be confirmed"} last /> : <Row label="Location" value={form.deliveryMode === "Online" ? "Online session" : form.travelArea || "Coach travels to client"} last />}</Card><div><div style={{ marginBottom: 8, fontSize: T.labelLg, fontWeight: 700, color: C.jet, ...fBody }}>Coach assignment</div><SegTabs items={[{ value: "business_assigns", label: "We assign" }, { value: "client_selects", label: "Client chooses" }]} value={form.assignmentMode} onChange={(value) => set("assignmentMode", value)} /></div><div><div style={{ marginBottom: 8, fontSize: T.labelLg, fontWeight: 700, color: C.jet, ...fBody }}>Eligible verified coaches</div>{coaches.length ? <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>{coaches.map((coach) => <Chip key={coach.id} active={form.eligibleCoachIds.includes(coach.id)} onClick={() => set("eligibleCoachIds", form.eligibleCoachIds.includes(coach.id) ? form.eligibleCoachIds.filter((id) => id !== coach.id) : [...form.eligibleCoachIds, coach.id])}>{coach.name}</Chip>)}</div> : <div style={{ fontSize: T.captionLg, color: C.slate, ...fBody }}>Invite and verify a coach before publishing this program.</div>}</div><Card style={{ padding: "4px 14px" }}><CheckboxRow label="This program serves participants under 18" checked={form.servesMinors} onClick={() => set("servesMinors", !form.servesMinors)} /><CheckboxRow label="Enable a waitlist when full" checked={form.waitlist} onClick={() => set("waitlist", !form.waitlist)} /></Card><SelectField C={C} label="Publishing status" name="status" value={form.status} onChange={(e) => set("status", e.target.value)} options={[{ value: "draft", label: "Save as draft" }, { value: "live", label: "Publish immediately" }]} /></div> : null}
+      {step === 3 ? <div style={{ display: "grid", gap: 14 }}><Card style={{ padding: 15, background: C.fog }}><div style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...fDisplay }}>Set up your delivery team</div><div style={{ marginTop: 4, fontSize: T.captionLg, lineHeight: 1.5, color: C.slate, ...fBody }}>Choose how bookings are matched and which verified coaches can deliver this program.</div></Card><Card style={{ padding: 14 }}><Row label="Program" value={form.title || "Untitled program"} /><Row label="First session" value={`${formatProgramDate(form.startDate)} · ${formatProgramTime(form.startTime)}`} /><Row label="Delivery" value={form.deliveryMode} />{form.deliveryMode === "In-person" ? <Row label="Location" value={previewLocation?.name || "To be confirmed"} last /> : <Row label="Location" value={form.deliveryMode === "Online" ? "Online session" : form.travelArea || "Coach travels to client"} last />}</Card><div><div style={{ marginBottom: 8, fontSize: T.labelLg, fontWeight: 700, color: C.jet, ...fBody }}>Coach assignment</div><SegTabs items={[{ value: "business_assigns", label: "We assign" }, { value: "client_selects", label: "Client chooses" }]} value={form.assignmentMode} onChange={(value) => set("assignmentMode", value)} /><div style={{ marginTop: 7, fontSize: T.captionLg, lineHeight: 1.5, color: C.slate, ...fBody }}>{form.assignmentMode === "client_selects" ? "Clients can compare and choose from the coaches selected below." : "Your team will assign one of the selected coaches after a booking request."}</div></div><CoachAssignmentPicker coaches={coaches} selectedIds={form.eligibleCoachIds} servesMinors={form.servesMinors} onToggle={(coachId) => set("eligibleCoachIds", form.eligibleCoachIds.includes(coachId) ? form.eligibleCoachIds.filter((id) => id !== coachId) : [...form.eligibleCoachIds, coachId])} C={C} /><Card style={{ padding: "4px 14px" }}><CheckboxRow label="This program serves participants under 18" checked={form.servesMinors} onClick={() => set("servesMinors", !form.servesMinors)} /><CheckboxRow label="Enable a waitlist when full" checked={form.waitlist} onClick={() => set("waitlist", !form.waitlist)} /></Card><SelectField C={C} label="Publishing status" name="status" value={form.status} onChange={(e) => set("status", e.target.value)} options={[{ value: "draft", label: "Save as draft" }, { value: "live", label: "Publish immediately" }]} /></div> : null}
     </div></div>
     <div style={{ display: "flex", gap: 9, padding: "12px 18px", paddingBottom: 28, borderTop: `1px solid ${C.border}`, background: C.white }}>{step > 1 ? <Btn variant="outline" onClick={() => setStep((value) => value - 1)}>Back</Btn> : null}<Btn full onClick={step < 3 ? next : save}>{step < 3 ? "Continue" : (existing ? "Save changes" : form.status === "live" ? "Publish program" : "Save draft")}</Btn></div>
   </div>;

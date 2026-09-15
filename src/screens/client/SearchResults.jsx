@@ -1,21 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowRight, Award, ChevronRight, Clock3, History, Package, Search, Star, User, X } from "lucide-react";
+import { Award, Building2, CalendarDays, ChevronRight, Clock3, History, MapPin, Search, Star, X } from "lucide-react";
 import { CL, CD, fDisplay, fBody, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 import { COACHES } from "../../data/coaches";
+import { isBusinessDiscoverable } from "../../data/businesses";
 import { POPULAR_SPORTS, SPORT_NAMES } from "../../data/sports";
 import { getPublicName } from "../../utils/name";
-import { Avatar, Card, Chip, EmptyState, SegTabs, TopBar, CoachCardSkeleton } from "../../components/ui/Primitives";
+import { Avatar, Card, Chip, EmptyState, TopBar, CoachCardSkeleton } from "../../components/ui/Primitives";
 import { SportBadge, SportIcon } from "../../components/ui/SportUI";
 
 const RECENT_SEARCHES_KEY = "coachnivo.recent-searches";
-const RESULT_TABS = [
-  { value: "all", label: "All" },
-  { value: "coaches", label: "Coaches" },
-  { value: "packages", label: "Packages" },
-  { value: "sports", label: "Sports" },
-];
-
 const readRecentSearches = () => {
   try {
     const saved = JSON.parse(window.localStorage.getItem(RECENT_SEARCHES_KEY) || "[]");
@@ -40,7 +34,7 @@ const PACKAGE_RESULTS = COACHES.flatMap(coach => (coach.packages || [])
   .filter(pkg => pkg.active !== false)
   .map(pkg => ({ ...pkg, coach })));
 
-function ResultSection({ title, count, onSeeAll, children }) {
+function ResultSection({ title, count, children }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
 
@@ -52,11 +46,6 @@ function ResultSection({ title, count, onSeeAll, children }) {
           <h2 style={{ margin: 0, fontSize: T.title, fontWeight: 700, color: C.jet, ...fDisplay }}>{title}</h2>
           <span style={{ fontSize: T.captionLg, fontWeight: 600, color: C.slateLight, ...fBody }}>{count}</span>
         </div>
-        {onSeeAll && (
-          <button type="button" onClick={onSeeAll} style={{ minHeight: 44, padding: "0 4px 0 12px", display: "inline-flex", alignItems: "center", gap: 4, border: "none", background: "transparent", color: C.brand, cursor: "pointer", fontSize: T.labelLg, fontWeight: 700, ...fBody }}>
-            See all <ArrowRight size={14} aria-hidden="true" />
-          </button>
-        )}
       </div>
       {children}
     </section>
@@ -125,6 +114,50 @@ function PackageResult({ result, onOpen }) {
   );
 }
 
+function BusinessResult({ business, programCount, onOpen }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
+  const location = business.registeredAddress?.split(",").slice(-2).join(",").trim();
+
+  return (
+    <Card onClick={onOpen} ariaLabel={`View ${business.tradingName}`} style={{ marginBottom: 10, padding: 14, boxShadow: "0 1px 2px rgba(22,24,29,.04)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <span style={{ width: 50, height: 50, borderRadius: 14, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", background: C.white, border: `1px solid ${C.border}` }}>
+          {business.profile?.logo ? <img src={business.profile.logo} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", padding: 4 }} /> : <Building2 size={21} color={C.brand} aria-hidden="true" />}
+        </span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: T.subtitleLg, fontWeight: 700, color: C.jet, ...fDisplay }}>{business.tradingName}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 4, fontSize: T.captionLg, color: C.slate, ...fBody }}><MapPin size={12} aria-hidden="true" /><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{location}</span></div>
+          <div style={{ marginTop: 7, fontSize: T.captionLg, color: C.slate, ...fBody }}>{programCount} program{programCount === 1 ? "" : "s"} · {business.sports?.slice(0, 2).join(" · ")}</div>
+        </div>
+        <div style={{ flexShrink: 0, textAlign: "right" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4, fontSize: T.labelLg, fontWeight: 700, color: C.jet, ...fBody }}><Star size={12} color={C.brand} fill={C.brand} aria-hidden="true" /> {business.profile?.rating}</div>
+          <ChevronRight size={16} color={C.slateLight} aria-hidden="true" style={{ marginTop: 8 }} />
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function ProgramResult({ result, onOpen }) {
+  const { darkMode } = useApp();
+  const C = darkMode ? CD : CL;
+
+  return (
+    <Card onClick={onOpen} ariaLabel={`View ${result.title} by ${result.business.tradingName}`} style={{ marginBottom: 10, padding: 14, boxShadow: "0 1px 2px rgba(22,24,29,.04)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <span style={{ width: 44, height: 44, borderRadius: 14, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: C.brandTint }}><CalendarDays size={20} color={C.brand} aria-hidden="true" /></span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: T.subtitle, fontWeight: 700, lineHeight: 1.3, color: C.jet, ...fDisplay }}>{result.title}</div>
+          <div style={{ marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: T.captionLg, color: C.slate, ...fBody }}>{result.business.tradingName}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 7 }}><SportBadge sport={result.sport} compact /><span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: T.captionLg, color: C.slate, ...fBody }}><Clock3 size={12} aria-hidden="true" />{result.durationMinutes} min</span></div>
+        </div>
+        <div style={{ flexShrink: 0, textAlign: "right" }}><div style={{ fontSize: T.title, fontWeight: 800, color: C.jet, ...fDisplay }}>${result.price}</div><ChevronRight size={16} color={C.slateLight} aria-hidden="true" style={{ marginTop: 8 }} /></div>
+      </div>
+    </Card>
+  );
+}
+
 function SportResult({ sport, coachCount, packageCount, onOpen }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
@@ -148,11 +181,10 @@ function SportResult({ sport, coachCount, packageCount, onOpen }) {
 }
 
 export function ScreenClientSearchResults() {
-  const { darkMode, nav, goBack, params } = useApp();
+  const { darkMode, nav, goBack, params, businesses, businessPrograms } = useApp();
   const C = darkMode ? CD : CL;
   const inputRef = useRef(null);
   const [query, setQuery] = useState(() => String(params?.query || ""));
-  const [activeTab, setActiveTab] = useState("all");
   const [recentSearches, setRecentSearches] = useState(readRecentSearches);
   const [loading, setLoading] = useState(false);
   const q = normalise(query);
@@ -180,7 +212,7 @@ export function ScreenClientSearchResults() {
   };
 
   const results = useMemo(() => {
-    if (!q) return { coaches: [], packages: [], sports: [] };
+    if (!q) return { coaches: [], businesses: [], programs: [], packages: [], sports: [] };
 
     const coaches = COACHES.filter(coach => [
       coach.name,
@@ -201,18 +233,41 @@ export function ScreenClientSearchResults() {
       ...(result.coach.sports || []),
     ].some(value => includesQuery(value, q)));
 
-    const sports = SPORT_NAMES.filter(sport => includesQuery(sport, q));
-    return { coaches, packages, sports };
-  }, [q]);
+    const visibleBusinesses = businesses.filter(isBusinessDiscoverable);
+    const businessById = new Map(visibleBusinesses.map(business => [business.id, business]));
+    const matchedBusinesses = visibleBusinesses.filter(business => [
+      business.tradingName,
+      business.legalName,
+      business.type,
+      business.registeredAddress,
+      business.profile?.description,
+      ...(business.sports || []),
+    ].some(value => includesQuery(value, q)));
 
-  const totalResults = results.coaches.length + results.packages.length + results.sports.length;
+    const programs = businessPrograms
+      .filter(program => program.status === "live" && businessById.has(program.businessId))
+      .map(program => ({ ...program, business: businessById.get(program.businessId) }))
+      .filter(program => [
+        program.title,
+        program.description,
+        program.sport,
+        program.type,
+        program.ageRange,
+        program.skillLevel,
+        program.business.tradingName,
+      ].some(value => includesQuery(value, q)));
+
+    const sports = SPORT_NAMES.filter(sport => includesQuery(sport, q));
+    return { coaches, businesses: matchedBusinesses, programs, packages, sports };
+  }, [businessPrograms, businesses, q]);
+
+  const totalResults = results.coaches.length + results.businesses.length + results.programs.length + results.packages.length + results.sports.length;
   const clearRecent = () => {
     setRecentSearches([]);
     saveRecentSearches([]);
   };
   const chooseSearch = value => {
     setQuery(value);
-    setActiveTab("all");
     rememberQuery(value);
   };
   const submitSearch = event => {
@@ -228,22 +283,23 @@ export function ScreenClientSearchResults() {
     rememberQuery(query);
     nav("package-detail", { coachId: result.coach.id, packageId: result.id });
   };
+  const openBusiness = business => {
+    rememberQuery(query);
+    nav("business-public-profile", { id: business.id });
+  };
+  const openProgram = program => {
+    rememberQuery(query);
+    nav("business-program-detail", { businessId: program.businessId, programId: program.id });
+  };
   const sportCounts = sport => ({
     coachCount: COACHES.filter(coach => coach.sport === sport || coach.sports?.includes(sport)).length,
     packageCount: PACKAGE_RESULTS.filter(result => result.sport === sport || result.coach.sport === sport || result.coach.sports?.includes(sport)).length,
   });
-  const visibleCoaches = activeTab === "all" ? results.coaches.slice(0, 4) : results.coaches;
-  const visiblePackages = activeTab === "all" ? results.packages.slice(0, 5) : results.packages;
-  const visibleSports = activeTab === "all" ? results.sports.slice(0, 5) : results.sports;
-
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", background: C.white }}>
       <TopBar title="Search" subtitle="Coaches, businesses, programs and sports" onBack={() => goBack("client-home")} />
 
       <div style={{ padding: "12px 18px 10px", background: C.white, flexShrink: 0 }}>
-        <div style={{ marginBottom: 10 }}>
-          <SegTabs items={[{ value: "coaches", label: "Individual coaches" }, { value: "businesses", label: "Businesses & clubs" }]} value="coaches" onChange={(value) => value === "businesses" && nav("business-directory")} />
-        </div>
         <form role="search" onSubmit={submitSearch}>
           <div className="cl-input" style={{ minHeight: 50, display: "flex", alignItems: "center", gap: 10, border: `1.5px solid ${q ? C.brand : C.border}`, background: C.fog, borderRadius: 14, padding: "0 4px 0 14px" }}>
             <Search size={17} color={q ? C.brand : C.slateLight} aria-hidden="true" />
@@ -254,25 +310,20 @@ export function ScreenClientSearchResults() {
               role="searchbox"
               inputMode="search"
               autoComplete="off"
-              aria-label="Search coaches, packages and sports"
+              aria-label="Search coaches, businesses, programs, packages and sports"
               value={query}
               onChange={event => setQuery(event.target.value)}
-              placeholder="Search coaches, packages or sports…"
+              placeholder="Search coaches, clubs, programs or sports…"
               style={{ flex: 1, minWidth: 0, minHeight: 46, padding: 0, border: "none", outline: "none", background: "transparent", color: C.jet, fontSize: T.bodyLg, ...fBody }}
             />
             {query && (
-              <button type="button" aria-label="Clear search" onClick={() => { setQuery(""); setActiveTab("all"); inputRef.current?.focus(); }} style={{ width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", padding: 0, border: "none", borderRadius: 12, background: "transparent", cursor: "pointer" }}>
+              <button type="button" aria-label="Clear search" onClick={() => { setQuery(""); inputRef.current?.focus(); }} style={{ width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", padding: 0, border: "none", borderRadius: 12, background: "transparent", cursor: "pointer" }}>
                 <X size={16} color={C.slate} aria-hidden="true" />
               </button>
             )}
           </div>
         </form>
 
-        {q && (
-          <div style={{ marginTop: 10 }}>
-            <SegTabs items={RESULT_TABS} value={activeTab} onChange={setActiveTab} />
-          </div>
-        )}
       </div>
 
       <div className="cl-hide-scrollbar" style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "18px 18px 32px" }}>
@@ -319,9 +370,9 @@ export function ScreenClientSearchResults() {
           <EmptyState
             icon={Search}
             title="No matches yet"
-            body={`We couldn't find coaches, packages or sports for “${query.trim()}”. Try a sport name or coach name.`}
+            body={`We couldn't find coaches, businesses, programs, packages or sports for “${query.trim()}”. Try a sport, coach or club name.`}
             ctaLabel="Clear search"
-            onCta={() => { setQuery(""); setActiveTab("all"); inputRef.current?.focus(); }}
+            onCta={() => { setQuery(""); inputRef.current?.focus(); }}
             large
           />
         ) : (
@@ -330,27 +381,25 @@ export function ScreenClientSearchResults() {
               <span style={{ fontWeight: 700, color: C.jet }}>{totalResults}</span> result{totalResults === 1 ? "" : "s"} for “{query.trim()}”
             </div>
 
-            {(activeTab === "all" || activeTab === "sports") && (
-              <ResultSection title="Sports" count={results.sports.length} onSeeAll={activeTab === "all" && results.sports.length > visibleSports.length ? () => setActiveTab("sports") : null}>
-                {visibleSports.map(sport => <SportResult key={sport} sport={sport} {...sportCounts(sport)} onOpen={() => chooseSearch(sport)} />)}
-              </ResultSection>
-            )}
+            <ResultSection title="Sports" count={results.sports.length}>
+              {results.sports.map(sport => <SportResult key={sport} sport={sport} {...sportCounts(sport)} onOpen={() => chooseSearch(sport)} />)}
+            </ResultSection>
 
-            {(activeTab === "all" || activeTab === "coaches") && (
-              <ResultSection title="Coaches" count={results.coaches.length} onSeeAll={activeTab === "all" && results.coaches.length > visibleCoaches.length ? () => setActiveTab("coaches") : null}>
-                {visibleCoaches.map(coach => <CoachResult key={coach.id} coach={coach} onOpen={() => openCoach(coach)} />)}
-              </ResultSection>
-            )}
+            <ResultSection title="Coaches" count={results.coaches.length}>
+              {results.coaches.map(coach => <CoachResult key={coach.id} coach={coach} onOpen={() => openCoach(coach)} />)}
+            </ResultSection>
 
-            {(activeTab === "all" || activeTab === "packages") && (
-              <ResultSection title="Packages" count={results.packages.length} onSeeAll={activeTab === "all" && results.packages.length > visiblePackages.length ? () => setActiveTab("packages") : null}>
-                {visiblePackages.map(result => <PackageResult key={`${result.coach.id}-${result.id}`} result={result} onOpen={() => openPackage(result)} />)}
-              </ResultSection>
-            )}
+            <ResultSection title="Businesses & clubs" count={results.businesses.length}>
+              {results.businesses.map(business => <BusinessResult key={business.id} business={business} programCount={businessPrograms.filter(program => program.businessId === business.id && program.status === "live").length} onOpen={() => openBusiness(business)} />)}
+            </ResultSection>
 
-            {activeTab !== "all" && results[activeTab].length === 0 && (
-              <EmptyState icon={activeTab === "coaches" ? User : activeTab === "packages" ? Package : Award} title={`No ${activeTab} found`} body="Try another search or choose a different result category." />
-            )}
+            <ResultSection title="Programs" count={results.programs.length}>
+              {results.programs.map(program => <ProgramResult key={program.id} result={program} onOpen={() => openProgram(program)} />)}
+            </ResultSection>
+
+            <ResultSection title="Coach packages" count={results.packages.length}>
+              {results.packages.map(result => <PackageResult key={`${result.coach.id}-${result.id}`} result={result} onOpen={() => openPackage(result)} />)}
+            </ResultSection>
           </div>
         )}
       </div>
