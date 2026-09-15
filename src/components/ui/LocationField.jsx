@@ -6,9 +6,13 @@ import { AU_SUBURBS } from "../../data/mockData";
 import { haversineKm } from "../../lib/mapUtils";
 import { Spinner, RequiredMark } from "./Primitives";
 
-const FALLBACK_SUBURB = AU_SUBURBS.find((s) => s.suburb === "Sydney CBD" && s.postcode === "2000") || AU_SUBURBS[0];
+const FALLBACK_SUBURB = AU_SUBURBS.find((s) => s.suburb === "Chatswood" && s.postcode === "2067") || AU_SUBURBS.find((s) => s.suburb === "Chatswood") || AU_SUBURBS[0];
 
 function nearestSuburb(lat, lng) {
+  // If coordinates are outside Australia (e.g. overseas testing environment), default to Chatswood
+  const isAustralia = lat <= -10 && lat >= -44 && lng >= 112 && lng <= 154;
+  if (!isAustralia) return FALLBACK_SUBURB;
+
   let best = null;
   let bestKm = Infinity;
   for (const s of AU_SUBURBS) {

@@ -356,11 +356,13 @@ export function ScreenAuth({ nav, resetNav, params, role, toast, biometric, upda
     ? true
     : firstName.trim() && lastName.trim() && email.trim() && isValidPhone(phone) && passwordValid(password) && passwordsMatch && agree;
   const homeScreen = getRoleHome(role);
+  const onboardingScreen = params?.next || (role === "businessCoach" ? "coach-info" : getRoleOnboarding(role));
+  const onboardingParams = params?.invitation ? { invitation: true, backTo: params?.backTo || "business-coach-login" } : {};
 
   const proceedAfterAuth = (method) => {
     const isSocial = method === "apple" || method === "google";
     if (mode === "login") { resetNav(homeScreen, {}, role); return; }
-    if (role === "coach") {
+    if (role === "coach" || role === "businessCoach") {
       const fn = firstName.trim() || (isSocial ? (method === "apple" ? "Apple" : "Google") : "");
       const ln = lastName.trim() || (isSocial ? "User" : "");
       updateCoachOnboarding?.({
@@ -387,7 +389,8 @@ export function ScreenAuth({ nav, resetNav, params, role, toast, biometric, upda
       nav("verify-phone", {
         phone: isValidPhone(phone) ? phone.trim() : "",
         next: "enable-biometric",
-        nextParams: { next: getRoleOnboarding(role) },
+        nextParams: { next: onboardingScreen, nextParams: onboardingParams },
+        authParams: { next: onboardingScreen, backTo: params?.backTo, invitation: params?.invitation },
       });
       return;
     }
@@ -397,8 +400,10 @@ export function ScreenAuth({ nav, resetNav, params, role, toast, biometric, upda
       nextParams: {
         phone: phone.trim(),
         next: "enable-biometric",
-        nextParams: { next: getRoleOnboarding(role) },
+        nextParams: { next: onboardingScreen, nextParams: onboardingParams },
+        authParams: { next: onboardingScreen, backTo: params?.backTo, invitation: params?.invitation },
       },
+      authParams: { next: onboardingScreen, backTo: params?.backTo, invitation: params?.invitation },
     });
   };
 
@@ -411,7 +416,7 @@ export function ScreenAuth({ nav, resetNav, params, role, toast, biometric, upda
       <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>{mode === "signup" ? "Create your account" : "Welcome back"}</div>
       <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 6, marginBottom: 20, ...fBody }}>
         {mode === "signup"
-          ? (role === "coach" ? "Signing up as a Coach." : role === "business" ? "Signing up as a Business." : "Signing up as a Client.")
+          ? (role === "coach" || role === "businessCoach" ? "Signing up as a Coach." : role === "business" ? "Signing up as a Business." : "Signing up as a Client.")
           : "Welcome back - sign in to your CoachNivo account."}
       </div>
 
@@ -706,7 +711,7 @@ export function ScreenVerifyEmail({ nav, params, toast, role }) {
     setPhase("success");
   };
 
-  const changeEmail = () => nav("auth", { mode: "signup", email });
+  const changeEmail = () => nav("auth", { mode: "signup", email, ...(params?.authParams || {}) });
 
   const continueAfterVerify = () => nav(next, nextParams);
 
@@ -887,7 +892,7 @@ export function ScreenVerifyPhone({ nav, params, toast, role, updateClientIdenti
       return;
     }
     const verifiedPhone = phone.trim();
-    if (role === "coach") updateCoachOnboarding?.({ phone: verifiedPhone, phoneVerified: true });
+    if (role === "coach" || role === "businessCoach") updateCoachOnboarding?.({ phone: verifiedPhone, phoneVerified: true });
     else if (role === "business") updateBusinessOnboarding?.({ phone: verifiedPhone, phoneVerified: true });
     else updateClientIdentity?.({ phone: verifiedPhone, phoneVerified: true });
     if (params?.pendingClientPrefs) onComplete?.({ ...params.pendingClientPrefs, mobile: verifiedPhone, phoneVerified: true });
@@ -905,7 +910,7 @@ export function ScreenVerifyPhone({ nav, params, toast, role, updateClientIdenti
   };
   const back = () => params?.backTo
     ? nav(params.backTo, params.backParams || {})
-    : nav("auth", { mode: "signup", phone });
+    : nav("auth", { mode: "signup", phone, ...(params?.authParams || {}) });
   const mmss = `${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, "0")}`;
 
   return (
@@ -1010,9 +1015,9 @@ export function ScreenEnableBiometric({ nav, params, toast, biometric, setBiomet
   const enable = () => {
     setBiometric(true);
     toast("Face ID enabled");
-    nav(next);
+    nav(next, params?.nextParams || {});
   };
-  const skip = () => nav(next);
+  const skip = () => nav(next, params?.nextParams || {});
 
   return (
     <div style={{ padding: "24px 20px 0", height: "100%", display: "flex", flexDirection: "column" }}>
@@ -1033,7 +1038,7 @@ export function ScreenEnableBiometric({ nav, params, toast, biometric, setBiomet
   );
 }
 
-export function ScreenCoachInfo({ nav, coachOnboarding, updateCoachOnboarding }) {
+export function ScreenCoachInfo({ nav, params, coachOnboarding, updateCoachOnboarding }) {
   const { darkMode, isHandleTaken } = useApp();
   const C = darkMode ? CD : CL;
   const inputStyle = { width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "11px 13px", fontSize: T.bodyLg, outline: "none", boxSizing: "border-box", background: C.white, color: C.jet, ...fBody };
@@ -1061,12 +1066,12 @@ export function ScreenCoachInfo({ nav, coachOnboarding, updateCoachOnboarding })
 
   const proceed = () => {
     updateCoachOnboarding({ photo, name, handle, namePrivacy, bio, yearsExperience, gender, languages, location });
-    nav("coach-expertise");
+    nav("coach-expertise", params?.invitation ? { invitation: true, backTo: params?.backTo } : {});
   };
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title="" onBack={() => nav("auth", { mode: "signup" })} />
+      <TopBar title="" onBack={() => nav("auth", { mode: "signup", next: "coach-info", invitation: params?.invitation, backTo: params?.backTo })} />
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
 
         <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Coach information</div>
@@ -1134,7 +1139,7 @@ export function ScreenCoachInfo({ nav, coachOnboarding, updateCoachOnboarding })
   );
 }
 
-export function ScreenCoachExpertise({ nav, coachOnboarding, updateCoachOnboarding }) {
+export function ScreenCoachExpertise({ nav, params, coachOnboarding, updateCoachOnboarding }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const [primarySports, setPrimarySports] = useState(coachOnboarding.primarySports || []);
@@ -1155,12 +1160,12 @@ export function ScreenCoachExpertise({ nav, coachOnboarding, updateCoachOnboardi
       primarySports, secondarySports, coachingCategories: categories, skillLevels, ageGroups,
       coachingExperienceLevel: experienceLevel, coachingFormats: formats,
     });
-    nav("verification");
+    nav("verification", params?.invitation ? { invitation: true, backTo: params?.backTo } : {});
   };
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title="" onBack={() => nav("coach-info")} />
+      <TopBar title="" onBack={() => nav("coach-info", params?.invitation ? { invitation: true, backTo: params?.backTo } : {})} />
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
 
         <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Coaching expertise</div>
@@ -1256,7 +1261,7 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <TopBar title="" onBack={() => nav("coach-expertise")} />
+      <TopBar title="" onBack={() => nav("coach-expertise", params?.invitation ? { invitation: true, backTo: params?.backTo } : {})} />
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }} className="cl-hide-scrollbar">
 
         <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, ...fDisplay }}>Get verified</div>
@@ -1394,7 +1399,7 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
             ];
             submitVerification({ documents, worksWithMinors });
             toast("Documents submitted for review");
-            nav("verification-pending");
+            nav("verification-pending", params?.invitation ? { invitation: true } : {});
           }}>
             Submit for review
           </Btn>
@@ -1409,14 +1414,15 @@ export function ScreenVerification({ nav, toast, submitVerification, coachOnboar
   );
 }
 
-export function ScreenVerificationPending({ nav, params, verificationStatus, setReachedDashboardAfterVerification, simulateVerificationDecision }) {
+export function ScreenVerificationPending({ nav, params, role, verificationStatus, setReachedDashboardAfterVerification, simulateVerificationDecision }) {
   const { darkMode } = useApp();
   const C = darkMode ? CD : CL;
   const rejected = verificationStatus === "rejected" || params?.variant === "rejected";
   const approved = verificationStatus === "approved";
+  const businessCoachInvite = role === "businessCoach" || params?.invitation;
   const goToSetup = () => {
     if (approved && setReachedDashboardAfterVerification) setReachedDashboardAfterVerification(true);
-    nav("coach-create-package");
+    nav(businessCoachInvite ? "business-coach-home" : "coach-create-package");
   };
   const simulateLinkStyle = { background: "none", border: "none", cursor: "pointer", fontSize: T.caption, color: C.slateLight, textDecoration: "underline", ...fBody };
   if (rejected) {
@@ -1428,7 +1434,7 @@ export function ScreenVerificationPending({ nav, params, verificationStatus, set
     ];
     return (
       <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-        <TopBar title="Verification review" onBack={() => nav("coach-dashboard")} />
+        <TopBar title="Verification review" onBack={() => nav(businessCoachInvite ? "business-coach-login" : "coach-dashboard")} />
         <div style={{ flex: 1, overflowY: "auto", padding: "18px 18px 24px" }} className="cl-hide-scrollbar">
           <div style={{ textAlign: "center", padding: "5px 10px 20px" }}>
             <div style={{ width: 68, height: 68, borderRadius: 22, background: C.dangerTint, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 15px" }}>
@@ -1462,7 +1468,7 @@ export function ScreenVerificationPending({ nav, params, verificationStatus, set
           </Card>
         </div>
         <div style={{ padding: "12px 18px 28px", borderTop: `1px solid ${C.border}`, background: C.white, display: "flex", flexDirection: "column", gap: 9 }}>
-          <Btn full icon={Upload} onClick={() => nav("verification", { resubmit: true })}>Update documents</Btn>
+          <Btn full icon={Upload} onClick={() => nav("verification", { resubmit: true, invitation: businessCoachInvite })}>Update documents</Btn>
           <Btn full variant="outline" onClick={() => nav("support", { presetTab: "contact", faqTopic: "verification", backTo: "verification-rejected" })}>Ask verification support</Btn>
         </div>
       </div>
@@ -1484,7 +1490,7 @@ export function ScreenVerificationPending({ nav, params, verificationStatus, set
         </div>
         <div style={{ fontSize: T.bodyLg, color: C.slate, marginTop: 8, lineHeight: 1.6, maxWidth: 300, marginLeft: "auto", marginRight: "auto", ...fBody }}>
           {approved
-            ? "An admin has reviewed and approved your documents. Create your first package to start accepting bookings."
+            ? (businessCoachInvite ? "An admin has approved your documents. Your verified business coach workspace is ready." : "An admin has reviewed and approved your documents. Create your first package to start accepting bookings.")
             : "Your documents have been submitted successfully and are now awaiting review by a CoachNivo administrator. This usually takes up to 2 business days - we'll notify you as soon as a decision is made."}
         </div>
         {!approved && (
@@ -1500,7 +1506,7 @@ export function ScreenVerificationPending({ nav, params, verificationStatus, set
       </div>
 
       <div style={{ marginTop: "auto", padding: "14px 0", display: "flex", flexDirection: "column", gap: 10 }}>
-        <Btn full disabled={!approved} onClick={goToSetup}>Create your first package</Btn>
+        <Btn full disabled={!approved} onClick={goToSetup}>{businessCoachInvite ? "Open coach workspace" : "Create your first package"}</Btn>
         {!approved && (
           <div style={{ fontSize: T.captionLg, color: C.slateLight, textAlign: "center", lineHeight: 1.5, ...fBody }}>
             This unlocks once an admin approves your application.

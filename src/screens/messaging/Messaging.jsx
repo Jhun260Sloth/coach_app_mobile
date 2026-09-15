@@ -98,7 +98,7 @@ export function ScreenMessages({ nav, role, isFirstTimeClient }) {
   const { isPinned, pin, unpin } = usePinnedThreads();
   const { isDeleted, remove } = useDeletedThreads();
   const [loading, setLoading] = useState(true);
-  const rawThreads = role === "coach" ? COACH_THREADS : role === "business" ? BUSINESS_THREADS : THREADS;
+  const rawThreads = role === "coach" || role === "businessCoach" ? COACH_THREADS : role === "business" ? BUSINESS_THREADS : THREADS;
   // Pinned threads first, then unread, then original order; deleted threads drop out entirely.
   const threads = [...rawThreads]
     .filter(t => !isDeleted(t.id))
@@ -118,7 +118,7 @@ export function ScreenMessages({ nav, role, isFirstTimeClient }) {
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <TopBar
         title="Messages"
-        onBack={role === "business" ? () => nav("business-more") : undefined}
+        onBack={role === "business" ? () => nav("business-more") : role === "businessCoach" ? () => nav("business-coach-account") : undefined}
         right={
           <button type="button" aria-label="Open help and support" onClick={() => nav("support")} style={{ width: LAYOUT.touchTarget, height: LAYOUT.touchTarget, padding: 0, background: "transparent", border: "none", borderRadius: LAYOUT.pillRadius, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <HelpCircle size={22} color={C.jet} />
@@ -474,6 +474,7 @@ export function ScreenChatThread({ nav, goBack, params, role, toast, offline, bo
   const { isBlocked, block, unblock } = useBlockedThreads();
   const threadId = params?.threadId || params?.bookingId || params?.name;
   const blocked = isBlocked(threadId);
+  const isCoachActor = role === "coach" || role === "businessCoach";
   const coach = role === "client" ? COACHES.find((c) => c.name === params.name) : null;
 
   // Live location is only safe to expose once money/a booking is actually
@@ -481,7 +482,7 @@ export function ScreenChatThread({ nav, goBack, params, role, toast, offline, bo
   // unpaid other party. Prefer the real booking record (status can change
   // after this thread was opened); fall back to the thread's own context
   // label ("Booking · ..." vs "Enquiry") when there's no bookingId to look up.
-  const bookingPool = (role === "coach" ? coachBookings : role === "business" ? businessBookings : bookings) || [];
+  const bookingPool = (role === "businessCoach" ? businessBookings : role === "coach" ? coachBookings : role === "business" ? businessBookings : bookings) || [];
   const explicitBooking = params?.bookingId
     ? bookingPool.find((booking) => booking.id === params.bookingId)
     : null;
@@ -489,7 +490,7 @@ export function ScreenChatThread({ nav, goBack, params, role, toast, offline, bo
   const bookingStatusPriority = { confirmed: 0, awaiting_payment: 1, pending: 2, completed: 3 };
   const inferredBooking = isBookingConversation
     ? [...bookingPool]
-      .filter((booking) => role === "coach"
+      .filter((booking) => isCoachActor
         ? String(booking.clientName || "").replace(/\s*\(u18\)\s*/i, "").startsWith(String(params.name || "").replace(/\s*\(u18\)\s*/i, ""))
         : role === "business"
           ? booking.clientName === params.name
@@ -498,7 +499,7 @@ export function ScreenChatThread({ nav, goBack, params, role, toast, offline, bo
     : null;
   const relatedBooking = explicitBooking || inferredBooking || null;
   const pendingBookingAction = relatedBooking?.status === BOOKING_STATUS.PENDING
-    ? (role === "coach" ? "decline" : "withdraw")
+    ? (role === "coach" ? "decline" : role === "businessCoach" ? null : "withdraw")
     : null;
   const locationUnlocked = relatedBooking
     ? (relatedBooking.status === "confirmed" || relatedBooking.status === "completed")
@@ -506,7 +507,7 @@ export function ScreenChatThread({ nav, goBack, params, role, toast, offline, bo
 
   // Privacy-safe name for the chat header — public name unless this thread's
   // booking is confirmed (then the full partner name is revealed).
-  const pub = role === "coach"
+  const pub = isCoachActor
     ? getPublicName(
       { name: params.name, ...clientMetaFor(params.name) },
       relatedBooking && ["confirmed", "completed"].includes(relatedBooking.status) ? "confirmed" : "public"
@@ -592,11 +593,15 @@ export function ScreenChatThread({ nav, goBack, params, role, toast, offline, bo
     toast?.("Location shared");
   };
 
-  const backTarget = params?.backTo || (role === "coach" ? "coach-messages" : role === "business" ? "business-messages" : "client-messages");
+  const backTarget = params?.backTo || (role === "coach" ? "coach-messages" : role === "businessCoach" ? "business-coach-messages" : role === "business" ? "business-messages" : "client-messages");
   const openBooking = () => {
     if (!relatedBooking) return;
-    if (role !== "coach") {
+    if (!isCoachActor) {
       nav("client-booking-detail", { id: relatedBooking.id });
+      return;
+    }
+    if (role === "businessCoach") {
+      nav("business-coach-booking-detail", { id: relatedBooking.id });
       return;
     }
     const coachRoute = ["confirmed", "completed"].includes(relatedBooking.status)

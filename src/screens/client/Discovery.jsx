@@ -3,11 +3,12 @@ import { Search, SlidersHorizontal, ArrowUpDown, ArrowDown, ChevronDown, Chevron
 import { CL, CD, fDisplay, fBody, T, LAYOUT } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
 
-import { COACHES, ALL_SUBURBS, SUBURB_COORDS, PROMO_BANNERS } from "../../data/mockData";
+import { COACHES, ALL_SUBURBS, SUBURB_COORDS, PROMO_BANNERS, FEATURED_BUSINESS_BANNERS } from "../../data/mockData";
 import { isBusinessDiscoverable } from "../../data/businesses";
 import { BusinessCard } from "./BusinessDiscovery";
 import { Card, Chip, Badge, SectionLabel, Avatar, Btn, BottomSheet, Spinner, ScrollFadeRow, HandleTag, Skeleton } from "../../components/ui/Primitives";
 import { PromoBannerCarousel } from "../../components/ui/PromoBannerCarousel";
+import { FeaturedBusinessCarousel } from "../../components/ui/FeaturedBusinessCarousel";
 import { SportBadge, SportIcon, SportSearchMultiSelect, SportTile } from "../../components/ui/SportUI";
 import { POPULAR_SPORTS, SPORT_NAMES } from "../../data/sports";
 import { getPublicName } from "../../utils/name";
@@ -528,7 +529,7 @@ export function ScreenClientHome({ nav, params = {}, favorites = [], toggleFav, 
       const distance = haversineKm(origin, coords);
       return !best || distance < best.distance ? { label, distance } : best;
     }, null);
-    return nearest?.label || "Current location";
+    return nearest?.label || "Chatswood, Sydney";
   }, [manualLabel, permissionDenied, origin.lat, origin.lng]);
   const withDistance = useMemo(
     () => COACHES.map(c => ({ ...c, liveDistanceKm: Math.round(getApproxCoachDistance(origin, c) * 10) / 10 })),
@@ -703,7 +704,7 @@ export function ScreenClientHome({ nav, params = {}, favorites = [], toggleFav, 
   }).length, [filterDraft, origin.lat, origin.lng, safeFavorites]);
   const locationSuggestions = locationQuery.trim()
     ? ALL_SUBURBS.filter(s => s.toLowerCase().includes(locationQuery.trim().toLowerCase())).slice(0, 5)
-    : ALL_SUBURBS.slice(0, 4);
+    : ["Chatswood, Sydney", ...ALL_SUBURBS.filter(s => s !== "Chatswood, Sydney")].slice(0, 4);
   const chooseLocation = suburb => {
     const coords = SUBURB_COORDS[suburb];
     if (coords) setManualLocation(coords, suburb);
@@ -1047,9 +1048,27 @@ export function ScreenClientHome({ nav, params = {}, favorites = [], toggleFav, 
           )}
 
           {!hasActiveFilters && providerType === "coaches" && (
-            <PromoBannerCarousel
-              banners={PROMO_BANNERS}
-              onSelectBanner={handleBannerSelect}
+            <>
+              <PromoBannerCarousel
+                banners={PROMO_BANNERS}
+                onSelectBanner={handleBannerSelect}
+              />
+              <FeaturedBusinessCarousel
+                banners={FEATURED_BUSINESS_BANNERS}
+                onSelectBusiness={(id) => nav("business-public-profile", { id })}
+                onViewAll={() => {
+                  setProviderType("businesses");
+                  haptic(8);
+                }}
+              />
+            </>
+          )}
+
+          {!hasActiveFilters && providerType === "businesses" && (
+            <FeaturedBusinessCarousel
+              banners={FEATURED_BUSINESS_BANNERS}
+              onSelectBusiness={(id) => nav("business-public-profile", { id })}
+              showViewAll={false}
             />
           )}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>

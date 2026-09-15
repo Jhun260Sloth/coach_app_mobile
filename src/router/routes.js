@@ -69,7 +69,7 @@ import {
   ScreenBusinessProgramForm, ScreenBusinessProgramOverview, ScreenBusinessBookingDetail, ScreenBusinessMore,
   ScreenBusinessLocations, ScreenBusinessProfileEdit, ScreenBusinessMedia, ScreenBusinessReviews, ScreenBusinessFinance,
   ScreenBusinessAnalytics, ScreenBusinessCompliance, ScreenBusinessBookings,
-  ScreenBusinessNotifications,
+  ScreenBusinessNotifications, ScreenBusinessIdentityDetails, ScreenBusinessInsuranceDetails,
 } from "../screens/business/BusinessScreens";
 import {
   ScreenBusinessDirectory, ScreenBusinessPublicProfile, ScreenBusinessCoachPublicProfile, ScreenBusinessProgramDetail,
@@ -78,8 +78,9 @@ import {
 import { ScreenBusinessBookingPayment } from "../screens/client/BusinessBookingPayment";
 import {
   ScreenBusinessCoachLogin, ScreenBusinessCoachHome, ScreenBusinessCoachBookings,
-  ScreenBusinessCoachBookingDetail, ScreenBusinessCoachPrograms, ScreenBusinessCoachEarnings,
-  ScreenBusinessCoachAccount, ScreenBusinessCoachNotifications,
+  ScreenBusinessCoachBookingDetail, ScreenBusinessCoachPrograms, ScreenBusinessCoachProgramOverview,
+  ScreenBusinessCoachEarnings, ScreenBusinessCoachAccount, ScreenBusinessCoachNotifications,
+  ScreenBusinessCoachAccess, ScreenBusinessCoachCredentials, ScreenBusinessCoachContact,
 } from "../screens/businessCoach/BusinessCoachScreens";
 
 // Shared: messaging & support
@@ -210,6 +211,8 @@ export const ROUTES = {
   "business-invoices": ScreenBusinessInvoices,
   "business-analytics": ScreenBusinessAnalytics,
   "business-compliance": ScreenBusinessCompliance,
+  "business-identity-details": ScreenBusinessIdentityDetails,
+  "business-insurance-details": ScreenBusinessInsuranceDetails,
 
   // Invited business coach
   "business-coach-login": ScreenBusinessCoachLogin,
@@ -217,9 +220,14 @@ export const ROUTES = {
   "business-coach-bookings": ScreenBusinessCoachBookings,
   "business-coach-booking-detail": ScreenBusinessCoachBookingDetail,
   "business-coach-programs": ScreenBusinessCoachPrograms,
+  "business-coach-program-overview": ScreenBusinessCoachProgramOverview,
   "business-coach-earnings": ScreenBusinessCoachEarnings,
   "business-coach-account": ScreenBusinessCoachAccount,
   "business-coach-notifications": ScreenBusinessCoachNotifications,
+  "business-coach-messages": ScreenMessages,
+  "business-coach-access": ScreenBusinessCoachAccess,
+  "business-coach-credentials": ScreenBusinessCoachCredentials,
+  "business-coach-contact": ScreenBusinessCoachContact,
 
   // Shared
   "chat-thread": ScreenChatThread,
@@ -350,6 +358,8 @@ const ROUTE_METADATA_BASE = {
   "business-invoices": { title: "Business Invoices", category: "Business", role: "business" },
   "business-analytics": { title: "Business Analytics", category: "Business", role: "business" },
   "business-compliance": { title: "Business Launch Checklist", category: "Business", role: "business" },
+  "business-identity-details": { title: "Business Identity & Registration", category: "Business", role: "business" },
+  "business-insurance-details": { title: "Business Insurance & Safeguarding", category: "Business", role: "business" },
 
   // Invited Business Coach Flow
   "business-coach-login": { title: "Business Coach Invitation Login", category: "Business Coach", role: "businessCoach" },
@@ -357,9 +367,14 @@ const ROUTE_METADATA_BASE = {
   "business-coach-bookings": { title: "Business Coach Assigned Sessions", category: "Business Coach", role: "businessCoach" },
   "business-coach-booking-detail": { title: "Business Coach Session Detail", category: "Business Coach", role: "businessCoach" },
   "business-coach-programs": { title: "Business Coach Assigned Programs", category: "Business Coach", role: "businessCoach" },
+  "business-coach-program-overview": { title: "Business Coach Program Overview", category: "Business Coach", role: "businessCoach" },
   "business-coach-earnings": { title: "Business Coach Earnings", category: "Business Coach", role: "businessCoach" },
   "business-coach-account": { title: "Business Coach Account & Access", category: "Business Coach", role: "businessCoach" },
   "business-coach-notifications": { title: "Business Coach Notifications", category: "Business Coach", role: "businessCoach" },
+  "business-coach-messages": { title: "Business Coach Messages", category: "Business Coach", role: "businessCoach" },
+  "business-coach-access": { title: "Business Coach Workspace Access", category: "Business Coach", role: "businessCoach" },
+  "business-coach-credentials": { title: "Business Coach Identity & Credentials", category: "Business Coach", role: "businessCoach" },
+  "business-coach-contact": { title: "Contact Business", category: "Business Coach", role: "businessCoach" },
 
   // Shared
   "chat-thread": { title: "Interactive Chat Thread", category: "Shared", role: "client" },
@@ -455,6 +470,7 @@ const ROUTE_DEMO_PARAMS = {
   "business-booking-detail": { id: "bb1" },
   "business-coach-detail": { id: "rm1" },
   "business-coach-booking-detail": { id: "bb5" },
+  "business-coach-program-overview": { id: "prog1" },
   "dispute-create": { bookingId: "s1", role: "client", category: "session_not_delivered", backTo: "client-booking-detail" },
   "dispute-status": { caseId: "case-102", role: "client", backTo: "client-history" },
   "additional-charge-create": { bookingId: "cb1", role: "coach", phase: "completion", backTo: "coach-session-detail" },

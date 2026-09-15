@@ -7,6 +7,7 @@ import { Avatar, Badge, BottomSheet, Btn, Card, CheckboxRow, EmptyState, Field, 
 import { calcAge } from "./AboutYou";
 import { SessionJourneyTimeline } from "../../components/booking/SessionJourneyTimeline";
 import { BusinessBookingPaymentSummary } from "../../components/business/BusinessBookingPaymentSummary";
+import { FeaturedBusinessCarousel } from "../../components/ui/FeaturedBusinessCarousel";
 
 const page = (C) => ({ height: "100%", display: "flex", flexDirection: "column", background: C.white });
 const scroll = { flex: 1, overflowY: "auto", padding: "16px 18px 124px" };
@@ -45,8 +46,18 @@ export function ScreenBusinessDirectory() {
   const visible = useMemo(() => businesses.filter(isBusinessDiscoverable).filter((item) => !query.trim() || [item.tradingName, item.registeredAddress, ...(item.sports || [])].join(" ").toLowerCase().includes(query.trim().toLowerCase())), [businesses, query]);
   return <div style={page(C)}><TopBar title="Businesses & clubs" subtitle="Verified organisations and programs" onBack={() => nav("client-home")} />
     <div style={{ padding: "4px 18px 12px" }}><div style={{ display: "flex", alignItems: "center", gap: 9, minHeight: 48, border: `1.5px solid ${C.border}`, borderRadius: 13, padding: "0 13px", background: C.fog }}><Search size={17} color={C.slateLight} /><input aria-label="Search businesses" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search sport, club or location…" style={{ flex: 1, minWidth: 0, minHeight: 44, border: "none", outline: "none", background: "transparent", color: C.jet, fontSize: T.bodyLg, ...fBody }} /></div><div style={{ marginTop: 10 }}><SegTabs items={[{ value: "coaches", label: "Individual coaches" }, { value: "businesses", label: "Businesses & clubs" }]} value="businesses" onChange={(value) => value === "coaches" && nav("client-home")} /></div></div>
-    <div style={scroll} className="cl-hide-scrollbar"><div style={{ marginBottom: 14, fontSize: T.body, color: C.slate, ...fBody }}>{visible.length} verified organisation{visible.length === 1 ? "" : "s"}</div>{visible.length ? visible.map((item) => <BusinessCard key={item.id} business={item} programCount={businessPrograms.filter((program) => program.businessId === item.id && program.status === "live").length} rosterCount={businessRoster.filter((member) => member.businessId === item.id && member.status === "active").length || 4} onOpen={() => nav("business-public-profile", { id: item.id })} C={C} />) : <EmptyState icon={Building2} title="No businesses match" body="Try another sport, club name or location." ctaLabel="Clear search" onCta={() => setQuery("")} />}</div>
-    </div>;
+    <div style={scroll} className="cl-hide-scrollbar">
+      {!query.trim() && (
+        <FeaturedBusinessCarousel
+          onSelectBusiness={(id) => nav("business-public-profile", { id })}
+          showViewAll={false}
+          style={{ marginBottom: 20 }}
+        />
+      )}
+      <div style={{ marginBottom: 14, fontSize: T.body, color: C.slate, ...fBody }}>{visible.length} verified organisation{visible.length === 1 ? "" : "s"}</div>
+      {visible.length ? visible.map((item) => <BusinessCard key={item.id} business={item} programCount={businessPrograms.filter((program) => program.businessId === item.id && program.status === "live").length} rosterCount={businessRoster.filter((member) => member.businessId === item.id && member.status === "active").length || 4} onOpen={() => nav("business-public-profile", { id: item.id })} C={C} />) : <EmptyState icon={Building2} title="No businesses match" body="Try another sport, club name or location." ctaLabel="Clear search" onCta={() => setQuery("")} />}
+    </div>
+  </div>;
 }
 
 export function ScreenBusinessPublicProfile() {

@@ -15,10 +15,10 @@ export const LEAFLET_JS_URL = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
 
 export const AUSTRALIA_CENTER = [-25.2744, 133.7751];
 export const AUSTRALIA_ZOOM = 4;
-// Fallback "you are here" point (Sydney CBD) used whenever the browser denies
-// or lacks geolocation, so the blue dot + radius filter always have
-// somewhere to sit.
-export const FALLBACK_USER_LOCATION = { lat: -33.8688, lng: 151.2093 };
+// Fallback "you are here" point (Chatswood, Sydney) used as the default location
+// whenever the browser lacks geolocation or is outside Australia.
+export const FALLBACK_USER_LOCATION = { lat: -33.7969, lng: 151.1830 };
+export const DEFAULT_LOCATION_LABEL = "Chatswood, Sydney";
 // Zoom level used the first time we auto-centre on the user's real location.
 export const LOCATE_ZOOM = 13;
 // Preset quick-filter distances shown as chips; anything above 10km lives in
