@@ -176,14 +176,16 @@ export const fBody = { fontFamily: "'Inter', sans-serif" };
    ASSETS
    ========================================================================= */
 
-export const LOGO_WHITE_SRC = "/logo.png";
+export const LOGO_WHITE_SRC = "/logomark-white.png";
 
 export const LOGO_SRCS = {
-  green: "/logo.png",
-  iconGreen: "/logo.png",
-  iconWhite: "/logo.png",
-  white: "/logo.png",
-  logo: "/logo.png",
+  green: "/coachnivo-logo.png",
+  iconGreen: "/logomark-dark.png",
+  iconWhite: "/logomark-white.png",
+  white: "/logomark-white.png",
+  logo: "/coachnivo-logo.png",
+  logomarkDark: "/logomark-dark.png",
+  logomarkWhite: "/logomark-white.png",
 };
 
 /* =========================================================================

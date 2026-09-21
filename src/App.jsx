@@ -294,7 +294,7 @@ function AppShell() {
         {/* Header */}
         <div style={{ padding: "16px 18px 14px", borderBottom: `1px solid ${vSystem.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <LogoMark size={22} system />
+            <LogoMark size={22} system dark={studioTheme === "dark"} />
             <div>
               <div style={{ fontSize: 14, fontWeight: 700, color: vSystem.textPrimary, letterSpacing: "-0.3px", fontFamily: vSystem.fontFamily }}>
                 CoachNivo Studio

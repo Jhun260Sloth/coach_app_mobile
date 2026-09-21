@@ -1077,26 +1077,40 @@ export function Toast({ toast }) {
   );
 }
 
-export function LogoMark({ size = 30 }) {
+export function LogoMark({ size = 30, dark, style, ...props }) {
+  let isDark = false;
+  if (dark !== undefined) {
+    isDark = Boolean(dark);
+  } else {
+    try {
+      const app = useApp();
+      isDark = Boolean(app?.darkMode);
+    } catch (e) {
+      isDark = false;
+    }
+  }
+  const src = isDark ? "/logomark-white.png" : "/logomark-dark.png";
   return (
     <img
-      src="/logo.png"
+      src={src}
       alt="CoachNivo"
       width={size}
       height={size}
-      style={{ display: "block", objectFit: "contain", borderRadius: Math.round(size * 0.22) }}
+      style={{ display: "block", objectFit: "contain", borderRadius: Math.round(size * 0.22), ...style }}
+      {...props}
     />
   );
 }
 
-export function LogoMarkWhite({ size = 120 }) {
+export function LogoMarkWhite({ size = 120, style, ...props }) {
   return (
     <img
-      src="/logo.png"
+      src="/logomark-white.png"
       alt="CoachNivo"
       width={size}
       height={size}
-      style={{ display: "block", objectFit: "contain", borderRadius: Math.round(size * 0.22) }}
+      style={{ display: "block", objectFit: "contain", borderRadius: Math.round(size * 0.22), ...style }}
+      {...props}
     />
   );
 }

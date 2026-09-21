@@ -94,8 +94,7 @@ export function ScreenSplash({ nav }) {
   return (
     <div style={{ height: "100%", background: C.white, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 28, textAlign: "center" }}>
       <div style={{ animation: "clFadeUp .5s ease", display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
-        <img src="/logo.png" alt="CoachNivo" style={{ width: 72, height: 72, borderRadius: 16 }} />
-        <div style={{ fontSize: T.displayLg, fontWeight: 800, color: C.jet, letterSpacing: "-0.03em", ...fDisplay }}>CoachNivo</div>
+        <img src="/coachnivo-logo.png" alt="CoachNivo" style={{ width: 200, maxWidth: "60vw", height: "auto", objectFit: "contain" }} />
       </div>
       <div style={{ marginTop: 34 }}>
         <Spinner size={22} color={C.slateLight} />
@@ -161,7 +160,7 @@ export function ScreenGetStarted({ nav }) {
         }}
       >
         <img
-          src="/logo.png"
+          src="/logomark-white.png"
           alt="CoachNivo"
           style={{ height: 32, width: 32, borderRadius: 8 }}
         />
@@ -288,7 +287,7 @@ export function ScreenRoleSelect({ nav, setRole }) {
     <div style={{ height: "100%", display: "flex", flexDirection: "column", background: C.white }}>
       <TopBar title="" onBack={() => nav("get-started")} />
       <div style={{ flex: 1, overflowY: "auto", padding: "14px 18px 24px" }} className="cl-hide-scrollbar">
-        <img src="/logo.png" alt="CoachNivo" style={{ height: 36, width: 36, marginBottom: 8 }} />
+        <img src={darkMode ? "/logomark-white.png" : "/logomark-dark.png"} alt="CoachNivo" style={{ height: 36, width: 36, marginBottom: 8 }} />
         <div style={{ fontSize: T.displayLg, fontWeight: 600, color: C.jet, marginTop: 18, ...fDisplay }}>
           What brings you<br />to CoachNivo?
         </div>
@@ -1532,7 +1531,7 @@ export function ScreenAdminLogin({ nav, toast }) {
     <div style={{ height: "100%", background: C.white, display: "flex", flexDirection: "column", padding: "40px 24px 28px" }}>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
         <div style={{ textAlign: "center", marginBottom: 30, display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <img src="/logo.png" alt="CoachNivo" style={{ width: 56, height: 56, borderRadius: 14, marginBottom: 12 }} />
+          <img src={darkMode ? "/logomark-white.png" : "/logomark-dark.png"} alt="CoachNivo" style={{ width: 56, height: 56, borderRadius: 14, marginBottom: 12 }} />
           <div style={{ fontSize: T.display, fontWeight: 800, color: C.jet, ...fDisplay }}>CoachNivo</div>
           <div style={{ fontSize: T.body, color: C.onDarkMuted, marginTop: 4, ...fBody }}>Sign in with your CoachNivo admin credentials</div>
         </div>
