@@ -94,7 +94,7 @@ export function ScreenSplash({ nav }) {
   return (
     <div style={{ height: "100%", background: C.white, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 28, textAlign: "center" }}>
       <div style={{ animation: "clFadeUp .5s ease", display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
-        <img src="/coachnivo-logo.png" alt="CoachNivo" style={{ width: 200, maxWidth: "60vw", height: "auto", objectFit: "contain" }} />
+        <img src="/Coachnivo-logo.png" alt="CoachNivo" style={{ width: 200, maxWidth: "60vw", height: "auto", objectFit: "contain" }} />
       </div>
       <div style={{ marginTop: 34 }}>
         <Spinner size={22} color={C.slateLight} />
