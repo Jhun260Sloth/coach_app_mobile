@@ -27,9 +27,9 @@ function ProgressBar({ value, C }) {
   return <div style={{ height: 8, borderRadius: 999, overflow: "hidden", background: C.border }}><div style={{ height: "100%", width: `${value}%`, borderRadius: 999, background: value === 100 ? C.success : C.brand, transition: "width .25s ease" }} /></div>;
 }
 
-function StatMini({ label, value, icon: Icon, C }) {
+function StatMini({ label, value, icon: Icon, onClick, C }) {
   return (
-    <Card style={{ flex: 1, textAlign: "center", padding: "12px 6px" }}>
+    <Card onClick={onClick} style={{ flex: 1, textAlign: "center", padding: "12px 6px", cursor: onClick ? "pointer" : "default" }}>
       <Icon size={15} color={C.brand} style={{ margin: "0 auto 6px" }} />
       <div style={{ fontSize: T.title, fontWeight: 700, color: C.jet, ...fDisplay }}>{value}</div>
       <div style={{ fontSize: T.tiny, color: C.slate, ...fBody }}>{label}</div>
@@ -60,7 +60,7 @@ export function ScreenBusinessDashboard() {
   const pendingRequests = businessBookings.filter((item) => item.businessId === business.id && item.status === "pending");
   const awaitingPayment = businessBookings.filter((item) => item.businessId === business.id && item.status === "awaiting_payment");
   const upcoming = businessBookings.filter((item) => item.businessId === business.id && ["confirmed", "in_progress", "completion_pending"].includes(item.status));
-  const activeCoaches = businessRoster.filter((item) => item.businessId === business.id && item.status === "active").length;
+  const rosterCoachesCount = businessRoster.filter((item) => item.businessId === business.id && item.status !== "removed").length;
   const unreadCount = businessNotifications.filter((item) => item.unread).length;
 
   const reviews = (businessReviews[business.id] || []).filter((review) => !review.hidden);
@@ -151,9 +151,9 @@ export function ScreenBusinessDashboard() {
 
         {/* Stats */}
         <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
-          <StatMini label="Coaches" value={activeCoaches} icon={Users} C={C} />
-          <StatMini label="Rating" value={ratingAvg} icon={Star} C={C} />
-          <StatMini label="Next payout" value="Fri" icon={Banknote} C={C} />
+          <StatMini label="Coaches" value={rosterCoachesCount} icon={Users} onClick={() => nav("business-roster")} C={C} />
+          <StatMini label="Rating" value={ratingAvg} icon={Star} onClick={() => nav("business-reviews")} C={C} />
+          <StatMini label="Next payout" value="Fri" icon={Banknote} onClick={() => nav("business-finance")} C={C} />
         </div>
 
         {/* Pending Requests */}

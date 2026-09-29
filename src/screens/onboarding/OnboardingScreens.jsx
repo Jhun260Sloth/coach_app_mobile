@@ -1439,7 +1439,6 @@ export function ScreenVerificationPending({ nav, params, role, verificationStatu
             <div style={{ width: 68, height: 68, borderRadius: 22, background: C.dangerTint, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 15px" }}>
               <XCircle size={30} color={C.danger} />
             </div>
-            <Badge tone="neutral" icon={Clock}>Action needed</Badge>
             <div style={{ fontSize: T.display, fontWeight: 700, color: C.jet, marginTop: 11, ...fDisplay }}>Two documents need an update</div>
             <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.6, margin: "7px auto 0", maxWidth: 310, ...fBody }}>Your application is saved. Replace the items below and we’ll prioritise the new review.</div>
           </div>
