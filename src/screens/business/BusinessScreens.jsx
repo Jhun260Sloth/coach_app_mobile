@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle, Award, Banknote, BarChart3, Bell, Building2, CalendarDays, Check, CheckCircle2, ChevronRight,
-  Camera, CircleDollarSign, ClipboardCheck, Clock3, CreditCard, FileCheck2, Film, HelpCircle, Image as ImageIcon, Landmark, Mail, MapPin, MessageCircle,
+  Camera, CircleDollarSign, ClipboardCheck, Clock3, CreditCard, FileCheck2, Film, HelpCircle, Image as ImageIcon, Landmark, LogOut, Mail, MapPin, MessageCircle,
   MoreHorizontal, Pencil, Phone, Play, PlayCircle, Plus, RefreshCw, Scale, Search, ShieldCheck, Sparkles, Star, Trash2, UploadCloud, UserCheck, Users, WalletCards,
 } from "lucide-react";
 import { CL, CD, fBody, fDisplay, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
-import { BUSINESS_PLANS, BUSINESS_STATUS, BUSINESS_STATUS_LABELS, getBusinessPlan } from "../../data/businesses";
+import { BUSINESS_STATUS, BUSINESS_STATUS_LABELS } from "../../data/businesses";
 import { BOOKING_STATUS, PAYMENT_STATUS } from "../../data/bookings";
 import { COACHES } from "../../data/coaches";
 import { SPORT_NAMES } from "../../data/sports";
@@ -15,7 +15,6 @@ import { Avatar, Badge, BottomSheet, Btn, Card, CheckboxRow, ConfirmDialog, Empt
 import { SportSearchSelect } from "../../components/ui/SportUI";
 import { SessionJourneyTimeline } from "../../components/booking/SessionJourneyTimeline";
 import { NotificationBellButton } from "../../systems/StateSystem";
-import { BusinessPlanCard, BusinessPlanSummary } from "../../components/business/BusinessPlanUI";
 import { BusinessBookingPaymentSummary } from "../../components/business/BusinessBookingPaymentSummary";
 
 const page = (C) => ({ height: "100%", display: "flex", flexDirection: "column", background: C.white });
@@ -133,17 +132,14 @@ export function ScreenBusinessRoster() {
   const C = darkMode ? CD : CL;
   const [email, setEmail] = useState("");
   const members = businessRoster.filter((item) => item.businessId === business.id && item.status !== "removed");
-  const plan = getBusinessPlan(business.planId);
-  const atLimit = members.length >= plan.coachLimit;
   const invite = () => {
     if (!email.includes("@")) { toast("Enter a valid coach email"); return; }
-    if (!inviteBusinessCoach(email.trim())) { toast("Upgrade to invite more coaches"); return; }
+    inviteBusinessCoach(email.trim());
     setEmail(""); toast("Coach invitation sent");
   };
-  return <div style={page(C)}><TopBar title="Coach roster" subtitle={`${members.length} of ${Number.isFinite(plan.coachLimit) ? plan.coachLimit : "unlimited"} coach seats used`} />
+  return <div style={page(C)}><TopBar title="Coach roster" subtitle={`${members.length} coach${members.length === 1 ? "" : "es"}`} />
     <div style={scroll} className="cl-hide-scrollbar">
-      <Card style={{ padding: 14, marginTop: 6, background: atLimit ? C.warnTint : C.fog }}><div style={{ display: "flex", justifyContent: "space-between", fontSize: T.captionLg, color: C.slate, ...fBody }}><span>{plan.name} roster allowance</span><strong style={{ color: C.jet }}>{members.length}/{Number.isFinite(plan.coachLimit) ? plan.coachLimit : "∞"}</strong></div><div style={{ marginTop: 9 }}><ProgressBar value={Number.isFinite(plan.coachLimit) ? Math.min(100, members.length / plan.coachLimit * 100) : 25} C={C} /></div>{atLimit ? <div style={{ marginTop: 8, fontSize: T.captionLg, color: C.warnStrong, fontWeight: 700, ...fBody }}>Your roster is full. Upgrade to add another coach.</div> : null}</Card>
-      <div style={{ display: "flex", gap: 8, marginTop: 14 }}><div style={{ flex: 1 }}><Field label="Invite a coach" placeholder="coach@email.com" type="email" value={email} onChange={(event) => setEmail(event.target.value)} /></div><div style={{ alignSelf: "flex-end" }}><Btn size="sm" icon={Plus} disabled={atLimit} onClick={invite}>Invite</Btn></div></div>
+      <div style={{ display: "flex", gap: 8, marginTop: 14 }}><div style={{ flex: 1 }}><Field label="Invite a coach" placeholder="coach@email.com" type="email" value={email} onChange={(event) => setEmail(event.target.value)} /></div><div style={{ alignSelf: "flex-end" }}><Btn size="sm" icon={Plus} onClick={invite}>Invite</Btn></div></div>
       <SectionLabel style={{ marginTop: 24 }}>Your team</SectionLabel>
       <div style={{ marginTop: 10 }}>{members.map((member) => <Card key={member.id} onClick={() => nav("business-coach-detail", { id: member.id })} ariaLabel={`View ${member.name} in ${business.tradingName}`} style={{ padding: 14, marginBottom: 10 }}><div style={{ display: "flex", alignItems: "center", gap: 12 }}><Avatar name={member.name} size={48} /><div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...oneLine, ...fDisplay }}>{member.name}</div><div style={{ marginTop: 3, fontSize: T.captionLg, color: C.slate, ...oneLine, ...fBody }}>{member.sport} · {member.email}</div><div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}><Badge tone={memberTone(member.status)}>{member.status}</Badge><Badge tone={member.verification === "verified" ? "success" : "orange"}>{member.verification === "verified" ? "Verified" : "Checks pending"}</Badge></div></div><ChevronRight size={18} color={C.slateLight} /></div></Card>)}</div>
     </div></div>;
@@ -552,7 +548,8 @@ export function ScreenBusinessBookingDetail() {
 }
 
 export function ScreenBusinessMore() {
-  const { darkMode, nav, business, businessMedia, businessReviews } = useApp(); const C = darkMode ? CD : CL;
+  const { darkMode, nav, resetNav, business, businessMedia, businessReviews } = useApp(); const C = darkMode ? CD : CL;
+  const [showLogoutSheet, setShowLogoutSheet] = useState(false);
   const ownMedia = businessMedia.filter((item) => item.businessId === business.id);
   const visibleReviews = (businessReviews[business.id] || []).filter((review) => !review.hidden);
   const reviewCount = visibleReviews.length || business.profile?.reviews || 9;
@@ -597,7 +594,7 @@ export function ScreenBusinessMore() {
           <SettingsGroup title="Organisation">
             <SettingsRow icon={MessageCircle} label="Messages" sub="Client enquiries and coach conversations" onClick={() => nav("business-messages")} />
             <SettingsRow icon={MapPin} label="Locations" sub="Facilities, access and weather rules" onClick={() => nav("business-locations")} />
-            <SettingsRow icon={CircleDollarSign} label="Finance & billing" sub="Subscription, invoices and payouts" onClick={() => nav("business-finance")} />
+            <SettingsRow icon={CircleDollarSign} label="Finance & billing" sub="Invoices, payments and payouts" onClick={() => nav("business-finance")} />
             <SettingsRow icon={BarChart3} label="Analytics" sub="Views, conversion and occupancy" onClick={() => nav("business-analytics")} />
           </SettingsGroup>
         </div>
@@ -606,6 +603,21 @@ export function ScreenBusinessMore() {
           <SettingsRow icon={ClipboardCheck} label="Launch checklist" sub={BUSINESS_STATUS_LABELS[business.status]} onClick={() => nav("business-compliance")} />
           <SettingsRow icon={HelpCircle} label="Help & support" sub="Get help with your business account" onClick={() => nav("support", { faqTopic: "business", backTo: "business-more" })} />
         </SettingsGroup>
+
+        <SettingsGroup title="Session">
+          <SettingsRow icon={LogOut} label="Log out" danger onClick={() => setShowLogoutSheet(true)} />
+        </SettingsGroup>
+
+        {/* Log out confirmation */}
+        <BottomSheet open={showLogoutSheet} onClose={() => setShowLogoutSheet(false)} title="Log out" heightPct={38}>
+          <div style={{ fontSize: T.bodyLg, color: C.slate, lineHeight: 1.55, marginBottom: 18, ...fBody }}>
+            Are you sure you want to log out?
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <Btn full variant="dark" icon={LogOut} onClick={() => { setShowLogoutSheet(false); resetNav("splash", {}, "client"); }}>Log out</Btn>
+            <Btn full variant="secondary" onClick={() => setShowLogoutSheet(false)}>Cancel</Btn>
+          </div>
+        </BottomSheet>
       </div>
     </div>
   );
@@ -915,32 +927,26 @@ export function ScreenBusinessReviews() {
 }
 
 export function ScreenBusinessFinance() {
-  const { darkMode, nav, business } = useApp(); const C = darkMode ? CD : CL; const current = getBusinessPlan(business.planId);
-  const changePlan = (plan) => nav("business-plan-checkout", { planId: plan.id, source: "upgrade" });
+  const { darkMode, nav, business } = useApp(); const C = darkMode ? CD : CL;
   const invoice = business.lastSubscriptionInvoice;
   const financeLinks = [
-    { icon: CreditCard, label: "Payment methods", detail: "Subscription cards", route: "business-payment-methods" },
+    { icon: CreditCard, label: "Payment methods", detail: "Billing cards", route: "business-payment-methods" },
     { icon: Banknote, label: "Earnings", detail: "Revenue & fees", route: "business-earnings" },
     { icon: Users, label: "Coach payouts", detail: "Amounts due", route: "business-coach-payouts" },
     { icon: FileCheck2, label: "Invoices", detail: "Billing history", route: "business-invoices" },
   ];
   return <div style={page(C)}><TopBar title="Finance & billing" onBack={() => nav("business-more")} />
     <div style={{ ...scroll, paddingBottom: 32 }} className="cl-hide-scrollbar">
-      <div style={{ marginTop: 8 }}><BusinessPlanSummary plan={current} label="Current plan" detail={business.trialEndsAt ? `Free month ends ${business.trialEndsAt}` : "Your subscription is active and billed monthly."} C={C} /></div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>{financeLinks.map(({ icon: Icon, label, detail, route }) => <Card key={route} onClick={() => nav(route)} ariaLabel={label} style={{ padding: 13 }}><div style={{ width: 34, height: 34, borderRadius: 11, background: C.fog, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon size={17} color={C.brand} /></div><div style={{ marginTop: 9, fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>{label}</div><div style={{ marginTop: 2, fontSize: T.caption, color: C.slate, ...fBody }}>{detail}</div></Card>)}</div>
-      <Card onClick={() => nav("business-payment-methods")} ariaLabel="Manage subscription payment methods" style={{ padding: 14, marginTop: 10, display: "flex", alignItems: "center", gap: 10 }}>
+      <Card onClick={() => nav("business-payment-methods")} ariaLabel="Manage payment methods" style={{ padding: 14, marginTop: 10, display: "flex", alignItems: "center", gap: 10 }}>
         <div style={{ width: 38, height: 38, borderRadius: 12, background: C.fog, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><CreditCard size={18} color={C.brand} /></div>
-        <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>{business.billingMethod ? `${business.billingMethod.brand} •••• ${business.billingMethod.last4}` : "No billing card saved"}</div><div style={{ marginTop: 2, fontSize: T.captionLg, color: C.slate, ...fBody }}>Subscription billing method</div></div>
+        <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>{business.billingMethod ? `${business.billingMethod.brand} •••• ${business.billingMethod.last4}` : "No billing card saved"}</div><div style={{ marginTop: 2, fontSize: T.captionLg, color: C.slate, ...fBody }}>Billing method</div></div>
         <Badge tone={business.billingMethod ? "success" : "orange"}>{business.billingMethod ? "Active" : "Required"}</Badge>
         <ChevronRight size={17} color={C.slateLight} />
       </Card>
 
-      <SectionLabel style={{ marginTop: 24 }}>Change subscription</SectionLabel>
-      <div style={{ marginTop: 5, fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, ...fBody }}>Choose a different plan to review pricing and payment before anything changes.</div>
-      <div style={{ marginTop: 10 }}>{BUSINESS_PLANS.map((plan) => <BusinessPlanCard key={plan.id} plan={plan} current={plan.id === current.id} actionLabel={plan.monthlyPrice > current.monthlyPrice ? "Upgrade" : plan.monthlyPrice < current.monthlyPrice ? "Downgrade" : undefined} onSelect={() => changePlan(plan)} C={C} />)}</div>
-
       <SectionLabel style={{ marginTop: 24 }}>Client payments & payouts</SectionLabel>
-      <div style={{ marginTop: 5, fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, ...fBody }}>Separate from your subscription card, this account receives client payments and sends payouts to your business.</div>
+      <div style={{ marginTop: 5, fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, ...fBody }}>Separate from your billing card, this account receives client payments and sends payouts to your business.</div>
       <Card style={{ padding: 14, marginTop: 10 }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: T.body, color: C.jet, ...fBody }}><span>Client payments</span><Badge tone={business.paymentsStatus === "enabled" ? "success" : "orange"}>{business.paymentsStatus.replaceAll("_", " ")}</Badge></div>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginTop: 14, fontSize: T.body, color: C.jet, ...fBody }}><span>Business payouts</span><Badge tone={business.payoutsStatus === "enabled" ? "success" : "orange"}>{business.payoutsStatus.replaceAll("_", " ")}</Badge></div>
@@ -948,8 +954,8 @@ export function ScreenBusinessFinance() {
         <div style={{ marginTop: 14 }}><Btn full variant={business.payoutMethod ? "outline" : "primary"} icon={WalletCards} onClick={() => nav("business-payout-setup")}>{business.payoutMethod ? "Manage payout account" : "Complete payment setup"}</Btn></div>
       </Card>
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 24 }}><SectionLabel>Latest subscription invoice</SectionLabel><Btn size="sm" variant="ghost" onClick={() => nav("business-invoices")}>View all</Btn></div>
-      <Card style={{ padding: 14, marginTop: 10 }}><div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: T.body, color: C.slate, ...fBody }}><div><div style={{ color: C.jet, fontWeight: 600 }}>{invoice?.label || `${current.name} monthly subscription`}</div><div style={{ marginTop: 3, fontSize: T.caption, color: C.slateLight, ...fBody }}>{invoice?.date || "September 2026"}</div></div><strong style={{ color: C.jet, flexShrink: 0 }}>${Number(invoice?.amount ?? (business.trialEndsAt ? 0 : current.monthlyPrice)).toFixed(2)} · {invoice?.status || (business.trialEndsAt ? "Free month" : "Paid")}</strong></div></Card>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 24 }}><SectionLabel>Latest billing invoice</SectionLabel><Btn size="sm" variant="ghost" onClick={() => nav("business-invoices")}>View all</Btn></div>
+      <Card style={{ padding: 14, marginTop: 10 }}><div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: T.body, color: C.slate, ...fBody }}><div><div style={{ color: C.jet, fontWeight: 600 }}>{invoice?.label || "Platform fee"}</div><div style={{ marginTop: 3, fontSize: T.caption, color: C.slateLight, ...fBody }}>{invoice?.date || "September 2026"}</div></div><strong style={{ color: C.jet, flexShrink: 0 }}>${Number(invoice?.amount ?? 0).toFixed(2)} · {invoice?.status || "Paid"}</strong></div></Card>
     </div>
   </div>;
 }

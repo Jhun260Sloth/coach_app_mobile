@@ -272,8 +272,8 @@ const ROUTE_METADATA_BASE = {
   "business-eligibility": { title: "Business Signup: Eligibility", category: "Business Onboarding", role: "business" },
   "business-identity": { title: "Business Signup: Identity", category: "Business Onboarding", role: "business" },
   "business-plan": { title: "Business Signup: Plan", category: "Business Onboarding", role: "business" },
-  "business-plan-checkout": { title: "Business Plan Checkout", category: "Business", role: "business" },
-  "business-plan-confirmation": { title: "Business Plan Confirmation", category: "Business", role: "business" },
+  "business-plan-checkout": { title: "Business Payment Setup", category: "Business Onboarding", role: "business" },
+  "business-plan-confirmation": { title: "Business Payment Confirmation", category: "Business", role: "business" },
   "business-application-submitted": { title: "Business Verification", category: "Business Onboarding", role: "business" },
 
   // Client Flow

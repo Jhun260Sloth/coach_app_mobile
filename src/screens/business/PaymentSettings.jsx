@@ -32,7 +32,7 @@ export function ScreenBusinessPaymentMethods() {
   return <div style={page(C)}>
     <TopBar title="Payment methods" onBack={() => nav("business-finance")} />
     <div style={scroll} className="cl-hide-scrollbar">
-      <Card style={{ padding: 14, display: "flex", alignItems: "flex-start", gap: 10, background: C.brandTint }}><ShieldCheck size={19} color={C.brand} style={{ flexShrink: 0 }} /><div><div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>Subscription billing cards</div><div style={{ marginTop: 3, fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, ...fBody }}>These cards pay for your business plan. Client booking payments are deposited into your payout account separately.</div></div></Card>
+      <Card style={{ padding: 14, display: "flex", alignItems: "flex-start", gap: 10, background: C.brandTint }}><ShieldCheck size={19} color={C.brand} style={{ flexShrink: 0 }} /><div><div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>Business billing cards</div><div style={{ marginTop: 3, fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, ...fBody }}>These cards pay for your business account fees. Client booking payments are deposited into your payout account separately.</div></div></Card>
 
       <SectionLabel style={{ marginTop: 24 }}>Saved cards</SectionLabel>
       <div style={{ marginTop: 10 }}>
@@ -48,18 +48,18 @@ export function ScreenBusinessPaymentMethods() {
             {!method.isDefault ? <Btn size="sm" variant="ghost" onClick={() => makeDefault(method)}>Set as default</Btn> : null}
             <Btn size="sm" variant="ghost" icon={Trash2} disabled={methods.length === 1} onClick={() => setRemoveTarget(method)}>{methods.length === 1 ? "Required" : "Remove"}</Btn>
           </div>
-        </Card>) : <Card style={{ padding: 16, textAlign: "center", background: C.fog }}><CreditCard size={24} color={C.slateLight} /><div style={{ marginTop: 8, fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>No billing cards yet</div><div style={{ marginTop: 4, fontSize: T.captionLg, color: C.slate, ...fBody }}>Add a card to keep your subscription active.</div></Card>}
+        </Card>) : <Card style={{ padding: 16, textAlign: "center", background: C.fog }}><CreditCard size={24} color={C.slateLight} /><div style={{ marginTop: 8, fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>No billing cards yet</div><div style={{ marginTop: 4, fontSize: T.captionLg, color: C.slate, ...fBody }}>Add a card to keep your account active.</div></Card>}
       </div>
       <Btn full variant="secondary" icon={Plus} onClick={openAdd}>Add billing card</Btn>
 
-      <Card style={{ marginTop: 18, padding: 14, display: "flex", gap: 10, background: C.fog }}><ShieldCheck size={18} color={C.success} style={{ flexShrink: 0 }} /><div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.55, ...fBody }}>CoachNivo never stores full card numbers. Changes apply to future subscription charges.</div></Card>
+      <Card style={{ marginTop: 18, padding: 14, display: "flex", gap: 10, background: C.fog }}><ShieldCheck size={18} color={C.success} style={{ flexShrink: 0 }} /><div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.55, ...fBody }}>CoachNivo never stores full card numbers. Changes apply to future account charges.</div></Card>
     </div>
 
     <BottomSheet open={addOpen} onClose={() => setAddOpen(false)} title="Add billing card" heightPct={82}>
       <PaymentCardForm value={draft} onChange={setDraft} />
       <div style={{ marginTop: 20 }}><Btn full disabled={!isPaymentCardValid(draft)} onClick={save}>Save billing card</Btn></div>
     </BottomSheet>
-    <ConfirmDialog open={!!removeTarget} onClose={() => setRemoveTarget(null)} onConfirm={confirmRemove} title="Remove this billing card?" description={`Future subscription charges will no longer use ${removeTarget?.brand || "this card"} ending ${removeTarget?.last4 || ""}.`} confirmLabel="Remove card" />
+    <ConfirmDialog open={!!removeTarget} onClose={() => setRemoveTarget(null)} onConfirm={confirmRemove} title="Remove this billing card?" description={`Future charges will no longer use ${removeTarget?.brand || "this card"} ending ${removeTarget?.last4 || ""}.`} confirmLabel="Remove card" />
   </div>;
 }
 

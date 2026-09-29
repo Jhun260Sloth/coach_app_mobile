@@ -8,7 +8,6 @@ import { isBusinessDiscoverable } from "../../data/businesses";
 import { BusinessCard } from "./BusinessDiscovery";
 import { Card, Chip, Badge, SectionLabel, Avatar, Btn, BottomSheet, Spinner, ScrollFadeRow, HandleTag, Skeleton } from "../../components/ui/Primitives";
 import { PromoBannerCarousel } from "../../components/ui/PromoBannerCarousel";
-import { FeaturedBusinessCarousel } from "../../components/ui/FeaturedBusinessCarousel";
 import { SportBadge, SportIcon, SportSearchMultiSelect, SportTile } from "../../components/ui/SportUI";
 import { POPULAR_SPORTS, SPORT_NAMES } from "../../data/sports";
 import { getPublicName } from "../../utils/name";
@@ -963,13 +962,6 @@ export function ScreenClientHome({ nav, params = {}, favorites = [], toggleFav, 
             <div style={{ display: "flex", gap: 8, width: "max-content", paddingBottom: 2 }}>
               <Chip
                 compact
-                active={providerType === "businesses"}
-                onClick={() => { haptic(8); setProviderType((current) => current === "businesses" ? "coaches" : "businesses"); }}
-              >
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Building2 size={13} />Businesses & clubs</span>
-              </Chip>
-              <Chip
-                compact
                 active={!appliedFilters.sports?.length}
                 onClick={() => { if (appliedFilters.sports?.length) { haptic(8); setAppliedFilters({ ...appliedFilters, sports: [] }); } }}
               >
@@ -1048,27 +1040,9 @@ export function ScreenClientHome({ nav, params = {}, favorites = [], toggleFav, 
           )}
 
           {!hasActiveFilters && providerType === "coaches" && (
-            <>
-              <PromoBannerCarousel
-                banners={PROMO_BANNERS}
-                onSelectBanner={handleBannerSelect}
-              />
-              <FeaturedBusinessCarousel
-                banners={FEATURED_BUSINESS_BANNERS}
-                onSelectBusiness={(id) => nav("business-public-profile", { id })}
-                onViewAll={() => {
-                  setProviderType("businesses");
-                  haptic(8);
-                }}
-              />
-            </>
-          )}
-
-          {!hasActiveFilters && providerType === "businesses" && (
-            <FeaturedBusinessCarousel
-              banners={FEATURED_BUSINESS_BANNERS}
-              onSelectBusiness={(id) => nav("business-public-profile", { id })}
-              showViewAll={false}
+            <PromoBannerCarousel
+              banners={PROMO_BANNERS}
+              onSelectBanner={handleBannerSelect}
             />
           )}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>

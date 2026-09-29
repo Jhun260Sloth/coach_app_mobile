@@ -1181,19 +1181,20 @@ export function AppProvider({ children }) {
 
   const markBusinessCoachPayoutPaid = (id) => setBusinessCoachPayouts((items) => items.map((item) => item.id === id ? { ...item, status: "paid", paidAt: "Just now" } : item));
 
-  const submitBusinessApplication = ({ planId, billingMethod }) => {
+  const submitBusinessApplication = ({ planId, billingMethod, onboardingData } = {}) => {
     setBusiness((current) => {
-      const plan = getBusinessPlan(planId);
+      const resolvedPlanId = planId || current.planId || "starter";
+      const data = { ...businessOnboarding, ...onboardingData };
       return {
         ...current,
-        ...businessOnboarding,
-        ownerName: businessOnboarding.representativeName || current.ownerName,
-        tradingName: businessOnboarding.tradingName || current.tradingName,
-        legalName: businessOnboarding.legalName || current.legalName,
-        planId,
+        ...data,
+        ownerName: data.representativeName || current.ownerName,
+        tradingName: data.tradingName || current.tradingName,
+        legalName: data.legalName || current.legalName,
+        planId: resolvedPlanId,
         status: BUSINESS_STATUS.VERIFYING,
-        agreement: { version: "B2B-2026.1", acceptedBy: businessOnboarding.representativeName || current.ownerName, acceptedAt: "Just now" },
-        trialEndsAt: plan.trialMonths ? "10 Oct 2026" : null,
+        agreement: { version: "B2B-2026.1", acceptedBy: data.representativeName || current.ownerName, acceptedAt: "Just now" },
+        trialEndsAt: null,
         subscriptionStatus: "active",
         billingMethod: billingMethod || current.billingMethod || null,
         billingMethods: billingMethod ? [{ ...billingMethod, id: billingMethod.id || `bpm-${Date.now()}`, isDefault: true }] : current.billingMethods || [],
@@ -1223,9 +1224,6 @@ export function AppProvider({ children }) {
   };
 
   const inviteBusinessCoach = (email) => {
-    const plan = getBusinessPlan(business.planId);
-    const used = businessRoster.filter((member) => member.businessId === business.id && member.status !== "removed").length;
-    if (used >= plan.coachLimit) return false;
     setBusinessRoster((items) => [...items, { id: `rm${Date.now()}`, businessId: business.id, coachId: null, name: "Invite pending", email, sport: business.sports?.[0] || "Coaching", status: "pending", verification: "not_started", wwcc: "not_started", programs: [] }]);
     completeBusinessChecklistItem("roster");
     return true;

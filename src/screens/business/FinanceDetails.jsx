@@ -62,12 +62,12 @@ export function ScreenBusinessInvoices() {
   const { darkMode, nav, business, toast } = useApp();
   const C = darkMode ? CD : CL;
   const latest = business.lastSubscriptionInvoice;
-  const invoices = [latest, { id: "inv-aug-2026", label: "Growth monthly subscription", date: "2 Aug 2026", amount: 129, status: "Paid" }, { id: "inv-jul-2026", label: "Growth monthly subscription", date: "2 Jul 2026", amount: 129, status: "Paid" }].filter(Boolean);
+  const invoices = [latest, { id: "inv-aug-2026", label: "Monthly platform fee", date: "2 Aug 2026", amount: 129, status: "Paid" }, { id: "inv-jul-2026", label: "Monthly platform fee", date: "2 Jul 2026", amount: 129, status: "Paid" }].filter(Boolean);
   return <div style={page(C)}>
     <TopBar title="Invoices" onBack={() => nav("business-finance")} />
     <div style={scroll} className="cl-hide-scrollbar">
-      <Card style={{ padding: 14, display: "flex", gap: 10, background: C.fog }}><ReceiptText size={19} color={C.brand} /><div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, ...fBody }}>Subscription invoices are issued to {business.legalName}. Client booking receipts remain available under Earnings.</div></Card>
-      <SectionLabel style={{ marginTop: 24 }}>Subscription invoices</SectionLabel>
+      <Card style={{ padding: 14, display: "flex", gap: 10, background: C.fog }}><ReceiptText size={19} color={C.brand} /><div style={{ fontSize: T.captionLg, color: C.slate, lineHeight: 1.5, ...fBody }}>Billing invoices are issued to {business.legalName}. Client booking receipts remain available under Earnings.</div></Card>
+      <SectionLabel style={{ marginTop: 24 }}>Billing invoices</SectionLabel>
       <div style={{ marginTop: 10 }}>{invoices.map((invoice) => <Card key={invoice.id} style={{ padding: 14, marginBottom: 10 }}><div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><div><div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>{invoice.label}</div><div style={{ marginTop: 3, fontSize: T.captionLg, color: C.slate, ...fBody }}>{invoice.date}</div></div><div style={{ textAlign: "right" }}><div style={{ fontSize: T.body, fontWeight: 800, color: C.jet, ...fBody }}>{money(invoice.amount)}</div><Badge tone="success">{invoice.status}</Badge></div></div><div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10, paddingTop: 8, borderTop: `1px solid ${C.border}` }}><Btn size="sm" variant="ghost" icon={Download} onClick={() => toast("Invoice download started")}>Download</Btn></div></Card>)}</div>
     </div>
   </div>;
