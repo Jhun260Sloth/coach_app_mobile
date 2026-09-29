@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  AlertTriangle, Award, Banknote, BarChart3, Bell, Building2, CalendarDays, Check, CheckCircle2, ChevronRight,
-  Camera, CircleDollarSign, ClipboardCheck, Clock3, CreditCard, FileCheck2, Film, HelpCircle, Image as ImageIcon, Landmark, LogOut, Mail, MapPin, MessageCircle,
-  MoreHorizontal, Pencil, Phone, Play, PlayCircle, Plus, RefreshCw, Scale, Search, ShieldCheck, Sparkles, Star, Trash2, UploadCloud, UserCheck, Users, WalletCards,
+  AlertTriangle, Award, Banknote, BarChart3, Bell, Building2, Calendar, CalendarDays, Check, CheckCircle2, ChevronRight,
+  Camera, CircleDollarSign, ClipboardCheck, Clock, Clock3, CornerUpLeft, CreditCard, FileCheck2, Film, HelpCircle, Image as ImageIcon, Landmark, LogOut, Mail, MapPin, MessageCircle,
+  MoreHorizontal, Pencil, Phone, Play, PlayCircle, Plus, RefreshCw, Scale, Search, ShieldCheck, Sparkles, Star, Trash2, UploadCloud, UserCheck, Users, WalletCards, WifiOff,
 } from "lucide-react";
 import { CL, CD, fBody, fDisplay, T } from "../../theme/theme";
 import { useApp } from "../../context/AppContext";
@@ -11,7 +11,7 @@ import { BOOKING_STATUS, PAYMENT_STATUS } from "../../data/bookings";
 import { COACHES } from "../../data/coaches";
 import { SPORT_NAMES } from "../../data/sports";
 import { LocationField } from "../../components/ui/LocationField";
-import { Avatar, Badge, BottomSheet, Btn, Card, CheckboxRow, ConfirmDialog, EmptyState, Field, Row, SearchSelect, SectionLabel, SegTabs, SettingsGroup, SettingsRow, StatusPill, StepProgress, ThreadSkeleton, Toggle, TopBar } from "../../components/ui/Primitives";
+import { Avatar, Badge, BottomSheet, Btn, Card, CheckboxRow, ConfirmDialog, EmptyState, Field, Row, ScreenHeader, SearchSelect, SectionLabel, SegTabs, SettingsGroup, SettingsRow, StatusPill, StepProgress, ThreadSkeleton, Toggle, TopBar } from "../../components/ui/Primitives";
 import { SportSearchSelect } from "../../components/ui/SportUI";
 import { SessionJourneyTimeline } from "../../components/booking/SessionJourneyTimeline";
 import { NotificationBellButton } from "../../systems/StateSystem";
@@ -27,6 +27,16 @@ function ProgressBar({ value, C }) {
   return <div style={{ height: 8, borderRadius: 999, overflow: "hidden", background: C.border }}><div style={{ height: "100%", width: `${value}%`, borderRadius: 999, background: value === 100 ? C.success : C.brand, transition: "width .25s ease" }} /></div>;
 }
 
+function StatMini({ label, value, icon: Icon, C }) {
+  return (
+    <Card style={{ flex: 1, textAlign: "center", padding: "12px 6px" }}>
+      <Icon size={15} color={C.brand} style={{ margin: "0 auto 6px" }} />
+      <div style={{ fontSize: T.title, fontWeight: 700, color: C.jet, ...fDisplay }}>{value}</div>
+      <div style={{ fontSize: T.tiny, color: C.slate, ...fBody }}>{label}</div>
+    </Card>
+  );
+}
+
 function StatCard({ icon: Icon, value, label, C }) {
   return <Card style={{ padding: 12, minWidth: 0 }}><Icon size={17} color={C.brand} /><div style={{ marginTop: 9, fontSize: T.heading, fontWeight: 800, color: C.jet, ...fDisplay }}>{value}</div><div style={{ marginTop: 2, fontSize: T.micro, color: C.slate, ...fBody }}>{label}</div></Card>;
 }
@@ -36,31 +46,332 @@ function HeaderIconButton({ icon: Icon, label, onClick, unread = 0, C }) {
 }
 
 export function ScreenBusinessDashboard() {
-  const { darkMode, nav, business, businessBookings, businessPrograms, businessRoster, businessNotifications, getBusinessProgress } = useApp();
+  const {
+    darkMode, nav, business, businessBookings, businessPrograms, businessRoster,
+    businessNotifications, businessReviews, getBusinessProgress, updateBusinessBooking,
+    replyToBusinessReview, toast, offline,
+  } = useApp();
   const C = darkMode ? CD : CL;
   const progress = getBusinessProgress();
-  const pending = businessBookings.filter((item) => item.businessId === business.id && item.status === "pending");
+  const [respondingId, setRespondingId] = useState(null);
+  const [replyTarget, setReplyTarget] = useState(null);
+  const [replyText, setReplyText] = useState("");
+
+  const pendingRequests = businessBookings.filter((item) => item.businessId === business.id && item.status === "pending");
+  const awaitingPayment = businessBookings.filter((item) => item.businessId === business.id && item.status === "awaiting_payment");
+  const upcoming = businessBookings.filter((item) => item.businessId === business.id && ["confirmed", "in_progress", "completion_pending"].includes(item.status));
   const activeCoaches = businessRoster.filter((item) => item.businessId === business.id && item.status === "active").length;
   const unreadCount = businessNotifications.filter((item) => item.unread).length;
-  return <div style={page(C)}>
-    <TopBar title={business.tradingName} subtitle="Business workspace" right={<NotificationBellButton count={unreadCount} onClick={() => nav("business-notifications")} />} />
-    <div style={scroll} className="cl-hide-scrollbar">
-      <Card style={{ marginTop: 14, padding: 16, background: C.black, border: `1px solid ${C.black}` }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}><div><span style={{ display: "inline-flex", minHeight: 24, alignItems: "center", padding: "0 9px", borderRadius: 999, background: `color-mix(in srgb, ${C.white} 14%, transparent)`, color: C.white, fontSize: T.caption, fontWeight: 700, ...fBody }}>{BUSINESS_STATUS_LABELS[business.status]}</span><div style={{ marginTop: 10, fontSize: T.title, fontWeight: 700, color: C.white, ...fDisplay }}>{progress.ready ? "Your business is ready" : "Complete your launch checklist"}</div></div><ShieldCheck size={24} color={C.white} /></div>
-        <div style={{ height: 8, marginTop: 14, borderRadius: 999, overflow: "hidden", background: `color-mix(in srgb, ${C.white} 22%, transparent)` }}><div style={{ height: "100%", width: `${progress.percent}%`, borderRadius: 999, background: C.white, transition: "width .25s ease" }} /></div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginTop: 8, fontSize: T.captionLg, color: C.white, ...fBody }}><span style={{ opacity: .72 }}>{progress.complete} of {progress.total} requirements complete</span><button type="button" onClick={() => nav("business-compliance")} style={{ minHeight: 44, margin: "-10px -8px -10px 0", padding: "0 8px", border: "none", background: "transparent", color: C.white, fontSize: T.captionLg, fontWeight: 700, cursor: "pointer", ...fBody }}>View checklist</button></div>
-      </Card>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, marginTop: 14 }}><StatCard icon={Users} value={activeCoaches} label="Active coaches" C={C} /><StatCard icon={CalendarDays} value={business.metrics.bookings7d} label="Bookings · 7d" C={C} /><StatCard icon={CircleDollarSign} value={`$${Math.round(business.metrics.revenueMonth / 1000)}k`} label="This month" C={C} /></div>
-      {business.payoutsStatus !== "enabled" ? <><SectionLabel style={{ marginTop: 24 }}>Needs attention</SectionLabel><Card onClick={() => nav("business-finance")} ariaLabel="Complete payout setup" style={{ padding: 14, marginTop: 10, display: "flex", alignItems: "center", gap: 12, background: C.warnTint }}><div style={{ width: 40, height: 40, borderRadius: 13, display: "flex", alignItems: "center", justifyContent: "center", background: C.white }}><WalletCards size={19} color={C.warnStrong} /></div><div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...fDisplay }}>Finish payout setup</div><div style={{ marginTop: 3, fontSize: T.captionLg, color: C.slate, ...fBody }}>Required before paid bookings can go live.</div></div><ChevronRight size={17} color={C.slateLight} /></Card></> : null}
-      <SectionLabel style={{ marginTop: 24 }}>Booking requests</SectionLabel>
-      {pending.length ? pending.map((booking) => {
-        const program = businessPrograms.find((item) => item.id === booking.programId);
-        return <Card key={booking.id} onClick={() => nav("business-booking-detail", { id: booking.id })} ariaLabel={`Open booking from ${booking.clientName}`} style={{ padding: 14, marginTop: 10 }}><div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><div style={{ minWidth: 0 }}><div style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...oneLine, ...fDisplay }}>{booking.clientName}</div><div style={{ marginTop: 4, fontSize: T.captionLg, color: C.slate, ...fBody }}>{program?.title} · {booking.date}</div></div><Badge tone="orange">Review</Badge></div></Card>;
-      }) : <EmptyState icon={CalendarDays} title="No requests waiting" body="New program booking requests will appear here." />}
-      <SectionLabel style={{ marginTop: 24 }}>Program snapshot</SectionLabel>
-      <Card onClick={() => nav("business-programs")} ariaLabel="Manage programs" style={{ marginTop: 10, padding: 14, display: "flex", alignItems: "center", gap: 12 }}><div style={{ width: 42, height: 42, borderRadius: 14, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center" }}><Sparkles size={19} color={C.brand} /></div><div style={{ flex: 1 }}><div style={{ fontSize: T.bodyLg, fontWeight: 700, color: C.jet, ...fDisplay }}>{businessPrograms.filter((item) => item.businessId === business.id && item.status === "live").length} programs live</div><div style={{ marginTop: 3, fontSize: T.captionLg, color: C.slate, ...fBody }}>{business.metrics.occupancy}% average occupancy</div></div><ChevronRight size={17} color={C.slateLight} /></Card>
+
+  const reviews = (businessReviews[business.id] || []).filter((review) => !review.hidden);
+  const ratingAvg = reviews.length
+    ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+    : (business.profile?.rating || "4.8");
+
+  const respondWithFeedback = (id, nextStatus, message) => {
+    setRespondingId(id);
+    setTimeout(() => {
+      updateBusinessBooking(id, { status: nextStatus });
+      setRespondingId(null);
+      toast(message);
+    }, 550);
+  };
+
+  const saveReplyAction = () => {
+    if (!replyText.trim()) { toast("Write a reply first"); return; }
+    replyToBusinessReview(replyTarget.id, replyText.trim());
+    setReplyTarget(null);
+    setReplyText("");
+    toast("Reply published");
+  };
+
+  return (
+    <div style={page(C)}>
+      <div style={{ padding: "18px 18px 0" }}>
+        <ScreenHeader
+          title={`${business.tradingName || "Organisation"}'s dashboard`}
+          subtitle="Bookings, coaches and business activity."
+          action={<NotificationBellButton count={unreadCount} onClick={() => nav("business-notifications")} />}
+        />
+      </div>
+
+      <div style={{ ...scroll, paddingTop: 0 }} className="cl-hide-scrollbar">
+        {/* Launch Checklist */}
+        <Card style={{ marginTop: 14, padding: 16, background: C.black, border: `1px solid ${C.black}` }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+            <div>
+              <span style={{ display: "inline-flex", minHeight: 24, alignItems: "center", padding: "0 9px", borderRadius: 999, background: `color-mix(in srgb, ${C.white} 14%, transparent)`, color: C.white, fontSize: T.caption, fontWeight: 700, ...fBody }}>
+                {BUSINESS_STATUS_LABELS[business.status]}
+              </span>
+              <div style={{ marginTop: 10, fontSize: T.title, fontWeight: 700, color: C.white, ...fDisplay }}>
+                {progress.ready ? "Your business is ready" : "Complete your launch checklist"}
+              </div>
+            </div>
+            <ShieldCheck size={24} color={C.white} />
+          </div>
+          <div style={{ height: 8, marginTop: 14, borderRadius: 999, overflow: "hidden", background: `color-mix(in srgb, ${C.white} 22%, transparent)` }}>
+            <div style={{ height: "100%", width: `${progress.percent}%`, borderRadius: 999, background: C.white, transition: "width .25s ease" }} />
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginTop: 8, fontSize: T.captionLg, color: C.white, ...fBody }}>
+            <span style={{ opacity: 0.72 }}>{progress.complete} of {progress.total} requirements complete</span>
+            <button
+              type="button"
+              onClick={() => nav("business-compliance")}
+              style={{ minHeight: 44, margin: "-10px -8px -10px 0", padding: "0 8px", border: "none", background: "transparent", color: C.white, fontSize: T.captionLg, fontWeight: 700, cursor: "pointer", ...fBody }}
+            >
+              View checklist
+            </button>
+          </div>
+        </Card>
+
+        {/* Offline Status */}
+        {offline && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.jet, color: C.white, padding: "9px 12px", borderRadius: 12, marginTop: 14, fontSize: T.label, ...fBody }}>
+            <WifiOff size={14} color={C.brand} />
+            Offline - showing your last synced data.
+          </div>
+        )}
+
+        {/* Earnings + Pending Requests */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 14 }}>
+          <div style={{ background: C.jet, borderRadius: 18, padding: 16 }}>
+            <div style={{ fontSize: T.caption, color: C.onDarkMuted, ...fBody }}>This month's revenue</div>
+            <div style={{ fontSize: T.hero, fontWeight: 700, color: C.white, marginTop: 4, ...fDisplay }}>
+              ${business.metrics?.revenueMonth ? business.metrics.revenueMonth.toLocaleString() : "14,800"}
+            </div>
+          </div>
+
+          <div style={{ background: C.brandTint, borderRadius: 18, padding: 16 }}>
+            <div style={{ fontSize: T.caption, color: C.brand, fontWeight: 600, ...fBody }}>Pending requests</div>
+            <div style={{ fontSize: T.hero, fontWeight: 700, color: C.jet, marginTop: 4, ...fDisplay }}>
+              {pendingRequests.length}
+            </div>
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
+          <StatMini label="Coaches" value={activeCoaches} icon={Users} C={C} />
+          <StatMini label="Rating" value={ratingAvg} icon={Star} C={C} />
+          <StatMini label="Next payout" value="Fri" icon={Banknote} C={C} />
+        </div>
+
+        {/* Pending Requests */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 22, marginBottom: 10 }}>
+          <SectionLabel>Pending requests</SectionLabel>
+          <button
+            onClick={() => nav("business-bookings")}
+            style={{ minHeight: 44, padding: "0 4px", background: "none", border: "none", color: C.brand, fontSize: T.label, fontWeight: 600, cursor: "pointer", ...fBody }}
+          >
+            See all
+          </button>
+        </div>
+
+        {pendingRequests.length === 0 ? (
+          <div style={{ fontSize: T.labelLg, color: C.slateLight, marginBottom: 6, ...fBody }}>
+            No active booking requests right now.
+          </div>
+        ) : (
+          <div className="cl-stagger">
+            {pendingRequests.slice(0, 2).map((b, i) => {
+              const program = businessPrograms.find((item) => item.id === b.programId);
+              return (
+                <Card
+                  key={b.id}
+                  style={{ marginBottom: 10, animationDelay: `${Math.min(i, 8) * 45}ms` }}
+                  onClick={() => nav("business-booking-detail", { id: b.id })}
+                >
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <Avatar name={b.clientName} size={40} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: T.bodyLg, fontWeight: 600, color: C.jet, ...oneLine, ...fDisplay }}>
+                        {b.clientName}
+                      </div>
+                      <div style={{ fontSize: T.body, fontWeight: 600, color: C.brand, marginTop: 2, ...oneLine, ...fBody }}>
+                        {program?.title || b.service}
+                      </div>
+                      <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 3, ...fBody }}>
+                        {b.date} · {b.time}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: T.subtitle, fontWeight: 700, color: C.jet, ...fDisplay }}>
+                      ${b.price}
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 12, paddingTop: 10, borderTop: `1px solid ${C.border}`, alignItems: "center" }}>
+                    <Btn
+                      size="sm"
+                      variant="outline"
+                      disabled={!!respondingId}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        respondWithFeedback(b.id, "declined", "Booking declined");
+                      }}
+                    >
+                      Decline
+                    </Btn>
+                    <Btn
+                      size="sm"
+                      loading={respondingId === b.id}
+                      loadingText="Accepting…"
+                      disabled={!!respondingId && respondingId !== b.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        respondWithFeedback(b.id, "confirmed", "Booking accepted");
+                      }}
+                    >
+                      Accept
+                    </Btn>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Waiting for payment */}
+        {awaitingPayment.length > 0 && (
+          <>
+            <div style={{ marginTop: 18, marginBottom: 10 }}><SectionLabel>Waiting for payment</SectionLabel></div>
+            {awaitingPayment.slice(0, 2).map((b) => {
+              const program = businessPrograms.find((item) => item.id === b.programId);
+              return (
+                <Card key={b.id} onClick={() => nav("business-booking-detail", { id: b.id })} style={{ marginBottom: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <Avatar name={b.clientName} size={38} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: T.body, fontWeight: 700, color: C.jet, ...fBody }}>{b.clientName}</div>
+                      <div style={{ fontSize: T.captionLg, color: C.slate, marginTop: 2, ...fBody }}>{program?.title || b.service} · {b.date}</div>
+                    </div>
+                    <StatusPill status={b.status} perspective="business" />
+                  </div>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 10, padding: "9px 10px", borderRadius: 12, background: C.strongTint }}>
+                    <Clock size={14} color={C.strong} />
+                    <span style={{ flex: 1, fontSize: T.label, color: C.slate, ...fBody }}>Reserved until {b.paymentDeadline || "tomorrow, 6:00pm"}</span>
+                  </div>
+                </Card>
+              );
+            })}
+          </>
+        )}
+
+        {/* Upcoming Sessions */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 18, marginBottom: 10 }}>
+          <SectionLabel>Upcoming sessions</SectionLabel>
+          <button
+            onClick={() => nav("business-bookings")}
+            style={{ minHeight: 44, padding: "0 4px", background: "none", border: "none", color: C.brand, fontSize: T.label, fontWeight: 600, cursor: "pointer", ...fBody }}
+          >
+            See all
+          </button>
+        </div>
+
+        {upcoming.length === 0 ? (
+          <div style={{ fontSize: T.labelLg, color: C.slateLight, ...fBody }}>
+            Nothing scheduled yet.
+          </div>
+        ) : (
+          <div className="cl-stagger">
+            {upcoming.slice(0, 3).map((b, i) => {
+              const program = businessPrograms.find((item) => item.id === b.programId);
+              const coach = businessRoster.find((item) => item.id === b.assignedCoachId);
+              return (
+                <Card
+                  key={b.id}
+                  style={{
+                    marginBottom: 10,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    animationDelay: `${Math.min(i, 8) * 45}ms`,
+                  }}
+                  onClick={() => nav("business-booking-detail", { id: b.id })}
+                >
+                  <div style={{ display: "flex", gap: 10, alignItems: "center", minWidth: 0, flex: 1 }}>
+                    <Avatar name={b.clientName} size={38} />
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...oneLine, ...fBody }}>
+                        {b.clientName}
+                      </div>
+                      <div style={{ fontSize: T.captionLg, color: C.slate, ...oneLine, ...fBody }}>
+                        {program?.title || b.service} · {b.date} · {b.time}
+                      </div>
+                      {coach ? (
+                        <div style={{ marginTop: 2, fontSize: T.tiny, color: C.brand, fontWeight: 600, ...oneLine, ...fBody }}>
+                          Coach: {coach.name}
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                  <StatusPill status={b.status} perspective="business" />
+                </Card>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Recent Reviews */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 18, marginBottom: 10 }}>
+          <SectionLabel>Recent reviews</SectionLabel>
+          <button
+            onClick={() => nav("business-reviews")}
+            style={{ background: "none", border: "none", color: C.brand, fontSize: T.label, fontWeight: 600, cursor: "pointer", ...fBody }}
+          >
+            See all
+          </button>
+        </div>
+
+        {reviews.length === 0 ? (
+          <div style={{ fontSize: T.labelLg, color: C.slateLight, ...fBody }}>
+            No reviews yet.
+          </div>
+        ) : (
+          reviews.slice(0, 2).map((r) => (
+            <Card key={r.id} style={{ marginBottom: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ fontSize: T.body, fontWeight: 600, color: C.jet, ...fBody }}>{r.name}</span>
+                <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: T.labelLg, fontWeight: 700, color: C.jet, ...fBody }}>
+                  <Star size={12} fill={C.brand} color={C.brand} />
+                  {Number(r.rating).toFixed(1)}
+                </span>
+              </div>
+              <div style={{ marginTop: 2, fontSize: T.caption, color: C.slateLight, ...fBody }}>
+                {r.date} · {r.program}
+              </div>
+              <p style={{ fontSize: T.labelLg, color: C.slate, marginTop: 4, lineHeight: 1.5, ...fBody }}>
+                {r.text}
+              </p>
+              {r.reply ? (
+                <div style={{ marginTop: 10, background: C.fog, borderRadius: 10, padding: "10px 12px" }}>
+                  <div style={{ fontSize: T.caption, fontWeight: 700, color: C.brand, ...fBody }}>Your reply</div>
+                  <p style={{ fontSize: T.labelLg, color: C.jet, marginTop: 3, lineHeight: 1.5, ...fBody }}>{r.reply}</p>
+                </div>
+              ) : null}
+              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                <Btn size="sm" variant="secondary" icon={CornerUpLeft} onClick={() => { setReplyTarget(r); setReplyText(r.reply || ""); }}>
+                  {r.reply ? "Edit reply" : "Reply to review"}
+                </Btn>
+              </div>
+            </Card>
+          ))
+        )}
+
+        {/* Reply to Review BottomSheet */}
+        <BottomSheet open={!!replyTarget} onClose={() => setReplyTarget(null)} title="Reply to review" heightPct={46}>
+          {replyTarget ? (
+            <div style={{ display: "grid", gap: 14 }}>
+              <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.5, ...fBody }}>
+                Your response will appear below {replyTarget.name}'s verified review.
+              </div>
+              <Field label="Your reply" value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder="Thank you for your feedback…" />
+              <Btn full onClick={saveReplyAction}>Publish reply</Btn>
+            </div>
+          ) : null}
+        </BottomSheet>
+      </div>
     </div>
-  </div>;
+  );
 }
 
 const BUSINESS_BOOKING_FILTERS = [
