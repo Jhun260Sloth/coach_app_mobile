@@ -1059,20 +1059,47 @@ export function Toast({ toast }) {
   if (!toast) return null;
   return (
     <div
-      role="status"
-      aria-live="polite"
-      aria-atomic="true"
       style={{
-        position: "absolute", bottom: 100, left: 16, right: 16, background: C.jet, color: C.white,
-        padding: "10px 12px", borderRadius: 16, fontSize: T.body, fontWeight: 500, display: "flex",
-        alignItems: "center", gap: 10, zIndex: 60, boxShadow: "0 12px 32px rgba(0,0,0,.28)",
-        animation: "clToastIn .3s cubic-bezier(.22,1,.36,1)", ...fBody,
+        position: "absolute",
+        bottom: 20,
+        left: 0,
+        right: 0,
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        zIndex: 9999,
+        pointerEvents: "none",
+        padding: "0 16px",
       }}
     >
-      <span style={{ width: 26, height: 26, borderRadius: 9, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-        <CheckCircle2 size={14} color={C.brand} />
-      </span>
-      <span style={{ flex: 1, minWidth: 0 }}>{toast}</span>
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        style={{
+          pointerEvents: "auto",
+          background: C.jet,
+          color: C.white,
+          padding: "10px 18px",
+          borderRadius: 99,
+          fontSize: T.body,
+          fontWeight: 500,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 10,
+          maxWidth: "100%",
+          boxShadow: "0 12px 32px rgba(0,0,0,.28)",
+          animation: "clToastIn .3s cubic-bezier(.22,1,.36,1)",
+          textAlign: "center",
+          ...fBody,
+        }}
+      >
+        <span style={{ width: 24, height: 24, borderRadius: 99, background: C.brandTint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <CheckCircle2 size={14} color={C.brand} />
+        </span>
+        <span style={{ textAlign: "center" }}>{toast}</span>
+      </div>
     </div>
   );
 }
@@ -1383,8 +1410,8 @@ export function ConfirmDialog({
 
   return (
     <BottomSheet open={open} onClose={onClose} title={title} heightPct={42}>
-      <div>
-        {description && <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.55, paddingBottom: 14, ...fBody }}>{description}</div>}
+      <div style={{ textAlign: "center" }}>
+        {description && <div style={{ fontSize: T.body, color: C.slate, lineHeight: 1.55, paddingBottom: 14, textAlign: "center", ...fBody }}>{description}</div>}
         <button type="button" onClick={onConfirm} style={{ width: "100%", minHeight: LAYOUT.touchTarget, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, padding: "0 12px", border: `1px solid ${destructive ? C.dangerBorder : C.border}`, borderRadius: LAYOUT.buttonRadius, background: destructive ? C.dangerTint : C.brandTint, color: destructive ? C.danger : C.brand, cursor: "pointer", fontSize: T.bodyLg, fontWeight: 600, ...fBody }}>
           <Icon aria-hidden="true" size={17} />
           {confirmLabel}
@@ -1489,7 +1516,7 @@ export function BottomSheet({ open, onClose, title, children, footer, heightPct 
           <div style={{ width: 40, height: 4.5, borderRadius: 99, background: C.border }} />
         </button>
         {title && (
-          <div id={titleId} style={{ padding: "4px 20px 10px", fontSize: T.titleLg, fontWeight: 700, color: C.jet, letterSpacing: "-0.2px", ...fDisplay }}>{title}</div>
+          <div id={titleId} style={{ padding: "4px 20px 10px", fontSize: T.titleLg, fontWeight: 700, color: C.jet, letterSpacing: "-0.2px", textAlign: "center", ...fDisplay }}>{title}</div>
         )}
         <div style={{ overflowY: "auto", overscrollBehavior: "contain", padding: footer ? "4px 18px 24px" : "4px 18px max(28px, env(safe-area-inset-bottom))", flex: 1, minHeight: 0 }} className="cl-hide-scrollbar">{children}</div>
         {footer && (

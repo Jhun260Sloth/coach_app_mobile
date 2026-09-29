@@ -780,12 +780,14 @@ const closeSheet = () => setSheet(null);
 
       {/* Log out confirmation */}
       <BottomSheet open={sheet === "logout"} onClose={closeSheet} title="Log out" heightPct={38}>
-        <div style={{ fontSize: T.bodyLg, color: C.slate, lineHeight: 1.55, marginBottom: 18, ...fBody }}>
-          Are you sure you want to log out of your account?
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <Btn full variant="dark" icon={LogOut} onClick={() => { closeSheet(); resetNav("splash", {}, "client"); }}>Log out</Btn>
-          <Btn full variant="secondary" onClick={closeSheet}>Cancel</Btn>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: T.bodyLg, color: C.slate, lineHeight: 1.55, marginBottom: 18, textAlign: "center", ...fBody }}>
+            Are you sure you want to log out of your account?
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <Btn full variant="dark" icon={LogOut} onClick={() => { closeSheet(); resetNav("splash", {}, "client"); }}>Log out</Btn>
+            <Btn full variant="secondary" onClick={closeSheet}>Cancel</Btn>
+          </div>
         </div>
       </BottomSheet>
 

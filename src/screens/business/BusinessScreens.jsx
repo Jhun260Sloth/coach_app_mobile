@@ -89,7 +89,7 @@ export function ScreenBusinessDashboard() {
     <div style={page(C)}>
       <div style={{ padding: "18px 18px 0" }}>
         <ScreenHeader
-          title={`${business.tradingName || "Organisation"}'s dashboard`}
+          title={business.tradingName || "Organisation"}
           subtitle="Bookings, coaches and business activity."
           action={<NotificationBellButton count={unreadCount} onClick={() => nav("business-notifications")} />}
         />
@@ -921,12 +921,14 @@ export function ScreenBusinessMore() {
 
         {/* Log out confirmation */}
         <BottomSheet open={showLogoutSheet} onClose={() => setShowLogoutSheet(false)} title="Log out" heightPct={38}>
-          <div style={{ fontSize: T.bodyLg, color: C.slate, lineHeight: 1.55, marginBottom: 18, ...fBody }}>
-            Are you sure you want to log out?
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <Btn full variant="dark" icon={LogOut} onClick={() => { setShowLogoutSheet(false); resetNav("splash", {}, "client"); }}>Log out</Btn>
-            <Btn full variant="secondary" onClick={() => setShowLogoutSheet(false)}>Cancel</Btn>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: T.bodyLg, color: C.slate, lineHeight: 1.55, marginBottom: 18, textAlign: "center", ...fBody }}>
+              Are you sure you want to log out?
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <Btn full variant="dark" icon={LogOut} onClick={() => { setShowLogoutSheet(false); resetNav("splash", {}, "client"); }}>Log out</Btn>
+              <Btn full variant="secondary" onClick={() => setShowLogoutSheet(false)}>Cancel</Btn>
+            </div>
           </div>
         </BottomSheet>
       </div>
